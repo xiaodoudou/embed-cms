@@ -1,0 +1,40 @@
+.login-canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 1.5vw;
+  text-align: center;
+  max-width: 374px;
+  .title, .actions {
+    display: block;
+    text-align: center;
+  }
+  input {
+    border: 1px #c7c7c7 solid;
+    display: block;
+    width: calc(270px - 22px);
+    height: 40px;
+    font-size: 16px;
+    padding-left: 20px;
+    margin-top: 10px;
+  }
+  .user-id {
+    font-style: italic;
+  }
+  button {
+    cursor: pointer;
+    padding: 5px 12px;
+    margin: 0px;
+    margin-top: 10px;
+    line-height: 28px;
+    box-sizing: border-box;
+    background: #f0f0f0;
+    display: inline-block;
+    text-decoration: none;
+    color: #999;
+    border-width: 0px;
+    width: 270px;
+    font-size: 16px;
+  }
+}

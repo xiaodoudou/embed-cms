@@ -5,7 +5,10 @@ class LoginService {
   constructor () {
     this.user = null
     this.logoutCallbackList = []
+  }
 
+  init () {
+    console.info(`LoginService - init`)
     setInterval(async () => {
       this.checkStatus()
     }, 1000 * 15)
@@ -28,7 +31,7 @@ class LoginService {
     } catch (error) {
     }
     if (_.isEmpty(status)) {
-      console.warn('will logout')
+      // console.info('will logout')
       await this.logout()
     }
   }
@@ -38,6 +41,7 @@ class LoginService {
     try {
       await axios.get('./logout')
     } catch (error) {
+      console.error(`Failed to logout: `, error)
     }
     _.each(this.logoutCallbackList, callback => {
       callback()

@@ -29,7 +29,8 @@ before(async () => {
     config: CONFIG,
     autoload: true,
     apiVersion: 2,
-    disableAdminLogin: false,
+    disableJwtLogin: false,
+    disableAuthentication: true,
     auth: { secret: 'auth.jwt.secret' }
   })
 

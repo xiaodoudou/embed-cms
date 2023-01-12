@@ -5,10 +5,15 @@
       <locale-list v-if="localeList && localeList.length > 0" :locale-list="localeList" />
       <div class="login-canvas">
         <form @submit.prevent="login">
-          <input v-model="username" autofocus type="test" name="nodeCmsUsername" :placeholder="'TL_USERNAME' | translate" autocomplete="on">
-          <input v-model="password" type="password" name="nodeCmsPassword" :placeholder="'TL_PASSWORD' | translate" autocomplete="on">
+          <div class="title">{{ 'TL_LOGIN' | translate }} </div>
+          <input ref="username" v-model="username" autofocus type="test" name="nodeCmsUsername" autocomplete="on"
+                 :placeholder="'TL_USERNAME' | translate"
+          >
+          <input ref="password" v-model="password" type="password" name="nodeCmsPassword" autocomplete="on" :placeholder="'TL_PASSWORD' | translate">
           <span v-if="loginFailed" class="error-message">{{ 'TL_LOGIN_FAIL' | translate }}</span>
-          <button :disabled="!username || !password || loggingIn">{{ 'TL_LOGIN' | translate }}</button>
+          <div class="login-btn-wrapper" :class="{disabled: !username || !password || loggingIn}">
+            <button :disabled="loggingIn">{{ 'TL_CONFIRM' | translate }}</button>
+          </div>
         </form>
       </div>
     </div>
@@ -18,12 +23,14 @@
 
 <script>
 import axios from 'axios/dist/axios.min'
+import _ from 'lodash'
 
 import Loading from './Loading.vue'
 import LocaleList from './LocaleList.vue'
 import LoadingService from '../services/LoadingService'
 import ConfigService from '../services/ConfigService'
 import TranslateService from '../services/TranslateService'
+import LoginService from '../services/LoginService'
 export default {
   components: {
     Loading,
@@ -33,6 +40,7 @@ export default {
     return {
       username: null,
       password: null,
+      activeField: false,
       loginFailed: false,
       loggingIn: false,
       locale: 'enUS',
@@ -44,6 +52,10 @@ export default {
   async mounted () {
     this.$loading.start('init')
     try {
+      const noLogin = _.get(window, 'noLogin', false)
+      if (!noLogin) {
+        LoginService.init()
+      }
       await ConfigService.init()
       await TranslateService.init()
       this.localeList = ConfigService.config.locales
@@ -54,8 +66,14 @@ export default {
   },
   methods: {
     async login () {
-      if (this.loggingIn || !this.username || !this.password) {
+      if (this.loggingIn) {
         return
+      }
+      if (!this.username) {
+        return this.$refs.username.focus()
+      }
+      if (!this.password) {
+        return this.$refs.password.focus()
       }
       this.$loading.start('login')
       this.loggingIn = true
@@ -80,11 +98,28 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.login-canvas {
-  padding: 5vw;
-  border: 1px solid #c7c7c7;
-  border-radius: 16px;
-  box-shadow: 0px 0px 20px 0px rgba(0,0,0,0.5);
+.cms-layout {
+  background-color: #e9e9e9;
+  color: black;
+
+}
+.title {
+  text-align: left;
+  font-size: 24px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+input {
+  outline: none;
+  z-index: 1;
+  position: relative;
+  background: none;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  font-size: 16px;
+  border-bottom: 1px solid #757575;
+  margin-bottom: 15px;
 }
 .error-message {
   display: block;
@@ -93,12 +128,10 @@ export default {
   text-align: center;
   padding-top: 10px;
 }
-button {
-  // background-color: aqua;
-  &:disabled {
-    opacity: 0.5;
-    touch-action: none;
-    pointer-events: none;
-  }
+.login-btn-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
 }
+
 </style>

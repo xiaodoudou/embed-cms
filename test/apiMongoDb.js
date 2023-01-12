@@ -33,7 +33,8 @@ before(async () => {
     mid: 'lat5di0f',
     autoload: true,
     apiVersion: 2,
-    disableAdminLogin: false,
+    disableJwtLogin: false,
+    disableAuthentication: true,
     auth: { secret: 'auth.jwt.secret' },
     dbEngine: {
       type: 'mongodb',

@@ -4,17 +4,22 @@
     <div v-if="user" class="cms-layout">
       <div>
         <nav-bar />
-        <user-nav-bar />
       </div>
-      <denied-page v-if="!user.group" :user="user" />
-      <div v-else class="cms-inner-layout">
+      <div class="cms-inner-layout">
         <div class="resources">
           <locale-list v-if="localeList" :locale-list="localeList" />
           <resource-list :class="{locale:localeList && localeList.length > 1}" :list="resourceList" :plugins="pluginList" :selected-item="selectedResource || selectedPlugin" @selectItem="selectResource" />
         </div>
         <div class="records">
           <template v-if="selectedResource && (!selectedResource.view || selectedResource.view == 'list')">
-            <record-list v-if="selectedResource" :list="recordList" :locale="locale" :selected-item="selectedRecord" :resource="selectedResource" @selectItem="selectRecord" />
+            <record-list v-if="selectedResource" :list="recordList" :locale="locale" :selected-item="selectedRecord"
+                         :resource="selectedResource"
+                         :multiselect="multiselect"
+                         :multiselect-items="multiselectItems"
+                         @selectItem="selectRecord"
+                         @changeMultiselectItems="onChangeMultiselectItems"
+                         @selectMultiselect="onSelectMultiselect"
+            />
             <record-editor v-if="selectedRecord" :key="selectedRecord._id" :resource-list="resourceList" :record.sync="selectedRecord" :resource="selectedResource" :locale.sync="locale"
                            :user-locale="TranslateService.locale" @updateRecordList="updateRecordList"
             />
@@ -24,6 +29,17 @@
                         @unsetRecord="unsetSelectedRecord" @updateRecordList="updateRecordList"
           />
           <plugin-page v-if="selectedPlugin" :plugin="selectedPlugin" />
+
+          <multiselect-page v-if="selectedResource && multiselect"
+                            :multiselect-items="multiselectItems"
+                            :locale="locale"
+                            :resource="selectedResource"
+                            :record-list="recordList"
+                            @cancel="onCancelMultiselectPage"
+                            @changeMultiselectItems="onChangeMultiselectItems"
+                            @updateRecordList="updateRecordList"
+          />
+
           <button-counter />
         </div>
         <loading v-if="LoadingService.isShow" />
@@ -37,29 +53,26 @@ import axios from 'axios/dist/axios.min'
 import _ from 'lodash'
 import pAll from 'p-all'
 
-import UserNavBar from './UserNavBar.vue'
 import Loading from './Loading.vue'
 import LocaleList from './LocaleList.vue'
 import ResourceList from './ResourceList.vue'
-import DeniedPage from './DeniedPage.vue'
 import RecordList from './RecordList.vue'
 import RecordEditor from './RecordEditor.vue'
 import RecordTable from './RecordTable.vue'
 import LoadingService from '../services/LoadingService'
+import LoginService from '../services/LoginService'
 import ConfigService from '../services/ConfigService'
 import TranslateService from '../services/TranslateService'
 import ResourceService from '../services/ResourceService'
 
 export default {
   components: {
-    UserNavBar,
     ResourceList,
     RecordList,
     RecordEditor,
     Loading,
     LocaleList,
-    RecordTable,
-    DeniedPage
+    RecordTable
   },
   data () {
     return {
@@ -72,7 +85,9 @@ export default {
       selectedPlugin: null,
       LoadingService,
       TranslateService,
-      user: null
+      user: null,
+      multiselect: false,
+      multiselectItems: []
     }
   },
   computed: {
@@ -96,23 +111,34 @@ export default {
   },
   mounted () {
     this.$loading.start('init')
+    LoginService.onLogout(() => {
+      console.info(`User logged out`)
+      window.location.reload()
+    })
     this.$nextTick(async () => {
       await ConfigService.init()
       await TranslateService.init()
-      try {
-        const userResponse = await axios.get('./login')
-        this.user = userResponse.data
-        // console.warn(`User is: `, this.user)
-        this.$forceUpdate()
-      } catch (error) {
-        const errorMessage = _.get(error, 'response.data.message', error.message)
-        this.$notify({
-          group: 'notification',
-          type: 'error',
-          text: errorMessage
-        })
-        throw error
+      const noLogin = _.get(window, 'noLogin', false)
+      if (noLogin) {
+        this.user = {}
+      } else {
+        LoginService.init()
+        try {
+          const userResponse = await axios.get('./login')
+          this.user = userResponse.data
+          // console.warn(`User is: `, this.user)
+          this.$forceUpdate()
+        } catch (error) {
+          const errorMessage = _.get(error, 'response.data.message', error.message)
+          this.$notify({
+            group: 'notification',
+            type: 'error',
+            text: errorMessage
+          })
+          throw error
+        }
       }
+
       try {
         const resourcesResponse = await axios.get('./resources')
         this.$loading.stop('init')
@@ -144,6 +170,7 @@ export default {
           this.selectedPlugin = resource
           return
         }
+        this.onCancelMultiselectPage()
         this.selectedResource = resource
         this.selectedPlugin = null
         this.recordList = null
@@ -220,6 +247,15 @@ export default {
     selectRecord (record) {
       this.selectedRecord = record
     },
+    onSelectMultiselect (isMultiselect) {
+      this.multiselect = isMultiselect
+      if (isMultiselect) {
+        this.unsetSelectedRecord()
+      }
+    },
+    onChangeMultiselectItems (items) {
+      this.multiselectItems = _.clone(items)
+    },
     async updateRecordList (record) {
       try {
         this.$loading.start('updateRecordList')
@@ -233,6 +269,10 @@ export default {
     },
     unsetSelectedRecord () {
       this.selectedRecord = null
+    },
+    onCancelMultiselectPage () {
+      this.multiselect = false
+      this.multiselectItems = []
     }
   }
 }

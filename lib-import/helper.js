@@ -1,12 +1,10 @@
 const util = require('util')
 const measure = require('measure')
 const numeral = require('numeral')
-const log4js = require('log4js')
+const path = require('path')
+const logger = new (require(path.join(__dirname, '..', 'lib', 'logger')))()
 const moment = require('moment')
 const _ = require('lodash')
-
-let logger = log4js.getLogger()
-logger.level = log4js.levels.DEBUG
 
 let startProcess = function () {
   let done, label

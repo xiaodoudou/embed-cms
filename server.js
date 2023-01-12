@@ -3,14 +3,13 @@
 'use strict'
 
 const express = require('express')
-const log4js = require('log4js')
 const Q = require('q')
 
 const CMS = require('./')
 const pkg = require('./package.json')
 
-const logger = log4js.getLogger()
-logger.level = log4js.levels.DEBUG
+const path = require('path')
+const logger = new (require(path.join(__dirname, 'lib/logger')))()
 
 // start with leveldb
 // let options = {
@@ -44,11 +43,11 @@ logger.level = log4js.levels.DEBUG
 
 // start with mongo dbEngine
 let options = {
-  apiVersion: 2,
-  dbEngine: {
-    type: 'mongodb',
-    url: `${process.env.XPKIT_HOST || 'localhost'}/node-cms`
-  }
+  apiVersion: 2
+  // dbEngine: {
+  //   type: 'mongodb',
+  //   url: `${process.env.XPKIT_HOST || 'localhost'}/node-cms`
+  // }
 }
 
 const cms = new CMS(options)
@@ -58,7 +57,7 @@ app.use(cms.express())
 const server = app.listen(pkg.config.port, async () => {
   await Q.ninvoke(cms, 'bootstrap')
   logger.info('########### server started #################')
-  return logger.info('%s started at http://localhost:%s/admin', pkg.name, server.address().port)
+  return logger.info(`${pkg.name} started at http://localhost:${server.address().port}/admin`)
 })
 
 process.on('uncaughtException', (error) => {

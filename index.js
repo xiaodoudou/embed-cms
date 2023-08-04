@@ -38,7 +38,10 @@ const defaultConfig = () =>
     disableReplication: false,
     disableAuthentication: false,
     disableAnonymous: false,
-    apiVersion: 1
+    apiVersion: 1,
+    session: {
+      secret: 'MdjIwFRi9ezT'
+    }
   })
 
 /*
@@ -116,10 +119,11 @@ class CMS {
       }
     }))
     if (!options.disableAuthentication || !options.disableJwtLogin) {
-      this._app.use(session({
-        secret: 'keyboard cat',
-        cookie: {}
-      }))
+      const secret = _.get(this.options, 'session.secret')
+      if (_.isEmpty(secret)) {
+        throw new Error('config.session.secret is missing')
+      }
+      this._app.use(session(_.extend({cookie: {}}, this.options.session)))
     }
     if (!options.disableAuthentication) {
       /* Enables session with basic auth */
@@ -147,8 +151,12 @@ class CMS {
     this.use(require('./lib/plugins/authentication')(options))
 
     // handle syslog and system
-    SyslogManager.init(this, options)
-    SystemManager.init(this, options)
+    this.bootstrapFunctions = this.bootstrapFunctions || []
+    this.bootstrapFunctions.push(async (callback) => {
+      SyslogManager.init(this, options)
+      SystemManager.init(this, options)
+      callback()
+    })
     this._app.use(SyslogManager.express())
     this._app.use(SystemManager.express())
 
@@ -193,7 +201,12 @@ class CMS {
     }
 
     // handle bootstrap
-    this.bootstrap = async (callback) => {
+    this.bootstrap = async (server, callback) => {
+      if (_.isFunction(server) && _.isUndefined(callback)) {
+        callback = server
+        server = undefined
+      }
+      this.server = server
       await pAll(_.map(this.bootstrapFunctions, bootstrap => {
         return async () => {
           await Q.nfcall(bootstrap)

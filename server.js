@@ -1,19 +1,13 @@
 #!/usr/bin/env node
 
-'use strict'
-
 const express = require('express')
 
 const CMS = require('./')
 const pkg = require('./package.json')
-
-const path = require('path')
-const logger = new (require(path.join(__dirname, 'lib/logger')))()
-
+const logger = new (require('img-sh-logger'))()
 // start with leveldb
 // let options = {
 //   // debug: true,
-//   apiVersion: 2,
 //   xlsx: true,
 //   import: {
 //     oauth: {
@@ -33,20 +27,26 @@ const logger = new (require(path.join(__dirname, 'lib/logger')))()
 
 // // start with dbEngine
 // let options = {
-//   apiVersion: 1
 //   // dbEngine: {
-//   //   type: 'xpkit',
-//   //   url: `${process.env.XPKIT_HOST || 'localhost'}/node-cms`
+//   //   type: 'mongodb',
+//   //   url: `127.0.0.1/node-cms`
 //   // }
 // }
 
-// start with mongo dbEngine
 let options = {
-  apiVersion: 2
-  // dbEngine: {
-  //   type: 'mongodb',
-  //   url: `${process.env.XPKIT_HOST || 'localhost'}/node-cms`
-  // }
+  sync: {
+    resources: ['articles','comments','authors']
+  },
+  disableReplication: true,
+  smartCrop: true,
+  dbEngine: {
+    type: 'mongodb',
+    url: '127.0.0.1/node-cms'
+  }
+  //   "syslog": {
+  //   "method": "file",
+  //   "path": "syslog.log"
+  // },
 }
 
 const cms = new CMS(options)
@@ -55,7 +55,12 @@ const app = express()
 app.use(cms.express())
 const server = app.listen(pkg.config.port, async () => {
   await cms.bootstrap(server)
-  logger.info('########### server started #################')
+  logger.trace('########### server started ###########')
+  logger.verbose('########### server started ###########')
+  logger.debug('########### server started ###########')
+  logger.info('########### server started ###########')
+  logger.warn(`You can access the admin interface at http://localhost:${server.address().port}/admin`)
+  logger.error('########### server error ###########')
   return logger.info(`${pkg.name} started at http://localhost:${server.address().port}/admin`)
 })
 

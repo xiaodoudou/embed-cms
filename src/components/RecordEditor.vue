@@ -3,7 +3,7 @@
     <div class="top-bar">
       <top-bar-locale-list :locales="resource.locales" :locale="locale" :select-locale="selectLocale" :back="back" />
       <div class="buttons">
-        <v-btn v-if="editingRecord._id" elevation="0" class="delete" icon @click="deleteRecord"><v-icon>mdi-trash-can-outline</v-icon></v-btn>
+        <v-btn v-if="editingRecord._id" elevation="0" class="delete" icon @click="deleteRecord"><v-icon icon="$trashCanOutline" /></v-btn>
         <v-btn elevation="0" class="update" :class="{blinking: blinkButton}" rounded :disabled="!canCreateUpdate" @click="createUpdateClicked">{{ getActionText() }}</v-btn>
       </div>
     </div>
@@ -190,6 +190,7 @@
           document.querySelector(`#${firstInvalidField.id}`).focus()
         }
         this.formValid = formValid
+        // TODO: hugo - check validation of fields which aren't part of vuetify i.e, WYSIWYG fields
         this.canCreateUpdate = true
         if (!this.formValid) {
           // const notificationText = this.editingRecord._id ? TranslateService.get('TL_ERROR_CREATING_RECORD_ID', { id: this.editingRecord._id }) : TranslateService.get('TL_ERROR_CREATING_RECORD')

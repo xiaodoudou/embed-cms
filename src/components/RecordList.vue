@@ -58,7 +58,7 @@
           >
             <div class="item-info">
               <div v-if="multiselect" class="checkbox" @click.exact="select($event, item, true)">
-                <v-icon v-if="item._local" :class="{displayed: isItemSelected(item)}" size="small" :icon="'mdiCheckBold'" />
+                <v-icon v-if="item._local" :class="{displayed: isItemSelected(item)}" size="small" icon="$checkBold" />
               </div>
               <div class="infos-wrapper">
                 <div v-if="item" class="main">
@@ -120,6 +120,10 @@
       return {
         get: _.get,
         sortOptions: [
+          {
+            title: TranslateService.get('TL_UPDATED_AT'),
+            value: '_updatedAt'
+          },
           {
             title: TranslateService.get('TL_ALPHABETICAL'),
             value: 'alphabetical'
@@ -317,8 +321,8 @@
       manageError (error, type, record) {
         let typePrefix = this.getTypePrefix(type)
         let errorMessage = typePrefix
-        if (_.get(error, 'response.data.code', 500) === 400) {
-          errorMessage = `${typePrefix}: ${_.get(error, 'response.data.message', TranslateService.get('TL_UNKNOWN_ERROR'))}`
+        if (_.get(error, 'code', 500) === 400) {
+          errorMessage = `${typePrefix}: ${_.get(error, 'message', TranslateService.get('TL_UNKNOWN_ERROR'))}`
         }
         console.error(errorMessage, record)
         this.notify(errorMessage, 'error')

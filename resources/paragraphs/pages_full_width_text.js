@@ -1,4 +1,4 @@
-exports = module.exports = {
+module.exports = {
   displayname: 'Full Width Text',
   schema: [
     {
@@ -8,6 +8,7 @@ exports = module.exports = {
       options: {
         hint: 'Recommended canvas size: auto × 140',
         accept: '.jpg,.png,.svg',
+        limit: 1 * 1024 * 1024, // 1 MB
         maxCount: 1
       },
       localised: true,

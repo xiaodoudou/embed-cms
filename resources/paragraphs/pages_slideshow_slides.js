@@ -1,4 +1,4 @@
-exports = module.exports = {
+module.exports = {
   displayname: 'Slide',
   schema: [
     {
@@ -6,8 +6,10 @@ exports = module.exports = {
       field: 'image',
       input: 'image',
       options: {
-        hint: 'Recommended canvas size: 1516 × 1672',
-        accept: '.jpg,.png'
+        hint: 'Recommended canvas size: 2572 × 1672',
+        accept: '.jpg',
+        limit: 1 * 1024 * 1024, // 1 MB
+        maxCount: 1
       },
       localised: true,
       required: true
@@ -17,8 +19,9 @@ exports = module.exports = {
       field: 'fullscreen',
       input: 'image',
       options: {
-        hint: 'Recommended canvas size: 2528 × 2160',
-        accept: '.jpg,.png',
+        hint: 'Recommended canvas size: 3840 × 2160',
+        accept: '.jpg',
+        limit: 2 * 1024 * 1024, // 2 MB
         maxCount: 1
       },
       localised: true,

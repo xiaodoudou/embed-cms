@@ -1,13 +1,14 @@
 <template>
-  <div ref="wysiwygWrapper" class="wysiwyg-wrapper">
+  <div ref="wysiwygWrapper" class="wysiwyg-wrapper" :data-val="schema.required ? getVal() : 'not-required'">
     <field-label :schema="schema" />
     <div class="border-wrapper">
       <v-card v-if="editor" class="editor" rounded elevation="0">
         <tiptap-menu-bar class="editor__header" :editor="editor" :buttons="getButtons()" />
         <editor-content class="editor-content" :editor="editor" />
       </v-card>
+      <div v-if="wysiwygError.length > 0" class="error-message">{{ wysiwygError }}</div>
     </div>
-    <div v-if="showHint()" class="help-block">
+    <div v-if="showHint() && wysiwygError.length === 0" class="help-block">
       <v-icon size="small" icon="$information" />
       <span>{{ schema.options.hint }}</span>
     </div>
@@ -19,19 +20,23 @@
   import { Editor, EditorContent } from '@tiptap/vue-3'
   import StarterKit from '@tiptap/starter-kit'
   import Superscript from '@tiptap/extension-superscript'
-  import Link from '@tiptap/extension-link'
-  import Underline from '@tiptap/extension-underline'
+  import { createLowlight } from 'lowlight'
+  import CustomHighlight from '@m/CustomHighlight'
+  import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
   import TiptapMenuBar from './TiptapMenuBar.vue'
   import AbstractField from '@m/AbstractField'
+  const lowlight = createLowlight()
+  lowlight.register('javascript', CustomHighlight)
 
   export default {
-    components: { EditorContent, TiptapMenuBar },
+    components: { EditorContent, TiptapMenuBar},
     mixins: [AbstractField],
     data () {
       return {
         loaded: false,
         key: null,
-        editor: null
+        editor: null,
+        wysiwygError: ''
       }
     },
     watch: {
@@ -43,15 +48,15 @@
       this.editor = new Editor({
         content: this._value,
         extensions: [
-          StarterKit.configure({history: true, code: true, blockquote: true}),
+          StarterKit.configure({history: true, code: true, codeBlock: false, blockquote: true}),
           Superscript,
-          Underline,
-          Link
+          CodeBlockLowlight.configure({ lowlight })
         ],
         onUpdate: () => {
           const val = this.editor.getHTML()
           this.$emit('change', val)
           this._value = val
+          this.wysiwygError = this.validateField()
         },
         onFocus: ()=> {
           this.onFieldFocus(true)
@@ -63,18 +68,18 @@
       this.loaded = true
       this.updateObj()
     },
-    created () {
-    },
     methods: {
+      getVal() {
+        return this.editor ? this.editor.getHTML() : ''
+      },
       validateField () {
-        const val = this.editor ? this.editor.getHTML() : ''
-        if (this.schema.required && (_.isNull(val) || _.isUndefined(val) || val === '')) {
-          return false
-        }
-        if (_.isFunction(this.schema.validator)) {
+        const val = this.getVal()
+        if (this.schema.required && (_.isNull(val) || _.isUndefined(val) || val === '' || val === '<p></p>')) {
+          return 'T_FIELD_IS_REQUIRED'
+        } else if (_.isFunction(this.schema.validator)) {
           return !!this.schema.validator(val, this.schema.model, this.model)
         }
-        return true
+        return ''
       },
       getButtons() {
         return _.get(this.schema, 'options.buttons', [])
@@ -107,6 +112,64 @@
 </script>
 <style lang="scss">
 @use '@a/scss/variables.scss' as *;
+@use '@a/scss/mixins.scss' as *;
+.wysiwyg-wrapper .editor-content pre{
+  background-color: #282a36 !important;
+  border-radius:4px !important;
+}
+
+/* Syntax highlighting */
+.tiptap .hljs-comment,
+.tiptap .hljs-quote {
+  color: #616161;
+}
+
+.tiptap .hljs-variable,
+.tiptap .hljs-template-variable,
+.tiptap .hljs-attribute,
+.tiptap .hljs-tag,
+.tiptap .hljs-name,
+.tiptap .hljs-regexp,
+.tiptap .hljs-link,
+.tiptap .hljs-name,
+.tiptap .hljs-selector-id,
+.tiptap .hljs-selector-class {
+  color: #f98181;
+}
+
+.tiptap .hljs-number,
+.tiptap .hljs-meta,
+.tiptap .hljs-built_in,
+.tiptap .hljs-builtin-name,
+.tiptap .hljs-literal,
+.tiptap .hljs-type,
+.tiptap .hljs-params {
+  color: #fbbc88;
+}
+
+.tiptap .hljs-string,
+.tiptap .hljs-symbol,
+.tiptap .hljs-bullet {
+  color: #b9f18d;
+}
+
+.tiptap .hljs-title,
+.tiptap .hljs-section {
+  color: #faf594;
+}
+
+.tiptap .hljs-keyword,
+.tiptap .hljs-selector-tag {
+  color: #70cff8;
+}
+
+.tiptap .hljs-emphasis {
+  font-style: italic;
+}
+
+.tiptap .hljs-strong {
+  font-weight: 700;
+}
 
 .wysiwyg-wrapper {
   position: relative;
@@ -152,6 +215,89 @@
       padding-left: 1rem;
       border-left: 3px solid rgba(#0D0D0D, 0.1);
     }
+
+    pre {
+      background: #2e2b29;
+      border-radius: .5rem;
+      color: white;
+      font-family: JetBrainsMono, monospace;
+      margin: 1.5rem 0;
+      padding: .75rem 1rem;
+    }
+  code {
+      background: none;
+      color: inherit;
+      font-size: 0.8rem;
+      padding: 0;
+    }
+
+    /* Code styling */
+    .hljs-comment,
+    .hljs-quote {
+      color: #616161;
+    }
+
+    .hljs-template-variable,
+    .hljs-attribute,
+    .hljs-tag,
+    .hljs-name,
+    .hljs-regexp,
+    .hljs-link,
+    .hljs-name,
+    .hljs-selector-id,
+    .hljs-selector-class,
+    .hljs-variable {
+      color: #50fa7b;
+    }
+
+    .hljs-number,
+    .hljs-meta,
+    .hljs-built_in,
+    .hljs-builtin-name,
+    .hljs-type,
+    .hljs-params{
+      color: #fbbc88;
+    }
+    .hljs-literal{
+      color:#bd93f9;
+    }
+
+    .hljs-symbol,
+    .hljs-bullet
+    {
+      color: #b9f18d;
+    }
+
+    .hljs-title,
+    .hljs-string,
+    .hljs-section {
+      color: #faf594;
+      &.function_{
+        color:#50fa7b;
+      }
+    }
+    .hljs-title{
+      &.class_{
+        color:#50fa7b;
+      }
+    }
+    .hljs-property,
+    .hljs-attr{
+      color:#66d9ef;
+    }
+    .hljs-keyword,
+    .hljs-operator,
+    .hljs-selector-tag {
+      color: #ff79c6;
+    }
+
+    .hljs-emphasis {
+      font-style: italic;
+    }
+
+    .hljs-strong {
+      font-weight: 700;
+    }
   }
   .ProseMirror:focus {
     outline: none;
@@ -170,6 +316,10 @@
         list-style-position: inside;
       }
     }
+  }
+  .error-message {
+    @include error;
+    color: $imag-orange;
   }
 }
 .v-theme--dark {

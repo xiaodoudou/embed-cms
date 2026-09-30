@@ -221,13 +221,24 @@
     }
   }
   // Tags: even gaps, room inside the field, capped height with inner scroll
+  .v-autocomplete.v-autocomplete--chips .v-field__input,
+  .v-autocomplete.v-autocomplete--multiple .v-field__input,
   .v-autocomplete.v-select--chips .v-field__input,
   .v-autocomplete.v-select--multiple .v-field__input {
     flex-wrap: wrap;
     align-items: flex-start;
     gap: var(--cms-space-2);
-    padding: var(--cms-space-2) var(--cms-space-3);
+    // the same room above the first row of tags and below the last, whatever Vuetify's density sets
+    padding: var(--cms-space-3);
+    padding-block: var(--cms-space-3);
     row-gap: var(--cms-space-2);
+  }
+  .v-autocomplete.v-autocomplete--chips,
+  .v-autocomplete.v-autocomplete--multiple,
+  .v-autocomplete.v-select--chips,
+  .v-autocomplete.v-select--multiple {
+    --v-field-padding-top: var(--cms-space-3);
+    --v-field-padding-bottom: var(--cms-space-3);
   }
   .v-field__input {
     max-height: 216px;
@@ -255,6 +266,7 @@
         cursor: copy;
       }
     }
+    &.v-autocomplete--chips,
     &.v-select--chips {
       input {
         padding: 0;

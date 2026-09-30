@@ -27,18 +27,18 @@
     <div v-for="resourceGroup in visibleGroups" :key="groupKey(resourceGroup)" class="resource-group" :class="{'is-open': isGroupOpen(resourceGroup)}">
         <h2 class="group-heading">
           <button
-            type="button" class="group-toggle" :aria-expanded="isGroupOpen(resourceGroup) ? 'true' : 'false'"
+            type="button" class="group-toggle" :class="{locating: isLocatingGroup(resourceGroup)}" :aria-expanded="isGroupOpen(resourceGroup) ? 'true' : 'false'"
             :aria-controls="`resource-group-list-${groupKey(resourceGroup)}`" @click="toggleGroup(resourceGroup)"
           >
             <v-icon class="group-chevron" size="small" icon="$chevronRight" />
+            <img v-if="iconUrl(resourceGroup)" :src="iconUrl(resourceGroup)" class="group-image" alt="">
             <span class="group-title">{{ $filters.translate(resourceGroup.name) }}</span>
             <span v-if="!isGroupOpen(resourceGroup) && groupSelected(resourceGroup)" class="group-current-dot" :title="$filters.translate('TL_YOU_ARE_HERE')" />
-            <span class="group-count" :class="{current: !isGroupOpen(resourceGroup) && groupSelected(resourceGroup)}" aria-hidden="true">{{ resourceGroup.list.length }}</span>
           </button>
         </h2>
         <ul v-show="isGroupOpen(resourceGroup)" :id="`resource-group-list-${groupKey(resourceGroup)}`" class="group-list">
           <li v-for="resource in resourceGroup.list" :key="resource.name || resource.title">
-            <button type="button" class="resource-link" :class="{selected: isSelected(resource)}" :aria-current="isSelected(resource) ? 'page' : undefined" @click="selectResourceCallback(resource)">
+            <button type="button" class="resource-link" :class="{selected: isSelected(resource), locating: (crumbHint === 'resource' || pulse) && isSelected(resource)}" :aria-current="isSelected(resource) ? 'page' : undefined" @click="selectResourceCallback(resource)">
               <span class="resource-link-title"><template v-for="(part, i) in segments(getResourceTitle(resource))"><mark v-if="part.match" :key="i">{{ part.text }}</mark><template v-else>{{ part.text }}</template></template></span>
             </button>
           </li>
@@ -51,6 +51,8 @@
   import _ from 'lodash'
   import TranslateService from '@s/TranslateService'
   import SearchField from '@c/SearchField.vue'
+  import ResourceService from '@s/ResourceService'
+  import { groupSettingsName } from '@u/navModel'
 
   const STORAGE_KEY = 'node-cms.nav.groups'
 
@@ -61,12 +63,17 @@
       groupedList: { type: Array, default: () => [] },
       selectedItem: { type: Object, default: () => {} },
       autoSelect: { type: Boolean, default: true },
-      collapsible: { type: Boolean, default: false }
+      collapsible: { type: Boolean, default: false },
+      // 'group' or 'resource' while the pointer is on that crumb of the breadcrumb: the matching entry is highlighted
+      crumbHint: { type: String, default: '' }
     },
     emits: ['collapse'],
     data () {
       return {
+        menuIcons: ResourceService.menuIcons(),
         filter: '',
+        pulse: false,
+        pulseTimer: null,
         scrolled: false,
         scroller: null,
         // Explicit user choices, keyed by group name: true (open) / false (closed). Persisted per browser.
@@ -121,6 +128,7 @@
         this.selectResourceCallback(_.first(_.get(_.first(this.groupedList), 'list', [])))
       }
       this.openCurrentGroup()
+      ResourceService.events.on('cached', this.onResourceCached)
       // the sticky block shows a divider only while the list is scrolled
       this.scroller = this.$el.closest ? this.$el.closest('.cms-nav') : null
       if (this.scroller) {
@@ -128,6 +136,7 @@
       }
     },
     beforeUnmount () {
+      ResourceService.events.off('cached', this.onResourceCached)
       if (this.scroller) {
         this.scroller.removeEventListener('scroll', this.onScroll)
       }
@@ -138,6 +147,20 @@
       },
       isOthers (group) {
         return _.get(group, 'name', '') === 'TL_OTHERS'
+      },
+      // Shows where the current page is: opens its group, scrolls to it and highlights it for a moment
+      async locate () {
+        this.openCurrentGroup()
+        await this.$nextTick()
+        const toggle = this.$el.querySelector('.resource-link.selected, .group-toggle.locating') || this.$el.querySelector('.resource-group.is-open .group-toggle')
+        const selected = this.$el.querySelector('.resource-link.selected')
+        const target = selected || toggle
+        if (target && target.scrollIntoView) {
+          target.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        }
+        this.pulse = true
+        clearTimeout(this.pulseTimer)
+        this.pulseTimer = setTimeout(() => { this.pulse = false }, 1800)
       },
       openCurrentGroup () {
         const group = _.find(this.groupedList, (g) => this.groupSelected(g))
@@ -238,6 +261,22 @@
         event.preventDefault()
         const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : _.clamp(index + (event.key === 'ArrowDown' ? 1 : -1), 0, buttons.length - 1)
         buttons[next].focus()
+      },
+      // the group of the current page is the target of the 'group' crumb, and of the 'resource' crumb while it is folded
+      // the image chosen for this group in Settings, if any
+      iconUrl (resourceGroup) {
+        return this.menuIcons[groupSettingsName(resourceGroup)]
+      },
+      onResourceCached (resource) {
+        if (resource === '_settings') {
+          this.menuIcons = ResourceService.menuIcons()
+        }
+      },
+      isLocatingGroup (resourceGroup) {
+        if (!(this.crumbHint || this.pulse) || !this.groupSelected(resourceGroup)) {
+          return false
+        }
+        return this.crumbHint === 'group' || this.pulse || !this.isGroupOpen(resourceGroup)
       },
       groupSelected (resourceGroup) {
         if (!this.selectedItem) { return false }
@@ -349,9 +388,15 @@
   cursor: pointer;
   transition: background-color var(--cms-motion-fast) var(--cms-ease), color var(--cms-motion-fast) var(--cms-ease);
 
-  &:hover {
+  &:hover,
+  &.locating {
     background: var(--cms-chrome-hover);
     color: var(--cms-chrome-text);
+  }
+
+  // where the breadcrumb says you are, while the pointer is on it (not the active state)
+  &.locating {
+    box-shadow: inset 0 0 0 1px var(--cms-chrome-accent);
   }
 
   &:focus-visible {
@@ -373,6 +418,15 @@
     transform: rotate(90deg);
   }
 
+  // the image chosen for the group in Settings
+  .group-image {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    border-radius: var(--cms-radius-sm);
+    object-fit: cover;
+  }
+
   .group-title {
     flex: 1 1 auto;
     min-width: 0;
@@ -389,22 +443,6 @@
     background: var(--cms-chrome-accent);
   }
 
-  .group-count {
-    flex: 0 0 auto;
-    min-width: 24px;
-    padding: 0 var(--cms-space-2);
-    border-radius: var(--cms-radius-pill);
-    background: var(--cms-chrome-badge-bg);
-    color: var(--cms-chrome-badge-text);
-    font-size: var(--cms-fs-xs);
-    font-weight: var(--cms-fw-semibold);
-    line-height: 20px;
-    text-align: center;
-    &.current {
-      background: var(--cms-chrome-accent);
-      color: var(--cms-chrome-bg);
-    }
-  }
 }
 
 // Tree: children are inset under their header with a guide line
@@ -434,9 +472,15 @@
   cursor: pointer;
   transition: background-color var(--cms-motion-fast) var(--cms-ease), color var(--cms-motion-fast) var(--cms-ease);
 
-  &:hover {
+  &:hover,
+  &.locating {
     background: var(--cms-chrome-hover);
     color: var(--cms-chrome-text);
+  }
+
+  // where the breadcrumb says you are, while the pointer is on it (not the active state)
+  &.locating {
+    box-shadow: inset 0 0 0 1px var(--cms-chrome-accent);
   }
 
   &:focus-visible {

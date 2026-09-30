@@ -90,7 +90,8 @@ describe('authentication hardening (security)', () => {
       expect(auth.secret.length).to.be.at.least(32)
       const file = path.join(first.dataDir, '.secrets.json')
       expect(fs.existsSync(file), 'the secrets file exists').to.equal(true)
-      expect(fs.statSync(file).mode & 0o077, 'only the owner can read it').to.equal(0)
+      // Windows has no POSIX permission bits
+      if (process.platform !== 'win32') expect(fs.statSync(file).mode & 0o077, 'only the owner can read it').to.equal(0)
       await first.cms._closeDatabase()
       // second boot on the same data: same secrets, so sessions and tokens survive a restart
       const second = await buildCms({

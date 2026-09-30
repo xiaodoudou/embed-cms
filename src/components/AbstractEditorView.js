@@ -1,3 +1,4 @@
+import { log } from '@u/log'
 import _ from 'lodash'
 import TranslateServiceLib from '@s/TranslateService'
 import SchemaService from '@s/SchemaService'
@@ -27,11 +28,11 @@ export default {
               data.append('_filename', attachment._filename)
             }
             if (_.get(attachment, 'cropOptions', false)) {
-              console.info('detected cropOptions, will add it to the request')
+              log.debug('detected cropOptions, will add it to the request')
               data.append('cropOptions', JSON.stringify(attachment.cropOptions))
             }
             if (_.get(attachment, 'orderUpdated', false) && _.get(attachment, 'order', false)) {
-              console.info('detected orderUpdated, will add it to the request')
+              log.debug('detected orderUpdated, will add it to the request')
               data.append('order', attachment.order)
             }
             // Tracked per file (progress, error, retry); resolves to false instead of throwing
@@ -109,7 +110,7 @@ export default {
           console.warn(`not placed field ${field.model} in layout, placing at the end`)
           schema.layout.lines.push({fields: [{model: field.model, schema: field}]})
         } else {
-          console.info(`field ${field.model} already placed in layout, skipping`)
+          log.debug(`field ${field.model} already placed in layout, skipping`)
         }
       })
       return schema

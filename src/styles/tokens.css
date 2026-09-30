@@ -54,6 +54,7 @@
 
   /* Layout */
   --cms-appbar-height: 56px;
+  --cms-upload-panel-h: 0px; /* set by the uploads panel while it is shown: the toasts stack above it */
   --cms-nav-width: 248px;
   --cms-list-width: 324px;
   --cms-content-max: 1200px;
@@ -74,7 +75,7 @@
   --cms-record-meta-fs: 0.75rem; /* 12px */
   --cms-record-id-fs: 0.6875rem; /* 11px */
   --cms-list-row: 68px; /* three lines: title, meta, id */
-  --cms-list-row-compact: 48px; /* title and meta */
+  --cms-list-row-compact: 44px; /* title and meta */
 
   /* Table view: row heights per density, header, fixed columns */
   --cms-table-row-compact: 32px;

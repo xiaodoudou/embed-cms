@@ -228,15 +228,18 @@ a {
 }
 
 /* icon-only buttons are square/round and do not take label padding */
-.v-btn--icon {
+/* Vuetify sizes an icon button as its height + 12px whatever the size: the size variable decides here */
+.v-application .v-btn.v-btn--icon {
   width: var(--cms-btn-h);
   min-width: var(--cms-btn-h);
+  height: var(--cms-btn-h);
   padding: 0;
   border-radius: var(--cms-radius-pill) !important;
 }
 
+/* the same height as a text button, so an icon button next to Save or Create lines up with it */
 .v-btn--icon.v-btn--size-default {
-  --cms-btn-h: 40px;
+  --cms-btn-h: 36px;
 }
 
 /* primary (default look of an un-styled v-btn and of variant="flat") */
@@ -459,6 +462,12 @@ a {
   color: var(--cms-text);
   border: 1px solid var(--cms-border-strong);
   transition: border-color var(--cms-motion-fast) var(--cms-ease), box-shadow var(--cms-motion-fast) var(--cms-ease);
+}
+
+/* Vuetify fades the first 20px of a field input (room for a floating label); labels sit above the fields here, so no fade */
+.v-application .v-field__input {
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 .v-application .v-field--rounded {
@@ -849,10 +858,16 @@ a {
   display: flex;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: var(--cms-space-2);
-  padding: var(--cms-space-3) var(--cms-space-6);
+  gap: var(--cms-space-3);
+  padding: var(--cms-space-4) var(--cms-space-6);
   border-top: 1px solid var(--cms-border);
   background: var(--cms-surface-2);
+}
+
+/* the buttons share the row in equal halves: balanced, and nothing hangs to one side */
+.cms-dialog-foot .v-btn {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 /* ---- Other floating surfaces share radius, elevation and font ---------------- */
@@ -900,28 +915,35 @@ a {
   color: var(--cms-text);
 }
 
-.v-menu > .v-overlay__content,
-.v-select__content,
-.v-autocomplete__content {
+/* The popup box and the list inside it share one radius and one shadow (Vuetify gives the box its own 4px corners and shadow,
+   which cut the list's rounded border and doubled its shadow) */
+.v-overlay-container .v-menu > .v-overlay__content,
+.v-overlay-container .v-select__content,
+.v-overlay-container .v-autocomplete__content {
   border-radius: var(--cms-radius-md);
+  box-shadow: var(--cms-shadow-2);
 }
 
 .v-menu > .v-overlay__content > .v-list,
-.v-select__content > .v-list,
-.v-autocomplete__content > .v-list {
-  padding: var(--cms-space-1);
+.v-select__content .v-list,
+.v-autocomplete__content .v-list {
+  /* items run edge to edge: no padding, the list itself clips them to its rounded corners */
+  padding: 0;
+  overflow-y: auto;
+  border-radius: inherit;
   max-height: 320px;
   background: var(--cms-surface);
   border: 1px solid var(--cms-border);
-  box-shadow: var(--cms-shadow-2);
+  box-shadow: none;
 }
 
 .v-menu .v-list-item,
 .v-select__content .v-list-item,
 .v-autocomplete__content .v-list-item {
   min-height: 40px;
-  padding: 0 var(--cms-space-3);
-  border-radius: var(--cms-radius-sm);
+  /* room above and below: a one-line item stays 40px, a two-line one (name over id) breathes */
+  padding: var(--cms-space-2) var(--cms-space-3);
+  border-radius: 0;
   color: var(--cms-text);
   font-size: var(--cms-fs-base);
   background: transparent;
@@ -962,11 +984,22 @@ a {
   opacity: 1;
 }
 
+/* title and subtitle: the base size over a smaller muted line, */
+.v-menu .v-list-item-title,
+.v-select__content .v-list-item-title,
+.v-autocomplete__content .v-list-item-title {
+  font-size: var(--cms-fs-base);
+  line-height: var(--cms-lh-base);
+}
+
 .v-menu .v-list-item .v-list-item-subtitle,
-.v-select__content .v-list-item-subtitle {
+.v-select__content .v-list-item-subtitle,
+.v-autocomplete__content .v-list-item-subtitle {
+  margin-top: 2px;
   color: var(--cms-text-muted);
   opacity: 1;
-  font-size: var(--cms-fs-sm);
+  font-size: var(--cms-fs-xs);
+  line-height: var(--cms-lh-base);
 }
 
 .v-autocomplete__content .v-list-item-title mark,
@@ -1062,13 +1095,68 @@ a {
 
 /* ---- Native checkbox used in tables and menus ------------------------------------ */
 .cms-check {
-  width: 16px;
-  height: 16px;
+  appearance: none;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
   margin: 0;
-  accent-color: var(--cms-primary);
+  border: 1px solid var(--cms-border-strong);
+  border-radius: var(--cms-radius-xs);
+  background: var(--cms-surface) center / 12px no-repeat;
   cursor: pointer;
+  vertical-align: middle;
+  transition: background-color var(--cms-motion-fast) var(--cms-ease), border-color var(--cms-motion-fast) var(--cms-ease);
+}
+
+.cms-check:hover {
+  border-color: var(--cms-primary);
+}
+
+.cms-check:checked,
+.cms-check:indeterminate {
+  border-color: var(--cms-primary);
+  background-color: var(--cms-primary);
+}
+
+.cms-check:checked {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.5l2.5 2.5 4.5-5.5' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* some rows selected: a dash */
+.cms-check:indeterminate {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6h6' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+.cms-check:focus-visible {
+  outline: 2px solid var(--cms-focus-ring);
+  outline-offset: 1px;
 }
 
 .cms-check:disabled {
   cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ---- Empty required field after a failed save ----------------------------------- */
+/* The editor marks the fields that have no rule of their own (dates, times...) with .is-missing and the message. */
+.field-wrapper.is-missing .dp__input,
+.field-wrapper.is-missing .v-field,
+.field-wrapper.is-missing .file-input-card,
+.field-wrapper.is-missing .wysiwyg-wrapper .border-wrapper {
+  border-color: var(--cms-error);
+}
+
+/* a field with a rule of its own already shows its message */
+.field-wrapper.is-missing:has(.v-input--error)::after {
+  display: none;
+}
+
+.field-wrapper.is-missing::after {
+  content: attr(data-missing-text);
+  display: block;
+  margin-top: var(--cms-space-1);
+  color: var(--cms-error);
+  font-size: var(--cms-fs-sm);
+  font-weight: var(--cms-fw-medium);
 }

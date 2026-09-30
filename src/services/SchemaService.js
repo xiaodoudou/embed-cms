@@ -36,6 +36,10 @@ class SchemaService {
       _.each(field.options, (val, key) => {
         _.set(schema, key, val)
       })
+      // a hint can be one text per language
+      if (_.isPlainObject(_.get(schema, 'options.hint'))) {
+        schema.options = { ...schema.options, hint: TranslateService.get(schema.options.hint) }
+      }
       if (field.input === 'paragraph') {
         schema.key = field.key
       }
@@ -60,6 +64,9 @@ class SchemaService {
         if (field.input === 'pillbox') {
           schema.selectOptions.min = field.min
           schema.selectOptions.max = field.max
+          // the limits are rules of the field too (see utils/fieldValidation)
+          schema.min = field.min
+          schema.max = field.max
         }
       }
       return schema

@@ -192,7 +192,10 @@
   }
 }
 
-.date-picker {
+// The popup is attached to the page, outside the field, so the colours are defined for both: the field and the popup
+.date-picker,
+.dp__theme_light,
+.dp__theme_dark {
   border-radius: var(--cms-radius-md);
   --dp-border-radius: var(--cms-radius-md);
   --dp-input-padding: 0 30px 0 12px;
@@ -237,5 +240,26 @@
 .dp__action_button {
   border-radius: var(--cms-radius-md);
   font-weight: var(--cms-fw-medium);
+}
+
+// Select is the primary button, Cancel the secondary (outlined) one, as everywhere else
+.dp__action_select {
+  background: var(--cms-primary);
+  color: var(--cms-on-primary);
+  border: 1px solid var(--cms-primary);
+  &:hover {
+    background: var(--cms-primary-hover);
+    border-color: var(--cms-primary-hover);
+  }
+}
+
+.dp__action_cancel {
+  background: transparent;
+  color: var(--cms-primary);
+  border: 1px solid var(--cms-border-strong);
+  &:hover {
+    background: var(--cms-primary-soft);
+    border-color: var(--cms-primary);
+  }
 }
 </style>

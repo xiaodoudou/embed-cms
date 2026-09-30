@@ -35,9 +35,9 @@ The popup combines the calendar and the time spinner:
 
 ### Required
 
-`resources/dates.js`, field `requiredDatetime` (hint: "Shown in local time"). See [date](date.md#required-error) for the error behaviour: a toast, no message under the field.
+`resources/dates.js`, field `requiredDatetime` (hint: "Shown in local time"). See [date](date.md#required-error) for the error behaviour.
 
-![Required toast](img/date-required-error.png)
+![Required datetime](img/datetime-required-error.png)
 
 ### Read-only
 
@@ -57,5 +57,5 @@ A timestamp in milliseconds (UTC epoch). The editor enters the local time of the
 
 ## Validation and behaviour
 
-- UI: form-level required check only.
+- UI: the required check only.
 - Server: only `unique`.

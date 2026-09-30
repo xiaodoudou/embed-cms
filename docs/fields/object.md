@@ -34,7 +34,8 @@ Catalogue: `resources/structured_data.js`, fields `settings`, `rows`, `localised
 | `field`, `input`, `label`, `localised`, `unique` | | | As for [string](string.md). |
 | `options.jsonEditorOptions` | JSON schema | **required** | The schema given to json-editor (`type`, `properties`, `items`, `enum`, `default`, `minimum`, `maximum`, `format: 'table'`, ...). Without it the field cannot render (`this.schema.jsonEditorOptions.title` is set on it at mount). The top-level `title` is blanked, the label of the field is used instead. |
 | `options.hint` | string | none | Help text under the editor. |
-| `required`, `options.readonly` | | | No effect: no validator, and json-editor is not switched to read-only. |
+| `required` | boolean | `false` | Refuses the save while the object is empty, like the other types. The catalogue has no required object field, so this is not verified in the UI. |
+| `options.readonly` | | | No effect: json-editor is not switched to read-only. |
 | `options.disabled` | boolean | `false` | Only disables deleting array rows when the whole form is disabled; the inputs stay editable. |
 
 ## Variations

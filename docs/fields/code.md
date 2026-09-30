@@ -30,7 +30,7 @@ Catalogue: `resources/text_long.js`, fields `snippet` and `sizedSnippet`.
 | `options.line` | boolean | `true` | |
 | `options.readonly` | boolean | `false` | The editor is read-only (text can be selected and copied, not changed). Implemented in the component (CodeMirror `readOnly`); the catalogue has no read-only code field, so it is not shown or verified in the UI. |
 | `options.disabled` | boolean | `false` | Read-only and without a cursor (CodeMirror `readOnly: 'nocursor'`). Same remark as above. |
-| `required` | boolean | `false` | **Not implemented**: the component has no validator, a `required` code field can be saved empty. |
+| `required` | boolean | `false` | Empty code refuses the save like the other types (`This field is required!`). The catalogue has no required code field, so this is not verified in the UI. |
 
 ## Variations
 
@@ -59,7 +59,7 @@ An object found in the record is replaced by an empty string when the editor mou
 
 ## Validation and behaviour
 
-- No client validation: a `required` code field can be saved empty.
+- UI: only `required` (see the option; not verified, the catalogue has no required code field).
 - Server: only `unique`.
 - The editor is not part of the tab order (`tabindex="-1"`): click into it.
 

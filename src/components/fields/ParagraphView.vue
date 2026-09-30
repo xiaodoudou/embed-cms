@@ -1,11 +1,17 @@
 <template>
+  <div class="paragraph-field">
+    <!-- the label sits above the box, like the label of every other field -->
+    <field-label class="paragraph-label" :schema="schema" />
+    <div v-if="schema.options && schema.options.hint" class="help-block paragraph-hint">
+      <v-icon size="small" icon="$information" />
+      <span>{{ schema.options.hint }}</span>
+    </div>
   <div class="paragraph-view" :class="{'can-add-more': !blockMoreItems()}" :style="{ '--paragraph-level': getParagraphLevel() }">
     <div v-if="!blockMoreItems()" class="paragraph-header-bar">
       <v-autocomplete
         ref="input" :ripple="false" :menu-props="menuProps" :theme="theme" transition="none" :model-value="selectedType" :items="types" :item-title="getLabel" item-value="title" hide-details
         rounded density="compact" persistent-placeholder variant="solo-filled" flat :rules="[validateField]" :disabled="disabled || schema.disabled" menu-icon="$chevronDown" @update:model-value="onChangeType"
       >
-        <template #prepend><field-label :schema="schema" /></template>
         <template #label />
       </v-autocomplete>
       <div class="add-btn-wrapper">
@@ -14,10 +20,6 @@
           <span>{{ $filters.translate('TL_ADD_MULTIPLE') }}</span>
         </v-btn>
       </div>
-    </div>
-    <div v-if="schema.options && schema.options.hint" class="help-block">
-      <v-icon size="small" icon="$information" />
-      <span>{{ schema.options.hint }}</span>
     </div>
     <div v-if="showMultipleDropZone" class="multiple-drop-zone" :class="{ 'drag-over': isDragOver }" @click="$refs.fileInput.click()" @drop="onDropFiles" @dragover.prevent="onDragOver" @dragenter.prevent="onDragEnter" @dragleave.prevent="onDragLeave">
       <div class="drop-zone-content">
@@ -72,6 +74,7 @@
         </v-card>
       </draggable>
     </div>
+  </div>
   </div>
 </template>
 
@@ -814,6 +817,21 @@
 <style lang="scss" scoped>
 @use '@a/scss/variables.scss' as *;
 @use '@a/scss/mixins.scss' as *;
+// the label, then the box that holds the blocks
+.paragraph-field {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  > .paragraph-view {
+    flex: 1 1 auto;
+  }
+  // the hint of the whole block sits under the label, before the box
+  > .paragraph-hint {
+    margin: 0 0 var(--cms-space-2);
+  }
+}
+
 .paragraph-view {
   width: 100%;
   border: 2px $paragraph-top-bar-background solid;
@@ -899,7 +917,7 @@
     cursor: pointer;
   }
   .handle {
-    border-radius: 0px !important;
+    border-radius: 6px 6px 0 0 !important; /* follows the rounded border of the card (8px less its 2px border) */
     @include h5;
   }
   .file-item-handle {
@@ -973,20 +991,22 @@
   top: calc(var(--paragraph-level, 0) * 80px);
   background-color: var(--cms-surface-2);
   border-bottom: 1px solid var(--cms-border);
-  padding: 16px 8px;
+  padding: 12px 8px;
   margin-top: 0;
-  z-index: calc(5000 - var(--paragraph-level, 0)) !important; /* Higher level headers appear on top, above other components */
-  box-shadow: var(--cms-shadow-1);
-  border-radius: 8px 8px 0 0;
-  backdrop-filter: blur(8px);
+  /* above the blocks it slides over, below menus and dialogs; a deeper level sits below its parent */
+  z-index: calc(30 - var(--paragraph-level, 0));
+  /* a hairline, not a shadow: the bar is part of the box, the top corners follow the box (8px less its 2px border) */
+  border-radius: 6px 6px 0 0;
 
   /* Ensure sticky positioning works in nested contexts */
   align-self: flex-start;
   width: 100%;
-
-  /* Force sticky positioning to work */
-  contain: layout style paint;
-
+  contain: layout style;
+}
+// the top corners of a block's header follow the rounded border of its card (8px less the 2px border);
+// the selector is specific enough to win over Vuetify's rules for the first child of a card
+.v-card.item > .v-card-title.paragraph-header {
+  border-radius: 6px 6px 0 0;
 }
 .paragraph-header {
   background-color: $paragraph-top-bar-background;
@@ -998,6 +1018,8 @@
   height: 34px;
   padding-right: 0;
   padding-left: 16px;
+  // the top corners follow the rounded border of the block card (8px less its 2px border)
+  border-radius: 6px 6px 0 0;
   .paragraph-title {
     height: 100%;
     @include subtext;

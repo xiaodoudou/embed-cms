@@ -115,3 +115,29 @@ the moment.
   the contract suite but not the two-node replication scenarios.
 - `OSSHelper` upload and download paths (needs `ali-oss` stubbed) and the smart-crop internals.
 - Vue components, `FormService` and `SchemaService` (they pull in the whole Vuetify component map).
+
+## Random ETIMEDOUT failures on one machine
+
+The tests start a server in the process and connect to it over the loopback interface, hundreds of times. On a machine
+where something (a firewall, a network filter driver, an antivirus network inspection) drops the first packet to a
+freshly opened local port, a random test fails with `ETIMEDOUT` (`AggregateError [ETIMEDOUT]` from `internalConnectMultiple`,
+or `connect ETIMEDOUT 127.0.0.1:<port>`). Which tests fail changes from run to run, and a single file can pass, then
+fail 5 tests, then pass.
+
+Check the machine, without any CMS code:
+
+```bash
+node test/helpers/loopback-check.js
+```
+
+A healthy machine prints `{"ok":300}` for both hosts. The Windows developer machine this was found on printed
+`{"ok":297,"ETIMEDOUT":3}` for `127.0.0.1` (about 1 connection in 100). Moving the temporary folder to another drive
+made no difference.
+
+Run the suite with retries on such a machine:
+
+```bash
+MOCHA_RETRIES=2 npm run test:unit    # 654 passing, 0 failing on that machine
+```
+
+CI leaves `MOCHA_RETRIES` unset, so a test that really is flaky stays visible there.

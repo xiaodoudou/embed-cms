@@ -24,6 +24,7 @@
 </template>
 
 <script>
+  import { log } from '@u/log'
   import _ from 'lodash'
   import { sanitizeHtml } from '@u/sanitizeHtml'
   import LoginService from '@s/LoginService'
@@ -84,7 +85,7 @@
         _.each(['onopen', 'onclose', 'onmessage'], (key)=> this.client[key] = this[key])
       },
       onclose () {
-        // console.info('Websocket - onclose')
+        // log.debug('Websocket - onclose')
         this.isConnecting = false
         this.isConnected = false
         clearTimeout(this.heatbeat)
@@ -94,7 +95,7 @@
         }, this.reconnectAfter)
       },
       onopen () {
-        // console.info('Websocket - onopen')
+        // log.debug('Websocket - onopen')
         this.onHeartbeat()
         this.isConnecting = false
         this.isConnected = true
@@ -106,13 +107,13 @@
       onmessage (event) {
         const msg = JSON.parse(event.data)
         if (!_.get(msg, 'action', false)) {
-          return console.info('ws msg received without action:', msg)
+          return log.debug('ws msg received without action:', msg)
         } else if (msg.action === 'ping') {
           return this.pong()
         } else if (msg.action === 'update' && !this.isFromSelf(msg)) {
-          console.info('received WS msg', msg)
+          log.debug('received WS msg', msg)
           if (_.get(msg, 'data.resource', false) && msg.data.resource === this.selectedResource.name) {
-            console.info(`same ${this.isSameRecord(msg) ? 'record' : 'resource'} was edited`)
+            log.debug(`same ${this.isSameRecord(msg) ? 'record' : 'resource'} was edited`)
             this.receivedUpdate = msg
           }
         }
@@ -125,14 +126,14 @@
         }
       },
       pong () {
-        // console.info('WebSocket::pong: Responded')
+        // log.debug('WebSocket::pong: Responded')
         this.send({ action: 'pong' })
         this.onHeartbeat()
       },
       onHeartbeat () {
         clearTimeout(this.heatbeat)
         this.heatbeat = setTimeout(() => {
-          console.info('WebSocket::onHeartbeat: Timeout')
+          log.debug('WebSocket::onHeartbeat: Timeout')
           this.client.close()
         }, this.pingIntervalDuration + this.pingDelay)
       }

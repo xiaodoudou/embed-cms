@@ -194,14 +194,14 @@
     border-radius: var(--cms-radius-md);
     overflow: hidden;
     background-color: $wysiwyg-editor-background;
-    transition: border-color var(--cms-motion-fast) var(--cms-ease);
+    transition: border-color var(--cms-motion-fast) var(--cms-ease), box-shadow var(--cms-motion-fast) var(--cms-ease);
     &:hover {
       border-color: var(--cms-text-muted);
     }
+    // focus looks like a text field: accent border and the same halo
     &:focus-within {
       border-color: var(--cms-primary);
-      outline: 2px solid var(--cms-focus-ring);
-      outline-offset: 1px;
+      box-shadow: 0 0 0 3px var(--cms-field-ring);
     }
   }
   .editor {
@@ -218,7 +218,8 @@
     flex-wrap: wrap;
     gap: 2px;
     padding: var(--cms-space-1) var(--cms-space-2);
-    background-color: $wysiwyg-toolbar-background;
+    // same surface as the text area, so that the whole thing reads as one field box like a text field
+    background-color: $wysiwyg-editor-background;
     border-bottom: 1px solid $wysiwyg-toolbar-border;
   }
   .editor-content {

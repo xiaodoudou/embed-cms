@@ -15,7 +15,7 @@ Catalogue: `resources/dates.js` (group **Date and time**, resource **Dates and t
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `field`, `input`, `label`, `localised`, `unique` | | | As for [string](string.md). |
-| `required` | boolean | `false` | Adds `*` to the label. An empty value blocks Create/Save with the toast `N required fields missing`; the field itself shows no error text. |
+| `required` | boolean | `false` | Adds `*` to the label. An empty value refuses the save: red outline and `This field is required!` under the field. |
 | `options.hint` | string | none | Help text under the field. |
 | `options.readonly` | boolean | `false` | Not editable, no clear button, lock icon. |
 | `options.disabled` | boolean | `false` | Greyed out with a dashed border, not focusable. |
@@ -39,9 +39,10 @@ Click the field to open the calendar and press Select, or type a date and press 
 
 ### Required error
 
-With `required`, clicking Create on an empty field blocks the save and shows a toast; the field keeps its normal look.
+Clicking Create with an empty required date refuses the save: the field gets a red outline and `This field is required!`, and a toast names the fields (`3 required fields missing: Required date, Required time, Required date and time`).
 
-![Required toast](img/date-required-error.png)
+![Required date](img/date-required-error.png)
+![Required toast](img/required-toast.png)
 
 ### Localised
 
@@ -67,6 +68,6 @@ A **timestamp in milliseconds since the Unix epoch** (a number), `{ enUS, zhCN }
 
 ## Validation and behaviour
 
-- UI: only the form-level required check; the field shows no format error message.
+- UI: the required check only; there is no format error message.
 - Clearing with the `x` button empties the value.
 - Server: only `unique`; any value sent over REST is stored.

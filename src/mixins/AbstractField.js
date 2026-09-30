@@ -24,6 +24,16 @@ function attributesDirective (el, binding, vnode) {
   })
 }
 
+// What password managers look at to decide that a field is a credential to fill or save. The fields of a record are
+// content (an email address of a customer, a token of a plugin...), never the login of the person editing.
+const PASSWORD_MANAGER_OFF = {
+  'data-1p-ignore': 'true',
+  'data-lpignore': 'true',
+  'data-bwignore': 'true',
+  'data-form-type': 'other',
+  autocomplete: 'off'
+}
+
 export default {
   props: ['model', 'schema', 'formOptions', 'disabled', 'focused', 'paragraphLevel', 'paragraphIndex', 'theme'],
   data () {
@@ -72,7 +82,23 @@ export default {
       }
     }
   },
+  mounted () {
+    // Vuetify puts data-* attributes on the wrapper, not on the input: set them on the inputs themselves
+    this.$nextTick(this.keepPasswordManagersOut)
+  },
   methods: {
+    keepPasswordManagersOut () {
+      const root = this.$el
+      if (!root || !root.querySelectorAll) {
+        return
+      }
+      root.querySelectorAll('input, textarea').forEach((input) => {
+        Object.entries(PASSWORD_MANAGER_OFF).forEach(([name, value]) => {
+          // a password field asks for a new password, which is what stops the fill suggestion
+          input.setAttribute(name, name === 'autocomplete' && input.type === 'password' ? 'new-password' : value)
+        })
+      })
+    },
     // disabled or read-only: shown, not editable
     isLocked () {
       return !!(this.disabled || objGet(this.schema, 'disabled') || objGet(this.schema, 'readonly'))

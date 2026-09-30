@@ -2,7 +2,7 @@
 
 #### Using cms-import command to import gsheet data to cms
 
-1.  share your gsheet to user view-edit-spreadsheets@sinuous-voice-178902.iam.gserviceaccount.com
+1.  share your gsheet to user import-reader@your-project.iam.gserviceaccount.com
 
 1.  create config json file like that, e.g. local.json
 ```
@@ -10,10 +10,10 @@
   "host": "localhost:8351",
   "prefix": "/cms",
   "oauth": {
-    "email":"view-edit-spreadsheets@sinuous-voice-178902.iam.gserviceaccount.com",
-    "keyFile":"view-edit-spreadsheets.pem"
+    "email":"import-reader@your-project.iam.gserviceaccount.com",
+    "keyFile":"import-reader.pem"
   },
-  "gsheetId": "1FowHlz2rjiB0cioQ67AEgAwmneNzJFNbkzFBXaqXRk0",
+  "gsheetId": "your-google-sheet-id",
   "resources": [
     "users",
     "favoriteColors",
@@ -24,17 +24,17 @@
     "paints",
     "dealerships",
     "locations",
-    "xpkit__users",
+    "users",
     "translations"
   ]
 }
 ```
 
-1.  copy pem key (view-edit-spreadsheets.pem) to your folder
+1.  copy pem key (import-reader.pem) to your folder
 
 1.  install cms-import command
 ```
-    $ npm install -g git+https://github.com/XPKit/node-cms.git
+    $ npm install -g git+https://github.com/xiaodoudou/node-cms-private.git
 ```
 
 1.  run cms-import command to import gsheet data to cms

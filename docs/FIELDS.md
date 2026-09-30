@@ -41,19 +41,19 @@ Declared next to `input` in the schema entry:
 |---|---|---|---|
 | `field` | string | required | Key of the value. A dotted key (`address.city`) nests the value and groups the fields in the form. |
 | `input` | string | required | One of the types above. |
-| `label` | string \| `{ enUS, zhCN }` | `field` | Label. Translated with the CMS translations; a per-locale object is resolved for the current locale. A localised field shows the locale in brackets, `Name (enUS)`. |
-| `required` | boolean | `false` | Adds `*` to the label; each type decides how it is checked (see its page and the table below). Checked by the admin only. |
+| `label` | string \| `{ enUS, zhCN }` | `field` | Label. A string, a translation key, or one text per language; the text of the admin language is shown. A localised field shows the locale in brackets, `Name (enUS)`. |
+| `required` | boolean | `false` | Adds `*` to the label. Saving is refused while the field is empty, whatever its type (see [Required fields](#required-fields)). Checked by the admin only. |
 | `unique` | boolean | `false` | Checked by the server on create and update (`400 Field 'x' is duplicated`). |
 | `localised` | boolean | `true` when the resource declares `locales` | See below. |
 | `source` | array \| resource name | none | The values of `select` and `multiselect`. |
-| `min`, `max` | number | none | On `pillbox` only, at field level (declared, not enforced). For the other types use `options.min` / `options.max`. |
-| `hint` | string | none | Same as `options.hint`. |
+| `min`, `max` | number | none | On `pillbox` only, at field level: minimum / maximum number of tags (enforced). For the other types use `options.min` / `options.max`. |
+| `hint` | string \| `{ enUS, zhCN }` | none | Same as `options.hint`; it may be declared at the top of the field. |
 
 Declared in `options`:
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `options.hint` | string | none | Help text under the field, hidden while an error is shown. |
+| `options.hint` | string \| `{ enUS, zhCN }` | none | Help text under the label (above the box for `paragraph`), hidden while an error is shown. One text per language is allowed: `hint: { enUS: 'Shown in the top bar', zhCN: '显示在顶部栏' }`; the text of the admin language is shown (the built-in Settings resource uses this). |
 | `options.readonly` | boolean | `false` | Not editable, with a lock icon on inputs. Honoured by `string`, `text`, `password`, `email`, `url`, `number`, `integer`, `double`, `checkbox`, `date`, `time`, `datetime`, `select`, `multiselect`, `transliterate`, `wysiwyg`, `color`, `image` and `file` (no uploads); `code` implements it but the catalogue has no example. Ignored by `paragraph`, `object`, `json`. |
 | `options.disabled` | boolean | `false` | Greyed out and not focusable (also accepted as `disabled` next to `input`). Honoured like `readonly`; a disabled `image` or `file` shows only its label and previews, without the hint. Ignored by `object`, `json`; not verified for `pillbox`. |
 | `options.min` / `options.max` | number | none | Length for `string`, `text`, `password`, `email`, `url`, `transliterate`; value for `number`, `integer`, `double`. Enforced by the admin. |
@@ -70,19 +70,35 @@ Every key of `options` is also copied onto the component schema, which is how ty
 - `unique` on a localised field is checked per locale (`name.enUS`).
 - Creating a record over REST with `?locale=enUS` stores it locale-first (`{ "enUS": { "name": "x" } }`), which is not the shape the admin reads. Send the field-first shape.
 
+## Required fields
+
+Clicking Create/Save with a required field empty refuses the save, whatever the type: text, numbers, dates, times, datetimes, colour, select, multiselect, pillbox, wysiwyg, image, file, paragraph (code and object should behave the same but the catalogue has no required example). Then:
+- the empty fields get a red outline and `This field is required!` under them (image and file say `Image is mandatory` / `File is mandatory`; a required paragraph only outlines its type drop-down; an untouched wysiwyg shows neither until it is edited);
+- the first empty field is focused and scrolled into view;
+- a locale tab that holds errors shows a red badge with their number;
+- a toast names the fields: `3 required fields missing: Required date, Required time, Required date and time`, or `2 required fields missing in enUS: Required text, Required rich text` for localised fields.
+
+What counts as an answer: `false` (a checkbox turned off) and `0` count; an untouched checkbox or colour picker does not. In a localised field every locale must be filled.
+
+![Required toast](fields/img/required-toast.png)
+![Required toast with a locale](fields/img/required-toast-locale.png)
+![Locale tab badges](fields/img/locale-tab-badges.png)
+
+Known issue: when a text or number field fails its own rules (for example an empty required `Name`), the empty required dates and colours are listed in the toast but are not outlined until the text field is fixed and Create is clicked again; select-like fields are outlined at once.
+
 ## What is checked where
 
 | Rule | Admin (UI) | Server (REST) |
 |---|---|---|
-| `required` | yes for text types, numbers, select, multiselect, wysiwyg, image, file, paragraph (the last three without an inline message); **not** for checkbox, color, code, object, pillbox | no |
+| `required` | yes, every type (see above) | no |
 | Format (`email`, `url`, `integer`, numeric) | yes | no |
-| `min`, `max` | yes for text (length) and numbers (value); **not** for `pillbox` | no |
+| `min`, `max` | yes: length for text, value for numbers, number of tags for `pillbox` | no |
 | `regex` | yes for text types, also per locale | no |
 | `unique` | no | yes |
 | `accept`, `limit` (files) | yes, on selection | no |
 | `maxCount` | yes | `image` fields only |
 
-The admin runs its rules on blur and when Create/Save is clicked; an invalid field blocks the save. An empty optional value is always valid. Messages: `This field is required!`, `The text is too short! Length: N, minimum: M`, `The text is too long! Length: N, maximum: M`, `The number is too small! Minimum: M`, `The number is too big! Maximum: M`, `The value is not an integer`, `Invalid e-mail address!`, `Invalid URL!`, `Invalid format! (description)`. The rules live in `src/utils/fieldValidation.js`.
+The admin runs its rules on blur and when Create/Save is clicked; an invalid field blocks the save. An empty optional value is always valid. Messages: `This field is required!`, `The text is too short! Length: N, minimum: M`, `The text is too long! Length: N, maximum: M`, `The number is too small! Minimum: M`, `The number is too big! Maximum: M`, `The value is not an integer`, `Invalid e-mail address!`, `Invalid URL!`, `Invalid format! (description)`, `Add at least N tags`, `At most N tags`. The text and number rules live in `src/utils/fieldValidation.js`.
 
 The server stores what it receives, so REST clients must validate their own input.
 

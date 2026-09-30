@@ -46,6 +46,25 @@ describe('REST attachments (unit)', () => {
     expect(res.body.length).to.equal(fs.statSync(image).size)
   })
 
+  describe('a file whose name has no extension', () => {
+    const upload = async (contentType) => {
+      const res = await request(app.url)
+        .post(`/api/articles/${articleId}/attachments`)
+        .auth(...ADMIN)
+        .attach('image', image, { filename: 'photo', contentType })
+      expect(res.status).to.equal(200)
+      return res.body
+    }
+
+    it('takes the type the client declared', async () => {
+      expect((await upload('image/jpeg'))._contentType).to.equal('image/jpeg')
+    })
+
+    it('reads the type from the first bytes when the client declares nothing useful', async () => {
+      expect((await upload('application/octet-stream'))._contentType).to.equal('image/jpeg')
+    })
+  })
+
   it('resizes to the requested dimensions', async () => {
     const res = await get({ resize: '60x40' })
     expect(res.status).to.equal(200)

@@ -1,3 +1,4 @@
+import { log } from '@u/log'
 import _ from 'lodash'
 import { createApp, h } from 'vue'
 import * as Vue from 'vue'
@@ -114,7 +115,7 @@ app.use(router)
 
 function addPlugin (title, displayName, group = 'System', allowed = ['admins']) {
   window.plugins = window.plugins || []
-  console.info('adding plugin', displayName)
+  log.debug('adding plugin', displayName)
   window.plugins.push({
     title,
     displayname: displayName,

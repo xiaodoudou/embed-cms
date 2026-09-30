@@ -22,12 +22,12 @@
             <div class="cms-nav-wrap" :class="`mode-${navMode}`" :style="navStyle">
               <aside id="cms-nav" class="cms-nav" :class="{open: navOpen, 'is-rail': navMode === 'rail'}" :aria-label="$filters.translate('TL_NAVIGATION')" @keydown.esc="closeNav">
                 <nav-rail
-                  v-if="resourceList.length > 0 && navMode === 'rail'" :select-resource-callback="selectResourceAndCloseNav" :grouped-list="groupedList"
+                  v-if="resourceList.length > 0 && navMode === 'rail'" ref="navRail" :select-resource-callback="selectResourceAndCloseNav" :grouped-list="groupedList"
                   :selected-item="selectedResource || selectedPlugin" @toggle="toggleRail"
                 />
                 <resource-list
-                  v-else-if="resourceList.length > 0" :select-resource-callback="selectResourceAndCloseNav" :grouped-list="groupedList"
-                  :selected-item="selectedResource || selectedPlugin" :auto-select="false" :collapsible="navMode === 'expanded'" @collapse="toggleRail"
+                  v-else-if="resourceList.length > 0" ref="resourceList" :select-resource-callback="selectResourceAndCloseNav" :grouped-list="groupedList"
+                  :selected-item="selectedResource || selectedPlugin" :auto-select="false" :crumb-hint="crumbHint" :collapsible="navMode === 'expanded'" @collapse="toggleRail"
                 />
               </aside>
               <div
@@ -40,8 +40,14 @@
             <div class="cms-content">
               <nav v-if="selectedResource || selectedPlugin" class="cms-crumbs" :aria-label="$filters.translate('TL_YOU_ARE_HERE')">
                 <ol>
-                  <li v-if="currentGroupLabel" class="crumb-item"><span class="crumb-group" :title="currentGroupLabel">{{ currentGroupLabel }}</span></li>
-                  <li class="crumb-item"><span class="crumb" :title="currentResourceLabel" :aria-current="currentRecordLabel ? undefined : 'page'">{{ currentResourceLabel }}</span></li>
+                  <li v-if="currentGroupLabel" class="crumb-item" @mouseenter="crumbHint = 'group'" @mouseleave="crumbHint = ''">
+                    <!-- a group is not a page: clicking it shows where you are in the menu -->
+                    <button type="button" class="crumb-group crumb-link" :title="$filters.translate('TL_SHOW_IN_MENU')" :aria-label="`${$filters.translate('TL_SHOW_IN_MENU')}: ${currentGroupLabel}`" @click="locateInMenu">{{ currentGroupLabel }}</button>
+                  </li>
+                  <li class="crumb-item" @mouseenter="crumbHint = 'resource'" @mouseleave="crumbHint = ''">
+                    <button v-if="currentRecordLabel" type="button" class="crumb crumb-link" :title="currentResourceLabel" @click="selectCurrentResource">{{ currentResourceLabel }}</button>
+                    <span v-else class="crumb" :title="currentResourceLabel" aria-current="page">{{ currentResourceLabel }}</span>
+                  </li>
                   <li v-if="currentRecordLabel" class="crumb-item"><span class="crumb crumb-record" :title="currentRecordLabel" aria-current="page">{{ currentRecordLabel }}</span></li>
                 </ol>
               </nav>
@@ -95,6 +101,7 @@
 </template>
 
 <script>
+  import { log } from '@u/log'
   import _ from 'lodash'
   import pAll from 'p-all'
 
@@ -156,11 +163,13 @@
         localeList: [],
         recordList: [],
         allowedPlugins: [],
+        crumbHint: '',
         notification: {},
         showSnackBar: false,
         toolbarTitle: false,
         selectedResourceGroup: null,
         selectedRecord: null,
+        loadingRecords: false,
         selectedPlugin: null,
         isLoading: false,
         TranslateService,
@@ -215,7 +224,8 @@
         return getResourceLabel(this.currentItem)
       },
       currentRecordLabel () {
-        if (!this.selectedResource || !this.selectedRecord || this.multiselect) {
+        // a resource with a single record is one page: the crumb ends at the resource name, not at the record id
+        if (!this.selectedResource || !this.selectedRecord || this.multiselect || this.selectedResource.maxCount === 1) {
           return ''
         }
         return getRecordLabel(this.selectedResource, this.selectedRecord, this.locale) || TranslateService.get('TL_NEW_RECORD_CRUMB')
@@ -303,15 +313,31 @@
       }
     },
     watch: {
-      '$route': function () {
+      '$route': function (to, from) {
         NotificationsService.clearContextual()
         if (this.$route.query.id != null) {
+          const current = _.get(this.selectedResource || this.selectedPlugin, 'title')
+          if (current === this.$route.query.id) {
+            // same resource: only the record changed (the browser's back and forward buttons)
+            if (_.get(to, 'query.record') !== _.get(from, 'query.record')) {
+              this.applyRouteRecord()
+            }
+            return
+          }
           const allResources = this.getResourcesAndPlugins()
           if (allResources.length > 0) {
             this.selectResource(_.find(allResources, {title: this.$route.query.id}))
           }
         }
+      },
+      // the open record is in the address (?id=resource&record=id): a link opens it and back returns to the previous one
+      selectedRecord () {
+        this.syncRouteRecord()
       }
+    },
+    created () {
+      // a save empties and refills the selection within a few ticks: only the settled state goes to the address
+      this.syncRouteRecord = _.debounce(this.writeRouteRecord, 60)
     },
     unmounted () {
       document.removeEventListener('keydown', this.onDocumentKeydown)
@@ -334,7 +360,7 @@
       LoadingService.events.on('has-loading', this.onLoading)
       this.$loading.start('init')
       LoginService.onLogout(() => {
-        console.info('User logged out')
+        log.debug('User logged out')
         window.location.reload()
       })
       NotificationsService.events.on('notification', this.onGetNotification)
@@ -501,7 +527,7 @@
         try {
           this.user = await LoginService.getStatus()
           this.allowedPlugins = await LoginService.getPlugins()
-          console.info('Plugins available:', this.allowedPlugins)
+          log.debug('Plugins available:', this.allowedPlugins)
           if (_.get(ConfigService, 'config.disableDarkMode', false)) {
             this.user.theme = 'light'
             this.$vuetify.theme.dark = false
@@ -566,6 +592,21 @@
           return data.callback()
         }
       },
+      // "where am I in the menu?": opens the menu if it is a drawer, then shows the group of the current page
+      async locateInMenu () {
+        if (this.navMode === 'drawer' && !this.navOpen) {
+          this.toggleNav()
+          await this.$nextTick()
+        }
+        const menu = this.$refs.navRail || this.$refs.resourceList
+        if (menu && menu.locate) {
+          menu.locate()
+        }
+      },
+      // the resource crumb, while a record is open: back to the resource
+      selectCurrentResource () {
+        this.selectResource(this.selectedResource)
+      },
       async selectResourceGroup (resourceGroup) {
         this.selectedResourceGroup = resourceGroup
       },
@@ -577,7 +618,7 @@
           return window.DialogService.show({event: 'selectResource', callback: ()=> this.selectResource(resource)})
         }
         try {
-          if (_.get(this.$router, 'history.current.query.id', false) !== resource.title) {
+          if (this.$route.query.id !== resource.title) {
             this.$router.push({query: {id: resource.title}}).catch(error => console.error('Router throw an error:', error))
           }
           if (resource.type === 'plugin') {
@@ -593,6 +634,7 @@
           if (!this.selectedResource) {
             return
           }
+          this.loadingRecords = true
           this.locale = _.first(this.selectedResource.locales)
           this.$loading.start('selectResource')
           await this.cacheRelatedResources(resource)
@@ -601,10 +643,18 @@
           if (_.get(resource, 'maxCount', 0) === 1) {
             const first = _.get(this.recordList, '[0]', false)
             this.selectRecord(!first ? { _local: true } : first)
+          } else if (this.$route.query.record && this.$route.query.id === resource.title) {
+            // opened from a link (or a reload): the record named in the address
+            const linked = _.find(this.recordList, {_id: this.$route.query.record})
+            if (linked) {
+              this.selectRecord(linked, true)
+            }
           }
+          this.loadingRecords = false
           this.$loading.stop('selectResource')
         } catch (error) {
           console.error('Error happen during selectResource:', error)
+          this.loadingRecords = false
         }
       },
       async cacheRelatedResources (resource) {
@@ -652,6 +702,37 @@
             }
           }
         }), {concurrency: 10})
+      },
+      writeRouteRecord (replace = false) {
+        if (!this.selectedResource || this.selectedResource.type === 'plugin' || this.loadingRecords) {
+          return
+        }
+        const id = _.get(this.selectedRecord, '_id') || undefined
+        if (id === (this.$route.query.record || undefined)) {
+          return
+        }
+        const query = {id: this.selectedResource.title}
+        if (id) {
+          query.record = id
+        }
+        this.$router[replace === true ? 'replace' : 'push']({query}).catch(error => console.error('Router throw an error:', error))
+      },
+      // the address names another record than the one open: open it (or leave the record, when the address has none)
+      applyRouteRecord () {
+        if (!this.recordList) {
+          return
+        }
+        const wanted = this.$route.query.record
+        const record = wanted ? _.find(this.recordList, {_id: wanted}) : null
+        if (wanted && !record) {
+          return
+        }
+        if (this.isEditing && this.selectedRecord !== record) {
+          // unsaved edits: the address goes back to the record that stays open until the leave is confirmed
+          this.writeRouteRecord(true)
+          return window.DialogService.show({event: 'selectRecord', callback: () => this.selectRecord(record, true)})
+        }
+        this.selectRecord(record)
       },
       selectRecord (record, force = false) {
         if (!force && this.isEditing && this.selectedRecord !== record) {
@@ -842,6 +923,25 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    // a crumb that leads somewhere: the resource (back to it), the group (shows it in the menu)
+    .crumb-link {
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+      border-radius: var(--cms-radius-sm);
+      &:hover {
+        color: var(--cms-primary);
+        text-decoration: underline;
+      }
+      &:focus-visible {
+        outline: 2px solid var(--cms-focus-ring);
+        outline-offset: 2px;
+      }
     }
     .crumb[aria-current='page'],
     .crumb-record {

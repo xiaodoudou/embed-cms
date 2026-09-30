@@ -21,6 +21,10 @@
     min-width: 0;
   }
 
+  .record-list-top-bar .v-btn.new-record {
+    --cms-btn-h: var(--cms-field-h);
+  }
+
   // the "new record" icon button is a regular primary button; while a new record is being edited it shows the soft state
   .v-btn.new-record.active {
     color: var(--cms-on-primary-soft);
@@ -146,8 +150,10 @@
 
   .records-top-bar {
     flex-wrap: nowrap;
-    .sort-button {
+    // as tall as the other controls of the row (density button, filter chip)
+    .sort-button.v-btn {
       flex: 0 0 auto;
+      --cms-btn-h: 28px;
     }
   }
 
@@ -224,9 +230,11 @@
     height: var(--cms-list-row-compact);
   }
 
+  // compact: 2px above and below each card instead of 4px, and no vertical padding inside it
   &.compact .records .item .item-info {
-    height: calc(var(--cms-list-row-compact) - var(--cms-space-2));
+    height: calc(var(--cms-list-row-compact) - var(--cms-space-1));
     align-items: center;
+    padding-block: 0;
   }
 
   .badge-readonly {

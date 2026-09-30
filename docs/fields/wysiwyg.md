@@ -15,7 +15,7 @@ Catalogue: `resources/text_long.js`, fields `body`, `requiredBody`, `basicBody`,
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `field`, `input`, `label`, `unique`, `localised` | | | As for [string](string.md). |
-| `required` | boolean | `false` | The editor must contain text (`''` and `<p></p>` count as empty). In a localised field every locale must be filled. |
+| `required` | boolean | `false` | The editor must contain text (`''` and `<p></p>` count as empty). Saving is refused while it is empty; in a localised field every locale must be filled. |
 | `options.hint` | string | none | Help text under the editor (replaced by the error message when there is one). |
 | `options.buttons` | string[] | all buttons | Restricts the toolbar. Ids: `bold`, `italic`, `strike-through`, `paragraph`, `bullet-list`, `ordered-list`, `superscript`, `heading-1`, `heading-2`, `heading-3`, `underline`, `link`, `quote`, `code`, `clear-format`, `horizontal-rule`, `undo`, `redo`. An empty or missing list shows every button. |
 | `options.readonly` | boolean | `false` | The editor is not editable; the toolbar stays visible but greyed and inactive. |
@@ -82,4 +82,4 @@ A field that was never edited is not saved. An editor emptied after typing keeps
 - Server: only `unique`. The HTML is stored as sent; sanitise it when you render it.
 - Link button asks for the URL with a browser prompt; an empty answer removes the link.
 
-Known issue (verified in the running admin): the required message only appears after the editor has been edited; clicking Create on an untouched required field blocks the save but shows no message under the editor.
+Known issue (verified in the running admin): the save is refused for an untouched required editor and the toast names it (`2 required fields missing in enUS: Required text, Required rich text`), but the editor itself gets no red outline and no message until it has been edited.

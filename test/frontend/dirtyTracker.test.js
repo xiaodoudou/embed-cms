@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  normalizeValue, createSnapshot, isDirty, changedParts, missingRequired, isEmptyRichText, absorbPaths
+  normalizeValue, createSnapshot, isDirty, changedParts, missingRequired, unsetSwitchesToFalse, isEmptyRichText, absorbPaths
 } from '../../src/utils/dirtyTracker.js'
 
 const localised = { locales: ['enUS', 'zhCN'], schema: [
@@ -169,6 +169,10 @@ describe('missingRequired', () => {
     const resource = { schema: [{ field: 'flag', input: 'checkbox', required: true }, { field: 'n', input: 'integer', required: true }] }
     expect(missingRequired({ flag: false, n: 0 }, resource).total).toBe(0)
   })
+  it('a required switch is never missing: it shows No until it is turned on', () => {
+    const resource = { schema: [{ field: 'flag', input: 'checkbox', required: true }] }
+    expect(missingRequired({}, resource).total).toBe(0)
+  })
   it('works for a resource without locales', () => {
     expect(missingRequired({ name: '' }, plain)).toEqual({ byLocale: {}, shared: ['name'], total: 1 })
     expect(missingRequired({ name: 'x' }, plain).total).toBe(0)
@@ -201,5 +205,29 @@ describe('absorbPaths (defaults written by fields while the form settles)', () =
     const snapshot = createSnapshot({ note: 'x' })
     absorbPaths(snapshot, { note: '' }, ['note'])
     expect(isDirty(snapshot, { note: '' })).toBe(false)
+  })
+})
+
+describe('unsetSwitchesToFalse (a save stores what the switch shows)', () => {
+  const resource = {
+    locales: ['enUS', 'zhCN'],
+    schema: [
+      { field: 'flag', input: 'checkbox', localised: false, required: true },
+      { field: 'on', input: 'checkbox', localised: false },
+      { field: 'loc', input: 'checkbox', localised: true },
+      { field: 'name', input: 'string', localised: false }
+    ]
+  }
+  it('writes false where a switch holds nothing, in every locale', () => {
+    const model = unsetSwitchesToFalse({ on: true, name: 'x', loc: { enUS: true } }, resource)
+    expect(model).toEqual({ flag: false, on: true, name: 'x', loc: { enUS: true, zhCN: false } })
+  })
+  it('leaves read-only and disabled switches alone', () => {
+    const locked = { schema: [{ field: 'a', input: 'checkbox', options: { readonly: true } }, { field: 'b', input: 'checkbox', options: { disabled: true } }] }
+    expect(unsetSwitchesToFalse({}, locked)).toEqual({})
+  })
+  it('turns null into false too and leaves other fields alone', () => {
+    expect(unsetSwitchesToFalse({ flag: null }, resource).flag).toBe(false)
+    expect(unsetSwitchesToFalse({}, resource).name).toBe(undefined)
   })
 })

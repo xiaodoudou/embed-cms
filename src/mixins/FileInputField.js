@@ -1,3 +1,4 @@
+import { log } from '@u/log'
 import _ from 'lodash'
 import { filesize } from 'filesize'
 import TranslateService from '@s/TranslateService'
@@ -36,7 +37,12 @@ export default {
           return true
         }
       }
-      return a && /image/g.test(a._contentType || _.get(a, 'file.type', false))
+      const declared = a && (a._contentType || _.get(a, 'file.type', false))
+      if (_.isString(declared) && declared.length > 0) {
+        return /image/g.test(declared)
+      }
+      // no extension and no type: an image field holds images
+      return _.isFunction(this.unknownIsImage) && this.unknownIsImage()
     },
     getPreviewUrl (attachment = false) {
       const a = attachment || this.attachment()
@@ -191,7 +197,7 @@ export default {
       let files = _.get(event, 'dataTransfer.files', [])
       if (maxCount !== -1 && maxCount <= 1 && files.length > 1) {
         files = _.last(files)
-        console.info(`Only one file can be uploaded at a time for field '${this.schema.originalModel}', will take the last one:`, files)
+        log.debug(`Only one file can be uploaded at a time for field '${this.schema.originalModel}', will take the last one:`, files)
       } else if (_.isObject(files)) {
         files = _.toArray(files)
       }
@@ -204,7 +210,7 @@ export default {
         // dragAndDrop = true
         if (maxCount !== -1 && maxCount <= 1 && files.length > 1) {
           files = _.last(files)
-          console.info(`Only one file can be uploaded at a time for field '${this.schema.originalModel}', will take the last one:`, files)
+          log.debug(`Only one file can be uploaded at a time for field '${this.schema.originalModel}', will take the last one:`, files)
         } else if (_.isObject(files)) {
           files = _.toArray(files)
         }
@@ -224,7 +230,7 @@ export default {
       }
       const totalNbFiles = this.getAttachments().length + files.length
       if (maxCount >= 1 && totalNbFiles > maxCount) {
-        console.info(`Reached max number of files for ${this.schema.paragraphKey || this.schema.model}`, totalNbFiles, maxCount)
+        log.debug(`Reached max number of files for ${this.schema.paragraphKey || this.schema.model}`, totalNbFiles, maxCount)
         files = _.take(files, files.length - (totalNbFiles - maxCount))
       }
       if (_.get(this.$refs, 'input', false)) {

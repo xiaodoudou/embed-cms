@@ -94,6 +94,27 @@ export function isOthersGroup (group) {
 }
 
 /** Stable key of a group (its name may be a string or a per-locale object) */
+/** The name a group is known by in Settings: its English name, or the name itself when it is plain text */
+export function groupSettingsName (group) {
+  const name = _.get(group, 'name')
+  return _.isString(name) ? name : _.get(name, 'enUS', _.first(_.values(name)))
+}
+
+/**
+ * The menu icons chosen in Settings, as { group name: image url } (entries without a group or an image are skipped).
+ * @param {object} settings the Settings record
+ */
+export function menuIconMap (settings) {
+  const map = {}
+  _.each(_.get(settings, 'menuGroups', []), (item) => {
+    const url = _.get(item, 'icon[0].url')
+    if (_.isString(item.group) && item.group && _.isString(url) && url) {
+      map[item.group] = url
+    }
+  })
+  return map
+}
+
 export function groupKey (group) {
   const name = _.get(group, 'name.enUS', _.get(group, 'name'))
   return _.kebabCase(_.isString(name) ? name : JSON.stringify(name))
@@ -127,4 +148,4 @@ export function railSections (groups) {
 }
 
 export default {
-  isOthersGroup, groupKey, groupHoldsItem, orderResources, railSections, resolveNavMode, toggledPref, clampNavWidth, resizeByKey, groupInitials, groupTint, moveInList, flyoutPosition }
+  isOthersGroup, groupSettingsName, menuIconMap, groupKey, groupHoldsItem, orderResources, railSections, resolveNavMode, toggledPref, clampNavWidth, resizeByKey, groupInitials, groupTint, moveInList, flyoutPosition }

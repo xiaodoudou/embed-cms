@@ -3,8 +3,12 @@
     <div class="top-bar">
       <top-bar-locale-list :locales="resource.locales" :locale="locale" :select-locale="selectLocale" :back="back" :dirty-locales="dirtyLocales" :missing="visibleMissing" />
       <div class="editor-status" role="status" aria-live="polite">
-        <span v-if="isDirty" class="status-dirty"><span class="status-dot" aria-hidden="true" />{{ $filters.translate('TL_UNSAVED_CHANGES') }}</span>
+        <span v-if="isDirty" class="status-dirty" :title="$filters.translate('TL_UNSAVED_CHANGES_HINT')"><span class="status-dot" aria-hidden="true" />{{ $filters.translate('TL_UNSAVED_CHANGES') }}</span>
         <span v-else-if="editingRecord._id" class="status-saved">{{ $filters.translate('TL_ALL_SAVED') }}</span>
+        <!-- after a failed save: how many required fields are empty (the locale tabs only count the localised ones) -->
+        <button v-if="attempted && missing.total > 0" type="button" class="status-missing" @click="focusFirstMissing">
+          <v-icon size="14" icon="$alertBoxOutline" aria-hidden="true" />{{ $filters.translate(missing.total === 1 ? 'TL_REQUIRED_MISSING_ONE' : 'TL_REQUIRED_MISSING_MANY', { num: missing.total }) }}
+        </button>
       </div>
       <div class="buttons">
         <v-menu v-if="outlineFields.length > 6" location="bottom end">
@@ -43,6 +47,7 @@
 </template>
 
 <script>
+  import { log } from '@u/log'
   import _ from 'lodash'
   import { flatten } from 'flat'
   import pAll from 'p-all'
@@ -54,7 +59,7 @@
   import TopBarLocaleList from '@c/TopBarLocaleList.vue'
   import RequestService from '@s/RequestService'
   import { getRecordLabel, recordMessage } from '@u/recordLabel'
-  import { createSnapshot, changedParts, isDirty, missingRequired, absorbPaths } from '@u/dirtyTracker'
+  import { createSnapshot, changedParts, isDirty, missingRequired, absorbPaths, unsetSwitchesToFalse } from '@u/dirtyTracker'
 
   // Fields fill in their own defaults when they appear. For this long after a form (re)renders, and until the user
   // touches it, such changes are not edits (see settle() below).
@@ -130,11 +135,16 @@
           this.checkDirty()
         }
       },
+      // the marks follow the fields: filled in, they go
+      missing () {
+        this.$nextTick(this.markMissingFields)
+      },
       async locale () {
         await this.updateSchema()
         this.editingRecord = _.cloneDeep(this.editingRecord)
         this.checkDirty()
         this.settle()
+        this.$nextTick(this.markMissingFields)
       },
       async record () {
         NotificationsService.clearContextual()
@@ -153,7 +163,7 @@
       await this.updateSchema()
       this.cloneEditingRecord()
       this.isReady = true
-      // console.info('EDITING RECORD - ', this.editingRecord)
+      // log.debug('EDITING RECORD - ', this.editingRecord)
       FieldSelectorService.events.on('select', this.onFieldSelected)
       window.addEventListener('beforeunload', this.onBeforeUnload)
       await this.$nextTick()
@@ -204,6 +214,36 @@
         if (this.settling && event.isTrusted && _.invoke(document.getElementById(this.randomId), 'contains', event.target)) {
           this.settling = false
           clearTimeout(this.settleTimer)
+        }
+      },
+      // After a failed save the empty required fields say so on the field itself (the ones with a rule of their own
+      // already show their message)
+      markMissingFields () {
+        _.each(this.$el.querySelectorAll('.field-wrapper.is-missing'), (element) => {
+          element.classList.remove('is-missing')
+          element.removeAttribute('data-missing-text')
+        })
+        if (!this.attempted) {
+          return
+        }
+        const text = TranslateService.get('TL_FIELD_IS_REQUIRED')
+        _.each(_.get(this.schema, 'fields', []), (field) => {
+          const element = this.isFieldMissing(field) ? this.$el.querySelector(`.field-wrapper[data-model="${field.model}"]`) : null
+          if (element && !element.querySelector('.v-input--error')) {
+            element.classList.add('is-missing')
+            element.setAttribute('data-missing-text', text)
+          }
+        })
+      },
+      focusFirstMissing () {
+        const field = _.find(this.outlineFields, (f) => this.isFieldMissing(f))
+        if (!field) {
+          return
+        }
+        this.jumpToField(field)
+        const input = this.$el.querySelector(`.field-wrapper[data-model="${field.model}"] input, .field-wrapper[data-model="${field.model}"] textarea, .field-wrapper[data-model="${field.model}"] [contenteditable]`)
+        if (input && input.focus) {
+          input.focus({ preventScroll: true })
         }
       },
       isFieldMissing (field) {
@@ -293,7 +333,7 @@
           this.$loading.start('delete-record')
           try {
             await RequestService.delete(`../api/${this.resource.title}/${this.editingRecord._id}`)
-            this.notify(recordMessage('DELETED', this.resource, this.editingRecord, this.locale), 'success', { detail: this.editingRecord._id })
+            this.notify(recordMessage('DELETED', this.resource, this.editingRecord, this.locale), 'success')
             this.$emit('updateRecordList', null)
           } catch (error) {
             console.error('Error happen during deleteRecord:', error)
@@ -380,7 +420,7 @@
         return fieldValue
       },
       handleFormNotValid (msg) {
-        console.info('form not valid', msg)
+        log.debug('form not valid', msg)
       },
       getFieldValue(originalData, data, field) {
         const isLocalised = this.resource.locales && (field.localised || _.isUndefined(field.localised))
@@ -489,7 +529,7 @@
         return false
       },
       getDataToUpload(resource, originalRecord, record) {
-        // console.log(originalRecord)
+        // log.debug(originalRecord)
         let originalRecordAttachments = this.getAttachmentsOfRecord(resource, originalRecord)
         let recordAttachments = this.getAttachmentsOfRecord(resource, record)
         const uploadObject = _.cloneDeep(record)
@@ -537,20 +577,32 @@
         }), {concurrency: 1})
       },
       // "3 required fields missing in zhCN": summary of the first locale that has errors (or of the shared fields)
+      // The names of the fields, so that the message says which ones (the first three, then "...")
+      namesOfFields (fieldNames) {
+        const names = _.map(fieldNames, (name) => {
+          const field = _.find(this.resource.schema, { field: name })
+          return field && field.label ? TranslateService.get(field.label) : name
+        })
+        return _.size(names) > 3 ? `${_.take(names, 3).join(', ')}...` : names.join(', ')
+      },
       summariseMissing () {
         const firstLocale = _.find(this.resource.locales, (locale) => _.has(this.missing.byLocale, locale))
         if (firstLocale) {
-          const count = this.missing.byLocale[firstLocale].length
-          return TranslateService.get(count === 1 ? 'TL_REQUIRED_MISSING_IN_LOCALE_ONE' : 'TL_REQUIRED_MISSING_IN_LOCALE_MANY', { num: count, locale: TranslateService.get('TL_' + firstLocale.toUpperCase()) })
+          const fields = this.missing.byLocale[firstLocale]
+          const text = TranslateService.get(fields.length === 1 ? 'TL_REQUIRED_MISSING_IN_LOCALE_ONE' : 'TL_REQUIRED_MISSING_IN_LOCALE_MANY', { num: fields.length, locale: TranslateService.get('TL_' + firstLocale.toUpperCase()) })
+          return `${text}: ${this.namesOfFields(fields)}`
         }
-        const count = this.missing.shared.length
-        return count > 0 ? TranslateService.get(count === 1 ? 'TL_REQUIRED_MISSING_ONE' : 'TL_REQUIRED_MISSING_MANY', { num: count }) : ''
+        const fields = this.missing.shared
+        return fields.length > 0 ? `${TranslateService.get(fields.length === 1 ? 'TL_REQUIRED_MISSING_ONE' : 'TL_REQUIRED_MISSING_MANY', { num: fields.length })}: ${this.namesOfFields(fields)}` : ''
       },
       async createUpdateClicked () {
         if (!this.canCreateUpdate)  {
           return
         }
         this.attempted = true
+        // switches nobody touched show "No": save them as false, not as nothing
+        unsetSwitchesToFalse(this.editingRecord, this.resource)
+        this.$nextTick(this.markMissingFields)
         if (this.missing.total > 0) {
           this.invalidSummary = this.summariseMissing()
           const firstLocale = _.find(this.resource.locales, (locale) => _.has(this.missing.byLocale, locale))
@@ -561,12 +613,12 @@
         }
         try {
           if (_.get(this.resource, 'locales.length', 0) > 1) {
-            console.info('will check data for all locales')
+            log.debug('will check data for all locales')
             const currentLocale = this.locale
             await this.checkFormValidForAllLocales()
             this.selectLocale(currentLocale)
           } else {
-            console.info('will check data')
+            log.debug('will check data')
             await this.$nextTick()
             await this.checkFormValid()
             if (!this.formValid) {
@@ -576,6 +628,18 @@
         } catch (error) {
           console.error(error)
           this.formValid = false
+          return
+        }
+        // The rules of the fields catch most empty required fields, but not every type has one (dates, times...):
+        // this is the check that covers them all.
+        if (this.missing.total > 0) {
+          this.formValid = false
+          this.canCreateUpdate = true
+          this.notify(this.invalidSummary || this.summariseMissing(), 'error')
+          this.invalidSummary = ''
+          await this.$nextTick()
+          this.markMissingFields()
+          this.focusFirstMissing()
           return
         }
         this.canCreateUpdate = false
@@ -588,7 +652,7 @@
           return this.handleFormNotValid('createUpdateClicked 2')
         }
         _.each(newAttachments, (attachment) => {
-          console.info(`Will clean field ${attachment.field} from uploadObject`)
+          log.debug(`Will clean field ${attachment.field} from uploadObject`)
           _.set(dataToUpload.uploadObject, attachment.field, undefined)
         })
         if (_.isUndefined(this.editingRecord._id)) {
@@ -604,7 +668,7 @@
         try {
           let data = await RequestService.post(`../api/${this.resource.title}`, uploadObject)
           await this.uploadAttachments(data._id, newAttachments)
-          this.notify(recordMessage('CREATED', this.resource, { ...this.editingRecord, _id: data._id }, this.locale), 'success', { detail: data._id })
+          this.notify(recordMessage('CREATED', this.resource, { ...this.editingRecord, _id: data._id }, this.locale), 'success')
           this.$emit('updateRecordList', data)
         } catch (error) {
           console.error('Error happen during createRecord:', error)
@@ -626,15 +690,16 @@
       async updateRecord (uploadObject, newAttachments, updatedAttachments, deletedAttachments) {
         this.$loading.start('update-record')
         try {
-          let data = this.editingRecord
-          await this.handleAttachmentsUpdates(newAttachments, updatedAttachments, deletedAttachments)
           const url = `../api/${this.resource.title}/${this.editingRecord._id}`
+          // The record first, then its files (as when creating): a save the server refuses must not leave files
+          // uploaded, or fixing the record and saving again would upload them a second time.
           if (!_.isEmpty(uploadObject)) {
-            data = await RequestService.put(url, uploadObject)
-          } else {
-            data = await RequestService.get(url)
+            await RequestService.put(url, uploadObject)
           }
-          this.notify(recordMessage('SAVED', this.resource, this.editingRecord, this.locale), 'success', { detail: this.editingRecord._id })
+          await this.handleAttachmentsUpdates(newAttachments, updatedAttachments, deletedAttachments)
+          // read the record back: the files change it
+          const data = await RequestService.get(url)
+          this.notify(recordMessage('SAVED', this.resource, this.editingRecord, this.locale), 'success')
           this.$emit('updateRecordList', data)
         } catch (error) {
           console.error('Error happen during updateRecord:', error)

@@ -18,6 +18,7 @@ real project: copy the field you need into your own resource.
 | Media | `media_files` | file |
 | Structured | `structured_data` | json, object |
 | Structured | `structured_blocks` | paragraph |
+| Table | `table_view` | the table view (`view: 'table'`): one column per field |
 | Reference data | `reference_items` | target of the `source` examples |
 
 Variations shown in each resource, where the type supports them:

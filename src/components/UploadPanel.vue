@@ -1,5 +1,8 @@
 <template>
-  <section v-if="items.length > 0" class="upload-panel" :aria-label="$filters.translate('TL_UPLOADS')">
+  <section
+    v-if="items.length > 0" class="upload-panel" :aria-label="$filters.translate('TL_UPLOADS')"
+    @mouseenter="pause" @mouseleave="resume" @focusin="pause" @focusout="resume"
+  >
     <header class="upload-head">
       <h2 class="upload-title">{{ $filters.translate('TL_UPLOADS') }}</h2>
       <span class="upload-summary" role="status" aria-live="polite">{{ summary }}</span>
@@ -38,6 +41,7 @@
         </div>
       </li>
     </ul>
+    <span v-if="countdown" class="upload-countdown" :class="{paused: countdown.paused}" :style="{animationDuration: countdown.ms + 'ms'}" aria-hidden="true" />
   </section>
 </template>
 
@@ -46,13 +50,24 @@
   import UploadService from '@s/UploadService'
   import TranslateService from '@s/TranslateService'
 
+  // When every upload is done the panel clears itself after this long, with a bar that shows the time left
+  // (hovering or focusing the panel pauses it). Failed or cancelled uploads stay, they need a decision.
+  const AUTO_CLEAR_MS = 6000
+
   export default {
     data () {
       return {
-        items: UploadService.snapshot()
+        items: UploadService.snapshot(),
+        countdown: null,
+        timer: null,
+        startedAt: 0,
+        remaining: 0
       }
     },
     computed: {
+      allDone () {
+        return this.items.length > 0 && _.every(this.items, (item) => item.status === 'done')
+      },
       hasFinished () {
         return _.some(this.items, (item) => item.status !== 'uploading')
       },
@@ -65,13 +80,63 @@
         return failed > 0 ? TranslateService.get('TL_UPLOADS_FAILED', { num: failed }) : TranslateService.get('TL_UPLOADS_COMPLETE')
       }
     },
+    watch: {
+      allDone (done) {
+        return done ? this.startCountdown() : this.stopCountdown()
+      }
+    },
+    updated () {
+      this.publishHeight()
+    },
     mounted () {
       UploadService.events.on('change', this.onChange)
+      this.publishHeight()
+      if (this.allDone) {
+        this.startCountdown()
+      }
     },
     beforeUnmount () {
       UploadService.events.off('change', this.onChange)
+      document.documentElement.style.setProperty('--cms-upload-panel-h', '0px')
+      this.stopCountdown()
     },
     methods: {
+      // The toasts sit in the same corner: tell them how much room the panel takes (plus a gap), 0 when it is not shown
+      publishHeight () {
+        const panel = this.$el && this.$el.nodeType === 1 ? this.$el : null
+        const height = panel ? Math.ceil(panel.getBoundingClientRect().height) + 8 : 0
+        document.documentElement.style.setProperty('--cms-upload-panel-h', `${height}px`)
+      },
+      startCountdown () {
+        this.stopCountdown()
+        this.countdown = { ms: AUTO_CLEAR_MS, paused: false }
+        this.remaining = AUTO_CLEAR_MS
+        this.schedule()
+      },
+      schedule () {
+        this.startedAt = Date.now()
+        this.timer = setTimeout(() => UploadService.clearFinished(), this.remaining)
+      },
+      stopCountdown () {
+        clearTimeout(this.timer)
+        this.timer = null
+        this.countdown = null
+      },
+      pause () {
+        if (!this.countdown || this.countdown.paused) {
+          return
+        }
+        clearTimeout(this.timer)
+        this.remaining = Math.max(1000, this.remaining - (Date.now() - this.startedAt))
+        this.countdown.paused = true
+      },
+      resume () {
+        if (!this.countdown || !this.countdown.paused) {
+          return
+        }
+        this.countdown.paused = false
+        this.schedule()
+      },
       onChange (items) {
         this.items = items
       },
@@ -101,13 +166,19 @@
 </script>
 
 <style lang="scss">
+@keyframes upload-countdown {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
 .upload-panel {
   position: fixed;
   right: var(--cms-space-4);
   bottom: var(--cms-space-4);
   z-index: var(--cms-z-toast);
   width: min(360px, calc(100vw - 32px));
-  max-height: 50vh;
+  // never taller than this: the list inside scrolls
+  max-height: min(50vh, 420px);
   display: flex;
   flex-direction: column;
   background: var(--cms-surface);
@@ -116,6 +187,23 @@
   border-radius: var(--cms-radius-lg);
   box-shadow: var(--cms-shadow-3);
   overflow: hidden;
+
+  // time left before the finished uploads clear themselves
+  .upload-countdown {
+    flex: 0 0 auto;
+    height: 3px;
+    width: 100%;
+    background: var(--cms-success);
+    opacity: 0.5;
+    transform-origin: left center;
+    animation: upload-countdown linear forwards;
+    &.paused {
+      animation-play-state: paused;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
 
   .upload-head {
     display: flex;
@@ -142,7 +230,9 @@
   .upload-list {
     margin: 0;
     padding: 0;
-    overflow: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
     list-style: none;
   }
 

@@ -5,7 +5,7 @@
         v-for="toast in toasts" :key="toast.id" class="toast" :class="`toast-${toast.type}`" :role="isUrgent(toast) ? 'alert' : 'status'"
         @mouseenter="pause(toast)" @mouseleave="resume(toast)" @focusin="pause(toast)" @focusout="resume(toast)"
       >
-        <v-icon class="toast-icon" size="20" :icon="iconFor(toast)" aria-hidden="true" />
+        <v-icon class="toast-icon" size="22" :icon="iconFor(toast)" aria-hidden="true" />
         <div class="toast-body">
           <p class="toast-message">{{ toast.message }}</p>
           <div v-if="toast.detail || toast.actionLabel" class="toast-actions">
@@ -14,7 +14,7 @@
           </div>
         </div>
         <v-btn class="toast-close" icon size="small" variant="text" :aria-label="$filters.translate('TL_DISMISS')" @click="dismiss(toast.id)">
-          <v-icon size="small" icon="$close" />
+          <v-icon size="16" icon="$close" />
         </v-btn>
         <span v-if="toast.timeout" class="toast-progress" :class="{paused: toast.paused}" :style="{animationDuration: toast.timeout + 'ms'}" aria-hidden="true" />
       </div>
@@ -28,6 +28,8 @@
 
   const MAX_VISIBLE = 3
   const AUTO_DISMISS_MS = 4000
+  // an error is read more slowly than "saved", so it stays longer, but it goes away by itself too
+  const AUTO_DISMISS_URGENT_MS = 8000
 
   export default {
     data () {
@@ -55,8 +57,13 @@
       },
       onNotification (data) {
         const type = _.includes(['success', 'error', 'warn', 'info'], data.type) ? data.type : 'info'
-        // Errors and warnings stay until dismissed; success and info fade after a few seconds
-        const timeout = type === 'success' || type === 'info' ? AUTO_DISMISS_MS : 0
+        // every toast fades by itself; errors and warnings take longer (hover pauses the timer)
+        const timeout = type === 'success' || type === 'info' ? AUTO_DISMISS_MS : AUTO_DISMISS_URGENT_MS
+        // the same message again (a second click on Save) replaces the first one instead of stacking a copy
+        const same = _.find(this.toasts, { message: data.message, type })
+        if (same) {
+          this.dismiss(same.id)
+        }
         const toast = { id: ++this.sequence, message: data.message, type, detail: data.detail || '', actionLabel: data.actionLabel || '', action: data.action || null, timeout, paused: false }
         this.toasts = _.takeRight([...this.toasts, toast], MAX_VISIBLE)
         if (timeout) {
@@ -110,14 +117,16 @@
 </script>
 
 <style lang="scss">
+// Bottom right, like the uploads panel. The panel publishes its height (--cms-upload-panel-h, 0 when there is none), so
+// the toasts stack above it while files are being uploaded and drop back to the corner when it goes away.
 .toast-host {
   position: fixed;
-  left: 50%;
-  top: max(var(--cms-space-4), env(safe-area-inset-top));
+  right: var(--cms-space-4);
+  bottom: calc(var(--cms-space-4) + var(--cms-upload-panel-h, 0px));
   z-index: var(--cms-z-toast);
-  width: min(440px, calc(100vw - 32px));
-  transform: translateX(-50%);
+  width: min(400px, calc(100vw - 32px));
   pointer-events: none;
+  transition: bottom var(--cms-motion-base) var(--cms-ease);
 }
 
 .toast-stack {
@@ -128,8 +137,11 @@
 
 .toast {
   position: relative;
+  box-sizing: border-box;
+  min-height: 56px;
   display: flex;
-  align-items: flex-start;
+  // roomy: the icon, the text and the close button centred on the height of the toast
+  align-items: center;
   gap: var(--cms-space-3);
   padding: var(--cms-space-3) var(--cms-space-2) var(--cms-space-3) var(--cms-space-4);
   border: 1px solid var(--cms-border);
@@ -145,7 +157,6 @@
 
   .toast-icon {
     flex: 0 0 auto;
-    margin-top: 2px;
   }
 
   .toast-body {
@@ -156,6 +167,7 @@
   .toast-message {
     margin: 0;
     overflow-wrap: anywhere;
+    line-height: 1.35;
   }
 
   .toast-actions {
@@ -230,6 +242,14 @@
   &.toast-info .toast-progress {
     color: var(--cms-info);
   }
+
+  &.toast-error .toast-progress {
+    color: var(--cms-error);
+  }
+
+  &.toast-warn .toast-progress {
+    color: var(--cms-warning);
+  }
 }
 
 @keyframes toast-progress {
@@ -249,7 +269,7 @@
 .toast-enter-from,
 .toast-leave-to {
   opacity: 0;
-  transform: translateY(-12px);
+  transform: translateY(12px);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -263,10 +283,4 @@
   }
 }
 
-// keep the uploads panel clear of the toasts on phones
-@media (max-width: 599.98px) {
-  .upload-panel {
-    bottom: 96px;
-  }
-}
 </style>

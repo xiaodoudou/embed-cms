@@ -110,7 +110,7 @@ Make sure Python and all build tools are available in your PATH.
 
 #### Development
 
-    $ git clone https://github.com/XPKit/node-cms.git
+    $ git clone https://github.com/xiaodoudou/node-cms-private.git
     $ cd node-cms
     $ npm install
     $ npm test
@@ -118,7 +118,7 @@ Make sure Python and all build tools are available in your PATH.
 #### As a dependency in existing `nodejs` project
 
 ```
-npm install git+https://github.com/XPKit/node-cms.git --save
+npm install git+https://github.com/xiaodoudou/node-cms-private.git --save
 ```
 In your server.js, running `expressjs`
 ``` Javascript
@@ -135,7 +135,7 @@ app.listen()
 #### As a standalone CMS application, in an empty folder
 
 ```
-npm install -g git+https://git@https://github.com/XPKit/node-cms.git
+npm install -g git+https://github.com/xiaodoudou/node-cms-private.git
 cms
 ```
 
@@ -149,14 +149,8 @@ CXXFLAGS="--std=c++17" npm install
 
 #### Authors
 
-Edouard Durand<edouard.durand@imagination.com>
-
-Kong Yim <kong.yim@imagination.com>
-
-Louis Wang <louis.wang@imagination.com>
-
-Hugo Barbier <hugo.barbier@imagination.com>
+Edouard Durand, Kong Yim, Louis Wang, Hugo Barbier
 
 #### License
-[ISC](LICENSE)
+[MIT](LICENSE)
 

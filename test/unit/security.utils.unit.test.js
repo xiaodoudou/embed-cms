@@ -166,7 +166,8 @@ describe('security utilities (unit)', () => {
         await first.flush()
         const raw = await fs.readFile(file, 'utf8')
         expect(raw).to.not.include('secret-token-value')
-        expect(fs.statSync(file).mode & 0o077).to.equal(0)
+        // Windows has no POSIX permission bits
+        if (process.platform !== 'win32') expect(fs.statSync(file).mode & 0o077).to.equal(0)
         expect(new TokenRevocation({ file }).isRevoked('secret-token-value')).to.equal(true)
       } finally {
         await fs.remove(dir)

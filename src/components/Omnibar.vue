@@ -8,16 +8,16 @@
             ref="search"
             :model-value="search" clearable clear-icon="$close" class="search-bar"
             flat variant="solo-filled" hide-details prepend-inner-icon="$magnify" density="comfortable" :placeholder="$filters.translate('TL_INSERT_KEYWORDS')" :aria-label="$filters.translate('TL_INSERT_KEYWORDS')" type="text" @update:model-value="search = $event || ''" autocomplete="off"
-            name="search" :prefix="searchMode === 'all' ? '' : `${searchMode}:`" @keydown.ctrl.prevent.p="showHideOmnibar(false)" @keydown.prevent.escape="showHideOmnibar(false)"
+            name="search" role="combobox" aria-expanded="true" aria-controls="omnibar-results" :aria-activedescendant="results.length > 0 ? 'result-' + highlightedItem : undefined" @keydown="onSearchKeydown"
           />
         </v-card-title>
         <template v-if="results && results.length > 0">
           <v-divider />
           <div ref="scrollWrapper" class="scroll-wrapper" :class="{'scrolled-to-bottom': scrolledToBottom || results.length < 20}" @scroll="onScroll">
-            <v-list density="compact">
-              <v-list-item v-for="(item, i) in results" :id="'result-' + i" :key="i" class="list" :class="{highlighted: highlightedItem === i}" :ripple="false" @click="selectResult(i)">
+            <v-list id="omnibar-results" density="compact" role="listbox">
+              <v-list-item v-for="(item, i) in results" :id="'result-' + i" :key="i" class="list" :class="{highlighted: highlightedItem === i}" role="option" :aria-selected="highlightedItem === i ? 'true' : 'false'" :ripple="false" @click="selectResult(i)">
                 <v-list-item-title>
-                  <v-icon size="small" :icon="getIconForResult(item)" />
+                  <v-icon size="small" :icon="getIcon(item.type)" />
                   <span v-html="sanitizeHtml(item.html)" />
                 </v-list-item-title>
               </v-list-item>
@@ -34,8 +34,8 @@
 <script>
   import _ from 'lodash'
   import { sanitizeHtml } from '@u/sanitizeHtml'
-  import fuzzysort from 'fuzzysort'
-  import FieldSelectorService from '@s/FieldSelectorService'
+  import { buildEntries, searchEntries, moveHighlight } from '@u/switcherModel'
+  import TranslateService from '@s/TranslateService'
   import Notification from '@m/Notification'
 
   export default {
@@ -50,97 +50,48 @@
         showOmnibar: false,
         search: null,
         scrolledToBottom: false,
-        resourcesList: [],
+        entries: [],
         results: [],
         highlightedItem: 0,
-        searchModes: ['all', 'resource', 'field'],
-        searchMode: 'all',
+        // Ctrl+K is handled by the top bar; this one opens it too while it is closed
         shortcutsWhenClosed: {
           'open': ['ctrl', 'p']
-        },
-        shortcuts: {
-          'esc': ['esc'],
-          'open': ['ctrl', 'p'],
-          'arrow-up': ['arrowup'],
-          'arrow-down': ['arrowdown'],
-          'enter': ['enter'],
-          'all': ['shift', 'a'],
-          'resource': ['shift', 'r'],
-          'field': ['shift', 'f']
-        },
-        searchOptions: {
-          keys: ['displayname'],
-          scoreFn: a => {
-            if (!a[0]) {
-              return -10000000
-            }
-            return a[0].score + (this.isResultInCurrentResource(a) ? 10000000 : 0)
-          }
         }
       }
     },
     watch: {
+      groupedList: {
+        immediate: true,
+        handler () {
+          this.entries = buildEntries(this.groupedList, this.labelOf)
+        }
+      },
       search () {
         this.highlightedItem = 0
-        this.results = []
-        const results = fuzzysort.go(this.search, this.getDataForSearch(), this.searchOptions)
-        this.results = _.compact(_.map(results, (result) => {
-          if (_.isNull(_.get(result, '[0]', null))) {
-            return false
-          }
-          result.obj.html = fuzzysort.highlight(result[0])
-          result.obj.score = result.score
-          return result.obj
-        }))
+        this.results = searchEntries(this.entries, this.search, this.currentLabel())
       }
-    },
-    mounted () {
-      this.resourcesList = _.map(_.flatten(_.map(this.groupedList, 'list')), (resource) => {
-        if (_.isString(resource)) {
-          return resource
-        }
-        resource.type = 'resource'
-        resource.displayname = _.get(resource, 'displayname.enUS', _.get(resource, 'displayname', resource.title))
-        return resource
-      })
-      this.fieldsList = _.flatten(_.map(_.cloneDeep(this.resourcesList), (resource) => {
-        return _.map(resource.schema, (field) => {
-          field.resource = resource
-          field.displayname = `${resource.displayname}.${_.get(field, 'label.enUS', _.get(field, 'label', field.field))}`
-          field.type = 'field'
-          return field
-        })
-      }))
     },
     methods: {
       sanitizeHtml,
+      labelOf (item) {
+        const name = _.get(item, 'displayname', false)
+        return name ? TranslateService.get(name) : _.get(item, 'title', '')
+      },
+      currentLabel () {
+        return this.selectedItem ? this.labelOf(this.selectedItem) : ''
+      },
       getShortcuts () {
-        return this.showOmnibar ? this.shortcuts : this.shortcutsWhenClosed
+        return this.showOmnibar ? {} : this.shortcutsWhenClosed
       },
       onScroll ({ target: { scrollTop, clientHeight, scrollHeight } }) {
         this.scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 50
       },
-      isResultInCurrentResource (result) {
-        return _.startsWith(_.get(result[0], 'target', ''), _.get(this.selectedItem, 'displayname', ''))
-      },
-      getDataForSearch () {
-        if (this.searchMode === 'all') {
-          return _.concat(this.resourcesList, this.fieldsList)
-        }
-        return this.searchMode === 'resource' ? this.resourcesList : this.fieldsList
-      },
-      getIconForResult (result) {
-        return this.getIcon(this.searchMode === 'all' ? result.type : this.searchMode)
-      },
       getIcon (type) {
-        return `$${type === 'resource' ? 'package' : 'cursorText'}`
-      },
-      isCharHighlighted (result, i) {
-        return _.includes(_.values(result._indexes), i)
+        return type === 'plugin' ? '$cogOutline' : '$package'
       },
       showHideOmnibar (display) {
         this.showOmnibar = display
-        this.setSearchMode('all')
+        this.search = ''
         if (display) {
           this.$nextTick(() => {
             const elem = _.get(this.$refs, '[\'search\']', false)
@@ -154,48 +105,35 @@
         if (!result) {
           return
         }
-        const resultResource = _.includes(['resource', 'plugin'], result.type) ? result : result.resource
-        if (resultResource !== this.selectedItem) {
-          console.info(`Switching to resource ${resultResource.title}`)
-          this.selectResourceCallback(resultResource)
-        } else if (result.type === 'field') {
-          FieldSelectorService.events.emit('select', _.omit(result, 'resource'))
+        if (result.ref !== this.selectedItem) {
+          this.selectResourceCallback(result.ref)
         }
         this.showHideOmnibar(false)
-      },
-      setSearchMode (mode) {
-        this.searchMode = mode
-        this.search = ''
       },
       scrollToResult () {
         const elem = document.getElementById(`result-${this.highlightedItem}`)
         if (elem) {
-          elem.scrollIntoView()
+          elem.scrollIntoView({ block: 'nearest' })
         }
       },
-      async interactiveSearch (event) {
-        const action = _.get(event, 'srcKey', false)
-        if (!action) {
-          return
-        }
-        if (!this.showOmnibar) {
-          if (_.startsWith(action, 'open')) {
-            this.showHideOmnibar(true)
-          }
-          return
-        }
-        if (action === 'esc' || _.startsWith(action, 'open')) {
+      // keys typed in the search field: arrows move, Enter opens, Escape closes
+      onSearchKeydown (event) {
+        if (event.key === 'Escape' || (event.ctrlKey && _.toLower(event.key) === 'p')) {
+          event.preventDefault()
           this.showHideOmnibar(false)
-        } else if (action === 'arrow-up') {
-          this.highlightedItem = this.highlightedItem > 0 ? this.highlightedItem - 1 : 0
+        } else if (_.includes(['ArrowDown', 'ArrowUp'], event.key)) {
+          event.preventDefault()
+          this.highlightedItem = moveHighlight(this.highlightedItem, event.key, this.results.length)
           this.scrollToResult()
-        } else if (action === 'arrow-down') {
-          this.highlightedItem = this.highlightedItem < this.results.length ? this.highlightedItem + 1 : this.results.length - 1
-          this.scrollToResult()
-        } else if (action === 'enter') {
+        } else if (event.key === 'Enter') {
+          event.preventDefault()
           this.selectResult()
-        } else if (_.includes(this.searchModes, action)) {
-          this.setSearchMode(action)
+        }
+      },
+      // the shortcut library only opens the switcher (Ctrl+P); everything else is typed in the field
+      interactiveSearch (event) {
+        if (!this.showOmnibar && _.startsWith(_.get(event, 'srcKey', ''), 'open')) {
+          this.showHideOmnibar(true)
         }
       }
     }

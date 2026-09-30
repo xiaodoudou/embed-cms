@@ -15,7 +15,7 @@ Catalogue: `resources/choice_boolean.js` (group **Choice**, resource **Booleans*
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `field`, `input`, `label`, `localised`, `unique` | | | As for [string](string.md). |
-| `required` | boolean | `false` | Adds `*` to the label only. A switch that was never touched is not reported as missing (see Validation). |
+| `required` | boolean | `false` | Adds `*` to the label. A switch that was never touched refuses the save (`This field is required!`); a switch turned off counts as answered. |
 | `options.hint` | string | none | Help text under the switch. |
 | `options.readonly` | boolean | `false` | The switch cannot be toggled; a lock icon is shown, no border. |
 | `options.disabled` | boolean | `false` | The switch cannot be toggled and is removed from the tab order; dashed border, muted colours. |
@@ -36,7 +36,7 @@ On:
 
 ### Required
 
-`resources/choice_boolean.js`, field `requiredFlag`. Only the `*` mark is shown.
+`resources/choice_boolean.js`, field `requiredFlag`. A switch always shows an answer (No until it is turned on), so it is never reported as missing: a save stores an untouched switch as an explicit `false`, never as nothing. The record holds two values, true and false.
 
 ![Required switch](img/checkbox-required.png)
 
@@ -66,11 +66,11 @@ A boolean:
 { "flag": true, "localisedFlag": {} }
 ```
 
-- A switch that was never touched is **not saved** (the key is absent, not `false`); read it as `false`. After being switched on and off again it is stored as `false`.
+- A switch that was never touched is **not saved** (the key is absent, not `false`); read it as `false`. After being switched on and off again it is stored as `false`. A required switch must be touched at least once.
 - A localised switch that was not touched is saved as `{}`.
 - A read-only or disabled switch keeps its value; it cannot be changed from the form.
 
 ## Validation and behaviour
 
-- UI: none. There is no validator, so `required: true` does not stop a save while the switch is off or untouched: saving the catalogue record with `requiredFlag` untouched succeeded.
+- UI: `required` refuses the save while the switch was never touched (verified); once touched, on or off, it is accepted (`false` stored).
 - Server: only `unique`.

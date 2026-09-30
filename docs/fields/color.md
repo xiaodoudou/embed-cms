@@ -15,7 +15,7 @@ Catalogue: `resources/choice_color.js` (group **Choice**, resource **Colors**).
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `field`, `input`, `label`, `localised`, `unique` | | | As for [string](string.md). |
-| `required` | boolean | `false` | Adds `*` to the label only (see Validation). |
+| `required` | boolean | `false` | Adds `*` to the label. An untouched required picker refuses the save (`This field is required!`), although it displays black. |
 | `options.hint` | string | none | Help text under the picker. |
 | `options.hideCanvas` | boolean | `false` | Hides the gradient canvas. |
 | `options.hideSliders` | boolean | `false` | Hides the hue and alpha sliders. |
@@ -38,9 +38,10 @@ The old options `picker`, `menuPosition`, `draggable`, `enableAlpha` and `rgbSli
 
 ### Required
 
-`resources/choice_color.js`, field `requiredColor`. The picker always shows a colour (black), so an untouched required colour is not reported as missing.
+`resources/choice_color.js`, field `requiredColor`. The picker displays black but nothing is chosen until the editor clicks or drags: an untouched required colour is refused.
 
 ![Required colour](img/color-required.png)
+![Required error](img/color-required-error.png)
 
 ### Localised
 
@@ -76,5 +77,5 @@ A picker that was never touched is not saved (the key is absent) although it dis
 
 ## Validation and behaviour
 
-- UI: none. `required` is not checked: a record was saved without touching `requiredColor`.
+- UI: `required` refuses the save until a colour has been chosen (verified with `requiredColor`).
 - Server: only `unique`.

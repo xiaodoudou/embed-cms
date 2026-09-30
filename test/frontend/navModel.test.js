@@ -122,3 +122,20 @@ describe('rail colours', () => {
     })
   }
 })
+
+describe('menu icons from Settings', () => {
+  it('maps each group to the url of its image, skipping incomplete entries', async () => {
+    const { menuIconMap, groupSettingsName } = await import('../../src/utils/navModel.js')
+    const settings = { menuGroups: [
+      { group: 'CMS', icon: [{ url: '/a.png' }] },
+      { group: 'Text', icon: [] },
+      { icon: [{ url: '/b.png' }] },
+      { group: 'Media', icon: [{ url: '/c.svg' }] }
+    ] }
+    expect(menuIconMap(settings)).toEqual({ CMS: '/a.png', Media: '/c.svg' })
+    expect(menuIconMap(undefined)).toEqual({})
+    expect(menuIconMap({})).toEqual({})
+    expect(groupSettingsName({ name: { enUS: 'CMS', zhCN: '内容' } })).toBe('CMS')
+    expect(groupSettingsName({ name: 'Plain' })).toBe('Plain')
+  })
+})

@@ -49,6 +49,24 @@ const WIDTHS = {
   text: { min: 160, max: 340 }
 }
 
+/**
+ * The attachment shown in an image or file cell. The API puts the attachments of a field in the field itself
+ * (`record.photo = [{url, _filename, ...}]`, per locale `record.photo.enUS`); older records list them in `_attachments`.
+ */
+export function attachmentOf (record, column) {
+  const value = _.get(record, column.model)
+  const inField = _.find(_.isArray(value) ? value : [], (item) => _.isObject(item) && (item.url || item._filename))
+  if (inField) {
+    return inField
+  }
+  return _.find(_.get(record, '_attachments', []), (attachment) => {
+    if (attachment._name !== column.originalModel) {
+      return false
+    }
+    return !_.get(column, 'field.localised') || _.get(attachment, '_fields.locale', false) === column.locale
+  })
+}
+
 export function fieldKind (input) {
   return KIND_BY_INPUT[input] || 'text'
 }

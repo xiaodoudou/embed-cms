@@ -24,7 +24,7 @@
       :attachments="getAttachments()" :schema="schema" :theme="theme" :is-image="isImage" :disabled="isLocked()" :on-end-drag="onEndDrag" :image-size="imageSize" :get-image-src="getImageSrc"
       :remove-image="removeImage" :on-cropper-change="onCropperChange"
     />
-    <file-input-errors v-if="!disabled" file-type="image" :schema="schema" :is-for-multiple-images="isForMultipleImages" :get-max-count="getMaxCount" />
+    <file-input-errors file-type="image" :schema="schema" :is-for-multiple-images="isForMultipleImages" :get-max-count="getMaxCount" />
   </div>
 </template>
 
@@ -39,6 +39,10 @@
     components: {PreviewMultiple, FileInputErrors},
     mixins: [AbstractField, FileInputField],
     methods: {
+      // a file of an image field that says nothing about its type (no extension, no stored type) is shown as an image
+      unknownIsImage () {
+        return true
+      },
       onCropperChange (index, data) {
         const attachments = this.getAttachments()
         _.set(attachments, `[${index}].cropOptions`, {data: {coordinates: data.coordinates}, updated: true})

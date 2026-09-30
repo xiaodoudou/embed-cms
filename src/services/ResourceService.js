@@ -1,21 +1,32 @@
+import { log } from '@u/log'
 import _ from 'lodash'
+import Emitter from 'tiny-emitter'
 import RequestService from '@s/RequestService'
+import { menuIconMap } from '@u/navModel'
 
 class ResourceService {
   constructor () {
     this.cacheMap = {}
+    // emits 'cached' with the resource name each time a resource is (re)loaded
+    this.events = new Emitter()
     this.paragraphs = {}
   }
 
   async cache (resource) {
     const data = await RequestService.get(`${window.location.pathname}../api/${resource}`)
     if (_.get(data, 'userLoggedOut', false)) {
-      console.info('Received userLoggedOut from server, will redirect to login page')
+      log.debug('Received userLoggedOut from server, will redirect to login page')
       window.location.reload()
       return []
     }
     this.cacheMap[resource] = data
+    this.events.emit('cached', resource)
     return this.get(resource)
+  }
+
+  /** { group name: icon url } from the Settings record, once it has been loaded */
+  menuIcons () {
+    return menuIconMap(_.first(this.cacheMap._settings))
   }
 
   async getAll() {
@@ -32,7 +43,7 @@ class ResourceService {
   get (resource) {
     const data = this.cacheMap[resource]
     if (_.isUndefined(data)) {
-      console.info(`resource (${resource}) is not cached`)
+      log.debug(`resource (${resource}) is not cached`)
     }
     return data
   }

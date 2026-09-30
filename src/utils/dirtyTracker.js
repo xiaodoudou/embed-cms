@@ -130,7 +130,8 @@ export function missingRequired (model, resource) {
   const locales = _.get(resource, 'locales', [])
   let total = 0
   _.each(_.get(resource, 'schema', []), (field) => {
-    if (!field.required) {
+    // a switch always shows an answer (off when nothing was chosen), so it is never "missing"; see unsetSwitchesToFalse
+    if (!field.required || field.input === 'checkbox') {
       return
     }
     if (isLocalisedField(resource, field)) {
@@ -146,6 +147,27 @@ export function missingRequired (model, resource) {
     }
   })
   return { byLocale, shared, total }
+}
+
+/**
+ * A switch that nobody touched shows "No" but holds nothing (undefined or null): a save writes that as an explicit false,
+ * so the stored record has two values, not three. Mutates and returns the model.
+ */
+export function unsetSwitchesToFalse (model, resource) {
+  const locales = _.get(resource, 'locales', [])
+  _.each(_.get(resource, 'schema', []), (field) => {
+    // locked switches keep what they hold
+    if (field.input !== 'checkbox' || _.get(field, 'options.readonly') || _.get(field, 'options.disabled') || field.readonly || field.disabled) {
+      return
+    }
+    const paths = isLocalisedField(resource, field) ? _.map(locales, (locale) => `${field.field}.${locale}`) : [field.field]
+    _.each(paths, (path) => {
+      if (_.isNil(_.get(model, path))) {
+        _.set(model, path, false)
+      }
+    })
+  })
+  return model
 }
 
 export default { normalizeValue, createSnapshot, isDirty, changedParts, missingRequired, isEmptyRichText, isEmptyRequiredValue, isLocalisedField }

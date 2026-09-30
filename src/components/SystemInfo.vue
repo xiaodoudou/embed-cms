@@ -8,9 +8,14 @@
         </v-btn>
       </template>
       <div class="links-wrapper">
-        <div v-for="(group, i) in settingsData.linksGroups" :key="i" class="group">
-          <div class="node-cms-title">{{ group.title }}</div>
-          <a v-for="(link, y) in group.links" :key="y" class="link" :href="link.url" target="_blank" rel="noopener noreferrer" :class="{active: isActiveLink(link.url)}">{{ link.name }}</a>
+        <div v-for="(entry, i) in settingsData.linksGroups" :key="i" class="group">
+          <!-- a single link -->
+          <a v-if="entry._type === '_settingsLink'" class="link" :href="entry.url" target="_blank" rel="noopener noreferrer" :class="{active: isActiveLink(entry.url)}">{{ entry.name }}</a>
+          <!-- a group of links with its heading -->
+          <template v-else>
+            <div class="node-cms-title">{{ entry.title }}</div>
+            <a v-for="(link, y) in entry.links" :key="y" class="link" :href="link.url" target="_blank" rel="noopener noreferrer" :class="{active: isActiveLink(link.url)}">{{ link.name }}</a>
+          </template>
           <v-divider v-if="i < settingsData.linksGroups.length - 1" />
         </div>
       </div>
@@ -61,6 +66,7 @@
 </template>
 
 <script setup>
+  import { log } from '@u/log'
   import { ref, computed, onMounted, onUnmounted, getCurrentInstance } from 'vue'
   import _ from 'lodash'
   import Dayjs from 'dayjs'
@@ -151,7 +157,7 @@
         if (reconnectAttempts.value < maxReconnectAttempts) {
           reconnectAttempts.value++
           const reconnectDelay = Math.min(1000 * Math.pow(2, reconnectAttempts.value), 30000)
-          console.log(`Attempting to reconnect system info stream in ${reconnectDelay}ms (attempt ${reconnectAttempts.value})`)
+          log.debug(`Attempting to reconnect system info stream in ${reconnectDelay}ms (attempt ${reconnectAttempts.value})`)
           setTimeout(() => connectToLogStream(), reconnectDelay)
         } else {
           console.error('Max reconnection attempts for system info reached. Giving up.')

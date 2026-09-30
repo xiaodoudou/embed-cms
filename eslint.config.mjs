@@ -25,7 +25,7 @@ export default [
     }
   },
   {
-    files: ['lib/**/*.js', 'lib-import/**/*.js', 'lib-importFromRemote/**/*.js', 'old_tests/**/*.js', 'test/**/*.js', '*.js'],
+    files: ['lib/**/*.js', 'lib-import/**/*.js', 'lib-importFromRemote/**/*.js', 'old_tests/**/*.js', 'test/**/*.js', '*.js', '*.cjs'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'commonjs',
@@ -183,6 +183,17 @@ export default [
         'switchCase': 1,
         'ignores': []
       }]
+    }
+  },
+  {
+    files: ['test/frontend/**/*.js', 'vitest.config.mjs', 'vite.config.js', 'knip.config.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: { __dirname: 'readonly', console: 'readonly', process: 'readonly' }
+    },
+    rules: {
+      'no-unused-vars': ['error', { 'argsIgnorePattern': '^_', 'varsIgnorePattern': '^_' }]
     }
   },
   {

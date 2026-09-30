@@ -21,7 +21,8 @@
           @keydown.enter.prevent="openWithFocus(group, $event.currentTarget)" @keydown.space.prevent="openWithFocus(group, $event.currentTarget)"
           @keydown.right.prevent="openWithFocus(group, $event.currentTarget)" @keydown.esc="closeFlyout(true)" @keydown.left="closeFlyout(true)"
         >
-          <v-icon v-if="group.icon" size="small" :icon="group.icon" />
+          <img v-if="iconUrl(group)" :src="iconUrl(group)" class="rail-image" alt="">
+          <v-icon v-else-if="group.icon" size="small" :icon="group.icon" />
           <span v-else aria-hidden="true">{{ initialsOf(group) }}</span>
         </button>
       </li>
@@ -43,7 +44,6 @@
       >
         <div class="rail-flyout-head">
           <span class="rail-flyout-title">{{ titleOf(openGroup) }}</span>
-          <span class="rail-flyout-count" aria-hidden="true">{{ items.length }}</span>
         </div>
         <ul class="rail-flyout-list">
           <li v-for="resource in items" :key="resource.name || resource.title">
@@ -64,8 +64,9 @@
   import _ from 'lodash'
   import TranslateService from '@s/TranslateService'
   import NotificationsService from '@s/NotificationsService'
+  import ResourceService from '@s/ResourceService'
   import {
-    railSections, groupKey, groupHoldsItem, groupInitials, groupTint, orderResources, moveInList, flyoutPosition
+    railSections, groupSettingsName, groupKey, groupHoldsItem, groupInitials, groupTint, orderResources, moveInList, flyoutPosition
   } from '@u/navModel'
 
   const HOVER_OPEN_DELAY = 90
@@ -87,6 +88,7 @@
       return {
         openKey: null,
         pinnedKey: null,
+        menuIcons: ResourceService.menuIcons(),
         anchor: null,
         position: { left: 0, top: 0 },
         openTimer: null,
@@ -112,9 +114,11 @@
     },
     mounted () {
       document.addEventListener('pointerdown', this.onOutsidePointer, true)
+      ResourceService.events.on('cached', this.onResourceCached)
     },
     beforeUnmount () {
       document.removeEventListener('pointerdown', this.onOutsidePointer, true)
+      ResourceService.events.off('cached', this.onResourceCached)
       clearTimeout(this.openTimer)
       clearTimeout(this.closeTimer)
     },
@@ -125,6 +129,15 @@
       },
       groupLabel (group) {
         return `${this.titleOf(group)}, ${TranslateService.get(_.size(group.list) === 1 ? 'TL_N_RESOURCES_ONE' : 'TL_N_RESOURCES', { num: _.size(group.list) })}`
+      },
+      // the image chosen for this group in Settings, if any
+      iconUrl (group) {
+        return this.menuIcons[groupSettingsName(group)]
+      },
+      onResourceCached (resource) {
+        if (resource === '_settings') {
+          this.menuIcons = ResourceService.menuIcons()
+        }
       },
       initialsOf (group) {
         return groupInitials(this.titleOf(group))
@@ -145,6 +158,16 @@
           return _.get(resource, 'pluginComponent', false) === _.get(this.selectedItem, 'pluginComponent', false)
         }
         return this.selectedItem === resource
+      },
+      // Shows where the current page is: the flyout of its group opens (and stays until dismissed)
+      async locate () {
+        const group = _.find(this.sections.groups, (g) => this.holdsItem(g))
+        const badge = group && this.$el.querySelector(`[data-group="${this.keyOf(group)}"]`)
+        if (!badge) {
+          return
+        }
+        this.pinnedKey = groupKey(group)
+        await this.showFlyout(group, badge)
       },
       openSwitcher () {
         this.closeFlyout(false)
@@ -418,6 +441,13 @@
     }
   }
 
+  .rail-badge .rail-image {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+  }
+
   .rail-btn:focus-visible,
   .rail-badge:focus-visible {
     outline: 2px solid var(--cms-chrome-accent);
@@ -462,16 +492,6 @@
     font-weight: var(--cms-fw-semibold);
   }
 
-  .rail-flyout-count {
-    min-width: 24px;
-    padding: 0 var(--cms-space-2);
-    border-radius: var(--cms-radius-pill);
-    background: var(--cms-chrome-badge-bg);
-    color: var(--cms-chrome-badge-text);
-    font-size: var(--cms-fs-xs);
-    line-height: 20px;
-    text-align: center;
-  }
 
   .rail-flyout-list {
     margin: var(--cms-space-1) 0 0;

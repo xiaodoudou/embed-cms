@@ -60,7 +60,7 @@ function checkText (schema, input, value) {
   }
   if (input === 'url') {
     try {
-      new URL(value) // eslint-disable-line no-new
+      new URL(value)
     } catch {
       return t('TL_INVALID_URL')
     }
@@ -90,6 +90,18 @@ function checkNumber (schema, input, value) {
   return null
 }
 
+/** A pillbox holds between `min` and `max` tags (an empty optional one is fine; `required` is checked before) */
+function checkTags (schema, value) {
+  const count = _.isArray(value) ? value.length : 0
+  if (!_.isNil(schema.min) && count < schema.min) {
+    return t('TL_TAGS_TOO_FEW', { min: schema.min })
+  }
+  if (!_.isNil(schema.max) && count > schema.max) {
+    return t('TL_TAGS_TOO_MANY', { max: schema.max })
+  }
+  return null
+}
+
 /**
  * @param {object} schema the field schema (needs `input`, and `required`, `min`, `max`, `regex` when used)
  * @param {*} value the value being validated
@@ -97,8 +109,11 @@ function checkNumber (schema, input, value) {
  */
 export function validateFieldValue (schema, value) {
   const input = _.get(schema, 'input')
-  if (isEmptyValue(value)) {
+  if (isEmptyValue(value) || (input === 'pillbox' && _.isEmpty(value))) {
     return schema.required ? t('TL_FIELD_IS_REQUIRED') : null
+  }
+  if (input === 'pillbox') {
+    return checkTags(schema, value)
   }
   if (_.includes(TEXT_INPUTS, input)) {
     return checkText(schema, input, value)

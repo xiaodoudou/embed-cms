@@ -9,14 +9,13 @@
     <div class="scroll-wrapper" :class="{'scrolled-to-bottom': scrolledToBottom}" @scroll="onScroll">
       <div class="selected-records-list">
         <div v-for="item in multiselectItems" :key="item._id" class="selected-record">
-          <v-chip variant="outlined" :ripple="false">
-            <v-btn
-              class="deselect-item" icon variant="text" size="x-small" density="comfortable" :ripple="false"
-              :aria-label="$filters.translate('TL_DESELECT_ITEM', { name: getName(item) })" @click="deselectItem(item)"
-            >
-              <v-icon size="small" icon="$closeCircleOutline" />
-            </v-btn>
-            {{ $filters.translate(getName(item)) }} ({{ item._id }})
+          <!-- the same chip as the tags of the fields: soft indigo, with its own close button -->
+          <v-chip
+            closable :ripple="false" :title="item._id" :close-label="$filters.translate('TL_DESELECT_ITEM', { name: getName(item) })"
+            @click:close="deselectItem(item)"
+          >
+            <span class="chip-name">{{ $filters.translate(getName(item)) }}</span>
+            <span class="chip-id">{{ item._id }}</span>
           </v-chip>
         </div>
       </div>
@@ -117,19 +116,25 @@
   gap: var(--cms-space-2);
   padding: var(--cms-space-4);
   .selected-record {
-    flex: 1 1 280px;
     min-width: 0;
+    max-width: 100%;
   }
   .v-chip {
-    @include subtext;
     max-width: 100%;
-    width: 100%;
-    height: 36px;
-    justify-content: flex-start;
-    .deselect-item {
-      margin-inline-start: calc(var(--cms-space-2) * -1);
-      margin-inline-end: var(--cms-space-1);
-    }
+  }
+  .chip-name {
+    font-weight: var(--cms-fw-medium);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  // the id is there to tell records with the same name apart, so it stays quiet
+  .chip-id {
+    margin-left: var(--cms-space-2);
+    font-family: var(--cms-font-mono);
+    font-size: var(--cms-fs-xs);
+    opacity: 0.75;
+    white-space: nowrap;
   }
 }
 .buttons {

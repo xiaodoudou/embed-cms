@@ -96,7 +96,7 @@
   import { getRecordLabel, recordMessage } from '@u/recordLabel'
   import {
     buildColumns, fieldsFromSchema, applyPrefs, loadPrefs, savePrefs, clearPrefs, toggleColumn, moveColumn, nextSort, sortRows, sortValue, matchesSearch,
-    visibleLocales, richTextToPlain, isColumnHidden, DENSITIES
+    visibleLocales, richTextToPlain, isColumnHidden, attachmentOf, DENSITIES
   } from '@u/tableModel'
   import { readChoice, writePreference } from '@u/preferences'
   import VueTableGenerator from '@c/VueTableGenerator.vue'
@@ -341,12 +341,7 @@
         return _.toString(value)
       },
       findAttachment (record, column) {
-        return _.find(_.get(record, '_attachments', []), (attachment) => {
-          if (attachment._name !== column.originalModel) {
-            return false
-          }
-          return !_.get(column, 'field.localised') || _.get(attachment, '_fields.locale', false) === column.locale
-        })
+        return attachmentOf(record, column)
       },
       imageUrl (record, column) {
         const url = _.get(this.findAttachment(record, column), 'url', false)
@@ -431,7 +426,7 @@
         this.$loading.start('delete-record')
         try {
           await RequestService.delete(`../api/${this.resource.title}/${record._id}`)
-          this.notify(recordMessage('DELETED', this.resource, record, this.locale), 'success', { detail: record._id })
+          this.notify(recordMessage('DELETED', this.resource, record, this.locale), 'success')
           this.selectedRecords = _.without(this.selectedRecords, record._id)
           this.$emit('updateRecordList', null)
         } catch (error) {
@@ -459,7 +454,8 @@
           return ''
         }
         if (field.input === 'file') {
-          const attachment = _(item).get('_attachments', []).find(file => file._name === field.field)
+          const localised = this.resource.locales && (field.localised || _.isUndefined(field.localised))
+          const attachment = attachmentOf(item, { model: localised ? `${field.field}.${this.locale}` : field.field, originalModel: field.field, field, locale: this.locale })
           return attachment && attachment._filename
         }
         if (this.resource.locales && (field.localised || _.isUndefined(field.localised))) {

@@ -65,10 +65,12 @@
     },
     mounted () {
       this.getSettingsData()
+      ResourceService.events.on('cached', this.onResourceCached)
       document.addEventListener('keydown', this.onGlobalKeydown)
       NotificationsService.events.on('omnibar-open', this.openOmnibar)
     },
     beforeUnmount () {
+      ResourceService.events.off('cached', this.onResourceCached)
       document.removeEventListener('keydown', this.onGlobalKeydown)
       NotificationsService.events.off('omnibar-open', this.openOmnibar)
     },
@@ -98,6 +100,12 @@
           window.document.title = title
         }
         return this.getLogo() || title
+      },
+      // the top bar shows the settings (logo, title, links): follow them when they are saved
+      onResourceCached (resource) {
+        if (resource === '_settings') {
+          this.settingsData = _.first(ResourceService.get('_settings'))
+        }
       },
       async getSettingsData () {
         try {

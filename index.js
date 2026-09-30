@@ -155,6 +155,9 @@ class CMS {
     this._attachmentFields = {}
     this._relations = {}
     this._resourceNames = []
+    // the menu groups found in the resources (the Settings menu icons offer them); a live list, filled as resources are added
+    // (the plugin pages of the admin live in the System group, which no resource declares)
+    this._menuGroupNames = ['System']
     // keep track of available plugins
     this._plugins = {}
     // Use prefixed UUID
@@ -175,46 +178,82 @@ class CMS {
         logger.warn('No folder found for ', paragraphsDir)
       }
       _.set(this._paragraphs, '_settingsLink', {
-        displayname: 'Settings link',
+        displayname: { enUS: 'Link', zhCN: '链接' },
         maxCount: 1,
         schema: [
           {
             field: 'name',
+            label: { enUS: 'Name', zhCN: '名称' },
             localised: false,
             input: 'string',
-            required: true
+            required: true,
+            options: { hint: { enUS: 'The text of the link', zhCN: '链接文字' } }
           },
           {
             field: 'url',
+            label: { enUS: 'URL', zhCN: '网址' },
             localised: false,
             input: 'url',
-            required: true
+            required: true,
+            options: { hint: { enUS: 'Where the link goes, for example https://example.com', zhCN: '链接地址，例如 https://example.com' } }
           }
         ]
       })
       this.formatSchema(this._paragraphs, '_settingsLink', true)
       _.set(this._paragraphs, '_settingsLinkGroup', {
-        displayname: 'Link group',
+        displayname: { enUS: 'Link group', zhCN: '链接组' },
         maxCount: 1,
         schema: [
           {
-            label: 'Group title',
+            label: { enUS: 'Group title', zhCN: '组标题' },
             field: 'title',
             localised: false,
             input: 'string',
-            required: true
+            required: true,
+            options: { hint: { enUS: 'The heading of this group in the links menu', zhCN: '此组在链接菜单中的标题' } }
           },
           {
             field: 'links',
+            label: { enUS: 'Links', zhCN: '链接' },
             input: 'paragraph',
             localised: false,
             options: {
-              types: ['_settingsLink']
+              types: ['_settingsLink'],
+              hint: { enUS: 'The links of this group', zhCN: '此组的链接' }
             }
           }
         ]
       })
       this.formatSchema(this._paragraphs, '_settingsLinkGroup', true)
+      _.set(this._paragraphs, '_settingsMenuGroup', {
+        displayname: { enUS: 'Menu icon', zhCN: '菜单图标' },
+        maxCount: 1,
+        schema: [
+          {
+            field: 'group',
+            label: { enUS: 'Menu group', zhCN: '菜单组' },
+            localised: false,
+            input: 'select',
+            required: true,
+            // the groups found in the resources, kept up to date as resources are added
+            source: this._menuGroupNames,
+            options: { hint: { enUS: 'The group of the menu that gets this icon', zhCN: '使用此图标的菜单组' } }
+          },
+          {
+            field: 'icon',
+            label: { enUS: 'Icon', zhCN: '图标' },
+            localised: false,
+            input: 'image',
+            required: true,
+            options: {
+              maxCount: 1,
+              accept: '.png,.svg,.jpg,.jpeg,.webp',
+              hint: { enUS: 'Shown in place of the initials in the collapsed menu, and next to the group name', zhCN: '在折叠菜单中代替首字母显示，并显示在组名旁' }
+            }
+          }
+        ]
+      })
+      this.formatSchema(this._paragraphs, '_settingsMenuGroup', true)
     }
     // create main application
     this._app = express()
@@ -513,6 +552,17 @@ class CMS {
     }
   }
 
+  /**
+   * Remembers the name of a menu group (a string, or a per-language object: the English name, else the first one).
+   * @param {string|object} group the `group` of a resource
+   */
+  addMenuGroupName = (group) => {
+    const name = _.isString(group) ? group : _.get(group, 'enUS', _.first(_.values(group)))
+    if (_.isString(name) && !_.isEmpty(name) && !_.includes(this._menuGroupNames, name)) {
+      this._menuGroupNames.push(name)
+    }
+  }
+
   resource = (name, config, resolves) => {
     resolves = _.intersection(resolves, this._resourceNames)
     if (_.isEmpty(resolves)) {
@@ -534,6 +584,7 @@ class CMS {
       if (!_.includes(this._resourceNames, name)) {
         this._resourceNames.push(name)
       }
+      this.addMenuGroupName(opts.group)
     }
     return this._tempResources[key]
   }

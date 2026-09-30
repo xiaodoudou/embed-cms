@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import { retryOnNetworkError } from '@u/retry'
 
 class RequestService {
   async handleRequest (url, options) {
@@ -34,8 +35,9 @@ class RequestService {
     return json
   }
 
+  // a GET that never reached the server is asked again (see utils/retry.js); writes are never repeated
   async get (url, returnJson = true) {
-    return await this.handleRequest(url, {method: 'GET', returnJson})
+    return await retryOnNetworkError(() => this.handleRequest(url, {method: 'GET', returnJson}))
   }
 
   async post (url, body = {}, returnJson = true) {

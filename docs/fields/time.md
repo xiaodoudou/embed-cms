@@ -35,9 +35,9 @@ The popup shows three spinners; **Now** fills the current time.
 
 ### Required error
 
-Same as [date](date.md#required-error): the save is blocked with the toast `N required fields missing`, the field shows no message.
+Same as [date](date.md#required-error): the save is refused, the field is outlined in red with `This field is required!`.
 
-![Required toast](img/date-required-error.png)
+![Required time](img/time-required-error.png)
 
 ## Stored value
 
@@ -51,6 +51,6 @@ A timestamp in milliseconds. Only the time of day is meaningful; the date part i
 
 ## Validation and behaviour
 
-- UI: form-level required check only.
+- UI: the required check only.
 - The default format is the 24-hour `HH:mm:ss`: 16:48:51 is displayed as `16:48:51`.
 - Server: only `unique`.

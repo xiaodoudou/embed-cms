@@ -16,11 +16,13 @@ Catalogue: `resources/choice_multi.js`, fields `tags`, `requiredTags`, `localise
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `field`, `input`, `label`, `localised`, `unique` | | | As for [string](string.md). |
-| `required` | boolean | `false` | Adds `*` to the label only: **not enforced**, a record with no tag was saved. |
-| `min` / `max` | number | none | Declared at field level (next to `input`, not in `options`) and forwarded to the component, but **not enforced** (see Validation). |
+| `required` | boolean | `false` | At least one tag: an empty required pillbox refuses the save (`This field is required!`). |
+| `min` / `max` | number | none | Minimum / maximum number of tags, declared at field level (next to `input`, not in `options`). Messages: `Add at least 2 tags` / `At most 4 tags`, under the field, on blur and on save. |
 | `options.hint` | string | none | Help text under the field. |
 | `options.readonly` | boolean | `false` | Passed to the combobox as `readonly`. Not used by the catalogue, not verified. |
 | `options.disabled` | boolean | `false` | Greyed out. Not used by the catalogue. |
+
+An untouched optional pillbox is stored as `[]`.
 
 Typing behaviour:
 - Enter turns the text into a chip; a value with commas (`a,b`, also when pasted) is split into one chip per part, trimmed, empty parts dropped.
@@ -38,9 +40,10 @@ Typing behaviour:
 
 ### Required
 
-`resources/choice_multi.js`, field `requiredTags`. Only the `*` mark: an empty required pillbox does not block the save and shows no error (a record was saved with `"requiredTags": []`).
+`resources/choice_multi.js`, field `requiredTags`. With no tag the save is refused: red outline and `This field is required!`.
 
 ![Required pillbox](img/pillbox-required.png)
+![Required error](img/pillbox-required-error.png)
 
 ### Localised
 
@@ -50,10 +53,12 @@ Typing behaviour:
 
 ### Bounded
 
-`resources/choice_multi.js`, field `boundedTags` (`min: 2, max: 4`). The hint tells the editor the range; the range itself is not checked.
+`resources/choice_multi.js`, field `boundedTags` (`min: 2, max: 4`). The count is checked when the field loses focus and when saving; an invalid count refuses the save (`Form is invalid`).
 
 ![Bounded pillbox](img/pillbox-bounded.png)
-![One tag accepted](img/pillbox-bounded-one.png)
+![One tag](img/pillbox-bounded-one.png)
+![Two tags accepted](img/pillbox-bounded-ok.png)
+![Five tags](img/pillbox-bounded-many.png)
 
 ## Stored value
 
@@ -65,6 +70,6 @@ An array of strings; localised: one array per locale.
 
 ## Validation and behaviour
 
-- UI: neither `required` nor `min` / `max` is enforced: a record with an empty `requiredTags` and a single-tag `boundedTags` (`min: 2`) was saved. An untouched pillbox is stored as `[]`.
-- Server: only `unique`; arrays of any length are stored.
+- UI: `required` (at least one tag) and `min` / `max` (number of tags). One keyword in `boundedTags` (`min: 2`) refused the save; two were saved; five showed `At most 4 tags`.
+- Server: only `unique`; arrays of any length are stored over REST.
 - The old `inputtag` type no longer exists; use `pillbox`.

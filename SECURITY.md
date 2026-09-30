@@ -50,7 +50,7 @@ key. Nothing is decided silently: with the `legacy` profile the code path of ear
 |---|---|---|---|
 | `strongSecrets` | `false` | `true` | Boot is refused when `auth.secret` or `session.secret` is missing, shorter than 16 characters or one of the values published in the source |
 | `generateSecrets` | `false` | `false` | With `strongSecrets`: generate the missing secrets once and keep them in `<data>/.secrets.json` (mode 0600) instead of refusing to boot |
-| `localAdmin` | `true` | `false` | Create the built-in `localAdmin` account. When off, an existing `localAdmin` record cannot log in with the password `localAdmin` |
+| `localAdmin` | `true` | `false` | Create the built-in `localAdmin` account. When off, an existing `localAdmin` record cannot log in with the password `localAdmin`. Whatever the setting, a boot log line reports an existing `localAdmin` record: an error when it still has the default password, a warning otherwise |
 | `passwordHash` | `legacy` | `scrypt` | Scheme for new and changed passwords: `legacy` (PBKDF2-SHA1, 100 rounds) or `scrypt` (N=2^15, r=8, p=1, versioned). Both formats always verify; a legacy hash is rewritten as scrypt at the next successful login when `scrypt` is selected |
 | `hideCredentials` | `false` | `true` | No password hash or salt in the JWT, the login response or `find()` results; tokens carry a fingerprint that notices a password change |
 | `genericLockout` | `false` | `true` | A locked account answers `429` with `Retry-After` and one message for every account |
@@ -126,6 +126,74 @@ These are defects, not policy; they are fixed in every profile:
 - the PostgreSQL and MongoDB stores release their connections when the CMS closes, and a dropped idle PostgreSQL connection
   no longer ends the process;
 - a write to a resource with no replication peer no longer logs an error with a stack trace.
+
+## Recommended production configuration
+
+This is the `cms.json` that follows the decisions taken for this deployment, setting every choice explicitly instead of
+relying on the profile (the profile only fills in what is not written here). `test/unit/securityConfig.unit.test.js` reads
+the block below, so option names and values in it are checked against the code. Replace the three `REPLACE_WITH_*` values
+with random strings of at least 32 characters (they belong in a secret store, never in version control), and put your own
+peers in `replication`.
+
+<!-- example-config:start -->
+```json
+{
+  "auth": { "secret": "REPLACE_WITH_RANDOM_AUTH_SECRET" },
+  "session": { "secret": "REPLACE_WITH_RANDOM_SESSION_SECRET" },
+  "trustProxy": 1,
+  "blockRetry": { "retry": 10, "duration": 5 },
+  "attachmentCleanupGrace": 300000,
+  "replication": {
+    "secret": "REPLACE_WITH_RANDOM_REPLICATION_SECRET",
+    "strictTypes": true
+  },
+  "security": {
+    "strongSecrets": true,
+    "localAdmin": true,
+    "passwordHash": "scrypt",
+    "hideCredentials": true,
+    "genericLockout": true,
+    "csrf": "origin",
+    "allowedOrigins": [],
+    "cookies": { "httpOnly": true, "sameSite": "lax", "secure": "auto" },
+    "strictSessions": true,
+    "redactConfig": true,
+    "strictAdmin": true,
+    "headers": true,
+    "sseCors": [],
+    "safeRegex": true,
+    "uniformErrors": true,
+    "safeAttachments": false,
+    "strictUploads": false,
+    "restrictRemoteUrls": true,
+    "strictReplication": true,
+    "wsAuth": true,
+    "wsMaxPayload": 16384,
+    "authCacheTtl": 60000,
+    "limits": { "json": "100kb" }
+  }
+}
+```
+<!-- example-config:end -->
+
+What each deviation from the `hardened` profile means, and what still needs a decision:
+
+| Setting | Value here | Note |
+|---|---|---|
+| `localAdmin` | `true` | The profile would turn it off. The account stays, and every boot logs an error while it has its default password: change that password or delete the account |
+| `safeAttachments` | `false` | HTML and SVG attachments display inline and run with the privileges of the site for whoever opens them (accepted risk). Set `true` to send them as downloads |
+| `strictUploads` | `false` | No file name sanitising, no content-based type, and **no upload limits** |
+| `uniformErrors` | `true` | Not yet confirmed by the owner: JSON errors without stack traces |
+| `limits.json` | `"100kb"` | Not yet confirmed: the size of the largest JSON body (a record, an import) decides whether it must be raised |
+| `allowedOrigins` | `[]` | Add the origin of the admin app if it is served from another host than the API |
+| `trustProxy` | `1` | One reverse proxy in front of the CMS; change it to the real number |
+| `replication.strictTypes` | `true` | Every peer needs a `direction`, or it stops syncing `_users`, `_groups` and `_settings` |
+
+Not in the block because it depends on the environment: `imageConcurrency` (unlimited with the `legacy` profile, one per core
+with `hardened`), the `importFromRemote` remotes (`restrictUrls`, `allowedHosts` per remote) and the peers list. In
+development, run without `NODE_ENV=production` and without this block: the `legacy` profile keeps cookies, headers and the
+Content-Security-Policy as they were, so a dev server keeps working (the policy has only been checked against the built admin
+app).
 
 ## Hardening checklist
 

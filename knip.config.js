@@ -36,8 +36,6 @@ export default {
     'lib/util/fileType.js',
     // exports the Logger class next to the shared instance; only the tests use the class
     'lib/logger.js',
-    // used by the table view rework that is still in progress (see docs/UI_REDESIGN.md)
-    'src/utils/tableModel.js',
     // statusFor is exported for its unit tests
     'lib/plugins/rest/sendError.js'
   ],
@@ -63,7 +61,7 @@ export default {
     '@c/Omnibar',
     '@c/ThemeSwitch',
     '@c/PreviewMultiple',
-    '@c/FileInputErrors',
+    '@c/FileInputErrors'
   ],
   // Ignore binaries that are referenced in package.json but not installed
   // exports only used inside their own file (and by tests) are fine

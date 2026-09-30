@@ -1,3 +1,4 @@
+import { log } from '@u/log'
 import _ from 'lodash'
 import Emitter from 'tiny-emitter'
 import RequestService from './RequestService'
@@ -11,7 +12,7 @@ class LoginService {
   }
 
   init () {
-    // console.info('LoginService - init')
+    // log.debug('LoginService - init')
     setInterval(async () => {
       this.checkStatus()
     }, 1000 * 15)
@@ -59,7 +60,7 @@ class LoginService {
     } catch {
     }
     if (_.isEmpty(status) && !_.isEmpty(userBefore)) {
-      console.info('will logout')
+      log.debug('will logout')
       await this.logout()
     }
   }
@@ -69,7 +70,7 @@ class LoginService {
       const newTheme = _.get(this.user, 'theme', 'dark') === 'dark' ? 'light' : 'dark'
       this.events.emit('changed-theme', newTheme)
       await RequestService.get(`${window.location.pathname}changeTheme/${newTheme}`)
-      console.info(`Successfully changed the theme for user: ${newTheme}`)
+      log.debug(`Successfully changed the theme for user: ${newTheme}`)
       _.set(this.user, 'theme', newTheme)
       document.querySelectorAll('body')[0].classList = [`v-theme--${newTheme}`]
       return newTheme

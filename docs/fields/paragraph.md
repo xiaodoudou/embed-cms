@@ -27,7 +27,7 @@ module.exports = {
 | `field`, `input`, `label`, `localised` | | | As for [string](string.md). `unique` has no meaning. |
 | `options.types` | string[] | none | **Names of the block types** allowed (file names in `resources/paragraphs/`). A drop-down lists their `displayname`. |
 | `options.maxCount` | number | unlimited | Maximum number of blocks. When it is reached the drop-down, its label and the Add button disappear. |
-| `required` | boolean | `false` | At least one block. Empty: the drop-down turns red and the save is blocked; no text message is shown. |
+| `required` | boolean | `false` | At least one block. With none the save is refused: the type drop-down is outlined in red and focused, and the toast names the field. No text message is shown under it. |
 | `options.hint` | string | none | Help text under the type selector. |
 | `options.disabled` | boolean | `false` | Disables the selector, the Add button and the delete buttons. |
 | `options.dynamicLayout` | boolean | `false` | Lays the blocks out on a 12-column grid (see `docs/DYNAMIC_LAYOUT.md`). |
@@ -39,7 +39,7 @@ Inside a block, each field follows its own type page and options (`required`, hi
 
 ### One block type, any number of blocks
 
-`resources/structured_blocks.js`, field `textBlocks` (`types: ['block_text']`). Choose the type and click **Add**; each block has a header with a delete button.
+`resources/structured_blocks.js`, field `textBlocks` (`types: ['block_text']`). The label sits above the box, with the hint under it. Choose the type and click **Add**; each block has a header with a delete button.
 
 ![Text blocks](img/paragraph-default.png)
 ![Two text blocks added](img/paragraph-text-filled.png)
@@ -98,6 +98,6 @@ Blocks do not carry ids; their position in the array is their identity. Untouche
 
 ## Validation and behaviour
 
-- UI: `required` on the paragraph (at least one block) and the rules of each field inside the blocks: an empty required `heading` (or any invalid field) inside a block blocks the save.
+- UI: `required` on the paragraph (at least one block: the save is refused, verified with `requiredBlocks`) and the rules of each field inside the blocks: an empty required `heading` (or any invalid field) inside a block blocks the save.
 - Server: only `unique` at record level; the block content is stored as sent and is not validated against the block schema.
 - Files are uploaded after the record is created; `maxCount` of an image inside a block is enforced by the server only for `input: 'image'` at the top level of a resource.

@@ -41,7 +41,7 @@
                 <span v-if="showLocaleBadge && column.locale" class="th-badge">{{ localeLabel(column.locale) }}</span>
               </span>
             </th>
-            <th scope="col" class="col-actions sticky-right"><span class="cms-visually-hidden">{{ $filters.translate('TL_ACTIONS') }}</span></th>
+            <th scope="col" class="col-actions sticky-right"><span class="th-label">{{ $filters.translate('TL_ACTIONS') }}</span></th>
           </tr>
         </thead>
         <tbody>

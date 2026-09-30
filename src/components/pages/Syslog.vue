@@ -1,5 +1,5 @@
 <template>
-  <div class="syslog">
+  <div class="syslog" :class="{wrapped: wrap}">
     <div class="buttons" role="toolbar" :aria-label="$filters.translate('TL_SYSLOG_TOOLS')">
       <button type="button" class="item autoscroll" :class="{active: autoscroll}" :aria-pressed="autoscroll ? 'true' : 'false'" :aria-label="$filters.translate('TL_AUTO_SCROLL')" :title="$filters.translate('TL_AUTO_SCROLL')" @click="onClickAutoscroll">
         <v-icon v-if="autoscroll" icon="$lockOutline" />
@@ -7,6 +7,7 @@
       </button>
       <button type="button" class="item clear" :aria-label="$filters.translate('TL_CLEAR')" :title="$filters.translate('TL_CLEAR')" @click="onClickClear"><v-icon icon="$trashCanOutline" /></button>
       <button type="button" class="item refresh" :aria-label="$filters.translate('TL_REFRESH')" :title="$filters.translate('TL_REFRESH')" @click="onClickRefresh"><v-icon icon="$refresh" /></button>
+      <button type="button" class="item wrap" :class="{active: wrap}" :aria-pressed="wrap ? 'true' : 'false'" :aria-label="$filters.translate('TL_WRAP_LINES')" :title="$filters.translate('TL_WRAP_LINES')" @click="toggleWrap"><v-icon icon="$wrap" /></button>
       <input ref="searchInput" v-model="searchKey" :class="{'is-sift': searchKey && searchKey.search('sift:') === 0}" class="item search" :placeholder="$filters.translate('TL_SEARCH')" :aria-label="$filters.translate('TL_SEARCH')" @input="onInputSearch" @keydown.esc="onSearchEscape">
       <button v-if="searchKey && searchKey.length > 0" type="button" class="item clear-search" :aria-label="$filters.translate('TL_CLEAR_SEARCH')" :title="$filters.translate('TL_CLEAR_SEARCH')" @click="onClickClearSearch"><v-icon icon="$close" /></button>
       <div v-if="filterOutLines > 0" class="item filter-out" role="status"><v-icon icon="$target" />{{ filterOutLines }} lines are filter out</div>
@@ -23,12 +24,13 @@
         ref="virtualScroller"
         v-slot="{ item }"
         class="scroller"
-        :items="currentDisplayableLines"
-        :item-size="20"
+        :items="displayLines"
+        :item-size="wrap ? null : 20"
+        size-field="rowHeight"
         key-field="id"
         @scroll="detectScroll"
       >
-        <div class="log-line" :class="{ 'selected': selectedLineId === item.id }">
+        <div class="log-line" :class="[levelClass(item), { 'selected': selectedLineId === item.id, 'wrapping': wrap }]">
           <span class="line-number" @click="onLineNumberClick(item.id, $event)">{{ item.id }}</span>
           <div class="line-content" v-html="highlightLogLine(item)" />
         </div>
@@ -43,6 +45,11 @@
   import sift from 'sift'
   import JSON5 from 'json5'
   import stripAnsi from 'strip-ansi'
+  import { readPreference, writePreference } from '@u/preferences'
+  import { columnsFor, withRowHeights } from '@u/logWrap'
+
+  // the page keeps this many lines; the server keeps its own backlog (syslog.max, 2000 by default)
+  const MAX_LINES = 5000
 
   export default {
     data () {
@@ -73,19 +80,61 @@
         selectedLineId: null,
         shouldScrollToSelectedLine: false,
         reconnectAttempts: 0,
-        maxReconnectAttempts: 10
+        maxReconnectAttempts: 10,
+        pendingLines: [],
+        flushHandle: null,
+        // off by default: long lines scroll sideways; on, they continue on the next row when the window is too narrow
+        wrap: readPreference('syslog.wrap', false) === true,
+        columns: 120,
+        resizeObserver: null
+      }
+    },
+    computed: {
+      displayLines () {
+        return this.wrap ? withRowHeights(this.currentDisplayableLines, this.columns, (line) => stripAnsi(_.get(line, 'line', ''))) : this.currentDisplayableLines
       }
     },
     async mounted () {
       await this.$nextTick()
       this.connectToLogStream()
       await this.$nextTick()
+      this.measureColumns()
+      const scroller = _.get(this.$refs, 'virtualScroller.$el')
+      if (scroller && typeof ResizeObserver !== 'undefined') {
+        this.resizeObserver = new ResizeObserver(() => this.measureColumns())
+        this.resizeObserver.observe(scroller)
+      }
     },
     async unmounted () {
       this.destroyed = true
+      clearTimeout(this.flushHandle)
+      if (this.resizeObserver) {
+        this.resizeObserver.disconnect()
+      }
       this.disconnectFromLogStream()
     },
     methods: {
+      toggleWrap () {
+        this.wrap = !this.wrap
+        writePreference('syslog.wrap', this.wrap)
+        this.measureColumns()
+      },
+      // how many characters fit on a row now: the width of the list less the line number gutter
+      measureColumns () {
+        const scroller = _.get(this.$refs, 'virtualScroller.$el')
+        if (!scroller) {
+          return
+        }
+        const probe = document.createElement('span')
+        probe.className = 'line-content'
+        probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;font-family:var(--cms-font-mono);font-size:var(--cms-fs-sm)'
+        probe.textContent = 'M'.repeat(50)
+        scroller.appendChild(probe)
+        const charWidth = probe.getBoundingClientRect().width / 50
+        scroller.removeChild(probe)
+        // 74px line number, 3px border, 8px padding, and room for the scrollbar
+        this.columns = columnsFor(scroller.clientWidth - 74 - 3 - 8 - 12, charWidth)
+      },
       onLineNumberClick(id) {
         this.selectedLineId = id
         this.autoscroll = false
@@ -127,7 +176,7 @@
         this.disconnectFromLogStream()
         this.timer = setTimeout(() => {
           this.eventSource = new EventSource(`${window.location.pathname}../api/_syslog`)
-          this.eventSource.onmessage = async (event) => {
+          this.eventSource.onmessage = (event) => {
             this.$loading.stop('_syslog')
             this.reconnectAttempts = 0
             try {
@@ -135,20 +184,15 @@
               if (_.get(json, 'id', false) && _.get(json, 'line', false)) {
                 json.size = _.get(`${this.calculateLineNumberSpacing(json.id)} ${json.line}`, 'length', 0)
                 if (json.size > 0) {
-                  this.logLines.push(json)
+                  // frozen: a log line never changes, so Vue does not have to make it reactive (thousands of them)
+                  this.pendingLines.push(Object.freeze(json))
                   this.error = false
                 }
               }
             } catch (error) {
               console.error('Failed to parse SSE:', error)
             }
-            if (!this.isHandlingGutterClick) {
-              if (this.autoscroll) {
-                this.ignoreNextScrollEvent = true
-                this.scrollToBottomIfEnabled()
-              }
-              this.updateSysLog()
-            }
+            this.scheduleFlush()
           }
           this.eventSource.addEventListener('end', () => {
             this.$loading.stop('_syslog')
@@ -170,7 +214,35 @@
               console.error(this.error)
             }
           }
-        }, 1000)
+        }, 0)
+      },
+      // The backlog arrives as one message per line (up to 2000): handle them in batches, once per frame
+      scheduleFlush () {
+        if (this.flushHandle) {
+          return
+        }
+        this.flushHandle = setTimeout(() => {
+          this.flushHandle = null
+          this.flushPending()
+        }, 50)
+      },
+      flushPending () {
+        if (this.pendingLines.length === 0) {
+          return
+        }
+        this.logLines = _.takeRight(this.logLines.concat(this.pendingLines), MAX_LINES)
+        this.pendingLines = []
+        if (!this.isHandlingGutterClick) {
+          if (this.autoscroll) {
+            this.ignoreNextScrollEvent = true
+            this.scrollToBottomIfEnabled()
+          }
+          this.updateSysLog()
+        }
+      },
+      levelClass (item) {
+        const level = _.get(item, 'level', 0)
+        return level >= 2 ? 'level-error' : level === 1 ? 'level-warn' : level < 0 ? 'level-quiet' : 'level-info'
       },
       filterLevel (level) {
         this.searchKey = `sift:{level: {$gte: ${level}}}`
@@ -224,11 +296,15 @@
       },
       onClickRefresh () {
         this.error = false
+        this.pendingLines = []
         this.logLines = []
         this.sysLog = []
         this.clearFiltering()
         this.updateSysLog()
         this.lastId = -1
+        // the backlog is only sent when a client connects: reconnect to get the lines back
+        this.reconnectAttempts = 0
+        this.connectToLogStream()
       },
       onClickClearSearch () {
         this.clearFiltering()
@@ -392,7 +468,8 @@
         outline-offset: -2px;
       }
 
-      &.autoscroll.active {
+      &.autoscroll.active,
+      &.wrap.active {
         background: var(--cms-terminal-bg);
         box-shadow: inset 0 -2px 0 var(--cms-terminal-accent);
       }
@@ -521,6 +598,11 @@
         word-wrap: break-word;
         overflow-wrap: break-word;
       }
+      // wrapped: a long line continues on the next row instead of scrolling sideways
+      &.wrapping .line-content {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
     }
   }
 }
@@ -534,5 +616,18 @@
   width: 100%;
   padding: var(--cms-space-2);
   z-index: 1;
+}
+
+// log lines are coloured by level (the server detects it); ANSI colours inside a line still win
+.log-line {
+  &.level-error .line-content {
+    color: var(--cms-log-error);
+  }
+  &.level-warn .line-content {
+    color: var(--cms-log-warn);
+  }
+  &.level-quiet .line-content {
+    color: var(--cms-terminal-muted);
+  }
 }
 </style>

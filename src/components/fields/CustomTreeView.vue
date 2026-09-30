@@ -69,8 +69,27 @@
   }
 
   .jv-container {
+    .jv-tooltip {
+      top: var(--cms-space-1);
+      right: var(--cms-space-1);
+    }
     .jv-button {
       padding: 0;
+      .v-btn {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        background: transparent;
+        color: var(--cms-text-muted);
+        box-shadow: none;
+        &:hover {
+          background: var(--cms-primary-soft);
+          color: var(--cms-on-primary-soft);
+        }
+        .v-icon {
+          font-size: 16px;
+        }
+      }
     }
     .jv-code {
       padding: 8px 0px;

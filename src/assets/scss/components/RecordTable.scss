@@ -338,10 +338,6 @@
       }
     }
 
-    &:hover .row-actions,
-    &:focus-within .row-actions {
-      opacity: 1;
-    }
   }
 
   tbody tr.spacer td {
@@ -354,8 +350,14 @@
     font-weight: var(--cms-record-title-fw);
   }
 
+  // the actions are always there (not only on hover), under a header of their own
   td.col-actions {
     padding: 0 var(--cms-space-2);
+    text-align: right;
+  }
+
+  th.col-actions {
+    padding: 0 var(--cms-space-3);
     text-align: right;
   }
 
@@ -363,15 +365,6 @@
     display: inline-flex;
     align-items: center;
     gap: 2px;
-    opacity: 0;
-    transition: opacity var(--cms-motion-fast) var(--cms-ease);
-  }
-
-  // no hover on touch: the actions are always there
-  @media (hover: none) {
-    .row-actions {
-      opacity: 1;
-    }
   }
 
   .skeleton-row td {

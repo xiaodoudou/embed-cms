@@ -63,7 +63,10 @@ describe('admin plugin (unit)', () => {
       expect(res.status).to.equal(200)
       const names = res.body.map(g => g.name)
       expect(names).to.include.members(['admins', 'anonymous', 'editors'])
-      res.body.forEach(g => expect(Object.keys(g)).to.have.members(['name']).and.satisfy(keys => keys.every(k => ['name', 'plugins'].includes(k))))
+      res.body.forEach(g => {
+        expect(Object.keys(g)).to.include('name')
+        expect(Object.keys(g).every(k => ['name', 'plugins'].includes(k))).to.equal(true)
+      })
     })
   })
 

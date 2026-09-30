@@ -26,6 +26,6 @@ describe('field components', () => {
   })
 
   it.each(FIELD_COMPONENTS)('%s shows the hint', (name) => {
-    expect(source(name)).toMatch(/class="help-block"|showHint\(\)|<file-input-errors/)
+    expect(source(name)).toMatch(/class="help-block[ "]|showHint\(\)|<file-input-errors/)
   })
 })

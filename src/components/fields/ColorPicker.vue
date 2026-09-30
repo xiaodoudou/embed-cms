@@ -3,7 +3,7 @@
     <field-label :schema="schema" />
     <v-color-picker
       v-if="options.model" ref="input" :key="schema.model + 'custom'" :model-value="color" variant="outlined" @update:model-value="onPick"
-      elevation="1" :dot-size="options.dotSize" :hide-canvas="options.hideCanvas" :hide-sliders="options.hideSliders"
+      elevation="0" :dot-size="options.dotSize" :hide-canvas="options.hideCanvas" :hide-sliders="options.hideSliders"
       :hide-inputs="options.hideInputs" :model="options.outputModel" :disabled="isLocked()" :class="{disabled: isLocked()}"
     />
     <div v-if="showHint()" class="help-block">
@@ -61,3 +61,37 @@
     }
   }
 </script>
+
+<style lang="scss">
+// The picker follows the global field look: a 1px border, the standard radius and no shadow; its number inputs look
+// like every other input.
+.wrapper-color {
+  .v-color-picker {
+    box-shadow: none;
+    border: 1px solid var(--cms-border-strong);
+    border-radius: var(--cms-radius-md);
+    background: var(--cms-surface);
+    overflow: hidden;
+    transition: border-color var(--cms-motion-fast) var(--cms-ease);
+    &:hover {
+      border-color: var(--cms-text-muted);
+    }
+    &:focus-within {
+      border-color: var(--cms-primary);
+    }
+  }
+  .v-color-picker-edit__input input {
+    border: 1px solid var(--cms-border-strong);
+    border-radius: var(--cms-radius-sm);
+    background: var(--cms-surface);
+    color: var(--cms-text);
+    &:focus {
+      outline: none;
+      border-color: var(--cms-primary);
+    }
+  }
+  .v-color-picker-edit__input span {
+    color: var(--cms-text-muted);
+  }
+}
+</style>

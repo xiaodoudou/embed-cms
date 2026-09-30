@@ -11,7 +11,7 @@ const NOT_CHECKED_FOR_LITERALS = new Set([TOKENS, path.join(SRC, 'vuetify.js')])
 // Legitimate colour data, not styling: the default value of the colour field
 const ALLOWED_LITERALS = [/#000000FF/]
 // !important is a patch. This number may only go down; lower it when you remove some.
-const IMPORTANT_BASELINE = 61
+const IMPORTANT_BASELINE = 60
 
 const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
   const full = path.join(dir, entry.name)
@@ -68,7 +68,7 @@ describe('design system', () => {
 
   it('defines every colour token in both the light and the dark palette', () => {
     const css = fs.readFileSync(TOKENS, 'utf8')
-    const darkStart = css.indexOf("/* ---- Dark palette")
+    const darkStart = css.indexOf('/* ---- Dark palette')
     const lightStart = css.indexOf('/* ---- Light palette')
     expect(darkStart).toBeGreaterThan(lightStart)
     const names = (block) => new Set([...block.matchAll(/(--cms-[a-z0-9-]+)\s*:/g)].map((m) => m[1]))
@@ -84,7 +84,7 @@ describe('design system', () => {
     const value = (source, name) => new RegExp(`${name}:\\s*['"]?(#[0-9a-fA-F]{6})`).exec(source)?.[1]?.toLowerCase()
     const light = css.slice(css.indexOf('/* ---- Light palette'), css.indexOf('/* ---- Dark palette'))
     expect(value(vuetify, 'primary')).toBe(value(light, '--cms-primary'))
-    expect(value(vuetify, "'surface-2'")).toBe(value(light, '--cms-surface-2'))
+    expect(value(vuetify, '\'surface-2\'')).toBe(value(light, '--cms-surface-2'))
     expect(value(vuetify, 'background')).toBe(value(light, '--cms-bg'))
   })
 })

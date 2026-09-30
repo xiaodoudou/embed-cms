@@ -2,21 +2,6 @@
 @use "../variables.scss" as *;
 @use "../mixins.scss" as *;
 
-.help-block {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-    padding-left: 16px;
-  padding-top: 0;
-  margin-top: 3px;
-  font-weight: 400;
-  color: var(--cms-text-muted);
-  font-size: 12px;
-  line-height: 12px;
-  i {
-    margin-right: 4px;
-  }
-}
 
 .image-view, .attachment-view, .paragraph-attachment-view {
   overflow: hidden;
@@ -24,37 +9,6 @@
     width: 200px;
     height: 140px;
     object-fit: contain;
-  }
-  .help-block {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-        padding-left: 16px;
-    padding-top: 0;
-    margin-top: 3px;
-    font-weight: 600;
-    color: var(--cms-text-muted);
-    font-size: 12px;
-    line-height: 12px;
-    i {
-      margin-right: 4px;
-    }
-  }
-  svg.icon-remove {
-    // Seems crop plugin write css inline
-    top: -12.5px !important;
-    right: -12.5px !important;
-    width: 25px;
-    height: 25px;
-    z-index: 100;
-  }
-  .label-wrapper {
-    margin-bottom: 12px;
-    label {
-      font-size: 12px;
-      line-height: 12px;
-      padding-right: 12px;
-    }
   }
   .filename {
     &.v-chip.v-size--default {
@@ -251,6 +205,17 @@
     .v-field__prepend-inner .v-icon {
       color: var(--cms-text-muted);
     }
+
+    // The message of a rule (File is mandatory...) sits inside the dashed area: give it room from the edge
+    .v-input__details {
+      min-height: 0;
+      padding: var(--cms-space-1) var(--cms-space-3) var(--cms-space-2);
+    }
+  }
+
+  // the previews start below the drop area, not against it
+  .preview-multiple {
+    margin-top: var(--cms-space-2);
   }
 
   // With files present the drop area becomes a compact "add more" strip

@@ -83,3 +83,22 @@ describe('toStoredNumber', () => {
     expect(toStoredNumber('abc')).toBe('abc')
   })
 })
+
+describe('validateFieldValue: pillbox', () => {
+  const tags = (extra = {}) => ({ input: 'pillbox', model: 'tags', ...extra })
+
+  it('holds between min and max tags', () => {
+    const rule = tags({ min: 2, max: 4 })
+    expect(validateFieldValue(rule, ['a'])).toBeTruthy()
+    expect(validateFieldValue(rule, ['a', 'b'])).toBeNull()
+    expect(validateFieldValue(rule, ['a', 'b', 'c', 'd'])).toBeNull()
+    expect(validateFieldValue(rule, ['a', 'b', 'c', 'd', 'e'])).toBeTruthy()
+  })
+
+  it('accepts an empty optional pillbox and refuses an empty required one', () => {
+    expect(validateFieldValue(tags({ min: 2 }), [])).toBeNull()
+    expect(validateFieldValue(tags({ min: 2 }), undefined)).toBeNull()
+    expect(validateFieldValue(tags({ required: true }), [])).toBeTruthy()
+    expect(validateFieldValue(tags({ required: true }), ['a'])).toBeNull()
+  })
+})

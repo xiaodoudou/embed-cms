@@ -57,6 +57,7 @@
 </template>
 
 <script>
+  import { log } from '@u/log'
   import RequestService from '@s/RequestService'
   import NotificationsService from '@s/NotificationsService'
   import TranslateService from '@s/TranslateService'
@@ -173,7 +174,7 @@
           })
           if (!_.isEmpty(updateKeys)) {
             _.each(updateKeys, key => {
-              console.log(key, 'local', _.find(fromData, {[uniqueKey]: key}), 'remote', _.find(toData, {[uniqueKey]: key}))
+              log.debug(key, 'local', _.find(fromData, {[uniqueKey]: key}), 'remote', _.find(toData, {[uniqueKey]: key}))
             })
           }
           this.reportData = {

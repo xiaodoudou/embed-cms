@@ -27,7 +27,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:XPKit/node-cms.git"
+    "url": "git+https://github.com/xiaodoudou/node-cms-private.git"
   },
   "keywords": [
     "cms",
@@ -46,7 +46,7 @@
     "cms-import": "./import.js",
     "cms-import-remote": "./importFromRemote.js"
   },
-  "author": "Edouard Durand <edouard.durand@imagination.com>",
+  "author": "Edouard Durand",
   "license": "MIT",
   "dependencies": {
     "@e965/xlsx": "^0.20.3",

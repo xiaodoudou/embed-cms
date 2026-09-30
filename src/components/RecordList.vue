@@ -179,7 +179,7 @@
       },
       // mirrors --cms-list-row / --cms-list-row-compact (the virtual scroller needs the number)
       itemSize () {
-        return this.isCompact ? 48 : 68
+        return this.isCompact ? 44 : 68
       },
       selectedResourceGroup () {
         return _.find(this.groupedList, (resourceGroup) => this.groupSelected(resourceGroup))

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   fieldKind, buildColumns, defaultHiddenKeys, applyPrefs, orderedColumns, loadPrefs, savePrefs, clearPrefs,
-  compareValues, sortRows, nextSort, richTextToPlain
+  compareValues, sortRows, nextSort, richTextToPlain, attachmentOf
 } from '../../src/utils/tableModel.js'
 
 const resource = {
@@ -119,5 +119,25 @@ describe('richTextToPlain', () => {
   it('strips tags and entities', () => {
     expect(richTextToPlain('<p>Hello&nbsp;<strong>world</strong></p><p>Second &amp; last</p>')).toBe('Hello world Second & last')
     expect(richTextToPlain(undefined)).toBe('')
+  })
+})
+
+describe('attachmentOf (image and file cells)', () => {
+  const photo = { _id: 'a1', _filename: 'lamp.jpg', url: '/api/x/1/attachments/a1' }
+  it('reads the attachments the API puts in the field', () => {
+    expect(attachmentOf({ photo: [photo] }, { model: 'photo', originalModel: 'photo' })).toBe(photo)
+  })
+  it('reads the attachment of the current locale', () => {
+    const record = { banner: { enUS: [photo], zhCN: [] } }
+    expect(attachmentOf(record, { model: 'banner.enUS', originalModel: 'banner' })).toBe(photo)
+    expect(attachmentOf(record, { model: 'banner.zhCN', originalModel: 'banner' })).toBe(undefined)
+  })
+  it('still reads the older _attachments list', () => {
+    const record = { _attachments: [{ _name: 'photo', _filename: 'old.jpg' }] }
+    expect(attachmentOf(record, { model: 'photo', originalModel: 'photo' })._filename).toBe('old.jpg')
+  })
+  it('finds nothing when there is no file', () => {
+    expect(attachmentOf({ photo: [] }, { model: 'photo', originalModel: 'photo' })).toBe(undefined)
+    expect(attachmentOf({}, { model: 'photo', originalModel: 'photo' })).toBe(undefined)
   })
 })

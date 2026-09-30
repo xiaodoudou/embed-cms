@@ -16,7 +16,7 @@ const cookieParser = require('cookie-parser')
 const express = require('express')
 const helmet = require('helmet')
 const _ = require('lodash')
-const mkdirp = require('mkdirp')
+const fsExtra = require('fs-extra')
 const session = require('express-session')
 const UUID = require('./lib/util/uuid')
 const SyslogManager = require('./lib/SyslogManager')
@@ -146,8 +146,8 @@ class CMS {
       maxQueue: this.security.hardened ? 100 : Infinity
     })
     // ensure required folders are in place
-    mkdirp.sync(path.resolve(options.resources))
-    mkdirp.sync(path.resolve(options.data))
+    fsExtra.mkdirpSync(path.resolve(options.resources))
+    fsExtra.mkdirpSync(path.resolve(options.data))
     // keep track of available resources
     this._tempResources = {}
     this._resources = {}

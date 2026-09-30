@@ -49,9 +49,13 @@
       }
     },
     methods: {
+      // the limit is a number of bytes
       getFileSizeLimit (limit) {
-        const kbLimit = limit / 1024
-        return kbLimit > 1000 ? `${kbLimit / 1000} MB` : `${kbLimit} KB`
+        const format = (n) => String(Math.round(n * 10) / 10)
+        if (limit >= 1024 * 1024) {
+          return `${format(limit / (1024 * 1024))} MB`
+        }
+        return limit >= 1024 ? `${format(limit / 1024)} KB` : `${limit} B`
       }
     }
   }

@@ -1,26 +1,38 @@
+// UI language switcher (shown in the app bar when several UI locales exist)
 .locale-list {
-  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--cms-chrome-border);
+  border-radius: var(--cms-radius-md);
   white-space: nowrap;
-  display: flex;
+
   .locale {
-    display: inline-block;
-    box-sizing: border-box;
-    text-align: center;
-    height: 40px;
-    width: 100%;
-    line-height: 40px;
-    border-bottom: 1px #c7c7c7 solid;
-    border-right: 1px #c7c7c7 solid;
-    background-color: #f9f9f9;
-    border-bottom-width: 0px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 30px;
+    padding: 0 var(--cms-space-2);
+    border: 0;
+    border-radius: var(--cms-radius-sm);
+    background: transparent;
+    color: var(--cms-chrome-muted);
+    font: inherit;
+    font-size: var(--cms-fs-sm);
+    font-weight: var(--cms-fw-semibold);
     cursor: pointer;
-    &:last-child {
-      border-right-width: 0px;
+    transition: background-color var(--cms-motion-fast) var(--cms-ease);
+
+    &:hover {
+      background: var(--cms-chrome-hover);
+      color: var(--cms-chrome-text);
     }
 
     &.active {
-      background-color: white;
-      border-bottom-width: 1px;
+      background: var(--cms-nav-active-bg);
+      color: var(--cms-nav-active-text);
     }
   }
 }

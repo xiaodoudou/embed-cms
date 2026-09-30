@@ -17,6 +17,7 @@ class SchemaService {
       const name = field.label && TranslateService.get(field.label)
       const label = `${name || field.field}${isLocalised ? ` (${TranslateService.get(`TL_${locale.toUpperCase()}`)})` : ''}`
       const schema = _.extend({}, this.typeMapper[field.input], {
+        input: field.input,
         label,
         model: isLocalised ? `${field.field}.${locale}` : field.field,
         originalModel: field.field,
@@ -24,7 +25,8 @@ class SchemaService {
         disabled: disabled || _.get(field, 'options.disabled', _.get(field, 'disabled', false)),
         readonly: _.get(field, 'options.readonly', false),
         required: !!field.required,
-        options: field.options,
+        // a hint can be declared on the field or in its options
+        options: field.hint && !_.get(field, 'options.hint') ? _.extend({}, field.options, { hint: field.hint }) : field.options,
         hint: field.hint,
         resource,
         locale,
@@ -47,17 +49,6 @@ class SchemaService {
         schema.selectOptions.label = _.map(schema.labels, (label, value) => {
           return { value, text: _.get(label, locale, label) }
         })
-      } else if (field.input === 'multiselect' && _.get(schema, 'labels', false)) {
-        if (!_.isObject(_.first(field.source))) {
-          const values = []
-          _.each(field.source, (value) => {
-            values.push({
-              text: _.get(schema, `labels.${value}`, value),
-              value
-            })
-          })
-          field.source = values
-        }
       }
       if (field.input === 'select' || field.input === 'pillbox') {
         schema.selectOptions.selectLabel = TranslateService.get('TL_MULTISELECT_SELECT_LABEL')

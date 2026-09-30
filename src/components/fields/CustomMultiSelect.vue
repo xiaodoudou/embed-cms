@@ -3,46 +3,68 @@
     <v-autocomplete
       :id="selectOptions.id"
       ref="input"
+      v-model:search="searchText"
       :theme="theme"
       :chips="getSelectOpt('chips')"
       :menu-props="menuProps"
-      :model-value="objectValue || _value" :items="options" :closable-chips="getSelectOpt('deletableChips') || getSelectOpt('multiple')" :hide-selected="getSelectOpt('hideSelected')"
-      :disabled="disabled || schema.disabled" :placeholder="schema.placeholder" :multiple="getSelectOpt('multiple')" :ripple="false" :flat="get('flat')" :rules="[validateField]"
+       :model-value="objectValue || _value" :items="listItems" :closable-chips="getSelectOpt('deletableChips') || getSelectOpt('multiple')" :hide-selected="getSelectOpt('hideSelected')"
+      :disabled="disabled || schema.disabled" :readonly="!!schema.readonly" :aria-readonly="schema.readonly ? 'true' : undefined" :placeholder="schema.placeholder" :multiple="getSelectOpt('multiple')" :ripple="false" :flat="get('flat')" :rules="[validateField]"
       :item-title="customLabel" :item-value="getValue"
-      menu-icon="$chevronDown" :clearable="getSelectOpt('clearable')" :variant="getVariant()" :density="get('density')" rounded hide-details
+      menu-icon="$chevronDown" :clearable="isClearable" clear-icon="$close" :variant="getVariant()" :density="get('density')" rounded hide-details="auto" validate-on="blur" :aria-label="schema.label"
       @update:model-value="updateSelected" @search-change="onSearchChange" @tag="addTag"
       @update:focused="onFieldFocus"
     >
       <template #prepend>
         <field-label :schema="schema" :label="getLabel()" />
+        <span v-if="getSelectOpt('multiple') && selectedCount > 0" class="selected-count" aria-live="polite">{{ $filters.translate('TL_N_SELECTED', { num: selectedCount }) }}</span>
         <v-btn v-if="schema.listBox" variant="tonal" size="small" rounded elevation="0" @click="onChangeSelectAll">{{ $filters.translate(allOptionsSelected() ? 'TL_DESELECT_ALL' : 'TL_SELECT_ALL') }}</v-btn>
       </template>
       >
       <template #chip="{ props, item }">
         <v-chip
-          v-bind="props"
+          v-bind="props" :close-label="$filters.translate('TL_REMOVE_NAMED', { name: item.title })"
           @contextmenu.stop.prevent="copyToClipboard(item.value)"
         />
       </template>
       <template #label />
       <template #append />
       <template #item="{props, item}">
-        <v-list-item density="compact" v-bind="props" :title="customLabel(item)" />
+        <v-list-item density="compact" v-bind="props" :subtitle="subtitleOf(item)">
+          <template #title>
+            <span class="option-title"><template v-for="(part, i) in highlight(customLabel(item))" :key="i"><mark v-if="part.match">{{ part.text }}</mark><template v-else>{{ part.text }}</template></template></span>
+          </template>
+        </v-list-item>
+      </template>
+      <template #no-data>
+        <v-list-item density="compact" :title="$filters.translate('TL_NO_MATCHES')" class="option-empty" />
+      </template>
+      <template v-if="schema.readonly" #append-inner>
+        <v-icon class="cms-field-lock" size="16" icon="$lockOutline" :title="$filters.translate('TL_READ_ONLY')" />
       </template>
     </v-autocomplete>
+    <div v-if="showHint()" class="help-block">
+      <v-icon size="small" icon="$information" />
+      <span>{{ schema.options.hint }}</span>
+    </div>
   </div>
 </template>
 <script>
   import _ from 'lodash'
   import AbstractField from '@m/AbstractField'
+  import TranslateService from '@s/TranslateService'
   import Notification from '@m/Notification'
+  import * as Mustache from 'mustache'
+  import { highlightSegments, withGroupHeadings } from '@u/highlight'
 
   export default {
     mixins: [AbstractField, Notification],
     data () {
       return {
+        searchText: '',
         objectValue: this._value,
         menuProps: {
+          offset: 6,
+          maxHeight: 320,
           contentProps: {
             density: 'compact'
           }
@@ -50,6 +72,25 @@
       }
     },
     computed: {
+      // Single selects can be cleared unless the field is required; multi selects have closable chips
+      isClearable () {
+        if (this.getSelectOpt('clearable')) {
+          return true
+        }
+        return !this.getSelectOpt('multiple') && !this.schema.required && !this.schema.readonly && !this.disabled
+      },
+      // options.groupBy names a field of the option records that becomes the group heading
+      listItems () {
+        const groupBy = _.get(this.schema, 'options.groupBy', false)
+        const options = this.options
+        if (!groupBy || !_.isArray(options)) {
+          return options
+        }
+        return withGroupHeadings(options, (item) => _.get(item, groupBy))
+      },
+      selectedCount () {
+        return _.size(this.objectValue || this._value)
+      },
       selectOptions () {
         return this.schema.selectOptions || {}
       },
@@ -62,6 +103,22 @@
       }
     },
     methods: {
+      highlight (text) {
+        return highlightSegments(text, this.searchText)
+      },
+      // Secondary line: options.subtitle (a Mustache template over the option) or the id of records from another resource
+      subtitleOf (item) {
+        const raw = _.get(item, 'raw', item)
+        if (!_.isObject(raw)) {
+          return undefined
+        }
+        const template = _.get(this.schema, 'options.subtitle', false)
+        if (template) {
+          const rendered = Mustache.render(template, raw)
+          return _.includes(rendered, '[object Object]') ? undefined : rendered
+        }
+        return _.isString(this.schema.source) ? _.get(raw, '_id') : undefined
+      },
       valEmpty(val) {
         return _.isNull(val) || _.isUndefined(val) || val === '' || (_.isArray(val) && val.length === 0)
       },
@@ -71,9 +128,9 @@
       },
       validateField (val) {
         if (this.valEmpty(val)) {
-          return this.schema.required ? false : true
+          return this.schema.required ? TranslateService.get('TL_FIELD_IS_REQUIRED') : true
         } else if (_.isFunction(this.schema.validator)) {
-          return !!this.schema.validator(val, this.schema.model, this.model)
+          return this.schema.validator(val, this.schema.model, this.model) ? true : TranslateService.get('TL_INVALID_FORMAT')
         }
         return true
       },
@@ -83,10 +140,12 @@
       },
       customLabel (item) {
         const val = _.get(item, 'raw', item)
-        if (_.get(this.schema, `options.labels.${val}.${this.schema.locale}`, false)) {
-          return _.get(this.schema, `options.labels.${val}.${this.schema.locale}`, val)
-        } else if (_.get(this.schema, `options.labels.${val}`, false)) {
-          return _.get(val, 'text', val)
+        // plain values can carry a readable label: a string, or one string per locale
+        const label = _.isObject(val) ? undefined : _.get(this.schema, ['options', 'labels', val])
+        if (_.isString(label)) {
+          return label
+        } else if (_.isObject(label)) {
+          return _.get(label, this.schema.locale, _.first(_.values(label)) || val)
         } else if (!_.get(this.schema, 'localised', false)) {
           return this.schema.selectOptions.customLabel(val)
         } else if (_.get(val, '_id', false)) {
@@ -153,7 +212,38 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: var(--cms-space-3);
+    width: 100%;
+    .selected-count {
+      margin-left: auto;
+      color: var(--cms-text-muted);
+      font-size: var(--cms-fs-sm);
+    }
+  }
+  // Tags: even gaps, room inside the field, capped height with inner scroll
+  .v-autocomplete.v-select--chips .v-field__input,
+  .v-autocomplete.v-select--multiple .v-field__input {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--cms-space-2);
+    padding: var(--cms-space-2) var(--cms-space-3);
+    row-gap: var(--cms-space-2);
+  }
+  .v-field__input {
+    max-height: 216px;
+    overflow-y: auto;
+  }
+  .v-autocomplete .v-field__append-inner {
+    align-items: flex-start;
+    padding-top: var(--cms-space-3);
+  }
+  .v-autocomplete .v-autocomplete__selection {
+    margin: 0;
+    height: auto;
+  }
+  .v-autocomplete .v-field__input input {
+    min-height: 28px;
+    padding: 0;
   }
   .v-autocomplete {
     // input {
@@ -161,7 +251,7 @@
     // }
     .v-chip {
       &:hover {
-        background: rgba(0,0,0,.25);
+        background: var(--cms-overlay-strong);
         cursor: copy;
       }
     }
@@ -169,7 +259,7 @@
       input {
         padding: 0;
         height: 100%;
-        max-height: 100% !important;
+        max-height: 100%;
       }
     }
   }

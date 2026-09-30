@@ -12,6 +12,8 @@ import '@vuepic/vue-datepicker/dist/main.css'
 import { VueDraggableNext } from 'vue-draggable-next'
 import vuetify from './vuetify.js'
 import '@p/js/main.js'
+import './styles/tokens.css'
+import './styles/base.css'
 import '@a/scss/main.scss'
 import '@p/scss/main.scss'
 
@@ -110,7 +112,7 @@ app.use(router)
   .use(VueVirtualScroller)
   .use(VueShortkey, {prevent: ['input', 'textarea']})
 
-function addPlugin (title, displayName, group = 'System', allowed = ['admins', 'imagination']) {
+function addPlugin (title, displayName, group = 'System', allowed = ['admins']) {
   window.plugins = window.plugins || []
   console.info('adding plugin', displayName)
   window.plugins.push({

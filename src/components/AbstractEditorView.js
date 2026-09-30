@@ -3,6 +3,7 @@ import TranslateServiceLib from '@s/TranslateService'
 import SchemaService from '@s/SchemaService'
 import Notification from '@m/Notification'
 import RequestService from '@s/RequestService'
+import UploadService from '@s/UploadService'
 import pAll from 'p-all'
 
 const TranslateService = window.TranslateService || TranslateServiceLib
@@ -13,6 +14,7 @@ export default {
     async uploadAttachments (id, attachments) {
       this.$loading.start('uploadAttachments')
       const url = `../api/${this.resource.title}/${id}/attachments`
+      const failed = []
       try {
         await pAll(_.map(attachments, attachment => {
           return async () => {
@@ -32,8 +34,20 @@ export default {
               console.info('detected orderUpdated, will add it to the request')
               data.append('order', attachment.order)
             }
-            await RequestService.post(url, data)
+            // Tracked per file (progress, error, retry); resolves to false instead of throwing
+            const ok = await UploadService.upload(url, data, {
+              name: _.get(attachment, 'file.name', attachment._filename || attachment.field),
+              size: _.get(attachment, 'file.size', 0),
+              recordId: id,
+              resource: this.resource.title
+            })
+            if (!ok) {
+              failed.push(attachment)
+            }
           }}), {concurrency: 5})
+        if (failed.length > 0) {
+          this.notify(TranslateService.get('TL_UPLOADS_FAILED', { num: failed.length }), 'error')
+        }
       } catch (error) {
         console.error('Error happen during uploadAttachments:', error)
       }

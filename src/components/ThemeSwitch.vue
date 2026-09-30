@@ -1,14 +1,17 @@
 <template>
-  <div class="theme-switch" @click="toggleTheme()">
-    <v-icon :class="{selected: !isDark()}" icon="$weatherSunny" />
-    <v-icon :class="{selected: isDark()}" icon="$weatherNight" />
-  </div>
+  <v-btn
+    class="theme-switch" icon variant="text" role="switch" :aria-checked="isDark() ? 'true' : 'false'"
+    :aria-label="$filters.translate('TL_DARK_THEME')" :title="$filters.translate(isDark() ? 'TL_SWITCH_TO_LIGHT' : 'TL_SWITCH_TO_DARK')" @click="toggleTheme()"
+  >
+    <v-icon :icon="isDark() ? '$weatherNight' : '$weatherSunny'" />
+  </v-btn>
 </template>
 <script setup>
   import LoginService from '@s/LoginService'
   import _ from 'lodash'
   import { ref, watch } from 'vue'
   import { useTheme } from 'vuetify'
+  import { applyThemeToDocument } from '@u/theme'
   const theme = useTheme()
   const currentTheme = ref(theme.global.name.value)
 
@@ -19,46 +22,20 @@
   async function toggleTheme () {
     if (_.isFunction(theme.change)) {
       const newTheme = await LoginService.changeTheme()
+      if (!newTheme) {
+        return
+      }
       theme.change(newTheme)
       currentTheme.value = newTheme
-    // document.body.classList.remove('v-theme--dark', 'v-theme--light')
-    // document.body.classList.add(`v-theme--${newTheme}`)
+      applyThemeToDocument(newTheme)
     } else {
       console.error(`Cannot call theme change:`, theme)
     }
   }
 
-  // Watch for theme changes and update body class
+  // Keep the button and the document in sync when the theme changes elsewhere
   watch(() => theme.global.name.value, (newVal) => {
     currentTheme.value = newVal
-    console.warn(`THEME IS NOW: `, newVal)
-    document.body.classList.remove('v-theme--dark', 'v-theme--light')
-    document.body.classList.add(`v-theme--${newVal}`)
+    applyThemeToDocument(newVal)
   })
 </script>
-
-<style lang="scss" scoped>
-@use '@a/scss/variables.scss' as *;
-
-.theme-switch {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 4px;
-  border: 2px solid $imag-pale-grey;
-  border-radius: 100px;
-  .v-icon {
-    color: black;
-    background-color: transparent;
-    transition: all 0.3s;
-    border-radius: 50%;
-    padding: 2px;
-    &.selected {
-      color: white;
-      background-color: $imag-purple;
-    }
-  }
-}
-</style>

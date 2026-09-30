@@ -44,6 +44,7 @@ Add these options to your `cms.json` or when initializing the CMS:
 |-----------|---------|------------------------------------------------------------------|
 | netPort   | Number  | Port to listen for replication connections. Enables the plugin.   |
 | mid       | String  | Unique machine/server identifier for replication.                 |
+| replication.auth | Object | Optional `{ username, password }` sent as HTTP Basic credentials when downloading attachments from a peer. Needed when the peer requires authentication for the resource (attachment downloads are authorized like any other read). |
 
 **Example:**
 
@@ -62,36 +63,46 @@ await cms.bootstrap();
 
 ## How Replication Works
 
-- When enabled, the server listens on `netPort` for incoming replication requests.
-- The plugin exposes a `replicate` method on the CMS instance:
-  - `cms.replicate(host, port, baseUrl, resourceName, callback)`
-  - This method connects to a remote node-cms instance and synchronizes the specified resource and its attachments.
-- Attachments are checked for existence and integrity (MD5 hash) before downloading.
-- Old or removed attachments are cleaned up automatically.
+- When `netPort` is set, the server listens on it for incoming document sync connections (TCP).
+- Peers are read from `replication.peersByResource[<resource>]`, falling back to `replication.peers`.
+  A peer is an object `{ host, port, url, direction }` where `url` is the base HTTP url used to transfer attachments.
+- After a record of a resource whose `type` is not `normal` is created or updated, it is synced to the resource's peers.
+- Attachments are checked for existence and integrity (MD5 hash) before downloading, and old or removed attachments are cleaned up.
+- Attachment downloads are authorized like any other read on the peer. If the peer requires a login, set
+  `replication.auth` (see the options table).
+
+### HTTP routes
+
+All routes require a logged in session (they are part of the default `routesToAuth`).
+
+| Route | Description |
+|---|---|
+| `GET /replicator/resources` | Lists resources with their type, peers and direction |
+| `POST /replicator/sync/:resource` | Syncs every record of a resource with its peers |
+| `POST /replicator/sync/:resource/:id` | Syncs a single record |
 
 ---
 
 ## Usage Example
 
 ```js
-// On the target server (with netPort enabled):
 const CMS = require('./index.js');
 const cms = new CMS({
   data: './data',
-  locales: ['enUS'],
-  netPort: 9000,
-  mid: 'server-1'
+  netPort: 9000,          // enables the sync listener
+  mid: 'server-1',
+  replication: {
+    peersByResource: {
+      articles: [{ host: 'target-host', port: 9000, url: 'http://target-host:9990/api/', direction: 'normal' }]
+    },
+    auth: { username: 'replicator', password: '...' } // only if the peer requires authentication
+  }
 });
 await cms.bootstrap();
 
-// On the source server (to replicate a resource):
-await cms.replicate('target-host', 9000, 'http://target-host:9000/', 'articles', (err) => {
-  if (err) {
-    console.error('Replication failed:', err);
-  } else {
-    console.log('Replication complete!');
-  }
-});
+// trigger a sync programmatically
+await cms.$replicator.syncResource('articles');
+await cms.$replicator.syncRecord('articles', 'some-record-id');
 ```
 
 ---

@@ -3,7 +3,7 @@ const request = require('supertest')
 const chai = require('chai')
 const expect = chai.expect
 const jwt = require('jsonwebtoken')
-const serverUrl = 'http://localhost:9990'
+const serverUrl = `http://localhost:${process.env.TEST_PORT || 9990}`
 
 describe('Authentication Plugin API', () => {
   it('should login successfully with correct credentials and set JWT cookie', async () => {

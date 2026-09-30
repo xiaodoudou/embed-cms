@@ -16,7 +16,7 @@
         :title="$filters.translate(getTitle(receivedUpdate))" density="compact"
         :close-label="$filters.translate('TL_WS_UPDATES_CLOSE')" closable
       >
-        <div class="description" v-html="$filters.translate(getDescription(receivedUpdate))" />
+        <div class="description" v-html="sanitizeHtml($filters.translate(getDescription(receivedUpdate)))" />
         <v-btn rounded compact variant="flat" size="small" @click="reloadResource()">{{ $filters.translate('TL_WS_UPDATES_RELOAD') }}</v-btn>
       </v-alert>
     </div>
@@ -25,6 +25,7 @@
 
 <script>
   import _ from 'lodash'
+  import { sanitizeHtml } from '@u/sanitizeHtml'
   import LoginService from '@s/LoginService'
 
   export default {
@@ -50,6 +51,7 @@
       this.connectToWebsocketServer()
     },
     methods: {
+      sanitizeHtml,
       reloadResource() {
         this.$emit('reloadResource', _.get(this.receivedUpdate, 'data._id', false))
         this.receivedUpdate = false
@@ -154,8 +156,8 @@
   }
 }
 .update-notification {
-  position: absolute;
-  top: 74px;
+  position: fixed;
+  top: calc(var(--cms-appbar-height) + var(--cms-space-4));
   left: 50%;
   // max-width: 25vw;
   transform: translate(-50%, 0);

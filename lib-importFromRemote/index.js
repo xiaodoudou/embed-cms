@@ -1,6 +1,6 @@
 const _ = require('lodash')
 const Api = require('./api')
-const logger = new (require('img-sh-logger'))()
+const logger = require('../lib/logger')
 const pAll = require('p-all')
 const cliProgress = require('cli-progress')
 const { determineResourceOrder } = require('./utils')
@@ -69,16 +69,29 @@ class ImportWrapper {
     }), { concurrency: 5 })
   }
 
+  /**
+   * Imports the configured resources from the remote cms.
+   * @param {Object} config - local/remote connection settings and the resources to import
+   * @param {Object} options - cli style options (yes, overwrite, useCache, convertToPreload, createOnly)
+   * @param {Function} [askConfirmation] - called before starting unless options.yes is set
+   * @returns {Promise<boolean>} true when the import finished, false when it failed or was refused;
+   *   the failure is kept in `lastError`
+   */
   startImport = async (config, options, askConfirmation) => {
     if (this.ongoingImport) {
-      return logger.warn('Ongoing import, will cancel')
+      logger.warn('Ongoing import, will cancel')
+      return false
     }
     this.ongoingImport = true
+    this.lastError = null
     this.prepareImport(config, options, askConfirmation)
     logger.info('Starting import...')
     const importStartedAt = Date.now()
     try {
       if (!this.noPrompt) {
+        if (!_.isFunction(this.askConfirmation)) {
+          throw new Error('Confirmation required but no way to ask for it, pass options.yes')
+        }
         await this.askConfirmation()
       }
       await pAll(_.map(['local', 'remote'], (key) => {
@@ -106,9 +119,15 @@ class ImportWrapper {
       }
       this.multibar.stop()
       logger.info(`Import took ${Date.now() - importStartedAt}ms`)
+      return true
     } catch (error) {
       this.multibar.stop()
+      this.lastError = error
       logger.error(_.get(error, 'response.body', _.get(error, 'message', error)))
+      return false
+    } finally {
+      // a finished or failed import must not leave the wrapper "busy" forever
+      this.ongoingImport = false
     }
   }
 

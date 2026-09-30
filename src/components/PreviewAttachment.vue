@@ -2,7 +2,7 @@
   <v-card v-if="attachment" :key="getKey(attachment)" :theme="theme" elevation="0" class="preview-attachment" :class="{odd: index % 2 !== 0, 'can-crop': schema.crop}">
     <v-tooltip :theme="theme" location="right" eager>
       <template #activator="{ props }">
-        <v-chip variant="outlined" class="filename" :class="{'is-dirty': attachment.dirty}" closable close-icon="$closeCircleOutline" v-bind="props" @click:close="removeImage(attachment, index)" @contextmenu.stop.prevent="copyFilenameToClipboard()">#{{ index + 1 }} - {{ $filters.truncate(getAttachmentFilename(attachment),10) }} ({{ imageSize(attachment) }})</v-chip>
+        <v-chip variant="outlined" class="filename" :class="{'is-dirty': attachment.dirty}" :closable="!locked" close-icon="$closeCircleOutline" :close-label="$filters.translate('TL_REMOVE')" v-bind="props" @click:close="removeImage(attachment, index)" @contextmenu.stop.prevent="copyFilenameToClipboard()">#{{ index + 1 }} - {{ $filters.truncate(getAttachmentFilename(attachment),10) }} ({{ imageSize(attachment) }})</v-chip>
       </template>
       <span>{{ attachment._filename }} <template v-if="attachment.dirty">({{ $filters.translate(getDirtyReason()) }})</template></span>
     </v-tooltip>
@@ -29,6 +29,8 @@
       schema: { type: Object, default: () => ({}) },
       getImageSrc: { type: Function, default: () => {} },
       imageSize: { type: Function, default: () => {} },
+      // a disabled or read-only field keeps its attachments but cannot remove them
+      locked: { type: Boolean, default: false },
       removeImage: { type: Function, default: () => {} },
       isImage: { type: Function, default: () => {} },
       onCropperChange: { type: Function, default: () => {} }
@@ -59,7 +61,7 @@
 .field-wrapper{
   .v-card .v-chip {
     &:hover {
-      background: rgba(0,0,0,.05);
+      background: var(--cms-overlay-hover);
       cursor: copy;
     }
   }

@@ -2,9 +2,11 @@
   <div class="custom-textarea">
     <v-textarea
       ref="input" :class="[schema.labelClasses]" :type="getType()" :model-value="_value" :max-length="schema.max" :min-length="schema.min" auto-grow :density="get('density')" :flat="get('flat')" :disabled="schema.disabled"
-      :readonly="schema.readonly" :rules="[validateField]" hide-details :variant="getVariant()" rounded="get('rounded')" @update:model-value="onChangeData" @update:focused="onFieldFocus"
+      :readonly="schema.readonly" :aria-readonly="schema.readonly ? 'true' : undefined" :rules="[validateField]" hide-details="auto" validate-on="blur" :aria-label="schema.label" :variant="getVariant()" :rounded="get('rounded')" @update:model-value="onChangeData" @update:focused="onFieldFocus"
     >
-      <!-- <template #prepend><field-label :schema="schema" /></template> -->
+      <template #prepend><field-label :schema="schema" /></template>
+      <template #label />
+      <template v-if="schema.readonly" #append-inner><v-icon class="cms-field-lock" size="16" icon="$lockOutline" :title="$filters.translate('TL_READ_ONLY')" /></template>
     </v-textarea>
     <div v-if="showHint()" class="help-block">
       <v-icon size="small" icon="$information" />
@@ -16,6 +18,7 @@
 <script>
   import _ from 'lodash'
   import AbstractField from '@m/AbstractField'
+  import { validateFieldValue } from '@u/fieldValidation'
 
   export default {
     mixins: [AbstractField],
@@ -24,13 +27,7 @@
         return _.get(this.schema, 'inputFieldType', 'text')
       },
       validateField (val) {
-        if (this.schema.required && (_.isNull(val) || _.isUndefined(val) || val === '')) {
-          return false
-        }
-        if (_.isFunction(this.schema.validator)) {
-          return !!this.schema.validator(val, this.schema.model, this.model)
-        }
-        return true
+        return validateFieldValue(this.schema, val) || true
       }
     }
   }

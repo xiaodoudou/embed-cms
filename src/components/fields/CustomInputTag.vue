@@ -1,4 +1,5 @@
 <template>
+  <div class="custom-input-tag">
   <v-combobox
     ref="input"
     :theme="theme" :class="[schema.labelClasses]" :type="getType()" :model-value="_value" :input-value="_value"
@@ -15,6 +16,11 @@
       />
     </template>
   </v-combobox>
+  <div v-if="showHint()" class="help-block">
+    <v-icon size="small" icon="$information" />
+    <span>{{ schema.options.hint }}</span>
+  </div>
+  </div>
 </template>
 
 <script>
@@ -103,7 +109,7 @@
 .v-field {
   .v-chip {
     &:hover {
-      background: rgba(0,0,0,.25);
+      background: var(--cms-overlay-strong);
       cursor: copy;
     }
   }

@@ -2,230 +2,412 @@
 @use "../mixins.scss" as *;
 
 .record-list {
-  min-width: 364px;
-  max-width: 364px;
-  overflow: auto;
+  flex: 0 0 var(--cms-list-width);
+  width: var(--cms-list-width);
+  min-width: var(--cms-list-width);
+  max-width: var(--cms-list-width);
   height: 100%;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   overflow: hidden;
-  .delete-records,
-  .select-all {
-    padding: 0 !important;
-    @include cta-text;
-    text-transform: none;
-    letter-spacing: normal;
-    .v-icon,
-    .btn__content {
-      color: $sidebar-records-list-delete-icon-color;
-    }
+  background-color: $sidebar-records-list-background;
+  border-right: 1px solid var(--cms-border-strong);
+  align-self: stretch;
+
+  .record-list-top-bar .search {
+    // resource selector and search share the toolbar look of the table view (see .cms-toolbar in base.css)
+    min-width: 0;
   }
-  .record-list-top-bar {
-    flex: auto 0 0;
-    position: sticky;
-    .search {
-      padding: 16px;
-      gap: 16px;
-      .search-bar {
-        margin: 0;
-      }
-    }
+
+  // the "new record" icon button is a regular primary button; while a new record is being edited it shows the soft state
+  .v-btn.new-record.active {
+    color: var(--cms-on-primary-soft);
+    background-color: var(--cms-primary-soft);
+    box-shadow: inset 0 0 0 2px var(--cms-primary);
   }
-  .new-record {
-    color: $btn-icon-color !important;
-    transition: color 0.15s;
-    &.active {
-      color: $imag-white !important;
-      background-color: $imag-purple;
-    }
-  }
-  .main {
-    @include cta-text;
-  }
+
   .infos-wrapper {
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
     strong {
       text-decoration: underline;
+      font-weight: var(--cms-fw-bold);
     }
+    // line 1: title, semibold, one line with ellipsis (full title in the tooltip)
     .main {
       width: 100%;
       overflow: hidden;
-      display: block;
+      font-size: var(--cms-record-title-fs);
+      font-weight: var(--cms-record-title-fw);
+      line-height: 1.4;
       span {
-        width: 100%;
-        overflow: hidden;
         display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
         text-align: left;
-        text-decoration: none;
         text-overflow: ellipsis;
         white-space: nowrap;
+        vertical-align: bottom;
       }
     }
   }
+
+  // line 2: who and when. Wraps instead of truncating, the lock marks read-only records without pushing the title
   .meta {
-    border-top: 1px solid rgba(0, 0, 0, 0.15);
-    padding-top: 4px;
     width: 100%;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-content: center;
-    justify-content: space-between;
-    align-items: center;
-    height: 20px;
-    font-size: 10px;
-    line-height: 20px;
+    font-size: var(--cms-record-meta-fs);
+    line-height: 1.35;
+    color: var(--cms-text-muted);
+    overflow-wrap: anywhere;
     user-select: none;
-    .id,
-    .ts {
-      line-height: 1;
-      color: rgb(46, 46, 46);
-    }
-    .id {
-      font-style: normal;
-      box-sizing: border-box;
-      border: 1px solid transparent;
-      padding: 4px;
-      transition: all .1s linear;
-      &:hover {
-        border-radius: 100px;
-        border: 1px solid $imag-light-grey;
-        border-style: dashed;
-        color: $imag-light-grey;
-        cursor: copy;
-      }
-    }
-    .ts {
-      user-select: none;
+    .meta-lock {
+      margin: 0 var(--cms-space-1) 2px 0;
+      vertical-align: middle;
     }
   }
+
+  // line 3: the full record id, small monospace, never cut
+  .id {
+    display: block;
+    width: 100%;
+    font-family: var(--cms-font-mono);
+    font-size: var(--cms-record-id-fs);
+    line-height: 1.35;
+    color: var(--cms-text-muted);
+    overflow-wrap: anywhere;
+    // copying goes through the copy button, so the id is not selectable
+    user-select: none;
+    padding-right: 28px;
+  }
+
+  // compact rows show the id instead of the meta line while selected (it is always in the tooltip)
+  .meta:has(.id-inline) > :not(.id-inline) {
+    display: none;
+  }
+
+  .id-inline {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tooltip-id {
+    display: block;
+    font-family: var(--cms-font-mono);
+    font-size: var(--cms-record-id-fs);
+  }
+
+  // ghost copy button on the id line, bottom right, so it never covers the title
+  .copy-id {
+    position: absolute;
+    bottom: var(--cms-space-1);
+    right: var(--cms-space-1);
+    width: 24px;
+    height: 24px;
+    opacity: 0;
+    color: var(--cms-text-muted);
+    background: transparent;
+    box-shadow: none;
+    &:hover {
+      color: var(--cms-primary);
+      background: var(--cms-primary-soft);
+    }
+  }
+
+  .item:hover .copy-id,
+  .item:focus-within .copy-id,
+  .item:focus-visible .copy-id {
+    opacity: 1;
+  }
+
+  @media (hover: none) {
+    .copy-id {
+      opacity: 1;
+    }
+  }
+
+  // sort and density sit at the right end of the controls row
+  .density-btn {
+    margin-left: auto;
+    &[aria-pressed='true'] {
+      background: var(--cms-primary-soft);
+      color: var(--cms-on-primary-soft);
+    }
+  }
+
   .records,
   .records-top-bar {
-    background-color: $sidebar-records-list-background;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 16px;
   }
-  .records {
-    margin: 0px;
-    padding: 0px;
-    flex: 100% 1 1;
-    position: relative;
-    background-color: $sidebar-records-list-background !important;
-    .records-top-bar {
-      .select-all {
-        cursor: pointer;
-      }
-      .delete-records {
-        .v-icon {
-          color: red;
-        }
-      }
+
+  .records-top-bar {
+    flex-wrap: nowrap;
+    .sort-button {
+      flex: 0 0 auto;
     }
+  }
+
+  .records {
+    margin: 0;
+    padding: 0;
+    flex: 1 1 0;
+    position: relative;
+    min-height: 0;
+    background-color: $sidebar-records-list-background;
+
     .list {
       position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      inset: 0;
+      padding: var(--cms-space-1) 0;
       @include custom-scrollbar;
     }
+
     .item {
       cursor: pointer;
       display: flex;
       align-items: center;
-      justify-content: flex-start;
-      height: 60px;
-      // margin-bottom: 8px;
+      height: var(--cms-list-row);
+      padding: 0 var(--cms-space-2);
+      outline: none;
+
       .item-info {
         flex-grow: 1;
-        width: 354px;
+        min-width: 0;
         display: flex;
         align-items: center;
-        gap: 16px;
-        justify-content: flex-start;
-        height: 56px;
-        margin: 4px;
-        border-radius: 8px;
-        padding: 4px 10px;
+        gap: var(--cms-space-3);
+        position: relative;
+        height: calc(var(--cms-list-row) - var(--cms-space-2));
+        border-radius: var(--cms-radius-md);
+        border: 1px solid var(--cms-border);
+        border-left: 3px solid transparent;
+        padding: var(--cms-space-1) var(--cms-space-3);
         background-color: $sidebar-records-list-item-background;
-        transition: background-color 0.15s;
+        color: var(--cms-text);
+        transition: background-color var(--cms-motion-fast) var(--cms-ease), border-color var(--cms-motion-fast) var(--cms-ease);
         box-sizing: border-box;
-        border-bottom: 1px solid $imag-light-grey-2;
-        &:hover {
-          background-color: $imag-blue;
-        }
       }
-      &.selected {
-        .item-info {
-          background-color: $sidebar-records-list-item-background-selected;
+
+      &:hover .item-info {
+        border-color: var(--cms-border);
+        background-color: var(--cms-surface-2);
+      }
+
+      &:focus-visible .item-info {
+        outline: 2px solid var(--cms-focus-ring);
+        outline-offset: -2px;
+      }
+
+      &.selected .item-info {
+        background-color: $sidebar-records-list-item-background-selected;
+        color: var(--cms-on-primary-soft);
+        border-color: var(--cms-primary);
+        border-left-width: 4px;
+        box-shadow: 0 0 0 1px var(--cms-primary);
+        .meta {
+          color: var(--cms-on-primary-soft);
         }
       }
 
-      &.frozen {
-        .item-info {
-          background-color: $sidebar-records-list-item-background-disabled;
-        }
+      &.frozen .item-info {
+        background-color: $sidebar-records-list-item-background-disabled;
+        color: var(--cms-text-muted);
       }
     }
-    // .time-ago {
-    //   padding: 4px 6px;
-    //   box-sizing: border-box;
-    //   border: 1px solid transparent;
-    //   &:hover {
-    //     border-radius: 100px;
-    //     border: 1px solid $imag-light-grey;
-    //     border-style: dashed;
-    //     color: $imag-black;
-    //   }
-    // }
   }
-  .toggle-view-mode {
-    background-color: $sidebar-toggle-view-mode-background;
-    border: 2px solid $sidebar-toggle-view-mode-border-color;
-    border-radius: 100px;
-    display: flex;
-    gap: 8px;
+
+  &.compact .records .item {
+    height: var(--cms-list-row-compact);
+  }
+
+  &.compact .records .item .item-info {
+    height: calc(var(--cms-list-row-compact) - var(--cms-space-2));
     align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    padding: 2px;
-    .v-icon {
-      border-radius: 100px;
-      color: $sidebar-records-list-delete-icon-color;
-      height: 24px;
-      width: 24px;
-      position: relative;
-      .v-icon__svg {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 16px;
-        height: 16px;
-      }
-      &.selected {
-        color: $sidebar-records-list-delete-icon-selected-color;
-        background-color: $imag-purple;
-      }
-    }
   }
+
+  .badge-readonly {
+    display: inline-block;
+    margin-right: var(--cms-space-1);
+    padding: 0 var(--cms-space-2);
+    border-radius: var(--cms-radius-pill);
+    background: var(--cms-surface-3);
+    color: var(--cms-text);
+    font-size: var(--cms-fs-xs);
+    font-weight: var(--cms-fw-semibold);
+    line-height: 1.5;
+  }
+
   .multiselect-buttons {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    span {
-      cursor: pointer;
+    justify-content: flex-end;
+    flex: 1 1 auto;
+    gap: var(--cms-space-1);
+    .multiselect-action {
       @include cta-text;
+      min-height: 32px;
+      padding: 0 var(--cms-space-2);
+      border: 0;
+      border-radius: var(--cms-radius-sm);
+      background: transparent;
+      color: var(--cms-primary);
+      font-weight: var(--cms-fw-semibold);
+      cursor: pointer;
+      &:hover:not(:disabled) {
+        background: var(--cms-primary-soft);
+      }
+      &:disabled,
       &.disabled {
-        color: $imag-pale-grey;
-        pointer-events: none;
-        touch-action: none;
+        color: var(--cms-text-muted);
+        cursor: default;
       }
     }
+  }
+
+  .list-empty {
+    flex: 1 1 auto;
+    padding: var(--cms-space-8) var(--cms-space-4);
+  }
+
+  .list-footer {
+    flex: 0 0 auto;
+    padding: var(--cms-space-2) var(--cms-space-4);
+    border-top: 1px solid var(--cms-border);
+    background: var(--cms-surface-2);
+    color: var(--cms-text-muted);
+    font-size: var(--cms-fs-sm);
+  }
+
+  .record-skeleton {
+    flex: 1 1 auto;
+    padding: var(--cms-space-1) var(--cms-space-2);
+    .skeleton-item {
+      height: 60px;
+      margin: 4px 0;
+      border-radius: var(--cms-radius-md);
+      background: linear-gradient(90deg, var(--cms-surface-2) 25%, var(--cms-surface-3) 50%, var(--cms-surface-2) 75%);
+      background-size: 200% 100%;
+      animation: cms-skeleton 1.4s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes cms-skeleton {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.resource-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cms-space-2);
+  width: 100%;
+  min-height: $sidebar-resource-selector-height;
+  padding: var(--cms-space-2) var(--cms-space-4);
+  border: 0;
+  border-bottom: 1px solid var(--cms-border);
+  background-color: $sidebar-resource-selector-background;
+  color: $sidebar-resource-selector-color;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--cms-motion-fast) var(--cms-ease);
+
+  .resource-title {
+    @include h3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .v-icon {
+    flex: 0 0 auto;
+    color: var(--cms-text-muted);
+    transition: transform var(--cms-motion-fast) var(--cms-ease);
+  }
+
+  &:hover {
+    background-color: $sidebar-resource-selector-background-opened;
+  }
+
+  &.opened {
+    background-color: $sidebar-resource-selector-background-opened;
+    .v-icon {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.toggle-view-mode {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  padding: 2px;
+  border: 1px solid var(--cms-border-strong);
+  border-radius: var(--cms-radius-md);
+  background-color: $sidebar-toggle-view-mode-background;
+
+  .toggle-mode-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--cms-radius-sm);
+    background: transparent;
+    color: var(--cms-text-muted);
+    cursor: pointer;
+    transition: background-color var(--cms-motion-fast) var(--cms-ease);
+    &:hover {
+      background: var(--cms-surface-2);
+    }
+    &.selected,
+    &[aria-pressed='true'] {
+      color: $sidebar-records-list-delete-icon-selected-color;
+      background-color: var(--cms-primary-soft);
+    }
+  }
+}
+
+.filter-chip {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--cms-border-strong);
+  border-radius: var(--cms-radius-pill);
+  background: transparent;
+  color: var(--cms-text);
+  font: inherit;
+  font-size: var(--cms-fs-sm);
+  font-weight: var(--cms-fw-medium);
+  cursor: pointer;
+  transition: background-color var(--cms-motion-fast) var(--cms-ease);
+  &:hover {
+    background: var(--cms-surface-2);
+  }
+  &.active,
+  &[aria-pressed='true'] {
+    background: var(--cms-primary-soft);
+    border-color: var(--cms-primary);
+    color: var(--cms-on-primary-soft);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .record-list {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
   }
 }

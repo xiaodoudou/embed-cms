@@ -44,8 +44,30 @@ function determineResourceOrder(resources, schemaMap) {
   return sortedOrder
 }
 
+/**
+ * Joins segments under a base folder and refuses any result that would land outside of it.
+ * Segments come from remote records (unique keys, field names, filenames), so they are untrusted.
+ * @param {string} base - folder the result must stay inside
+ * @param {...*} segments - path segments, coerced to strings
+ * @returns {string} absolute path inside base
+ * @throws {Error} when the joined path escapes base
+ */
+function safeJoin(base, ...segments) {
+  const root = path.resolve(base)
+  const target = path.resolve(root, ...segments.map(segment => String(segment)))
+  if (target !== root && !target.startsWith(root + path.sep)) {
+    throw new Error(`Refusing to use a path outside of ${base}: ${JSON.stringify(segments)}`)
+  }
+  return target
+}
+
 function getFilename(attachment) {
-  return _.get(attachment, '_filename', path.basename(_.first(_.get(attachment, 'url', attachment).split('?'))))
+  // a filename is never a path: keep the last segment only, whatever the remote sent
+  let name = _.get(attachment, '_filename')
+  if (!name) {
+    name = _.first(String(_.get(attachment, 'url', attachment)).split('?'))
+  }
+  return path.basename(String(name).replaceAll(String.fromCharCode(92), '/'))
 }
 
 function findMatches(obj, regex, field) {
@@ -100,15 +122,6 @@ function buildUrl(config, withPrefix = true) {
   return `${config.protocol}${config.host}${withPrefix ? config.prefix : ''}`
 }
 
-function deepMerge(target, source) {
-  for (const key of Object.keys(source)) {
-    if (source[key] instanceof Object && key in target) {
-      Object.assign(source[key], deepMerge(target[key], source[key]))
-    }
-  }
-  return {...target, ...source}
-}
-
 function filterAttachments(list, attachmentsToIgnore) {
   return _.filter(list, key => !_.includes(attachmentsToIgnore, key))
 }
@@ -119,13 +132,12 @@ async function md5FileAsync(filePath) {
 
 module.exports = {
   determineResourceOrder,
+  safeJoin,
   getFilename,
   findMatches,
   getAttachmentFields,
   getAttachments,
   convertKeyToId,
-  buildUrl,
-  deepMerge,
   filterAttachments,
   md5FileAsync
 }

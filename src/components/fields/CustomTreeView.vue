@@ -40,6 +40,34 @@
 </script>
 <style lang="scss">
 .json-viewer-wrapper {
+  .jv-container.jv-light {
+    border: 1px solid var(--cms-border-strong);
+    border-radius: var(--cms-radius-md);
+    background: var(--cms-field-bg);
+    color: var(--cms-text);
+    .jv-key,
+    .jv-item.jv-undefined,
+    .jv-item.jv-null {
+      color: var(--cms-text-muted);
+    }
+    .jv-item.jv-string {
+      color: var(--cms-success);
+    }
+    .jv-item.jv-number {
+      color: var(--cms-info);
+    }
+    .jv-item.jv-boolean {
+      color: var(--cms-warning);
+    }
+    .jv-ellipsis {
+      background: var(--cms-surface-3);
+      color: var(--cms-text-muted);
+    }
+    .jv-toggle::before {
+      border-color: var(--cms-text-muted) transparent;
+    }
+  }
+
   .jv-container {
     .jv-button {
       padding: 0;

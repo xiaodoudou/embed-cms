@@ -145,7 +145,7 @@ $gapBetweenFields: 16px;
      box-shadow: 0px 0px 10px 0px transparent;
   }
   50% {
-    box-shadow: 0px 0px 10px 5px #868686;
+    box-shadow: 0 0 10px 5px var(--cms-border-strong);
   }
   100% {
     box-shadow: 0px 0px 10px 0px transparent;

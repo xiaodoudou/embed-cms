@@ -73,6 +73,10 @@ export default {
     }
   },
   methods: {
+    // disabled or read-only: shown, not editable
+    isLocked () {
+      return !!(this.disabled || objGet(this.schema, 'disabled') || objGet(this.schema, 'readonly'))
+    },
     showHint() {
       return objGet(this.schema, 'options.hint') && !this.errors.length
     },

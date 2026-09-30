@@ -67,13 +67,11 @@ export default {
       return maxCount === -1 ? true : maxCount > 1
     },
     isFieldDisabled () {
-      const maxCount = this.getMaxCount()
-      if (maxCount === -1) {
-        return false
-      } else if (this.getAttachments().length >= maxCount) {
+      if (this.isLocked()) {
         return true
       }
-      return this.disabled || _.get(this.schema, 'disabled', false)
+      const maxCount = this.getMaxCount()
+      return maxCount !== -1 && this.getAttachments().length >= maxCount
     },
     getFieldType () {
       return _.toUpper(_.get(this.schema, 'type', 'ImageView') === 'ImageView' ? 'image' : 'file')

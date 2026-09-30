@@ -3,7 +3,7 @@ const fs = require('fs-extra')
 const path = require('path')
 const express = require('express')
 const { spawn } = require('child_process')
-const logger = new (require('img-sh-logger'))()
+const logger = require('../lib/logger')
 const { getCMSInstance, options: cmsOptions } = require('./cmsInstance')
 const pkg = require('../package.json')
 
@@ -151,7 +151,7 @@ function spawnRunTests(withPeers = false) {
   })
 }
 
-const port = runPeerTests ? getRandomPort() : 9990
+const port = runPeerTests ? getRandomPort() : Number(process.env.TEST_PORT || 9990)
 const cms = getCMSInstance(options)
 cms.options.port = port
 const app = express()

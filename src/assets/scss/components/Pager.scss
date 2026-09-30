@@ -1,38 +1,33 @@
 ul.pager {
   display: flex;
-  width: 80%;
+  flex-wrap: wrap;
+  gap: var(--cms-space-1);
   margin: 0 auto;
-  border-collapse: collapse;
   align-items: center;
   justify-content: center;
   li {
-    &:first-child, &:last-child {
-      a {
-        width: 40px;
-        font-weight: bold;
-      }
-    }
     &.disabled {
       opacity: 0.5;
     }
-    &.active {
-      font-weight: bold;
+    &.active a {
+      background: var(--cms-primary-soft);
+      border-color: var(--cms-primary);
+      color: var(--cms-on-primary-soft);
+      font-weight: var(--cms-fw-bold);
     }
     a {
       display: block;
-      outline: none;
-      position: relative;
-      line-height: 16px;
-      font-size: 14px;
-      height: 16px;
-      margin: 4px;
-      padding: 6px;
-      min-width: 20px;
+      min-width: 36px;
+      padding: var(--cms-space-2);
       text-align: center;
-      background: #f9f9f9;
-      border: 1px solid #c7c7c7;
-      &:focus {
-        outline: none;
+      text-decoration: none;
+      font-size: var(--cms-fs-base);
+      color: var(--cms-text);
+      background: var(--cms-surface);
+      border: 1px solid var(--cms-border-strong);
+      border-radius: var(--cms-radius-sm);
+      &:hover {
+        background: var(--cms-surface-2);
       }
     }
   }

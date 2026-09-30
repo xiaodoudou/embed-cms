@@ -1,6 +1,6 @@
 <template>
   <div class="field-label">
-    <span v-if="schema.required" class="text-red"><strong>* </strong></span>{{ schema.label }}
+    <span v-if="schema.required" class="required-mark" aria-hidden="true">* </span>{{ schema.label }}<span v-if="schema.required" class="cms-visually-hidden"> ({{ $filters.translate('TL_REQUIRED') }})</span>
   </div>
 </template>
 
@@ -24,9 +24,14 @@
 @use '@a/scss/mixins.scss' as *;
 
 .field-label {
-  @include subtext;
-  padding-left: 16px;
+  font-size: var(--cms-fs-sm);
+  line-height: var(--cms-lh-base);
+  font-weight: var(--cms-fw-semibold);
   color: $field-label-color;
+  .required-mark {
+    color: var(--cms-error);
+    font-weight: var(--cms-fw-bold);
+  }
   .v-icon {
     margin-top: -8px;
   }

@@ -1,25 +1,35 @@
 <template>
-  <div class="date-picker-wrapper">
+  <div class="date-picker-wrapper" :class="{'is-readonly': isReadonly, 'is-disabled': isDisabled}">
     <field-label :schema="schema" />
-    <date-picker
-      ref="input"
-      v-model="_value"
-      class="date-picker" :dark="theme === 'dark'"
-      :enable-time-picker="enableTimePicker"
-      :time-picker="!enableDatePicker && enableTimePicker"
-      :enable-date-picker="enableDatePicker"
-      :time-picker-inline="enableDatePicker && enableTimePicker"
-      :enable-minutes="isInFormat('mm')"
-      :enable-seconds="isInFormat('ss')"
-      mode-height="100px"
-      :day-class="getDayClass"
-      :format="formatDateSelection"
-      :placeholder="placeholder"
-      :locale="locale"
-      model-type="timestamp"
-      tabindex="-1"
-      @focus="onFieldFocus(true)" @blur="onFieldFocus(false)"
-    />
+    <div class="date-row">
+      <div class="date-control">
+        <date-picker
+          ref="input"
+          v-model="_value"
+          class="date-picker" :dark="theme === 'dark'"
+          :enable-time-picker="enableTimePicker"
+          :time-picker="!enableDatePicker && enableTimePicker"
+          :enable-date-picker="enableDatePicker"
+          :time-picker-inline="enableDatePicker && enableTimePicker"
+          :enable-minutes="isInFormat('mm')"
+          :enable-seconds="isInFormat('ss')"
+          mode-height="100px"
+          :day-class="getDayClass"
+          :format="formatDateSelection"
+          :text-input="textInput"
+          :placeholder="placeholder"
+          :locale="locale"
+          :clearable="!isLocked"
+          :readonly="isReadonly"
+          :disabled="isDisabled"
+          :aria-labels="{input: schema.label}"
+          model-type="timestamp"
+          @focus="onFieldFocus(true)" @blur="onFieldFocus(false)"
+        />
+        <v-icon v-if="isReadonly" class="cms-field-lock date-lock" size="16" icon="$lockOutline" :title="$filters.translate('TL_READ_ONLY')" />
+      </div>
+      <v-btn v-if="enableTimePicker && !isLocked" class="date-now" variant="outlined" size="small" @click="setNow">{{ $filters.translate('TL_NOW') }}</v-btn>
+    </div>
     <div v-if="showHint()" class="help-block">
       <v-icon size="small" icon="$information" />
       <span>{{ schema.options.hint }}</span>
@@ -31,6 +41,7 @@
   import _ from 'lodash'
   import AbstractField from '@m/AbstractField'
   import Dayjs from 'dayjs'
+  import { toDateFnsFormat } from '@u/dateFormat'
 
   export default {
     mixins: [AbstractField],
@@ -62,6 +73,19 @@
       enableDatePicker() {
         return this.fieldType.indexOf('date') !== -1
       },
+      isReadonly () {
+        return !!this.schema.readonly
+      },
+      isDisabled () {
+        return !!(this.disabled || this.schema.disabled)
+      },
+      isLocked () {
+        return this.isReadonly || this.isDisabled
+      },
+      // typing and picking both work: typed text is parsed with the schema format
+      textInput () {
+        return { format: toDateFnsFormat(this.schema.format), enterSubmit: true, tabSubmit: true, selectOnFocus: true, openMenu: 'toggle' }
+      },
       locale() {
         return this.schema.locale === 'enUS' ? 'en' : 'zh'
       }
@@ -70,6 +94,9 @@
       this.schema.format = _.get(this.schema, 'format', 'YYYY/MM/DD h:i:s')
     },
     methods: {
+      setNow () {
+        this._value = Date.now()
+      },
       isInFormat(toFind) {
         return this.schema.format.indexOf(toFind) !== -1
       },
@@ -87,68 +114,128 @@
 </script>
 
 <style lang="scss">
-@use '@a/scss/variables.scss' as *;
+.date-picker-wrapper {
+  .date-row {
+    display: flex;
+    align-items: center;
+    gap: var(--cms-space-2);
+    margin-top: var(--cms-space-1);
+  }
 
-.date-picker {
-  border-radius: 8px;
-  --dp-border-radius: 8px;
-  background-color: $record-editor-background;
-  --dp-background-color: $record-editor-background;
-  --dp-text-color: #212121;
-  --dp-hover-color: #f3f3f3;
-  --dp-hover-text-color: #212121;
-  --dp-hover-icon-color: #959595;
-  --dp-primary-color: #1976d2;
-  --dp-primary-disabled-color: #6bacea;
-  --dp-primary-text-color: #f8f5f5;
-  --dp-secondary-color: #c0c4cc;
-  --dp-border-color: #ddd;
-  --dp-menu-border-color: #ddd;
-  --dp-border-color-hover: #aaaeb7;
-  --dp-border-color-focus: #aaaeb7;
-  --dp-disabled-color: #f6f6f6;
-  --dp-scroll-bar-background: #f3f3f3;
-  --dp-scroll-bar-color: #959595;
-  --dp-success-color: #76d275;
-  --dp-success-color-disabled: #a3d9b1;
-  --dp-icon-color: #959595;
-  --dp-danger-color: #ff6f60;
-  --dp-marker-color: #ff6f60;
-  --dp-tooltip-color: #fafafa;
-  --dp-disabled-color-text: #8e8e8e;
-  --dp-highlight-color: rgb(25 118 210 / 10%);
-  --dp-range-between-dates-background-color: var(--dp-hover-color, #f3f3f3);
-  --dp-range-between-dates-text-color: var(--dp-hover-text-color, #212121);
-  --dp-range-between-border-color: var(--dp-hover-color, #f3f3f3);
-  &.dp__theme_dark {
-    // --dp-background-color: $record-editor-background;
-    --dp-text-color: #fff;
-    --dp-hover-color: #484848;
-    --dp-hover-text-color: #fff;
-    --dp-hover-icon-color: #959595;
-    --dp-primary-color: #005cb2;
-    --dp-primary-disabled-color: #61a8ea;
-    --dp-primary-text-color: #fff;
-    --dp-secondary-color: #a9a9a9;
-    --dp-border-color: #2d2d2d;
-    --dp-menu-border-color: #2d2d2d;
-    --dp-border-color-hover: #aaaeb7;
-    --dp-border-color-focus: #aaaeb7;
-    --dp-disabled-color: #737373;
-    --dp-disabled-color-text: #d0d0d0;
-    --dp-scroll-bar-background: #212121;
-    --dp-scroll-bar-color: #484848;
-    --dp-success-color: #00701a;
-    --dp-success-color-disabled: #428f59;
-    --dp-icon-color: #959595;
-    --dp-danger-color: #e53935;
-    --dp-marker-color: #e53935;
-    --dp-tooltip-color: #3e3e3e;
-    --dp-highlight-color: rgb(0 92 178 / 20%);
-    --dp-range-between-dates-background-color: var(--dp-hover-color, #484848);
-    --dp-range-between-dates-text-color: var(--dp-hover-text-color, #fff);
-    --dp-range-between-border-color: var(--dp-hover-color, #fff);
+  .date-control {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .date-lock {
+    position: absolute;
+    top: 50%;
+    right: var(--cms-space-3);
+    transform: translateY(-50%);
+  }
+
+  .date-now {
+    flex: 0 0 auto;
+  }
+
+  // the field states are the same as every other control (see base.css)
+  .dp__input {
+    height: var(--cms-field-h);
+    padding-top: 0;
+    padding-bottom: 0;
+    border: 1px solid var(--cms-border-strong);
+    border-radius: var(--cms-radius-md);
+    background-color: var(--cms-field-bg);
+    color: var(--cms-text);
+    font-family: var(--cms-font-sans);
+    font-size: var(--cms-fs-base);
+    transition: border-color var(--cms-motion-fast) var(--cms-ease), box-shadow var(--cms-motion-fast) var(--cms-ease);
+
+    &::placeholder {
+      color: var(--cms-text-muted);
+      opacity: 1;
+    }
+
+    &:hover {
+      border-color: var(--cms-text-muted);
+    }
+
+    &:focus,
+    &.dp__input_focus {
+      border-color: var(--cms-primary);
+      box-shadow: 0 0 0 3px var(--cms-field-ring);
+      outline: none;
+    }
+  }
+
+  .dp__input_icon {
+    color: var(--cms-text-muted);
+  }
+
+  &.is-readonly .dp__input {
+    border-color: transparent;
+    background-color: var(--cms-field-readonly-bg);
+    cursor: default;
+    padding-right: 36px;
+    &:focus {
+      border-color: var(--cms-primary);
+    }
+  }
+
+  &.is-disabled .dp__input {
+    border: 1px dashed var(--cms-border-strong);
+    background-color: var(--cms-field-disabled-bg);
+    color: var(--cms-text-muted);
+    cursor: not-allowed;
+    opacity: 1;
   }
 }
 
+.date-picker {
+  border-radius: var(--cms-radius-md);
+  --dp-border-radius: var(--cms-radius-md);
+  --dp-input-padding: 0 30px 0 12px;
+  --dp-font-family: var(--cms-font-sans);
+  --dp-font-size: var(--cms-fs-base);
+  --dp-background-color: var(--cms-surface);
+  --dp-text-color: var(--cms-text);
+  --dp-hover-color: var(--cms-surface-2);
+  --dp-hover-text-color: var(--cms-text);
+  --dp-hover-icon-color: var(--cms-text-muted);
+  --dp-primary-color: var(--cms-primary);
+  --dp-primary-disabled-color: var(--cms-primary-soft);
+  --dp-primary-text-color: var(--cms-on-primary);
+  --dp-secondary-color: var(--cms-border-strong);
+  --dp-border-color: var(--cms-border-strong);
+  --dp-menu-border-color: var(--cms-border);
+  --dp-border-color-hover: var(--cms-text-muted);
+  --dp-border-color-focus: var(--cms-primary);
+  --dp-disabled-color: var(--cms-surface-3);
+  --dp-disabled-color-text: var(--cms-text-muted);
+  --dp-scroll-bar-background: var(--cms-surface-2);
+  --dp-scroll-bar-color: var(--cms-border-strong);
+  --dp-success-color: var(--cms-success);
+  --dp-success-color-disabled: var(--cms-success-soft);
+  --dp-icon-color: var(--cms-text-muted);
+  --dp-danger-color: var(--cms-error);
+  --dp-marker-color: var(--cms-error);
+  --dp-tooltip-color: var(--cms-surface-2);
+  --dp-highlight-color: var(--cms-primary-soft);
+  --dp-range-between-dates-background-color: var(--cms-primary-soft);
+  --dp-range-between-dates-text-color: var(--cms-on-primary-soft);
+  --dp-range-between-border-color: var(--cms-primary-soft);
+}
+
+// the popup follows the dropdown style: same surface, radius and elevation
+.dp__menu {
+  border-radius: var(--cms-radius-md);
+  box-shadow: var(--cms-shadow-2);
+  font-family: var(--cms-font-sans);
+}
+
+.dp__action_button {
+  border-radius: var(--cms-radius-md);
+  font-weight: var(--cms-fw-medium);
+}
 </style>

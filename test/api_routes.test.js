@@ -2,7 +2,7 @@
 const request = require('supertest')
 const chai = require('chai')
 const expect = chai.expect
-const serverUrl = 'http://localhost:9990'
+const serverUrl = `http://localhost:${process.env.TEST_PORT || 9990}`
 
 describe('API Route Coverage', () => {
   afterEach(async () => {

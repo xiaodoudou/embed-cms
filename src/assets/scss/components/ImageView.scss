@@ -6,12 +6,11 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  filter: grayscale(100%);
-  padding-left: 16px;
+    padding-left: 16px;
   padding-top: 0;
   margin-top: 3px;
-  font-weight: 600;
-  color: gray;
+  font-weight: 400;
+  color: var(--cms-text-muted);
   font-size: 12px;
   line-height: 12px;
   i {
@@ -30,12 +29,11 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    filter: grayscale(100%);
-    padding-left: 16px;
+        padding-left: 16px;
     padding-top: 0;
     margin-top: 3px;
     font-weight: 600;
-    color: gray;
+    color: var(--cms-text-muted);
     font-size: 12px;
     line-height: 12px;
     i {
@@ -72,7 +70,7 @@
 
     &.is-dirty {
       .v-chip__content {
-        color: $imag-orange;
+        color: $cms-warning;
       }
     }
   }
@@ -102,7 +100,7 @@
         border-color: $file-input-chip-border;
         background-color: $file-input-chip-background;
         font-size: 12px;
-        font-style: italic;
+        font-style: normal;
         font-weight: 400;
       }
     }
@@ -162,10 +160,10 @@
     }
     img {
       border-radius: 8px;
-      background-color: #ffffff;
+      background-color: var(--cms-surface);
       opacity: 1;
       background-repeat: repeat, repeat;
-      background-image:  repeating-linear-gradient(45deg, #cdcdcd 25%, transparent 25%, transparent 75%, #cdcdcd 75%, #cdcdcd), repeating-linear-gradient(45deg, #cdcdcd 25%, #ffffff 25%, #ffffff 75%, #cdcdcd 75%, #cdcdcd);
+      background-image:  repeating-linear-gradient(45deg, var(--cms-checker) 25%, transparent 25%, transparent 75%, var(--cms-checker) 75%, var(--cms-checker)), repeating-linear-gradient(45deg, var(--cms-checker) 25%, var(--cms-surface) 25%, var(--cms-surface) 75%, var(--cms-checker) 75%, var(--cms-checker));
       background-position: 0 0, 4px 4px;
       background-size: 8px 8px;
     }
@@ -181,16 +179,108 @@
 }
 
 .image-view, .attachment-view {
-  border: 2px $paragraph-top-bar-background solid;
-  border-radius: 8px;
-  padding: 8px;
+  // The field container is plain: only the drop area has a dashed border
+  border: 0;
+  padding: 0;
   .v-card {
     background-color: transparent;
   }
 }
 .form-group.error {
   .image-view .croppa-container{
-    border: 1px solid red;
+    border: 1px solid var(--cms-error);
   }
 }
 
+
+
+// ---- Upload area and previews -------------------------------------------------
+.image-view,
+.attachment-view {
+  .file-input-card {
+    margin-top: var(--cms-space-1);
+    border: 2px dashed var(--cms-border-strong);
+    border-radius: var(--cms-radius-md);
+    background: var(--cms-surface-2);
+    box-shadow: none;
+    transition: border-color var(--cms-motion-fast) var(--cms-ease), background-color var(--cms-motion-fast) var(--cms-ease);
+
+    &:hover {
+      border-color: var(--cms-primary);
+    }
+
+    &:focus-within {
+      outline: 2px solid var(--cms-focus-ring);
+      outline-offset: 2px;
+    }
+
+    &.drag-and-drop {
+      border-color: var(--cms-primary);
+      border-style: solid;
+      background: var(--cms-primary-soft);
+    }
+
+    // The inner field is invisible chrome: no second border, no second background
+    .v-field {
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      outline: none;
+    }
+
+    .v-field__input {
+      min-height: 104px;
+      justify-content: center;
+      text-align: center;
+      cursor: pointer;
+      // Hint: body-small, regular, muted (never louder than the label)
+      font-size: var(--cms-fs-sm);
+      font-weight: var(--cms-fw-regular);
+      color: var(--cms-text-muted);
+    }
+
+    .v-field__input input::placeholder,
+    .v-field__input .v-file-input__text,
+    .v-label {
+      font-size: var(--cms-fs-sm);
+      font-weight: var(--cms-fw-regular);
+      color: var(--cms-text-muted);
+      opacity: 1;
+    }
+
+    .v-field__prepend-inner .v-icon {
+      color: var(--cms-text-muted);
+    }
+  }
+
+  // With files present the drop area becomes a compact "add more" strip
+  &:has(.preview-attachment) .file-input-card .v-field__input {
+    min-height: 44px;
+  }
+
+  .preview-attachment {
+    border: 1px solid var(--cms-border);
+    border-radius: var(--cms-radius-md);
+    background: var(--cms-surface);
+    transition: box-shadow var(--cms-motion-fast) var(--cms-ease);
+    &:hover {
+      box-shadow: var(--cms-shadow-1);
+    }
+    .filename {
+      max-width: 100%;
+    }
+  }
+
+  .row-handle {
+    cursor: grab;
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  .file-input-errors,
+  .help-block {
+    color: var(--cms-text-muted);
+    font-size: var(--cms-fs-sm);
+  }
+}

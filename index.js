@@ -8,6 +8,7 @@
  */
 
 const path = require('path')
+const os = require('os')
 const fs = require('fs')
 const pAll = require('p-all')
 const compression = require('compression')
@@ -25,7 +26,13 @@ const escapeRegExp = require('./lib/util/escapeRegExp')
 const Resource = require('./lib/resource')
 const ResourceAPIWrapper = require('./lib/ResourceAPIWrapper')
 const OSSHelper = require('./lib/util/OSSHelper')
-const logger = new (require('img-sh-logger'))()
+const ImageOptimization = require('./lib/util/imageOptimization')
+const logger = require('./lib/logger')
+const { resolveSecurity } = require('./lib/util/securityOptions')
+const { ensureStrongSecrets } = require('./lib/util/secrets')
+const csrfGuard = require('./lib/util/csrf')
+const securityHeaders = require('./lib/util/securityHeaders')
+const sendError = require('./lib/plugins/rest/sendError')
 
 /**
  * Recursively loads all .js files in a directory as modules (synchronously).
@@ -127,6 +134,17 @@ class CMS {
     }
     // aggregate options
     this.options = (options = (this._options = _.extend({}, defaultConfig(), require(configPath), options)))
+    // effective security settings (the profile follows NODE_ENV, see lib/util/securityOptions.js)
+    this.security = resolveSecurity(options)
+    // reachable from the stores, which only see the options
+    options.securitySettings = this.security
+    // image operations at once: a burst of requests is worked off in turn, not all together. No limit with the legacy
+    // profile (as before the limit existed), one per core with the hardened one, where at most 100 may wait as well.
+    // imageConcurrency overrides the default (0 for no limit).
+    ImageOptimization.configure({
+      concurrency: options.imageConcurrency !== undefined ? options.imageConcurrency : (this.security.hardened ? os.cpus().length : 0),
+      maxQueue: this.security.hardened ? 100 : Infinity
+    })
     // ensure required folders are in place
     mkdirp.sync(path.resolve(options.resources))
     mkdirp.sync(path.resolve(options.data))
@@ -200,15 +218,23 @@ class CMS {
     }
     // create main application
     this._app = express()
-    this._app.use(helmet.dnsPrefetchControl())
-    this._app.use(helmet.expectCt())
-    this._app.use(helmet.frameguard())
-    this._app.use(helmet.hidePoweredBy())
-    this._app.use(helmet.hsts())
-    this._app.use(helmet.ieNoOpen())
-    this._app.use(helmet.noSniff())
-    this._app.use(helmet.permittedCrossDomainPolicies())
-    this._app.use(helmet.referrerPolicy())
+    if (options.trustProxy !== undefined) {
+      // req.ip, req.secure and the login lockout follow the proxy chain instead of the raw socket
+      this._app.set('trust proxy', options.trustProxy)
+    }
+    if (this.security.headers) {
+      this._app.use(securityHeaders({ contentSecurityPolicy: this.security.contentSecurityPolicy }))
+    } else {
+      this._app.use(helmet.dnsPrefetchControl())
+      this._app.use(helmet.expectCt())
+      this._app.use(helmet.frameguard())
+      this._app.use(helmet.hidePoweredBy())
+      this._app.use(helmet.hsts())
+      this._app.use(helmet.ieNoOpen())
+      this._app.use(helmet.noSniff())
+      this._app.use(helmet.permittedCrossDomainPolicies())
+      this._app.use(helmet.referrerPolicy())
+    }
     // Enable compression
     this._app.use(compression({
       filter (req, res) {
@@ -216,6 +242,7 @@ class CMS {
       }
     }))
     if (!options.disableAuthentication || !options.disableJwtLogin) {
+      ensureStrongSecrets(options, this.security, this.requiredKeyLength)
       const secret = _.get(this.options, 'auth.secret')
       if (_.isEmpty(secret)) {
         throw new Error('config.auth.secret is missing')
@@ -223,6 +250,16 @@ class CMS {
         throw new Error(`config.auth.secret isn't long enough, adjust the value to have minimum ${this.requiredKeyLength} characters`)
       }
       let sessionOptions = _.extend({ cookie: {} }, this.options.session)
+      if (this.security.hardened) {
+        // sameSite and secure follow the security settings, a cookie option written in the configuration still wins
+        sessionOptions.cookie = _.pickBy({ sameSite: this.security.cookies.sameSite, secure: this.security.cookies.secure, httpOnly: this.security.cookies.httpOnly }, value => value !== false)
+        _.extend(sessionOptions.cookie, _.get(this.options, 'session.cookie'))
+      }
+      if (this.security.strictSessions) {
+        // a session is only stored once something was written to it (a login)
+        sessionOptions.resave = false
+        sessionOptions.saveUninitialized = false
+      }
       if (process.env.NODE_ENV === 'production') {
         const FileStore = require('session-file-store')(session)
         sessionOptions.store = new FileStore({
@@ -231,12 +268,19 @@ class CMS {
           logFn: function(){}
         })
       }
-      this._app.use(session(sessionOptions))
+      // the record update socket authenticates its clients with the same session
+      this._sessionMiddleware = session(sessionOptions)
+      this._app.use(this._sessionMiddleware)
+    }
+    const csrf = csrfGuard(this.security)
+    if (csrf) {
+      this._app.use(csrf)
     }
     if (!options.disableAuthentication) {
       // Enables session with basic auth
       this._app.use((req, res, next) => {
-        if (req.session.user && !req.headers.authorization) {
+        // legacy: nothing in this package writes session.user any more, and a plaintext password must not be replayed
+        if (!this.security.hideCredentials && req.session.user && !req.headers.authorization) {
           req.headers.authorization = 'Basic ' + Buffer.from(req.session.user.username + ':' + req.session.user.password).toString('base64')
         }
         next()
@@ -295,6 +339,10 @@ class CMS {
     _.each(this.usedPlugins, (plugin) => {
       this.use(require(`./lib/plugins/${plugin}`), options, configPath)
     })
+    if (this.security.uniformErrors) {
+      // last in the chain: what no plugin answered ends here as json, without stack trace
+      this._app.use(sendError.middleware)
+    }
     // handle bootstrap
     this.bootstrap = async (server, callback) => {
       if (_.isFunction(server) && _.isUndefined(callback)) {
@@ -320,7 +368,21 @@ class CMS {
     this.oss = new OSSHelper()
   }
 
+  /**
+   * Drops the record update sockets: they are upgraded connections, which closing the http server does not end.
+   */
+  _closeSockets() {
+    if (this.wss) {
+      this.wss.clients.forEach(client => client.terminate())
+      this.wss.close()
+    }
+  }
+
   async _closeDatabase() {
+    this._closeSockets()
+    if (this.$replicator) {
+      await this.$replicator.close()
+    }
     const resourcesToClose = []
     _.each(this._resources, (resource, resourceName) => {
       if (resource.json && _.isFunction(resource.json.close)) {
@@ -342,7 +404,7 @@ class CMS {
     return (err) => {
       logger.warn(`${ signal }...`)
       if (err) {
-        console.error(err.stack || err)
+        logger.error(err.stack || err)
       }
       if (this.isExiting) {
         return
@@ -382,7 +444,7 @@ class CMS {
           field.path = paragraphRootPath
           _.set(this._resources, `["${resourceKey}"].options._attachmentFields["${escapeRegExp(paragraphRootPath, field.localised)}"]`, field)
           _.set(this._attachmentFields,  `${resourceKey}["${escapeRegExp(paragraphRootPath)}"]`, field)
-        } else if (fieldItem.input === 'paragraph') {
+        } else if (paragraphFieldItem.input === 'paragraph') {
           this._processAttachmentFieldsParagraph(paragraphFieldItem, resourceKey, paragraphRootPath)
         }
       })
@@ -418,8 +480,8 @@ class CMS {
           field.path = paragraphRootPath
           _.set(this._resources, `["${resourceKey}"].options._relations["${escapeRegExp(paragraphRootPath)}"]`, field)
           _.set(this._relations,  `${resourceKey}["${escapeRegExp(paragraphRootPath)}"]`, field)
-        } else if (fieldItem.input === 'paragraph') {
-          this._processAttachmentFieldsParagraph(paragraphFieldItem, resourceKey, paragraphRootPath)
+        } else if (paragraphFieldItem.input === 'paragraph') {
+          this._processSourceFieldsParagraph(paragraphFieldItem, resourceKey, paragraphRootPath)
         }
       })
     })
@@ -447,7 +509,7 @@ class CMS {
 
   broadcast = (msg) => {
     if (_.get(this.options, 'wsRecordUpdates', false)) {
-      UpdatesManager.broadcast(msg)
+      UpdatesManager.broadcast(msg, this)
     }
   }
 

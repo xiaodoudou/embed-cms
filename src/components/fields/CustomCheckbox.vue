@@ -1,12 +1,18 @@
 <template>
-  <div class="custom-checkbox" :class="{disabled: schema.disabled}">
+  <div class="custom-checkbox" :class="{disabled: isDisabled, readonly: isReadonly}">
     <field-label :schema="schema" />
-    <div ref="input" class="switch" :class="{active: getValue()}" tabindex="-1" @click="onChange" @focus="onFieldFocus(true)" @blur="onFieldFocus(false)">
+    <div
+      ref="input" class="switch" role="switch" :aria-checked="getValue() ? 'true' : 'false'" :aria-label="schema.label"
+      :aria-readonly="isReadonly ? 'true' : undefined" :aria-disabled="isDisabled ? 'true' : undefined" :class="{active: getValue()}"
+      :tabindex="isDisabled ? -1 : 0" @click="onChange" @keydown.space.prevent="onChange" @keydown.enter.prevent="onChange"
+      @focus="onFieldFocus(true)" @blur="onFieldFocus(false)"
+    >
       <div class="drag" />
       <div class="labels">
         <span class="label inactive">{{ $filters.translate('TL_NO') }}</span>
         <span class="label active">{{ $filters.translate('TL_YES') }}</span>
       </div>
+      <v-icon v-if="isReadonly" class="cms-field-lock lock" size="16" icon="$lockOutline" :title="$filters.translate('TL_READ_ONLY')" />
     </div>
     <div v-if="showHint()" class="help-block">
       <v-icon size="small" icon="$information" />
@@ -21,13 +27,21 @@
 
   export default {
     mixins: [AbstractField],
+    computed: {
+      isReadonly () {
+        return !!this.schema.readonly
+      },
+      isDisabled () {
+        return !!(this.disabled || this.schema.disabled)
+      }
+    },
     methods: {
       getValue () {
         const value = _.get(this.model, this.schema.model, false)
         return _.isNull(value) ? false : value
       },
       onChange () {
-        if (this.disabled) {
+        if (this.isDisabled || this.isReadonly) {
           return
         }
         this._value = !this.getValue()
@@ -97,10 +111,29 @@
         }
       }
     }
-      &.disabled {
-        pointer-events: none;
-        touch-action: none;
-        opacity: 0.5;
+      // read-only: tinted, no border, lock icon; disabled: page colour, dashed, muted
+      &.readonly .switch {
+        border-color: transparent;
+        background-color: var(--cms-field-readonly-bg);
+        cursor: default;
+        color: var(--cms-text);
+        .drag {
+          background-color: var(--cms-text-muted);
+        }
+        .lock {
+          position: absolute;
+          right: -26px;
+          top: 8px;
+        }
+      }
+      &.disabled .switch {
+        border: 2px dashed var(--cms-border-strong);
+        background-color: var(--cms-field-disabled-bg);
+        color: var(--cms-text-muted);
+        cursor: not-allowed;
+        .drag {
+          background-color: var(--cms-border-strong);
+        }
       }
   }
 </style>

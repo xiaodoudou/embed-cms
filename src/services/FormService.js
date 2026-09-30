@@ -209,7 +209,7 @@ let typeMapper = {
   },
   time: {
     type: 'CustomDatetimePicker',
-    format: 'HH:mm:ss a',
+    format: 'HH:mm:ss',
     customDatetimePickerOptions: {
       placeholder: 'HH:mm:ss'
     }

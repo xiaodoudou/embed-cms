@@ -25,22 +25,17 @@
         </tr>
       </tbody>
     </v-table>
-    <v-dialog v-model="showDialog">
-      <v-card>
-        <v-card-title>Sync Record</v-card-title>
-        <v-card-text>
-          <v-text-field v-model="recordId" label="Record ID" />
-        </v-card-text>
-        <v-card-actions>
-          <v-btn @click="doSyncRecord">Sync</v-btn>
-          <v-btn @click="showDialog = false">Cancel</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <app-dialog :model-value="showDialog" title="Sync record" type="info" confirm-text="Sync" cancel-text="Cancel" @confirm="doSyncRecord" @cancel="showDialog = false">
+      <v-text-field v-model="recordId" label="Record ID" @keydown.enter="doSyncRecord" />
+    </app-dialog>
   </div>
 </template>
 <script>
+  import AppDialog from '@c/AppDialog.vue'
+  import NotificationsService from '@s/NotificationsService'
+
   export default {
+    components: { AppDialog },
     data() {
       return {
         resources: [],
@@ -58,8 +53,16 @@
         this.resources = await res.json()
       },
       async syncResource(resource) {
-        await fetch(`/replicator/sync/${resource}`, { method: 'POST' })
-        this.$notify && this.$notify('Sync started for ' + resource)
+        NotificationsService.send(`Sync started for ${resource}`, 'info')
+        try {
+          const res = await fetch(`/replicator/sync/${resource}`, { method: 'POST' })
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`)
+          }
+          NotificationsService.send(`Sync finished for ${resource}`, 'success')
+        } catch (error) {
+          NotificationsService.send(`Sync failed for ${resource}: ${error.message}`, 'error', { actionLabel: 'Retry', action: () => this.syncResource(resource) })
+        }
       },
       syncRecordPrompt(resource) {
         this.recordResource = resource
@@ -68,13 +71,34 @@
       },
       async doSyncRecord() {
         if (!this.recordId) return
-        await fetch(`/replicator/sync/${this.recordResource}/${this.recordId}`, { method: 'POST' })
-        this.$notify && this.$notify('Sync started for record ' + this.recordId)
+        const resource = this.recordResource
+        const recordId = this.recordId
         this.showDialog = false
+        NotificationsService.send(`Sync started for ${resource} record`, 'info')
+        try {
+          const res = await fetch(`/replicator/sync/${resource}/${recordId}`, { method: 'POST' })
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`)
+          }
+          NotificationsService.send(`Sync finished for ${resource} record`, 'success')
+        } catch (error) {
+          NotificationsService.send(`Sync failed for ${resource} record: ${error.message}`, 'error')
+        }
       }
     }
   }
 </script>
 <style scoped>
-.cms-replicator { padding: 2em; }
+.cms-replicator {
+  padding: var(--cms-space-6);
+  max-width: var(--cms-content-max);
+}
+.cms-replicator h2 {
+  margin: 0 0 var(--cms-space-3);
+  font-size: var(--cms-fs-xl);
+  font-weight: var(--cms-fw-semibold);
+}
+.cms-replicator td .v-btn + .v-btn {
+  margin-left: var(--cms-space-2);
+}
 </style>

@@ -1,34 +1,39 @@
 <template>
-  <div id="omnibar" v-shortkey="getShortcuts()" @shortkey="interactiveSearch">
-    <div id="omnibar-backdrop" :class="{displayed: showOmnibar}" @click="showHideOmnibar(false)" />
-    <v-card v-show="showOmnibar" elevation="24">
-      <v-card-title class="search">
-        <v-text-field
-          ref="search"
-          v-model="search"
-          class="search-bar" flat variant="solo-filled" rounded hide-details prepend-inner-icon="$magnify" density="compact" :placeholder="$filters.translate('TL_INSERT_KEYWORDS')" type="text" autocomplete="off"
-          name="search" :prefix="searchMode === 'all' ? '' : `${searchMode}:`" @keydown.ctrl.prevent.p="showHideOmnibar(false)" @keydown.prevent.escape="showHideOmnibar(false)"
-        />
-      </v-card-title>
-      <template v-if="results && results.length > 0">
-        <v-divider />
-        <div ref="scrollWrapper" class="scroll-wrapper" :class="{'scrolled-to-bottom': scrolledToBottom || results.length < 20}" @scroll="onScroll">
-          <v-list density="compact">
-            <v-list-item v-for="(item, i) in results" :id="'result-' + i" :key="i" class="list" :class="{highlighted: highlightedItem === i}" :ripple="false" @click="selectResult(i)">
-              <v-list-item-title>
-                <v-icon size="small" :icon="getIconForResult(item)" />
-                <span v-html="item.html" />
-              </v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </div>
-      </template>
-    </v-card>
-  </div>
+  <Teleport to="body">
+    <div id="omnibar" v-shortkey="getShortcuts()" @shortkey="interactiveSearch">
+      <div id="omnibar-backdrop" :class="{displayed: showOmnibar}" @click="showHideOmnibar(false)" />
+      <v-card v-show="showOmnibar" elevation="0" role="dialog" aria-modal="true" :aria-label="$filters.translate('TL_SEARCH_RESOURCES')">
+        <v-card-title class="search">
+          <v-text-field
+            ref="search"
+            :model-value="search" clearable clear-icon="$close" class="search-bar"
+            flat variant="solo-filled" hide-details prepend-inner-icon="$magnify" density="comfortable" :placeholder="$filters.translate('TL_INSERT_KEYWORDS')" :aria-label="$filters.translate('TL_INSERT_KEYWORDS')" type="text" @update:model-value="search = $event || ''" autocomplete="off"
+            name="search" :prefix="searchMode === 'all' ? '' : `${searchMode}:`" @keydown.ctrl.prevent.p="showHideOmnibar(false)" @keydown.prevent.escape="showHideOmnibar(false)"
+          />
+        </v-card-title>
+        <template v-if="results && results.length > 0">
+          <v-divider />
+          <div ref="scrollWrapper" class="scroll-wrapper" :class="{'scrolled-to-bottom': scrolledToBottom || results.length < 20}" @scroll="onScroll">
+            <v-list density="compact">
+              <v-list-item v-for="(item, i) in results" :id="'result-' + i" :key="i" class="list" :class="{highlighted: highlightedItem === i}" :ripple="false" @click="selectResult(i)">
+                <v-list-item-title>
+                  <v-icon size="small" :icon="getIconForResult(item)" />
+                  <span v-html="sanitizeHtml(item.html)" />
+                </v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </div>
+        </template>
+        <div v-else-if="!search" class="omnibar-empty omnibar-hint">{{ $filters.translate('TL_QUICK_SWITCHER_HINT') }}</div>
+        <div v-else-if="search" class="omnibar-empty">{{ $filters.translate('TL_NO_RESULTS') }}</div>
+      </v-card>
+    </div>
+  </Teleport>
 </template>
 
 <script>
   import _ from 'lodash'
+  import { sanitizeHtml } from '@u/sanitizeHtml'
   import fuzzysort from 'fuzzysort'
   import FieldSelectorService from '@s/FieldSelectorService'
   import Notification from '@m/Notification'
@@ -108,6 +113,7 @@
       }))
     },
     methods: {
+      sanitizeHtml,
       getShortcuts () {
         return this.showOmnibar ? this.shortcuts : this.shortcutsWhenClosed
       },
@@ -173,12 +179,12 @@
           return
         }
         if (!this.showOmnibar) {
-          if (action === 'open') {
+          if (_.startsWith(action, 'open')) {
             this.showHideOmnibar(true)
           }
           return
         }
-        if (action === 'esc' || action === 'open') {
+        if (action === 'esc' || _.startsWith(action, 'open')) {
           this.showHideOmnibar(false)
         } else if (action === 'arrow-up') {
           this.highlightedItem = this.highlightedItem > 0 ? this.highlightedItem - 1 : 0
@@ -199,7 +205,8 @@
 @use '@a/scss/variables.scss' as *;
 @use '@a/scss/mixins.scss' as *;
 
-#omnibar, #omnibar-backdrop {
+#omnibar,
+#omnibar-backdrop {
   position: fixed;
   top: 0;
   left: 0;
@@ -207,89 +214,99 @@
   height: 100vh;
   pointer-events: none;
   touch-action: none;
+  z-index: var(--cms-z-omnibar);
 }
-#omnibar {
-  .v-list {
-    padding: 0;
-    max-height: 65vh;
-    padding-top: 16px;
-  }
-  .v-list-item {
-    min-height: 26px;
-    // padding-top: 8px;
-    // padding-bottom: 8px;
-    .v-list-item-title {
-      @include cta-text;
-      font-weight: normal;
-      font-style: normal;
-    }
-    .v-list-item__content {
-      border-radius: 100px;
-      padding: 4px 8px;
-      .v-icon {
-        margin-right: 8px;
-        width: 18px;
-        height: 18px;
-      }
-    }
-    &.highlighted {
-      .v-list-item__content {
-        color: $imag-white;
-        background-color: $imag-purple;
-        .v-icon {
-          color: $imag-black;
-        }
-      }
-    }
-    &:hover:not(.highlighted) {
-      .v-list-item__content {
-        color: $imag-white;
-        background-color: $imag-blue;
-        .v-icon {
-          color: $imag-black;
-        }
-      }
-      &:before {
-      background-color: transparent;
 
-      }
-    }
-  }
-  .v-text-field__prefix {
-    font-size: 12px;
-    font-style: italic;
-  }
-  .v-icon {
-    color: $imag-grey;
-  }
-  span {
-    b {
-      color: black;
-    }
-  }
+#omnibar {
+  color: var(--cms-text);
+
   .v-card {
-    top: 25vh;
-    left: 50vw;
-    max-width: 30vw;
+    position: fixed;
+    top: min(20vh, 160px);
+    left: 50%;
+    width: min(600px, calc(100vw - 32px));
+    max-width: none;
     transform: translateX(-50%);
     pointer-events: auto;
     touch-action: auto;
+    z-index: 1;
+    background: var(--cms-surface);
+    color: var(--cms-text);
+    border: 1px solid var(--cms-border);
+    border-radius: var(--cms-radius-lg);
+    box-shadow: var(--cms-shadow-3);
+    overflow: hidden;
   }
+
+  .v-card-title.search {
+    padding: var(--cms-space-3);
+  }
+
+  .v-list {
+    padding: var(--cms-space-2);
+    max-height: 60vh;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .v-list-item {
+    min-height: 40px;
+    border-radius: var(--cms-radius-sm);
+    .v-list-item-title {
+      @include cta-text;
+      font-weight: var(--cms-fw-regular);
+      display: flex;
+      align-items: center;
+      gap: var(--cms-space-2);
+    }
+    .v-icon {
+      color: var(--cms-text-muted);
+      flex: 0 0 auto;
+    }
+    &.highlighted {
+      background: var(--cms-primary-soft);
+      color: var(--cms-on-primary-soft);
+      .v-icon {
+        color: var(--cms-on-primary-soft);
+      }
+    }
+    &:hover:not(.highlighted) {
+      background: var(--cms-surface-2);
+    }
+  }
+
+  .v-text-field__prefix {
+    font-size: var(--cms-fs-sm);
+  }
+
+  span b {
+    color: var(--cms-primary);
+    font-weight: var(--cms-fw-bold);
+  }
+
+  .omnibar-empty {
+    padding: var(--cms-space-6);
+    text-align: center;
+    color: var(--cms-text-muted);
+    border-top: 1px solid var(--cms-border);
+  }
+
   #omnibar-backdrop {
-    background-color: rgba(0,0,0, 0.5);
+    z-index: 0;
+    background-color: var(--cms-scrim);
     opacity: 0;
-    transition: opacity 0.3s;
+    transition: opacity var(--cms-motion-base) var(--cms-ease);
     &.displayed {
       opacity: 1;
       pointer-events: auto;
       touch-action: auto;
     }
   }
+
   .scroll-wrapper {
-    padding-bottom: 16px;
-    .v-list {
-      @include custom-scrollbar;
-    }
+    overflow: auto;
+    @include custom-scrollbar;
   }
 }
 </style>

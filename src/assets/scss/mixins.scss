@@ -1,88 +1,99 @@
 @use "sass:list";
 @use "./variables.scss" as vars;
 
+// Deprecated: the UI used to scale text with the viewport width. Sizes are now
+// fixed rem/px tokens (see src/styles/tokens.css); this stays as an identity
+// function so older call sites keep compiling.
 @function vw($px-vw, $base-vw: 1440px) {
-  @return calc(($px-vw * 100vw) / $base-vw);
-}
-
-@font-face {
-  font-family: Source Sans Pro;
-  src: url('@a/fonts/SourceSans3-Regular.ttf');
+  @return $px-vw;
 }
 
 @mixin normal-text {
   font-style: normal;
-  line-height: normal;
-  font-weight: 400;
+  line-height: var(--cms-lh-base);
+  font-weight: var(--cms-fw-regular);
 }
 
 @mixin italic-text {
-  font-style: italic;
-  line-height: normal;
-  font-weight: 400;
+  // Italics were used for labels and hints; the redesign uses upright text.
+  font-style: normal;
+  line-height: var(--cms-lh-base);
+  font-weight: var(--cms-fw-regular);
 }
 
 @mixin h1 {
-  font-size: clamp(59px, 59px, vw(59px));
-  @include normal-text;
-  font-weight: 700;
+  font-size: var(--cms-fs-2xl);
+  line-height: var(--cms-lh-tight);
+  font-weight: var(--cms-fw-bold);
 }
 
 @mixin h2 {
-  font-size: clamp(44px, 44px, vw(44px));
-  @include normal-text;
+  font-size: var(--cms-fs-xl);
+  line-height: var(--cms-lh-tight);
+  font-weight: var(--cms-fw-semibold);
 }
 
 @mixin h3 {
-  font-size: clamp(33px, 33px, vw(33px));
-  @include normal-text;
+  font-size: var(--cms-fs-lg);
+  line-height: var(--cms-lh-tight);
+  font-weight: var(--cms-fw-semibold);
 }
 
 @mixin h4 {
-  font-size: clamp(25px, 25px, vw(25px));
-  @include italic-text;
+  font-size: var(--cms-fs-md);
+  line-height: var(--cms-lh-tight);
+  font-weight: var(--cms-fw-semibold);
 }
 
 @mixin h5 {
-  font-size: clamp(19px, 19px, vw(19px));
-  @include normal-text;
-  font-weight: 700;
+  font-size: var(--cms-fs-md);
+  line-height: var(--cms-lh-tight);
+  font-weight: var(--cms-fw-semibold);
 }
 
 @mixin h6 {
-  font-size: clamp(16px, 16px, vw(16px));
-  @include italic-text;
+  font-size: var(--cms-fs-base);
+  line-height: var(--cms-lh-base);
+  font-weight: var(--cms-fw-regular);
 }
 
 @mixin subtext {
-  font-size: clamp(12px, 12px, vw(12px));
-  @include italic-text;
+  font-size: var(--cms-fs-sm);
+  line-height: var(--cms-lh-base);
+  font-weight: var(--cms-fw-regular);
 }
 
 @mixin error {
-  @include subtext;
+  font-size: var(--cms-fs-sm);
+  line-height: var(--cms-lh-base);
+  font-weight: var(--cms-fw-medium);
 }
 
 @mixin cta-text {
-  @include h5;
-  font-size: clamp(14px, 14px, vw(14px));
+  font-size: var(--cms-fs-base);
+  line-height: var(--cms-lh-tight);
+  font-weight: var(--cms-fw-semibold);
 }
 
 @mixin small-cta-text {
-  font-size: clamp(12px, 12px, vw(12px));
-  font-weight: 700;
-  @include italic-text;
+  font-size: var(--cms-fs-xs);
+  line-height: var(--cms-lh-tight);
+  font-weight: var(--cms-fw-semibold);
 }
 
 @mixin textarea-text {
-  font-size: clamp(14px, 14px, vw(14px));
-  @include normal-text;
+  font-size: var(--cms-fs-base);
+  line-height: var(--cms-lh-base);
+  font-weight: var(--cms-fw-regular);
 }
 
+// Floating panel (menus, popovers)
 @mixin blurred-background {
-  padding: vw(14px);
-  background: white;
-  box-shadow: 0px 10px 10px 0px rgba(0, 0, 0, 0.15);
+  padding: var(--cms-space-3);
+  background: var(--cms-surface);
+  border: 1px solid var(--cms-border);
+  border-radius: var(--cms-radius-md);
+  box-shadow: var(--cms-shadow-2);
 }
 
 @function get-level-index($index) {
@@ -124,30 +135,14 @@
 
 @mixin highlight-paragraph() {
   border-color: vars.$level-hover-border;
+  // soft tint with readable text, not a solid fill
   > .v-card-title {
-    background-color: vars.$level-hover-border;
+    background-color: var(--cms-primary-soft);
   }
 }
 
+// Scrollbars are styled once for every element in src/styles/base.css (thin, palette coloured, no arrows);
+// the mixin stays so older call sites keep compiling.
 @mixin custom-scrollbar() {
-  &::-webkit-scrollbar {
-    width: vw(8px);
-  }
-
-  &::-webkit-scrollbar-track {
-    // box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
-    border-radius: 10px;
-    background-color: vars.$imag-pale-grey;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    border-radius: 10px;
-    background-color: vars.$imag-purple;
-    &:hover{
-      background-color: vars.$imag-light-purple;
-    }
-    &:active {
-      background-color: vars.$imag-blue;
-    }
-  }
+  scrollbar-width: thin;
 }

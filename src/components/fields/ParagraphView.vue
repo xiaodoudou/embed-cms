@@ -9,11 +9,15 @@
         <template #label />
       </v-autocomplete>
       <div class="add-btn-wrapper">
-        <v-btn elevation="0" class="add-new-item" rounded :disabled="blockMoreItems()" @click="onClickAddNewItem"><span>{{ $filters.translate('TL_ADD') }}</span></v-btn>
-        <v-btn v-if="hasFileOrImageTypes" elevation="0" class="add-multiple-items" rounded :disabled="blockMoreItems()" @click="toggleMultipleDropZone">
+        <v-btn elevation="0" class="add-new-item" :disabled="blockMoreItems()" @click="onClickAddNewItem"><span>{{ $filters.translate('TL_ADD') }}</span></v-btn>
+        <v-btn v-if="hasFileOrImageTypes" elevation="0" class="add-multiple-items" variant="outlined" :disabled="blockMoreItems()" @click="toggleMultipleDropZone">
           <span>{{ $filters.translate('TL_ADD_MULTIPLE') }}</span>
         </v-btn>
       </div>
+    </div>
+    <div v-if="schema.options && schema.options.hint" class="help-block">
+      <v-icon size="small" icon="$information" />
+      <span>{{ schema.options.hint }}</span>
     </div>
     <div v-if="showMultipleDropZone" class="multiple-drop-zone" :class="{ 'drag-over': isDragOver }" @click="$refs.fileInput.click()" @drop="onDropFiles" @dragover.prevent="onDragOver" @dragenter.prevent="onDragEnter" @dragleave.prevent="onDragLeave">
       <div class="drop-zone-content">
@@ -838,18 +842,18 @@
 }
 
 .multiple-drop-zone {
-  border: 2px dashed #ccc;
+  border: 2px dashed var(--cms-border-strong);
   border-radius: 8px;
   padding: 32px;
   margin: 16px 0;
   text-align: center;
-  background-color: #fafafa;
+  background-color: var(--cms-surface-2);
   cursor: pointer;
   transition: all 0.3s ease;
 
   &:hover, &.drag-over {
-    border-color: var(--v-theme-primary, #1976d2);
-    background-color: rgba(var(--v-theme-primary-rgb, 25, 118, 210), 0.04);
+    border-color: var(--cms-primary);
+    background-color: var(--cms-primary-soft);
   }
 
   .drop-zone-content {
@@ -866,10 +870,10 @@
     .primary-text {
       font-size: 18px;
       font-weight: 500;
-      color: var(--v-theme-on-surface, #212121);
+      color: var(--cms-text);
     }
     .secondary-text, .supported-types, .default {
-      color: var(--v-theme-on-surface-variant, #757575);
+      color: var(--cms-text-muted);
     }
     .secondary-text {
       font-size: 14px;
@@ -943,28 +947,17 @@
 .disabled {
   pointer-events: none;
 }
-.add-new-item, .remove-item, .add-multiple-items {
-  color: $btn-action-color !important;
+// Add / remove buttons use the shared button system (base.css); only alignment lives here
+.add-new-item, .add-multiple-items {
+  height: 40px;
+}
+.remove-item {
   max-height: 34px;
-  button {
-    &:before {
-      transform: translate(50%, 0);
-    }
-  }
-  span {
-    @include cta-text;
-    text-transform: none;
-    text-transform: uppercase !important;
-    letter-spacing: 0;
-  }
 }
 .add-btn-wrapper {
   display: flex;
-  gap: 8px;
-
-  .add-new-item, .add-multiple-items {
-    background-color: $btn-action-background !important;
-  }
+  align-items: flex-end;
+  gap: var(--cms-space-2);
 }
 .paragraph-footer, .paragraph-header, .paragraph-header-bar {
   display: flex;
@@ -978,12 +971,12 @@
   position: -webkit-sticky;
   position: sticky;
   top: calc(var(--paragraph-level, 0) * 80px);
-  background-color: var(--v-theme-surface, white);
-  border-bottom: 1px solid var(--v-theme-outline, #e0e0e0);
+  background-color: var(--cms-surface-2);
+  border-bottom: 1px solid var(--cms-border);
   padding: 16px 8px;
   margin-top: 0;
   z-index: calc(5000 - var(--paragraph-level, 0)) !important; /* Higher level headers appear on top, above other components */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--cms-shadow-1);
   border-radius: 8px 8px 0 0;
   backdrop-filter: blur(8px);
 
@@ -1024,7 +1017,7 @@
     @include cta-text;
   }
   .error-message {
-    color: $imag-orange;
+    color: $cms-warning;
   }
   .v-btn {
     color: $btn-action-color;
@@ -1159,11 +1152,11 @@
         position: absolute;
         top: 2px;
         left: 50%;
-        background: rgba(0, 0, 0, 0.1);
+        background: var(--cms-overlay-hover);
         font-size: 10px;
         padding: 2px 4px;
         border-radius: 2px;
-        color: #666;
+        color: var(--cms-text-muted);
         z-index: 10;
         pointer-events: none;
         transform: translate(-50%, 0);

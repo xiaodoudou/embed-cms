@@ -1,467 +1,93 @@
 # Fields
 
-## Options
-Non specific options that can be use on all filed types:
+Every field of a resource schema has an `input` type. Each type has its own page with the declaration, all options, the variations shown in the field catalogue (`resources/`), the stored JSON and the validation rules:
 
-- `required`
-  - Type: `Boolean`
-  - Default: `false`
-  - Purpose: Enforce field requirement on creation/update
-- `localised`
-  - Type: `Boolean`
-  - Default: `true`
-  - Purpose: Enforce field localization base on given languages/locales inside the resource
-- `unique`
-  - Type: `Boolean`
-  - Default: `false`
-  - Purpose: Enforce field content to be unique into all its given resource
-### Example
-``` JavaScript
-{
-  field: 'title',
-  input: 'string',
-  unique: true,
-  required: true,
-  localised: false
-}
-```
+| Type | Component | Stored value | Page |
+|---|---|---|---|
+| `string` | `CustomInput` | string | [string](fields/string.md) |
+| `transliterate` | `Transliterate` | string (slug of another field) | [transliterate](fields/transliterate.md) |
+| `text` | `CustomTextarea` | string | [text](fields/text.md) |
+| `password` | `CustomInput` | string, not hashed | [password](fields/password.md) |
+| `email` | `CustomInput` | string | [email](fields/email.md) |
+| `url` | `CustomInput` | string | [url](fields/url.md) |
+| `number` | `CustomInput` | number | [number](fields/number.md) |
+| `integer` | `CustomInput` | as `number` | [integer](fields/integer.md) |
+| `double` | `CustomInput` | as `number` | [double](fields/double.md) |
+| `checkbox` | `CustomCheckbox` | boolean | [checkbox](fields/checkbox.md) |
+| `date` | `CustomDatetimePicker` | timestamp in ms (local midnight) | [date](fields/date.md) |
+| `time` | `CustomDatetimePicker` | timestamp in ms (today at that time) | [time](fields/time.md) |
+| `datetime` | `CustomDatetimePicker` | timestamp in ms | [datetime](fields/datetime.md) |
+| `pillbox` | `CustomInputTag` | array of strings | [pillbox](fields/pillbox.md) |
+| `select` | `CustomMultiSelect` | string, or record `_id` | [select](fields/select.md) |
+| `multiselect` | `CustomMultiSelect` | array of strings or record `_id`s | [multiselect](fields/multiselect.md) |
+| `json` | `CustomTreeView` | any JSON (viewer only) | [json](fields/json.md) |
+| `code` | `CustomCode` | string | [code](fields/code.md) |
+| `wysiwyg` | `Wysiwyg` | HTML string | [wysiwyg](fields/wysiwyg.md) |
+| `image` | `ImageView` | array of attachment descriptors | [image](fields/image.md) |
+| `file` | `AttachmentView` | array of attachment descriptors | [file](fields/file.md) |
+| `paragraph` | `ParagraphView` | array of blocks (`_type` + fields) | [paragraph](fields/paragraph.md) |
+| `object` | `JsonEditor` | JSON built from a JSON schema | [object](fields/object.md) |
+| `color` | `ColorPicker` | hex string | [color](fields/color.md) |
 
-## String
-Standard input string field.
+`group` is an internal type used by the form to group dotted keys (`address.city`) and is not declared in schemas.
 
-### Example
-``` JavaScript
-{
-  field: 'title',
-  input: 'string'
-}
-```
-## Wysiwyg
-What You See Is What You Get field type; it include standard text-editing visual aspect such as bold, italic, alignment, etc....
+The catalogue in `resources/` (see [`resources/README.md`](../resources/README.md)) has one resource per field family with every variation; the pages above refer to it by file and field name and show a screenshot of each.
 
-### Example
-``` JavaScript
-{
-  field: 'wysiwyg',
-  input: 'wysiwyg'
-}
-```
+## Common options
 
-## Email
-Email input field. It checks if the content respect the format of an email.
+Declared next to `input` in the schema entry:
 
-### Example
-``` JavaScript
-{
-  field: 'email',
-  input: 'email'
-}
-```
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `field` | string | required | Key of the value. A dotted key (`address.city`) nests the value and groups the fields in the form. |
+| `input` | string | required | One of the types above. |
+| `label` | string \| `{ enUS, zhCN }` | `field` | Label. Translated with the CMS translations; a per-locale object is resolved for the current locale. A localised field shows the locale in brackets, `Name (enUS)`. |
+| `required` | boolean | `false` | Adds `*` to the label; each type decides how it is checked (see its page and the table below). Checked by the admin only. |
+| `unique` | boolean | `false` | Checked by the server on create and update (`400 Field 'x' is duplicated`). |
+| `localised` | boolean | `true` when the resource declares `locales` | See below. |
+| `source` | array \| resource name | none | The values of `select` and `multiselect`. |
+| `min`, `max` | number | none | On `pillbox` only, at field level (declared, not enforced). For the other types use `options.min` / `options.max`. |
+| `hint` | string | none | Same as `options.hint`. |
 
-## Password
-Password input field. It doesn't encrypt its content but just obfuscate its visual.
+Declared in `options`:
 
-### Example
-``` JavaScript
-{
-  field: 'password',
-  input: 'password'
-}
-```
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `options.hint` | string | none | Help text under the field, hidden while an error is shown. |
+| `options.readonly` | boolean | `false` | Not editable, with a lock icon on inputs. Honoured by `string`, `text`, `password`, `email`, `url`, `number`, `integer`, `double`, `checkbox`, `date`, `time`, `datetime`, `select`, `multiselect`, `transliterate`, `wysiwyg`, `color`, `image` and `file` (no uploads); `code` implements it but the catalogue has no example. Ignored by `paragraph`, `object`, `json`. |
+| `options.disabled` | boolean | `false` | Greyed out and not focusable (also accepted as `disabled` next to `input`). Honoured like `readonly`; a disabled `image` or `file` shows only its label and previews, without the hint. Ignored by `object`, `json`; not verified for `pillbox`. |
+| `options.min` / `options.max` | number | none | Length for `string`, `text`, `password`, `email`, `url`, `transliterate`; value for `number`, `integer`, `double`. Enforced by the admin. |
+| `options.regex` | `{ value, description }` or one per locale | none | Pattern for the text types (`'/pattern/flags'`). Enforced by the admin. |
 
-## URL
-URL input field. It checks if the content respect the format of an URL.
+Every key of `options` is also copied onto the component schema, which is how type-specific options such as `regex`, `min`, `max`, `labels`, `customLabel`, `accept`, `maxCount`, `limit`, `types` or `jsonEditorOptions` reach the component. Type-specific options are described on each type's page.
 
-### Example
-``` JavaScript
-{
-  field: 'URL',
-  input: 'url'
-}
-```
+## Localisation
 
-## Text
-Textarea input field.
-### Example
-``` JavaScript
-{
-  field: 'text',
-  input: 'text'
-}
-```
+- A resource declares `locales: ['enUS', 'zhCN']`. Every field is then localised unless it has `localised: false`. A resource without `locales` has no localised fields.
+- A localised value is stored per field, then per locale: `{ "title": { "enUS": "Hello", "zhCN": "你好" } }`. A non-localised value is stored as is: `{ "code": "A1" }`. Files are stored per locale as `{ "banner": { "enUS": [ ... ] } }`.
+- The form has a tab per locale. `required` must be satisfied in **every** locale; the tab that has an error shows a badge and the save is blocked.
+- An untouched localised field is saved as `{}`.
+- `unique` on a localised field is checked per locale (`name.enUS`).
+- Creating a record over REST with `?locale=enUS` stores it locale-first (`{ "enUS": { "name": "x" } }`), which is not the shape the admin reads. Send the field-first shape.
 
-## Numbers
-Number input fields.
-### Examples
-``` JavaScript
-{
-  field: 'number',
-  input: 'number'
-},
-{
-  field: 'gnumber',
-  input: 'number'
-},
-{
-  field: 'integer',
-  input: 'integer'
-},
-{
-  field: 'ginteger',
-  input: 'integer'
-},
-{
-  field: 'double',
-  input: 'double'
-},
-{
-  field: 'gdouble',
-  input: 'double'
-}
-```
+## What is checked where
 
-## Date
-Date input fields
-### Examples
-``` JavaScript
-{
-  field: 'gdate',
-  input: 'date'
-},
-{
-  field: 'time',
-  input: 'time'
-},
-{
-  field: 'gtime',
-  input: 'time'
-},
-{
-  field: 'datetime',
-  input: 'datetime'
-},
-{
-  field: 'gdatetime',
-  input: 'datetime'
-}
-```
+| Rule | Admin (UI) | Server (REST) |
+|---|---|---|
+| `required` | yes for text types, numbers, select, multiselect, wysiwyg, image, file, paragraph (the last three without an inline message); **not** for checkbox, color, code, object, pillbox | no |
+| Format (`email`, `url`, `integer`, numeric) | yes | no |
+| `min`, `max` | yes for text (length) and numbers (value); **not** for `pillbox` | no |
+| `regex` | yes for text types, also per locale | no |
+| `unique` | no | yes |
+| `accept`, `limit` (files) | yes, on selection | no |
+| `maxCount` | yes | `image` fields only |
 
-## Select
-Select input fields
-### Examples
-``` JavaScript
-{
-  label: {
-    enUS: 'Type',
-    zhCN: '类型'
-  },
-  field: 'type',
-  input: 'select',
-  source: ['idle',
-    'close',
-    'far'],
-  options: {
-    labels: {
-      idle: {
-        enUS: 'Meet Vivo',
-        zhCN: 'Meet Vivo'
-      },
-      close: {
-        enUS: 'Meet Vivo',
-        zhCN: 'Meet Vivo'
-      },
-      far: {
-        enUS: 'Meet Vivo',
-        zhCN: 'Meet Vivo'
-      }
-    }
-  },
-  localised: false,
-  required: true
-},
-{
-  field: 'select',
-  input: 'select',
-  source: [
-    'one',
-    'two',
-    'three'
-  ],
-  required: true
-},
-{
-  field: 'select_text_value',
-  input: 'select',
-  options: {
-    labels: {
-      1: 'One',
-      2: 'Two',
-      3: {
-        enUS: 'Three',
-        zhCN: '三'
-      }
-    }
-  },
-  source: [
-    1,
-    2,
-    3
-  ]
-},
-{
-  field: 'gselect',
-  input: 'select',
-  source: [
-    'one',
-    'two',
-    'three'
-  ],
-  localised: false
-},
-{
-  field: 'relation',
-  input: 'select',
-  source: 'articles'
-},
-{
-  field: 'grelation',
-  input: 'select',
-  source: 'articles',
-  localised: false
-},
-{
-  field: 'multiselect',
-  input: 'multiselect',
-  source: [
-    'one',
-    'two',
-    'three'
-  ]
-},
-{
-  field: 'listbox',
-  input: 'multiselect',
-  options: {
-    listBox: true,
-    labels: {
-      one: 'My first one',
-      two: 'My second one',
-      three: 'My third one'
-    }
-  },
-  source: [
-    'one',
-    'two',
-    'three'
-  ]
-},
-{
-  field: 'gmultiselect',
-  input: 'multiselect',
-  source: 'articles',
-  localised: false
-}
-```
+The admin runs its rules on blur and when Create/Save is clicked; an invalid field blocks the save. An empty optional value is always valid. Messages: `This field is required!`, `The text is too short! Length: N, minimum: M`, `The text is too long! Length: N, maximum: M`, `The number is too small! Minimum: M`, `The number is too big! Maximum: M`, `The value is not an integer`, `Invalid e-mail address!`, `Invalid URL!`, `Invalid format! (description)`. The rules live in `src/utils/fieldValidation.js`.
 
-## Nested fields
-Nested input fields
-### Examples
-``` JavaScript
-{
-  label: 'address country name',
-  field: 'address.country.name',
-  input: 'string',
-},
-{
-  label: 'address country code',
-  field: 'address.country.code',
-  input: 'string',
-}
-```
+The server stores what it receives, so REST clients must validate their own input.
 
-## Image fields
-Image input fields
-### Examples
-``` JavaScript
-{
-  field: 'gimage',
-  input: 'image',
-  localised: false,
-  options: {
-    maxCount: 1
-  }
-},
-{
-  field: 'cropimage',
-  input: 'image',
-  options: {
-    width: '800',
-    height: '300',
-    background: 'transparent',
-    accept: 'image/jpeg',
-    quality: 0.5,
-    limit: 300 * 1024 // 100KB
-  }
-},
-{
-  field: 'gcropimage',
-  input: 'image',
-  localised: false,
-  options: {
-    width: '400',
-    height: '200',
-    background: 'transparent'
-  }
-}
-```
+## Nested and other notes
 
-## File fields
-File input fields
-### Examples
-``` JavaScript
-{
-  field: 'file',
-  input: 'file',
-  required: true,
-  options: {
-    accept: 'image/*',
-    maxCount: 1
-  }
-}
-```
-
-## Checkbox fields
-Checkbox input fields
-### Examples
-``` Javascript
-{
-  field: 'checkboxopt',
-  input: 'checkbox',
-  options: {
-    textOn: 'Enable',
-    textOff: 'Disable'
-  }
-},
-{
-  field: 'checkbox',
-  input: 'checkbox'
-},
-{
-  field: 'disabledCheckbox',
-  input: 'checkbox',
-  options: {
-    disabled: true
-  }
-}
-```
-
-## Color fields
-Color input fields
-### Examples
-``` Javascript
-{
-  field: 'defaultColor',
-  input: 'color',
-  options: {
-  }
-},
-{
-  field: 'color',
-  input: 'color',
-  options: {
-    picker: 'wheel',
-    outputModel: 'hex',
-    menuPosition: 'right',
-    draggable: true,
-    enableAlpha: true,
-    rgbSliders: true
-  }
-},
-{
-  field: 'gColor',
-  input: 'color',
-  localised: false,
-  options: {
-    picker: 'square',
-    outputModel: 'rgb',
-    menuPosition: 'bottom',
-    draggable: false,
-    enableAlpha: false,
-    rgbSliders: false
-  }
-},
-```
-
-## Object fields
-Object input fields
-### Example
-``` Javascript
-{
-  field: 'array',
-  input: 'object',
-  options: {
-    jsonEditorOptions: {
-      type: 'array',
-      format: 'table',
-      items: {
-        type: 'object',
-        properties: {
-          name: {
-            type: 'string'
-          },
-          brand: {
-            type: 'string',
-            enum: ['Toyota','BMW','Honda','Ford','Chevy','VW']
-          },
-          model: {
-            type: 'string'
-          },
-          year: {
-            type: 'integer',
-            enum: [1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014],
-            default: 2008
-          }
-        }
-      }
-    }
-  }
-}
-```
-
-## Paragraph
-Paragraph input fields behave like any other resources allowing for nested groups within a record
-### Example
-``` Javascript
-resource schema
-{
-  displayname: 'My resource',
-  schema: [
-    {
-      label: 'Paragraph',
-      field: 'paragraph',
-      input: 'paragraph',
-      localised: false,
-      options: {
-        types: ['myParagraph']
-      }
-    }
-  ]
-}
-
-paragraph schema
-{
-  displayname: 'My paragraph',
-  schema: [
-    {
-      label: 'Text field',
-      field: 'text',
-      input: 'text'
-    },
-    {
-      label: 'Checkbox',
-      field: 'checkbox',
-      input: 'checkbox'
-    }
-  ]
-}
-```
+- Nested fields: `{ label: 'City', field: 'address.city', input: 'string' }` stores `{ address: { city: ... } }` and groups the fields under an `address` heading (`groups.address.label` in the resource sets its title).
+- Import and sync files reference records of a `select` / `multiselect` source by their first `unique` field.
+- The design system and the shape of the form are described in [UI_REDESIGN.md](UI_REDESIGN.md); dynamic layouts for paragraph blocks in [DYNAMIC_LAYOUT.md](DYNAMIC_LAYOUT.md).

@@ -47,16 +47,37 @@
 <style lang="scss" scoped>
 @use '@a/scss/variables.scss' as *;
 .import-from-remote {
+  margin: var(--cms-space-4) var(--cms-space-6) var(--cms-space-6);
+  padding: var(--cms-space-6);
+  max-width: var(--cms-content-max);
+  border: 1px solid var(--cms-border);
+  border-radius: var(--cms-radius-lg);
+  background: $layout-card-background;
   .main-container {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     flex-wrap: wrap;
-    .local, .remote {
-      width: 50%;
+    gap: var(--cms-space-4);
+    .local,
+    .remote {
+      flex: 1 1 280px;
+      min-height: 96px;
+      padding: var(--cms-space-4);
+      border: 1px dashed var(--cms-border-strong);
+      border-radius: var(--cms-radius-md);
+      color: var(--cms-text-muted);
+      text-transform: capitalize;
     }
     .actions {
       width: 100%;
     }
+  }
+}
+
+@media (max-width: 599.98px) {
+  .import-from-remote {
+    margin: var(--cms-space-3);
+    padding: var(--cms-space-4);
   }
 }
 </style>

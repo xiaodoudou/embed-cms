@@ -1,5 +1,12 @@
 <template>
-  <div ref="input" class="json-editor" :disabled="disabled" />
+  <div class="json-editor-field">
+    <field-label :schema="schema" />
+    <div ref="input" class="json-editor" :disabled="disabled" />
+    <div v-if="showHint()" class="help-block">
+      <v-icon size="small" icon="$information" />
+      <span>{{ schema.options.hint }}</span>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -88,9 +95,9 @@
         }
         getModal () {
           const el = document.createElement('div')
-          el.style.backgroundColor = 'white'
-          el.style.border = '1px solid black'
-          el.style.boxShadow = '3px 3px black'
+          el.style.backgroundColor = 'var(--cms-surface)'
+          el.style.border = '1px solid var(--cms-border-strong)'
+          el.style.boxShadow = 'var(--cms-shadow-2)'
           el.style.position = 'absolute'
           el.style.zIndex = '10'
           el.style.display = 'none'
@@ -106,9 +113,9 @@
           const tooltip = document.createElement('span')
           tooltip.style['font-family'] = 'sans-serif'
           tooltip.style.visibility = 'hidden'
-          tooltip.style['background-color'] = 'rgba(50, 50, 50, .75)'
+          tooltip.style['background-color'] = 'var(--cms-terminal-bg)'
           tooltip.style.margin = '0 .25rem'
-          tooltip.style.color = '#FAFAFA'
+          tooltip.style.color = 'var(--cms-terminal-fg)'
           tooltip.style.padding = '.5rem 1rem'
           tooltip.style['border-radius'] = '.25rem'
           tooltip.style.width = '25rem'

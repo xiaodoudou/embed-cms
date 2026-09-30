@@ -1,5 +1,5 @@
 <template>
-  <v-btn class="menu-item" icon elevation="0" :class="{ 'is-active': isActive ? isActive(): null }" :title="title" @click.stop.prevent="action">
+  <v-btn class="menu-item" icon elevation="0" variant="text" :class="{ 'is-active': isActive ? isActive(): null }" :title="title" :aria-label="title" :aria-pressed="isActive ? (isActive() ? 'true' : 'false') : undefined" @click.stop.prevent="action">
     <v-icon>{{ icon }}</v-icon>
   </v-btn>
 </template>
@@ -35,23 +35,32 @@
   background: transparent;
   border: none;
   color: $wysiwyg-toolbar-color;
-  border-radius: 8px;
+  border-radius: var(--cms-radius-sm) !important;
   width: 32px;
   height: 32px;
   cursor: pointer;
 
   .v-icon {
     color: $wysiwyg-toolbar-color;
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
   }
-  &.is-active,
   &:hover {
     background-color: $wysiwyg-toolbar-hover-background;
+  }
+  &.is-active {
+    background-color: var(--cms-primary-soft);
     .v-icon {
-      color: white;
+      color: var(--cms-on-primary-soft);
     }
+  }
+}
+
+@media (pointer: coarse) {
+  .menu-item {
+    width: 40px;
+    height: 40px;
   }
 }
 </style>

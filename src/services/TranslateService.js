@@ -8,7 +8,16 @@ class TranslateService {
   constructor () {
     // reactive: the app renders before the dictionaries are loaded, and what it rendered must fill in when they arrive
     this.dict = reactive({})
-    this.locale = 'enUS'
+    // reactive too: what shows the language (the date pickers, for one) follows a change of it
+    this.state = reactive({ locale: 'enUS' })
+  }
+
+  get locale () {
+    return this.state.locale
+  }
+
+  set locale (locale) {
+    this.state.locale = locale
   }
 
   async init () {

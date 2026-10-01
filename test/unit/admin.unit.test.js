@@ -30,6 +30,15 @@ describe('admin plugin (unit)', () => {
       expect(res.body).to.have.property('username', 'localAdmin')
       expect(res.body).to.not.have.property('password')
     })
+    it('tells the language and the theme the user chose, so the admin opens in them', async () => {
+      const user = await auth.users.find({ username: 'editor' })
+      await auth.users.update(user._id, { language: 'zhCN', theme: 'dark' })
+      const { agent } = await loginAs('editor', 'editorPass')
+      const status = await agent.get('/admin/login')
+      expect(status.status).to.equal(200)
+      expect(status.body).to.include({ username: 'editor', language: 'zhCN', theme: 'dark' })
+      await auth.users.update(user._id, { language: '', theme: 'light' })
+    })
     it('answers 401 for wrong credentials and sets no cookie', async () => {
       const { res } = await loginAs('localAdmin', 'wrong')
       expect(res.status).to.equal(401)

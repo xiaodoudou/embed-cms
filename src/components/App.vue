@@ -15,9 +15,7 @@
           <nav-bar
             v-if="resourceList.length > 0" :config="config" :toolbar-title="toolbarTitle" :select-resource-callback="selectResourceAndCloseNav" :grouped-list="groupedList"
             :selected-item="selectedResource || selectedPlugin" :nav-open="navOpen" :rail="navMode === 'rail'" @toggle-nav="toggleNav"
-          >
-            <locale-list v-if="localeList" :locale-list="localeList" />
-          </nav-bar>
+          />
           <div class="cms-body">
             <div class="cms-nav-wrap" :class="`mode-${navMode}`" :style="navStyle">
               <aside id="cms-nav" class="cms-nav" :class="{open: navOpen, 'is-rail': navMode === 'rail'}" :aria-label="$filters.translate('TL_NAVIGATION')" @keydown.esc="closeNav">
@@ -113,7 +111,6 @@
   import ResourceService from '@s/ResourceService'
   import Notification from '@m/Notification'
   import Loading from '@c/Loading.vue'
-  import LocaleList from '@c/LocaleList.vue'
   import NavBar from '@c/NavBar.vue'
   import ResourceList from '@c/ResourceList.vue'
   import RecordList from '@c/RecordList.vue'
@@ -126,7 +123,8 @@
   import ToastHost from '@c/ToastHost.vue'
   import DesignSystem from '@c/pages/DesignSystem.vue'
   import UploadService from '@s/UploadService'
-  import { applyThemeToDocument, pickTheme } from '@u/theme'
+  import { applyThemeToDocument, pickTheme, savedUserTheme } from '@u/theme'
+  import { savedUserLanguage } from '@u/locale'
   import { getRecordLabel, getResourceLabel } from '@u/recordLabel'
   import NavRail from '@c/NavRail.vue'
   import { readPreference, writePreference, readNumber } from '@u/preferences'
@@ -145,7 +143,6 @@
       MultiselectPage,
       RecordEditor,
       Loading,
-      LocaleList,
       RecordTable,
       UpdatesNotifier,
       UploadPanel,
@@ -160,7 +157,6 @@
         locale: 'enUS',
         resourceList: [],
         selectedResource: null,
-        localeList: [],
         recordList: [],
         allowedPlugins: [],
         crumbHint: '',
@@ -375,7 +371,6 @@
           return _.isUndefined(resource.allowed) ||  _.includes(resource.allowed, this.user.group)
         })
         ResourceService.setSchemas(this.resourceList)
-        this.localeList = TranslateService.config.locales
         const routed = this.$route.query.id != null ? _.find(_.union(this.pluginList, this.resourceList), {title: this.$route.query.id}) : undefined
         if (routed) {
           this.selectResource(routed)
@@ -523,6 +518,10 @@
           const theme = pickTheme(ConfigService.config, _.get(this.user, 'theme', 'light'))
           if (theme === 'light') {
             this.user.theme = 'light'
+          }
+          // the language the person chose for the admin, when it is one of the languages of this CMS
+          if (_.includes(TranslateService.getLocales(), _.get(this.user, 'language'))) {
+            TranslateService.setLocale(this.user.language)
           }
           this.$vuetify.theme.dark = theme === 'dark'
           const themeName = applyThemeToDocument(theme)
@@ -758,9 +757,34 @@
           updatedRecord = _.isUndefined(updatedRecord) ? (_.get(this.selectedResource, 'view') === 'table' ? null : {_local: true}) : updatedRecord
           // after a save or a delete the editor state is replaced on purpose: no leave prompt
           this.selectRecord(updatedRecord, true)
+          this.applySavedPreferences(updatedRecord)
         } catch (error) {
           console.error('Error happen during updateRecordList:', error)
         }
+      },
+      // a person who changes the theme or the language of their own user is shown it at once, not at the next login
+      applySavedPreferences (record) {
+        const language = savedUserLanguage(_.get(this.selectedResource, 'title'), record, this.user, TranslateService.getLocales(), _.get(this.user, 'language') || _.get(TranslateService.config, 'defaultLocale', 'enUS'))
+        if (language) {
+          // the whole admin is written in this language (menus, titles, schemas, pickers): the page starts again in it, and the
+          // status of the user (which carries the language) puts it back on the next visit too
+          this.user.language = language
+          TranslateService.setLocale(language)
+          setTimeout(() => window.location.reload(), 600)
+          return
+        }
+        const theme = savedUserTheme(_.get(this.selectedResource, 'title'), record, this.user, ConfigService.config)
+        if (!theme) {
+          return
+        }
+        this.user.theme = theme
+        this.$vuetify.theme.dark = theme === 'dark'
+        applyThemeToDocument(theme)
+        if (_.isFunction(_.get(this.$vuetify, 'theme.change'))) {
+          this.$vuetify.theme.change(theme)
+        }
+        LoginService.events.emit('changed-theme', theme)
+        this.$forceUpdate()
       },
       unsetSelectedRecord () {
         this.selectedRecord = null

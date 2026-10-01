@@ -46,7 +46,6 @@ const stubs = {
   UploadPanel: stub('UploadPanel'),
   ToastHost: stub('ToastHost'),
   AppDialog: stub('AppDialog'),
-  LocaleList: stub('LocaleList'),
   Loading: stub('Loading'),
   RecordList: { ...RecordList, template: undefined, render: () => null, name: 'RecordList', props: ['list', 'selectedItem', 'resource'], emits: ['select-item', 'select-multiselect', 'change-multiselect-items', 'update-record-list'] },
   RecordEditor: { name: 'RecordEditor', props: ['record', 'resource', 'locale', 'userLocale'], emits: ['update:record', 'update:locale', 'update-record-list', 'back'], template: '<div class="stub-RecordEditor" />' }

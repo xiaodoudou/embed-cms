@@ -142,7 +142,10 @@
   align-items: center;
   justify-content: center;
   padding: var(--cms-space-4);
-  background-color: var(--cms-bg);
+  // a soft glow of the accent colour behind the card, fading into the page
+  background:
+    radial-gradient(900px 480px at 50% 18%, var(--cms-primary-soft), transparent 70%),
+    var(--cms-bg);
   color: var(--cms-text);
   opacity: 0;
   transition: opacity var(--cms-motion-base) var(--cms-ease);
@@ -153,17 +156,33 @@
 }
 .login-canvas {
   width: 100%;
-  max-width: 400px;
-  padding: var(--cms-space-8) var(--cms-space-8) var(--cms-space-6);
+  max-width: 420px;
+  padding: var(--cms-space-8) var(--cms-space-8) var(--cms-space-8);
   background: var(--cms-surface);
   border: 1px solid var(--cms-border);
   border-radius: var(--cms-radius-lg);
-  box-shadow: var(--cms-shadow-2);
+  box-shadow: var(--cms-shadow-3);
+  position: relative;
+  overflow: hidden;
+  transform: translateY(8px);
+  transition: transform var(--cms-motion-base) var(--cms-ease);
+}
+.login-canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--cms-primary), var(--cms-primary-hover) 60%, var(--cms-primary-soft));
+}
+.displayed .login-canvas {
+  transform: none;
 }
 .login-brand {
   display: flex;
   justify-content: center;
-  margin-bottom: var(--cms-space-6);
+  margin-bottom: var(--cms-space-5);
+  transform: scale(1.25);
+  transform-origin: center;
 }
 .node-cms-title {
   margin: 0 0 var(--cms-space-5);

@@ -8,6 +8,9 @@ work on it, the tests, and how commits are written here. For how the code fits t
 
 You need Node.js 22.12 or later (CI runs Node 22) and git.
 
+Use npm 10 or 11: npm 12 refuses by default the dependencies fetched from a URL, and `vue3-shortkey` (a fork, pinned to a commit)
+is one of them. It is a development dependency, only bundled into the admin, so the published package does not need it.
+
 ```sh
 git clone https://github.com/xiaodoudou/embed-cms.git embed-cms
 cd embed-cms
@@ -80,7 +83,7 @@ A few tests guard the documentation:
 
 ## What CI checks
 
-`.github/workflows/test.yml` runs on every pull request and on `master`:
+`.github/workflows/test.yml` runs on every pull request and on `main`:
 
 1. `npx eslint lib src index.js test/unit test/security test/helpers test/bench` (no `--fix`: run `npm run lint` locally
    to fix what can be fixed);
@@ -124,7 +127,24 @@ line.
 
 ## Pull requests
 
-Open them against `master`. Describe the problem, the change, and how you checked it; screenshots for UI changes, in
+Open them against `main`. Describe the problem, the change, and how you checked it; screenshots for UI changes, in
 both themes when colours are involved. CI must be green before review.
 
 Security problems don't go in a public issue or pull request: see [SECURITY.md](SECURITY.md#reporting-a-vulnerability).
+
+## Releasing
+
+A release is a tag. With the version of `package.json` bumped and committed on `main` (a commit named "Release 3.0.2"), tag it and push the tag:
+
+```sh
+git tag -a v3.0.2 -m "embed-cms 3.0.2"
+git push origin v3.0.2
+```
+
+`.github/workflows/release.yml` then runs, in order: a check that the tag names the version of `package.json` and is on `main`, the same jobs
+as on every push, `npm publish`, and the GitHub release with its generated notes. A step that fails stops the next ones, so nothing is
+published from a red build. A tag with a prerelease suffix (`v3.1.0-rc.1`) is published under the `next` tag of npm and marked as a prerelease
+on GitHub.
+
+One-time setup, on npmjs.com: the package page, Settings, Trusted Publisher, GitHub Actions, with the repository `xiaodoudou/embed-cms` and the
+workflow file name `release.yml`. There is no token to store: the run proves its identity to npm, and the package gets its provenance badge.

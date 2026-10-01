@@ -125,6 +125,11 @@ How much the CMS itself prints is set by the `LOG_LEVEL` environment variable: `
 `verbose`, `debug` or `silent`. Requests a client got wrong (a duplicate key, a refused query) are logged at `debug`, so
 they don't fill the log with errors.
 
+In a terminal, the time, the level and the values of logged objects are coloured; written to a file or a pipe, lines stay
+plain. stdout and stderr (where warnings and errors go) are checked separately. `NO_COLOR=1` turns colours off and
+`FORCE_COLOR=1` turns them on, for example under a process manager that isn't a terminal. The log page shows the colours
+too, and reads the level of a coloured line as it would a plain one.
+
 The log page shows what the process prints, to every user whose group has the `plugins` right for it. Keep secrets out of
 log lines.
 

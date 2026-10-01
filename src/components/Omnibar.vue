@@ -125,6 +125,11 @@
           event.preventDefault()
           this.highlightedItem = moveHighlight(this.highlightedItem, event.key, this.results.length)
           this.scrollToResult()
+        } else if (event.key === 'Tab') {
+          // the switcher is a modal dialog and the field is its only stop: Tab walks the results instead of leaving for the page behind
+          event.preventDefault()
+          this.highlightedItem = moveHighlight(this.highlightedItem, event.shiftKey ? 'ArrowUp' : 'ArrowDown', this.results.length)
+          this.scrollToResult()
         } else if (event.key === 'Enter') {
           event.preventDefault()
           this.selectResult()

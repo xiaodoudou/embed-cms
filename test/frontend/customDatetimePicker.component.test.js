@@ -4,6 +4,7 @@ import VueDatePicker from '@vuepic/vue-datepicker'
 import Dayjs from 'dayjs'
 import CustomDatetimePicker from '@c/fields/CustomDatetimePicker.vue'
 import { mountField } from './helpers/mountField.js'
+import TranslateService from '@s/TranslateService'
 
 // The three kinds of schema FormService prepares for the input types date, time and datetime (see src/services/FormService.js).
 const KINDS = {
@@ -111,12 +112,19 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
       expect(inner().props('textInput')).toMatchObject({ format: 'yyyy-MM-dd HH:mm:ss', enterSubmit: true, tabSubmit: true })
     })
 
-    it('uses English for enUS and Chinese for the other locales', () => {
-      picker('date')
-      expect(inner().props('locale')).toBe('en')
-      wrapper.unmount()
-      picker('date', {}, { locale: 'zhCN' })
-      expect(inner().props('locale')).toBe('zh')
+    it('speaks the language of the person, not the language of the field they edit', () => {
+      const original = TranslateService.locale
+      try {
+        TranslateService.setLocale('enUS')
+        picker('date', {}, { locale: 'zhCN' })
+        expect(inner().props('locale')).toBe('en-US')
+        wrapper.unmount()
+        TranslateService.setLocale('zhCN')
+        picker('date', {}, { locale: 'enUS' })
+        expect(inner().props('locale')).toBe('zh-CN')
+      } finally {
+        TranslateService.setLocale(original)
+      }
     })
 
     it('follows the dark theme', () => {

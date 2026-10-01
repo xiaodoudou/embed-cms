@@ -42,6 +42,8 @@
   import AbstractField from '@m/AbstractField'
   import Dayjs from 'dayjs'
   import { toDateFnsFormat } from '@u/dateFormat'
+  import { localeTag } from '@u/locale'
+  import TranslateService from '@s/TranslateService'
 
   export default {
     mixins: [AbstractField],
@@ -94,8 +96,9 @@
       textInput () {
         return { format: toDateFnsFormat(this.schema.format), enterSubmit: true, tabSubmit: true, selectOnFocus: true, openMenu: 'toggle' }
       },
+      // the language of the person, not the language of the field they edit: a calendar in Chinese is for someone who reads Chinese
       locale() {
-        return this.schema.locale === 'enUS' ? 'en' : 'zh'
+        return localeTag(TranslateService.locale)
       }
     },
     created () {

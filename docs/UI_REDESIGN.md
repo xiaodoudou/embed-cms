@@ -42,7 +42,7 @@ The screenshots in `docs/ui/` were taken during the redesign. Only the ones this
 - Palette: derived from the three logo colours (see "Palette derivation" below). One hue only, plus muted functional status colours.
 - Type: system font stack (no font download), token scale 12/13/14/16/18/22/28 px in rem, weights 400/500/600/700, no italics for UI text, fixed sizes (no vw scaling). Inputs are 16px on phones so iOS does not zoom.
 - Shape and space: 4px spacing scale, radii 4/6/10/14/pill, two-level shadows.
-- Layout: app bar (menu, logo, resource search, language, theme, system/links, logout) plus a persistent left navigation of collapsible resource groups on desktop (at least 1280px). Below that the navigation is an off-canvas drawer with scrim, Escape to close and focus management. List + editor sit side by side from 768px; below that they are two steps (list, then editor with a Back button).
+- Layout: app bar (menu, logo, resource search, theme, system/links, logout; the language is the user's own setting, not a switch) plus a persistent left navigation of collapsible resource groups on desktop (at least 1280px). Below that the navigation is an off-canvas drawer with scrim, Escape to close and focus management. List + editor sit side by side from 768px; below that they are two steps (list, then editor with a Back button).
 - Field forms: labels above controls, uniform 40px (44px on touch) controls, one focus ring style, dirty fields marked with a dot and a warning border.
 - States: skeleton rows while loading, empty states for no resource selection, empty resources and no search results; toasts stay 2.5s (errors stay until closed) and are announced with `role="status"`.
 

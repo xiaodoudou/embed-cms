@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import ThemeSwitch from '@c/ThemeSwitch.vue'
-import LocaleList from '@c/LocaleList.vue'
 import PluginPage from '@c/pages/PluginPage.vue'
 import LoginService from '@s/LoginService'
 import TranslateService from '@s/TranslateService'
@@ -60,38 +59,6 @@ describe('ThemeSwitch (the dark theme button)', () => {
     await flushPromises()
     expect(wrapper.get('button').attributes('aria-checked')).toBe('false')
     expect(document.documentElement.dataset.theme).toBeUndefined()
-  })
-})
-
-describe('LocaleList (the language buttons)', () => {
-  beforeEach(() => {
-    TranslateService.dict.enUS.TL_ENUS = 'English'
-    TranslateService.dict.enUS.TL_ZHCN = 'Chinese'
-  })
-
-  it('shows nothing when there are fewer than two languages', () => {
-    wrapper = mountComponent(LocaleList, { props: { localeList: ['enUS'] } })
-    expect(wrapper.find('.locale-list').exists()).toBe(false)
-    wrapper.unmount()
-    wrapper = mountComponent(LocaleList, { props: {} })
-    expect(wrapper.find('.locale-list').exists()).toBe(false)
-  })
-
-  it('has a button for each language, and marks the one in use', () => {
-    TranslateService.locale = 'enUS'
-    wrapper = mountComponent(LocaleList, { props: { localeList: ['zhCN', 'enUS'] } })
-    const buttons = wrapper.findAll('button.locale')
-    expect(buttons.map((button) => button.text())).toEqual(['Chinese', 'English'])
-    expect(buttons.map((button) => button.classes('active'))).toEqual([false, true])
-    expect(buttons.map((button) => button.attributes('aria-pressed'))).toEqual(['false', 'true'])
-    expect(wrapper.get('.locale-list').attributes('aria-label')).toBe('Language')
-  })
-
-  it('changes the language of the app when a button is clicked', async () => {
-    const setLocale = vi.spyOn(TranslateService, 'setLocale').mockImplementation(() => {})
-    wrapper = mountComponent(LocaleList, { props: { localeList: ['enUS', 'zhCN'] } })
-    await wrapper.findAll('button.locale')[1].trigger('click')
-    expect(setLocale).toHaveBeenCalledWith('zhCN')
   })
 })
 

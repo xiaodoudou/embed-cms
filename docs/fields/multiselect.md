@@ -12,7 +12,7 @@ Catalogue: `resources/choice_multi.js` (group **Choice**, resource **Multiple ch
 
 ## Options
 
-Same as [select](select.md) (`source`, `options.labels`, `options.customLabel`, `options.extraSources`, `options.hint`, `options.readonly`, `options.disabled`, `required`, `localised`), plus:
+Same as [select](select.md) (`source`, `options.labels`, `options.customLabel`, `options.extraSources`, `options.subtitle`, `options.groupBy`, `options.hint`, `options.readonly`, `options.disabled`, `required`, `localised`), plus:
 
 | Option | Type | Default | Description |
 |---|---|---|---|

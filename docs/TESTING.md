@@ -40,11 +40,13 @@ when the first app closes), and can hand the host express app to `beforeMount` b
 Other helpers: `hardened(overrides)` (selects the hardened security profile with fresh random secrets), `randomSecret()`,
 `createUser(app)` and `withNodeEnv(value, fn)`. Secrets in tests are always generated, never literals.
 
-Two authentication modes exist and tests must pick the right one:
+The shared test options (`test/cmsInstance.js`) turn on both login modes (`disableJwtLogin: false`,
+`disableAuthentication: false`), unlike the defaults of a real install. Tests must pick the right one:
 
 - default (`disableAuthentication: false`): REST accepts HTTP Basic credentials, and the protected admin routes
   (`/admin/resources`, `/import`, `/replicator`, ...) accept a login **session** (`request.agent(...).post('/admin/login')`);
-- JWT mode (`disableAuthentication: true`): cookies are parsed and the JWT cookie authenticates every route.
+- JWT mode (pass `disableAuthentication: true`; `disableJwtLogin` is already `false`): cookies are parsed and the JWT
+  cookie authenticates every route.
 
 The security behaviour has two profiles (see `SECURITY.md`). Tests run on the `legacy` profile unless they call
 `hardened()`; a security regression test normally runs on both, to show what the default keeps and what the profile fixes.

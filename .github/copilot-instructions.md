@@ -141,7 +141,7 @@ These rules provide deep context for the `node-cms` repository.
 
 ### 3.1. Architecture Overview
 - **Core:** A flexible CMS built on Express.js. The main class is exported from `index.js`. Core data logic is in `lib/resource.js`.
-- **Storage:** Uses a dual-store system: JSON documents for metadata and chunked blobs for file attachments. Supports LevelDB (default) and MongoDB.
+- **Storage:** Records go to a JSON file per resource by default (`lib/db/leveldown/jsondown.js`), or to MongoDB or PostgreSQL (`dbEngine`); attachments are plain files per resource (`lib/db/file_store.js`). See `docs/ARCHITECTURE.md`.
 - **Plugins:** Features are modular and located in `lib/plugins/` (e.g., REST API, admin UI, authentication).
 - **Resources:** Data models are defined by schemas in `resources/*.js`. These schemas auto-generate the REST API and the admin UI.
 - **Frontend:** The admin panel is a Vue 3 application using the Vuetify component library, built with Vite.

@@ -1,17 +1,26 @@
 # Security
 
-This document describes what the backend protects, the options that control it, a hardening checklist for a
-deployment, how to report a vulnerability, and the changelog of the hardening work (every option added and its default).
+node-cms holds content, user accounts and files, and often sits on the public internet, so its protections matter. The
+short version:
 
-The backend audit that led to these changes, with a proof of concept for each finding, is in
-[docs/BACKEND_AUDIT.md](docs/BACKEND_AUDIT.md).
+- **Run production with `NODE_ENV=production`.** That selects the `hardened` profile, which turns on every protection
+  below: strong secrets are required, no `localAdmin` account, scrypt password hashes, CSRF checks, secure cookies,
+  security headers, upload limits, safe attachment downloads, authenticated replication and more.
+- **Development keeps the `legacy` profile**, the behaviour of earlier releases, so existing setups and dev servers keep
+  working. Plain defects are fixed in both profiles.
+- **Any single protection can be set on its own** in the `security` block of `cms.json`, whichever profile is active.
+
+This page lists every setting with its value in each profile, gives the recommended production configuration and a
+hardening checklist, and says how to report a vulnerability. The audit that led to these protections, with a proof of
+concept for each finding, is kept as a record in [docs/BACKEND_AUDIT.md](docs/BACKEND_AUDIT.md). The other options of
+`cms.json` are in [docs/CONFIG.md](docs/CONFIG.md).
 
 ## Reporting a vulnerability
 
 Please do not open a public issue for a security problem.
 
-- Send the details privately to the maintainers of the repository (open a *private security advisory* on the repository,
-  or write to the address of the maintainer given in `package.json`).
+- Send the details privately to the maintainers: open a *private security advisory* on the GitHub repository (Security
+  tab, "Report a vulnerability").
 - Say which version or commit you tested, what you did, what you saw, and what you expected. A failing request or a short
   script is the best report.
 - You will get an answer within a few working days. Fixes are released with an entry in the changelog below, and the
@@ -230,7 +239,7 @@ Run with `NODE_ENV=production` (the `hardened` profile), then check:
 
 ## Changelog
 
-### Unreleased (branch `claude/backend-hardening`)
+### Backend hardening (merged in PR #1)
 
 Options added, with defaults (see the tables above for the profile dependent ones):
 

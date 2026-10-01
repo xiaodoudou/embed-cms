@@ -99,4 +99,57 @@ describe('SyslogManager backlog and capture (unit)', () => {
       expect(text.split('direct-stdout-marker').length - 1, 'stdout.write').to.equal(1)
     })
   })
+
+  describe('very long logs', () => {
+    it('cuts a line longer than syslog.maxLineLength, and says how much is missing', () => {
+      sys.options = { syslog: { maxLineLength: 20 } }
+      sys.injectDataToSyslogData('INFO ' + 'x'.repeat(1000))
+      const [item] = sys.syslogData
+      expect(item.line.startsWith('INFO ' + 'x'.repeat(15))).to.equal(true)
+      expect(item.line).to.contain('line cut, 985 more characters')
+      expect(item.level).to.equal(0)
+    })
+
+    it('never leaves half a colour code at the cut, and keeps lines whole when the limit is 0', () => {
+      sys.options = { syslog: { maxLineLength: 6 } }
+      const colour = String.fromCharCode(27) + '[31m'
+      expect(sys.capLine('abcde' + colour + 'red')).to.not.contain(String.fromCharCode(27))
+      sys.options = { syslog: { maxLineLength: 0 } }
+      expect(sys.capLine('y'.repeat(50000))).to.have.length(50000)
+    })
+
+    it('drops a page that does not read, and keeps feeding the others', () => {
+      sys.options = { syslog: { maxClientBuffer: 100 } }
+      const written = []
+      const make = (writableLength) => ({ writableLength, write: (m) => written.push(m), end () { this.ended = true } })
+      const slow = make(1000)
+      const fast = make(0)
+      sys.logClients = [slow, fast]
+      sys.sendToClients({ id: 1, line: 'INFO hello' })
+      expect(slow.ended).to.equal(true)
+      expect(sys.logClients).to.deep.equal([fast])
+      expect(written).to.have.length(1)
+    })
+
+    it('copies the log file to <path>.1 and empties it once it passes syslog.maxFileSize', async () => {
+      sys.options = { syslog: { maxFileSize: 100 } }
+      const text = ('INFO a line' + os.EOL).repeat(20)
+      await fs.writeFile(file, text)
+      sys.rotateLogFile(file)
+      expect((await fs.stat(file)).size).to.equal(0)
+      expect(await fs.readFile(`${file}.1`, 'utf8')).to.equal(text)
+      await fs.remove(`${file}.1`)
+    })
+
+    it('leaves a file under the limit alone, and every file when the limit is 0', async () => {
+      const text = ('INFO a line' + os.EOL).repeat(20)
+      await fs.writeFile(file, text)
+      sys.options = { syslog: { maxFileSize: 10000 } }
+      sys.rotateLogFile(file)
+      sys.options = { syslog: { maxFileSize: 0 } }
+      sys.rotateLogFile(file)
+      expect((await fs.stat(file)).size).to.equal(text.length)
+      expect(await fs.pathExists(`${file}.1`)).to.equal(false)
+    })
+  })
 })

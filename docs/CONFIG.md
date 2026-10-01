@@ -116,6 +116,14 @@ from. The behaviour depends on the operating system, so read this table carefull
 `syslog.max` (default `2000`) is the number of lines kept in memory and sent to a page that opens. On Linux,
 `journalctl` and `syslog` need an `identifier`: without one nothing is captured.
 
+A very long log is kept in check by three more settings (set any of them to `0` to turn it off):
+
+| Setting | Default | What it does |
+|---|---|---|
+| `syslog.maxLineLength` | `10000` | A longer line is cut on the page, with the number of characters left out. The file keeps it whole. |
+| `syslog.maxFileSize` | `10485760` (10 MB) | With the `file` method, a log file past this size is copied to `<path>.1` (replacing the previous copy) and emptied. Checked at start-up and every minute. |
+| `syslog.maxClientBuffer` | `8388608` (8 MB) | A page that stops reading is dropped once this many bytes wait for it. It reconnects by itself. |
+
 `{ "method": "command", "command": "tail -F /var/log/app.log" }` follows the output of any command, on every operating
 system and without an `identifier`. It runs through the shell, so pipes work, and it is started again 2 seconds after it
 exits, which makes it a poor fit for one-shot commands.

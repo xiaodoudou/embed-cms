@@ -1,6 +1,6 @@
 {
   "name": "embed-cms",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Content management system, written in node.js, uses leveldb as an asset and content store.",
   "main": "index.js",
   "types": "index.d.ts",
@@ -53,6 +53,13 @@
     "type": "git",
     "url": "git+https://github.com/xiaodoudou/embed-cms.git"
   },
+  "bugs": {
+    "url": "https://github.com/xiaodoudou/embed-cms/issues"
+  },
+  "homepage": "https://github.com/xiaodoudou/embed-cms#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "cms",
     "node.js",
@@ -66,9 +73,9 @@
     ]
   },
   "bin": {
-    "cms": "./server.js",
-    "cms-import": "./import.js",
-    "cms-import-remote": "./importFromRemote.js"
+    "cms": "server.js",
+    "cms-import": "import.js",
+    "cms-import-remote": "importFromRemote.js"
   },
   "author": "Edouard Durand",
   "license": "GPL-3.0-only",

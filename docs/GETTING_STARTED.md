@@ -12,11 +12,11 @@ If a word is unfamiliar (resource, locale, paragraph), [CONCEPTS.md](CONCEPTS.md
 embed-cms is an Express application you mount in yours. In your project folder:
 
 ```sh
-npm install git+https://github.com/xiaodoudou/embed-cms.git express
+npm install embed-cms express
 ```
 
-The install builds the admin app as it goes (it takes a minute or two, for the build tools). If you add admin pages of
-your own in `embed-cms/plugins/` at the root of your project, rebuild it so they are included:
+The package comes with the admin app already built. If you add admin pages of your own in `embed-cms/plugins/` at the root
+of your project, rebuild it so they are included (it takes a minute or two, for the build tools):
 
 ```sh
 cd node_modules/embed-cms

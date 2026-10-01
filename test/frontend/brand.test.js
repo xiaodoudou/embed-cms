@@ -14,7 +14,8 @@ const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((entr
   if (entry.isDirectory()) {
     return SKIP.has(entry.name) || entry.name.startsWith('.tmp') ? [] : walk(full)
   }
-  return TEXT.test(entry.name) && entry.name !== 'package-lock.json' && entry.name !== 'brand.test.js' ? [full] : []
+  // LICENSE keeps the MIT notice of the code this version builds on, with its copyright line, as that license requires
+  return TEXT.test(entry.name) && !['package-lock.json', 'brand.test.js', 'LICENSE'].includes(entry.name) ? [full] : []
 })
 
 describe('brand', () => {

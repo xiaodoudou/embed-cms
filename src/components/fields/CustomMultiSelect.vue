@@ -53,7 +53,7 @@
   import AbstractField from '@m/AbstractField'
   import TranslateService from '@s/TranslateService'
   import Notification from '@m/Notification'
-  import * as Mustache from 'mustache'
+  import Mustache from 'mustache'
   import { highlightSegments, withGroupHeadings } from '@u/highlight'
 
   export default {

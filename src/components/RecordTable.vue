@@ -87,7 +87,7 @@
 <script>
 
   import _ from 'lodash'
-  import * as Mustache from 'mustache'
+  import Mustache from 'mustache'
 
   import TranslateService from '@s/TranslateService'
   import NotificationsService from '@s/NotificationsService'

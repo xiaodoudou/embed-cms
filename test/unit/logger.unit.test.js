@@ -22,6 +22,15 @@ describe('logger (unit)', () => {
     expect(require('../../lib/logger')).to.equal(shared)
   })
 
+  it('writes nothing at the silent level, not even errors', () => {
+    const quiet = new Logger({ level: 'silent' })
+    quiet.error('boom')
+    quiet.warn('careful')
+    quiet.info('hello')
+    quiet.debug('details')
+    expect(calls).to.have.length(0)
+  })
+
   it('writes an ISO timestamp, the level and the message', () => {
     new Logger().info('hello')
     expect(calls).to.have.length(1)

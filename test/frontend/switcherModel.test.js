@@ -23,6 +23,13 @@ describe('buildEntries', () => {
 })
 
 describe('searchEntries', () => {
+  it('finds a name from letters that are far apart (an abbreviation), not only from a part of it', () => {
+    // fuzzysort 3 and later hide such weak matches unless the search says otherwise
+    expect(searchEntries(entries, 'atcs').map((r) => r.displayname)).toContain('articles')
+    expect(searchEntries(entries, 'ssl').map((r) => r.displayname)).toContain('Syslog')
+    expect(searchEntries(entries, 'aths').map((r) => r.displayname)).toContain('authors')
+  })
+
   it('finds resources and plugins by name', () => {
     expect(searchEntries(entries, 'artic').map((r) => r.displayname)).toEqual(['articles'])
     expect(searchEntries(entries, 'sysl').map((r) => r.type)).toEqual(['plugin'])

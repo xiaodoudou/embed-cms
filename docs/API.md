@@ -96,6 +96,10 @@ Documents:
     PUT    /api/:resource/:id
     DELETE /api/:resource/:id
 
+A record made by another machine of a replicated setup (its id names that machine) cannot be changed or deleted here: `PUT` and
+`DELETE` answer `403` with `Can't modify foreign records`, and the record stays. A delete the store fails to carry out answers `500`;
+it is never reported as done.
+
 Attachments:
 
     GET    /api/:resource/:id/attachments/:id

@@ -723,6 +723,10 @@
           return
         }
         const wanted = this.$route.query.record
+        // the address already says what is open (the app wrote it itself: a new blank record has no id in it): nothing to do
+        if ((_.get(this.selectedRecord, '_id') || undefined) === (wanted || undefined)) {
+          return
+        }
         const record = wanted ? _.find(this.recordList, {_id: wanted}) : null
         if (wanted && !record) {
           return

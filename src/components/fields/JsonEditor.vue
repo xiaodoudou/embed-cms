@@ -40,6 +40,11 @@
       if (this.modalObserver) {
         this.modalObserver.disconnect()
       }
+      // the library keeps listeners and the form it built until it is told to go: switching records builds and drops many editors
+      if (this.editor) {
+        this.editor.destroy()
+        this.editor = null
+      }
       if (this.modalHost) {
         this.modalHost.remove()
       }
@@ -329,10 +334,12 @@
         }
       }
       this.editor = new JSONEditor(element, options)
-      if (this.disabled) {
-        this.editor.disable()
-      }
       this.editor.on('ready', () => {
+        // the library builds its form after the constructor returns: disabling it any sooner throws (and, in this hook, kept a
+        // locked field from ever showing its values)
+        if (this.disabled) {
+          this.editor.disable()
+        }
         this.originalValue = this.editor.getValue()
         const value = _.extend(this.originalValue, _.get(this.model, this.schema.model))
         this.editor.setValue(value)

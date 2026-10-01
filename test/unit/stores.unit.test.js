@@ -60,7 +60,10 @@ describe('JsonStore (unit)', () => {
   })
   it('refuses to update a record created by another node', async () => {
     const foreign = 'abcdefghOTHERMID0001'
-    expect(await store.update(foreign, { name: 'x' })).to.deep.equal({ error: 'Can\'t modify foreign records' })
+    const error = await store.update(foreign, { name: 'x' }).then(() => null, (e) => e)
+    expect(error, 'an update of a foreign record throws').to.be.instanceOf(Error)
+    expect(error.code).to.equal('EFOREIGN')
+    expect(error.message).to.equal('Can\'t modify foreign records')
   })
   it('rejects updating a record that does not exist', async () => {
     let failed = false
@@ -71,11 +74,13 @@ describe('JsonStore (unit)', () => {
     }
     expect(failed).to.equal(true)
   })
-  it('removes a record and reports foreign records', async () => {
+  it('removes a record and throws for foreign records', async () => {
     await store.create(id(1), { _id: id(1) })
     expect(await store.remove(id(1))).to.equal(true)
     expect(await store.find(id(1))).to.equal(undefined)
-    expect(await store.remove('abcdefghOTHERMID0001')).to.deep.equal({ error: 'Can\'t modify foreign records' })
+    const error = await store.remove('abcdefghOTHERMID0001').then(() => null, (e) => e)
+    expect(error, 'a remove of a foreign record throws').to.be.instanceOf(Error)
+    expect(error.code).to.equal('EFOREIGN')
   })
   it('read returns every record, or at most `limit`', async () => {
     for (let i = 1; i <= 5; i++) await store.create(id(i), { _id: id(i), n: i })

@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import * as Mustache from 'mustache'
+import Mustache from 'mustache'
 import TranslateServiceLib from '@s/TranslateService'
 import FormService from '@s/FormService'
 import ResourceService from './ResourceService'

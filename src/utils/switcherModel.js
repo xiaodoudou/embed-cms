@@ -41,6 +41,9 @@ export function searchEntries (entries, query, currentLabel = '') {
   }
   const results = fuzzysort.go(query, entries, {
     keys: ['displayname'],
+    // fuzzysort 3 and later hide weak matches unless told otherwise; an abbreviation ("stg" for Settings) is a weak match and is
+    // what a quick switcher is for: any name that contains the letters in order is a result, as it was with fuzzysort 2
+    threshold: 0,
     scoreFn: (a) => (a[0] ? a[0].score + (currentLabel && a[0].target === currentLabel ? 10000000 : 0) : -10000000)
   })
   return _.compact(_.map(results, (result) => {

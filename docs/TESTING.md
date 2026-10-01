@@ -6,7 +6,7 @@ There are three suites, plus a benchmark and a database contract suite. All of t
 | Command | What it runs | Notes |
 |---|---|---|
 | `npm run test:unit` | `test/unit` and `test/security` (mocha) | In-process, no fixed ports, no shared state |
-| `npm run test:frontend` | `test/frontend` (vitest + jsdom) | Validators, HTML helpers, services |
+| `npm run test:frontend` | `test/frontend` (vitest + jsdom) | Pure logic (validators, table model, dirty tracker, services) and real components mounted with Vuetify |
 | `npm test` | `test/runTests.js` (legacy HTTP integration suite) | Starts a server; set `TEST_PORT` to avoid clashes (default 9990) |
 | `npm run test:coverage` | the unit suite under `c8` | Prints a coverage summary for `lib/` and `index.js` |
 | `npm run test:all` | all of the above | |
@@ -49,6 +49,19 @@ Two authentication modes exist and tests must pick the right one:
 The security behaviour has two profiles (see `SECURITY.md`). Tests run on the `legacy` profile unless they call
 `hardened()`; a security regression test normally runs on both, to show what the default keeps and what the profile fixes.
 
+## Quiet logs
+
+The CMS logs every refused request, failed login and boot warning, and the tests provoke all of them on purpose, so `.mocharc.cjs` loads
+`test/helpers/quiet.js`, which sets the log level to `silent`. A run prints test results, not stack traces. When a test fails and you want
+the CMS's side of the story, run it with the logs back on:
+
+```bash
+TEST_LOGS=1 npx mocha test/unit/rest.errors.unit.test.js
+```
+
+Setting `LOG_LEVEL` does the same (`LOG_LEVEL=debug` shows even the refused requests, which are logged at debug level). A test that checks
+what is logged patches `logger.warn` and friends itself (see `test/unit/logging.refused.unit.test.js`), so it does not depend on the level.
+
 ## Layout
 
 | Path | Covers |
@@ -64,6 +77,28 @@ The security behaviour has two profiles (see `SECURITY.md`). Tests run on the `l
 | `test/unit/xlsx*`, `sync*`, `import*`, `importFromRemote*`, `replicator*` | The plugins (these replace the old, disabled `test/xlsx|sync|import|importFromRemote.test.js`, which accepted 404 as a pass) |
 | `test/unit/cms.class*` | Configuration, secrets, plugin loading, resources, paragraphs, lifecycle |
 | `test/frontend/` | `validators`, `sanitizeHtml`, the request/translate/login/resource/config services |
+
+## Component tests
+
+`test/frontend/*.component.test.js` mount real components with `@vue/test-utils`, inside jsdom. `test/frontend/helpers/mountField.js`
+builds the same environment as the app (Vuetify with its icon set, the `$filters` global, the real English dictionary from
+`i18n/enUS.json`, so a test reads what a person sees and a renamed translation key fails it).
+
+```js
+import CustomCheckbox from '@c/fields/CustomCheckbox.vue'
+import { mountField, mountComponent } from './helpers/mountField.js'
+
+const wrapper = mountField(CustomCheckbox, { model: {}, schema: { model: 'flag', label: 'Flag' } })
+await wrapper.get('[role=switch]').trigger('click')
+expect(wrapper.emitted('input')[0]).toEqual([true, 'flag'])
+```
+
+`mountField` is for the fields (props `model` and `schema`); `mountComponent` for everything else. `test/frontend/helpers/setup.js` stubs what
+jsdom lacks (`ResizeObserver`, `matchMedia`, `scrollIntoView`). jsdom has no layout, so tests check structure, attributes, classes, emitted events
+and state, not pixel positions: layout and appearance stay a matter for the browser (and the design-system test, which reads the CSS).
+
+Two things bite in jsdom: a list that uses the virtual scroller needs a stand-in that renders every item (see `recordList.component.test.js`), and a component that marks the records it is given (the record list does) needs its own copies of them in every test. The record editor ignores changes for 700 ms after it opens (fields fill in their own defaults), so a test that edits the model advances its fake timers first (see `recordEditor.component.test.js`). `app.component.test.js` mounts `App` with a real router (memory history) and fake timers, because the address follows the selection 60 ms later, and the services are mocked with `vi.mock`. `paragraphView.component.test.js` stands in for the draggable list and the nested form and mocks `ResourceService` and `SchemaService` (the paragraph types come from `getParagraphSchema`, which must return a fresh copy each time because the component edits what it gets). `jsonEditor.component.test.js` runs the real library: it builds its form a moment after the constructor returns, so a test waits for `originalValue` (set when it is ready) and for the library's own changes with `vi.waitFor`; CodeMirror needs the `Range` measurements stubbed in `helpers/setup.js`. The navigation tests share a small menu in `helpers/navFixtures.js`, advance fake timers for the rail's hover delays, and stub `offsetParent` where the keyboard code asks which buttons are shown (jsdom has no layout). Also: a field sets its password-manager attributes one tick after mounting (`await wrapper.vm.$nextTick()`), and timers (toasts) are
+tested with `vi.useFakeTimers()`.
 
 ## Driver contract suite
 
@@ -114,7 +149,9 @@ the moment.
 - The MongoDB driver contract tests were written without a MongoDB server at hand: the `drivers` CI job is their first run, and the PostgreSQL driver runs
   the contract suite but not the two-node replication scenarios.
 - `OSSHelper` upload and download paths (needs `ali-oss` stubbed) and the smart-crop internals.
-- Vue components, `FormService` and `SchemaService` (they pull in the whole Vuetify component map).
+- Most Vue components: the switch, the text input and textarea, the pillbox, the select fields, the colour picker, the toasts, the dialog, the search field, the record list, the record editor (with its form stood in for), the app itself (routing, the address, the unsaved-edits guard, the breadcrumb, with its children stood in for), the blocks field (`ParagraphView`), the object and list fields (`JsonEditor`, with the real @json-editor library and CodeMirror) the navigation (the collapsed rail with its flyouts, the expanded resource list, the quick switcher) and the table (grid, cell, column menu) are mounted so far (see
+  [Component tests](#component-tests)). the date pickers and the top bar (`NavBar`) are the next ones, and
+  `FormService` and `SchemaService` (they pull in the whole Vuetify component map).
 
 ## Random ETIMEDOUT failures on one machine
 
@@ -141,3 +178,27 @@ MOCHA_RETRIES=2 npm run test:unit    # 654 passing, 0 failing on that machine
 ```
 
 CI leaves `MOCHA_RETRIES` unset, so a test that really is flaky stays visible there.
+
+### Or run the tests in WSL
+
+On Windows, a WSL Ubuntu runs the whole backend suite without the connection problem, and it can host the databases the CI `drivers`
+job uses, which Docker Desktop could not do on the machine above (Windows refused to create unix sockets, so Docker would not start).
+In Ubuntu 24.04:
+
+```bash
+sudo apt-get install -y postgresql                       # PostgreSQL 16
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres'"
+# MongoDB 7: add MongoDB's apt repository (jammy/mongodb-org/7.0 works on 24.04), then
+sudo apt-get install -y mongodb-org-server
+mongod --dbpath ~/mongo-data --bind_ip 127.0.0.1 --fork --logpath ~/mongod.log
+
+git clone /mnt/d/path/to/node-cms ~/node-cms && cd ~/node-cms && npm ci   # a copy on the Linux disk: much faster than /mnt
+REQUIRE_DATABASES=1 \
+TEST_POSTGRES_URL=postgres://postgres:postgres@localhost:5432/postgres \
+TEST_MONGODB_URL=mongodb://localhost:27017 npm run test:unit            # 803 passing, 0 failing, about 30 seconds
+```
+
+A flaky test is easiest to catch by repeating it: loop `npx mocha test/unit/drivers.contract.test.js --grep "unique keys"` a few
+hundred times. That is how the record id bug (an id whose time part ends in "42" looked foreign to a machine id made of "42"s, see
+`lib/util/localId.js`) was found: a test that failed 2 runs in 150 was written as a loop of its own, and then failed 250 times in 800.
+

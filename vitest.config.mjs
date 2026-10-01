@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -6,7 +7,10 @@ const src = (folder) => path.resolve(path.dirname(fileURLToPath(import.meta.url)
 
 // Same aliases as vite.config.js, without the plugin symlink side effects of vite.utils.js
 export default defineConfig({
+  plugins: [vue()],
   resolve: {
+    // as in the app: an import may leave out the .vue
+    extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json', '.vue'],
     alias: {
       '@s': src('services'),
       '@u': src('utils'),
@@ -22,6 +26,10 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['test/frontend/**/*.test.js'],
-    restoreMocks: true
+    setupFiles: ['test/frontend/helpers/setup.js'],
+    restoreMocks: true,
+    // Vuetify ships ESM with css imports: let vite process it
+    server: { deps: { inline: ['vuetify'] } },
+    css: false
   }
 })

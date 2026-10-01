@@ -233,6 +233,9 @@ Run with `NODE_ENV=production`, then check:
 - **The configuration editor is removed.** `/admin/cms-config` (a page that rewrote `cms.json` from the browser and restarted the
   process) no longer exists: nothing on the web can read or change the secrets, the ports or the plugin settings. Edit
   `cms.json` on the server. Hardening item 8 and the `redactConfig` setting follow from it.
+- **The mode without any authentication works.** With `disableAuthentication` and `disableJwtLogin` both on, the admin used to reload
+  for ever (the schemas of the paragraphs answered 401), showed nothing (the `anonymous` group had no right) and signed writes
+  "anonymous~false". The `anonymous` group now has every right in that mode, and an error line in the log says so at every start.
 - **The log cannot exhaust the disk or the memory.** A line over `syslog.maxLineLength` is cut on the log page, a log file over
   `syslog.maxFileSize` is rotated to `<path>.1`, and a page that stops reading is dropped after `syslog.maxClientBuffer` bytes
   (see [CONFIG.md](docs/CONFIG.md)).

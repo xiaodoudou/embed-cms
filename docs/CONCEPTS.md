@@ -126,7 +126,8 @@ preferences for their own admin: a **Theme** (light or dark, when [dark mode](CO
 **Language** (one of the [admin's languages](CONFIG.md#features-you-can-switch)). Both apply when they log in, and at once when
 they save their own user. Two groups always
 exist. **`admins`** is given every right on every resource at each start. **`anonymous`** is the group of requests
-without a login, and has no rights until you give it some, for example with [`anonymousRead`](CONFIG.md#features-you-can-switch).
+without a login, and has no rights until you give it some, for example with [`anonymousRead`](CONFIG.md#features-you-can-switch)
+(unless both [login switches](CONFIG.md#authentication) are on, which opens everything to it).
 How people log in (browser prompt or login page) is set in [CONFIG.md](CONFIG.md#authentication).
 
 ## Group

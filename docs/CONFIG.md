@@ -78,7 +78,7 @@ combinations spelled out:
 | `false` | `true` | **The default.** HTTP Basic authentication. The browser shows its own login prompt for the admin, and REST clients send an `Authorization: Basic` header. |
 | `true` | `false` | Login page. The admin shows a login form; a successful login stores a JWT (valid 24 hours) in the `embedCmsJwt-<mid>` cookie (named after the `mid` of the server, so that two CMS on one host do not clear each other's login; the session cookie is `embedCmsSid-<mid>`, or the `session.name` you set). API clients get the token from `POST /admin/login` and send it back as an `x-access-token` header, a `token` query parameter or the cookie. |
 | `false` | `false` | Both. The admin shows the login page and uses the JWT cookie; REST clients can still send Basic credentials. |
-| `true` | `true` | No authentication at all. Everyone is the `anonymous` user and gets the rights of the `anonymous` group. |
+| `true` | `true` | No authentication at all. Everyone is the `anonymous` user. So that the admin has something to show (and its groups can be edited), the `anonymous` group is given every right on every resource at each start, like `admins`, and the log says so at every start. Only for a laptop or a private network: for public reads on a site that has logins, leave one switch off and use [`anonymousRead`](#features-you-can-switch). |
 
 Who may do what is decided by groups, not by these switches: see [Users, groups and rights](CONCEPTS.md#users-groups-and-rights).
 

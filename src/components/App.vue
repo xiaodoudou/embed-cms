@@ -395,6 +395,12 @@
         }
       } catch (error) {
         console.error('Error while getting resources: ', error)
+        if (_.get(window, 'noLogin', false)) {
+          // there is no session to end: logging out would only reload the page, which fails the same way, for ever
+          this.$loading.stop('init')
+          this.notify(_.get(error, 'message', 'Could not load the resources'), 'error')
+          return
+        }
         LoginService.logout()
       }
     },

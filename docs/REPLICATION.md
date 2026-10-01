@@ -1,6 +1,6 @@
 # Replication
 
-Replication keeps the records and files of a resource identical on several node-cms servers. The usual reason is a
+Replication keeps the records and files of a resource identical on several embed-cms servers. The usual reason is a
 fleet: one server where editors work, and several sites, kiosks or edge servers that should show the same content, or
 that collect data (logs, sign-ups) and send it back.
 

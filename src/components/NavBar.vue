@@ -60,7 +60,7 @@
         return /Mac|iPhone|iPad/.test(window.navigator.platform || '') ? '⌘ K' : 'Ctrl K'
       },
       settingsTitle () {
-        return _.get(this.settingsData, 'title', 'Node CMS')
+        return _.get(this.settingsData, 'title', 'Embed CMS')
       }
     },
     mounted () {

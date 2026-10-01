@@ -1,6 +1,6 @@
 # Security
 
-node-cms holds content, user accounts and files, and often sits on the public internet, so its protections matter. The
+embed-cms holds content, user accounts and files, and often sits on the public internet, so its protections matter. The
 short version:
 
 - **Every protection is on by default**, in development and in production: CSRF checks, secure cookies, security

@@ -7,13 +7,13 @@ const logo = (props = {}) => (wrapper = mountComponent(BrandLogo, { props }))
 
 afterEach(() => wrapper?.unmount())
 
-describe('BrandLogo (the Node CMS mark)', () => {
+describe('BrandLogo (the Embed CMS mark)', () => {
   it('shows the mark with the name, as one image for a screen reader', () => {
     logo()
     expect(wrapper.attributes('role')).toBe('img')
-    expect(wrapper.attributes('aria-label')).toBe('Node CMS')
+    expect(wrapper.attributes('aria-label')).toBe('Embed CMS')
     expect(wrapper.find('svg.brand-mark').exists()).toBe(true)
-    expect(wrapper.get('.brand-word').text()).toBe('Node CMS')
+    expect(wrapper.get('.brand-word').text()).toBe('Embed CMS')
   })
 
   it('hides the drawn parts from a screen reader, so the name is not read twice', () => {
@@ -26,7 +26,7 @@ describe('BrandLogo (the Node CMS mark)', () => {
     logo({ markOnly: true })
     expect(wrapper.find('.brand-word').exists()).toBe(false)
     expect(wrapper.find('svg').exists()).toBe(true)
-    expect(wrapper.attributes('aria-label')).toBe('Node CMS')
+    expect(wrapper.attributes('aria-label')).toBe('Embed CMS')
   })
 
   it('takes another name', () => {

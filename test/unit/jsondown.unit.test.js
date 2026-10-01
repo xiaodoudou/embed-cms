@@ -15,7 +15,7 @@ const keysOf = async (db, options) => {
 
 describe('json file store (unit)', () => {
   let dir
-  beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'node-cms-jsondown-')) })
+  beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'embed-cms-jsondown-')) })
   afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }) })
 
   describe('durability', () => {

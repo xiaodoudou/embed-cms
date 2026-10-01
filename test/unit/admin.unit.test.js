@@ -39,10 +39,23 @@ describe('admin plugin (unit)', () => {
       expect(status.body).to.include({ username: 'editor', language: 'zhCN', theme: 'dark' })
       await auth.users.update(user._id, { language: '', theme: 'light' })
     })
+    it('names its cookies after the server, so that another CMS on the same host does not clear them', async () => {
+      const { res, agent } = await loginAs('localAdmin', 'localAdmin')
+      const names = (res.headers['set-cookie'] || []).map(c => c.split('=')[0])
+      expect(app.cms.cookieNames.jwt).to.match(/^embedCmsJwt-\w+$/)
+      expect(names).to.include(app.cms.cookieNames.jwt)
+      expect(names).to.not.include('embedCmsJwt')
+      // a login token under the cookie name of another server is not this server's login
+      const token = (res.headers['set-cookie'].find(c => c.startsWith(`${app.cms.cookieNames.jwt}=`)) || '').split('=')[1].split(';')[0]
+      const foreign = await request(app.url).get('/admin/login').set('Cookie', `embedCmsJwt-other000=${token}`)
+      expect(foreign.body.username).to.not.equal('localAdmin')
+      const own = await agent.get('/admin/login')
+      expect(own.body.username).to.equal('localAdmin')
+    })
     it('answers 401 for wrong credentials and sets no cookie', async () => {
       const { res } = await loginAs('localAdmin', 'wrong')
       expect(res.status).to.equal(401)
-      expect(res.headers['set-cookie'] || []).to.satisfy(c => !c.some(x => x.startsWith('nodeCmsJwt=')))
+      expect(res.headers['set-cookie'] || []).to.satisfy(c => !c.some(x => x.startsWith(`${app.cms.cookieNames.jwt}=`)))
     })
     it('does not distinguish an unknown user from a wrong password', async () => {
       const wrong = await loginAs('localAdmin', 'wrong')
@@ -145,7 +158,7 @@ describe('admin plugin (unit)', () => {
       const fonts = await request(app.url).get('/admin/fonts/..%2f..%2fpackage.json')
       const js = await request(app.url).get('/admin/js/..%2f..%2fpackage.json')
       for (const res of [fonts, js]) {
-        expect(res.text || '').to.not.include('"name": "node-cms"')
+        expect(res.text || '').to.not.include('"name": "embed-cms"')
       }
     })
     it('serves the i18n config', async () => {

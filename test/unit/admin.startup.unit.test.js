@@ -11,7 +11,7 @@ const adminPlugin = path.resolve(__dirname, '..', '..', 'lib', 'plugins', 'admin
 describe('admin plugin start-up (unit)', () => {
   describe('project package.json', () => {
     let emptyDir
-    before(async () => { emptyDir = await fs.mkdtemp(path.join(os.tmpdir(), 'node-cms-nopkg-')) })
+    before(async () => { emptyDir = await fs.mkdtemp(path.join(os.tmpdir(), 'embed-cms-nopkg-')) })
     after(async () => { await fs.remove(emptyDir) })
 
     it('loads in a folder that has no package.json', async () => {
@@ -29,7 +29,7 @@ describe('admin plugin start-up (unit)', () => {
   describe('admin page without authentication', () => {
     let app, dist
     before(async () => {
-      dist = await fs.mkdtemp(path.join(os.tmpdir(), 'node-cms-dist-'))
+      dist = await fs.mkdtemp(path.join(os.tmpdir(), 'embed-cms-dist-'))
       await fs.writeFile(path.join(dist, 'index.html'), '<title>__TITLE__</title><script>window.type = "__TYPE__"</script>')
       app = await startApp({ disableJwtLogin: true, disableAuthentication: true })
       app.cms.$admin.distPath = dist
@@ -43,7 +43,7 @@ describe('admin plugin start-up (unit)', () => {
       const res = await request(app.url).get('/admin/').timeout({ response: 3000 })
       expect(res.status).to.equal(200)
       expect(res.text).to.not.include('__TITLE__')
-      expect(res.text).to.include('<title>Node CMS</title>')
+      expect(res.text).to.include('<title>Embed CMS</title>')
       expect(res.text).to.include('window.type = "index"')
     })
     it('redirects /admin to /admin/', async () => {
@@ -58,7 +58,7 @@ describe('admin plugin start-up (unit)', () => {
     const onRejection = (reason) => rejections.push(reason)
 
     before(async () => {
-      emptyDist = await fs.mkdtemp(path.join(os.tmpdir(), 'node-cms-nodist-'))
+      emptyDist = await fs.mkdtemp(path.join(os.tmpdir(), 'embed-cms-nodist-'))
       app = await startApp({ disableAuthentication: true })
       // as if `npm run build` was never run
       app.cms.$admin.distPath = emptyDist

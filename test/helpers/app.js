@@ -18,7 +18,7 @@ const ADMIN = ['localAdmin', 'localAdmin']
  * @returns {Promise<{cms: object, server: object, url: string, dataDir: string, close: Function}>}
  */
 async function startApp (overrides = {}, extra = {}) {
-  const dataDir = extra.dataDir || await fs.mkdtemp(path.join(os.tmpdir(), 'node-cms-test-'))
+  const dataDir = extra.dataDir || await fs.mkdtemp(path.join(os.tmpdir(), 'embed-cms-test-'))
   const options = {
     ...baseOptions,
     syslog: undefined,

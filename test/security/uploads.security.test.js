@@ -8,7 +8,7 @@ const { startApp, hardened, createUser } = require('../helpers/app')
 const IMAGE = path.join(__dirname, '..', 'man.jpg')
 const HTML = Buffer.from('<html><script>alert(document.domain)</script></html>')
 
-const UPLOAD_DIR = path.join(os.tmpdir(), 'node-cms', 'uploads')
+const UPLOAD_DIR = path.join(os.tmpdir(), 'embed-cms', 'uploads')
 // number of files in the folder of the uploads (files of other processes and tests in the temp folder do not count),
 // once the cleanup that follows the response has run
 const uploadsLeft = async (expected) => {

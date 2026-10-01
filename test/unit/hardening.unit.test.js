@@ -79,7 +79,7 @@ describe('hardening fixes (unit)', () => {
         await app.cms.api()('_xlsx').create({ token: 'export-token' })
         await app.cms.api()('cities').create({ key: 'paris', name: { en: 'Paris' } })
         // the folder the exports are written to (the rest of the temp folder belongs to other processes, and may not be readable)
-        const exportsDir = path.join(os.tmpdir(), 'node-cms', 'exports')
+        const exportsDir = path.join(os.tmpdir(), 'embed-cms', 'exports')
         const spreadsheets = () => fs.existsSync(exportsDir) ? fs.readdirSync(exportsDir).filter(name => name.endsWith('.xlsx')).length : 0
         const before = spreadsheets()
         const [a, b] = await Promise.all([

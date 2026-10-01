@@ -1,6 +1,6 @@
 # Configuration
 
-Every option of node-cms lives in one object. You can write it in `cms.json`, pass it to the constructor, or both. This page
+Every option of embed-cms lives in one object. You can write it in `cms.json`, pass it to the constructor, or both. This page
 is the reference for that object. The security settings have their own page, [SECURITY.md](../SECURITY.md), because they
 come with a profile and a checklist.
 
@@ -27,7 +27,7 @@ on the file is yours to edit. That has two consequences worth knowing:
   effect, check what your code passes in.
 
 ```js
-const CMS = require('node-cms')
+const CMS = require('embed-cms')
 
 const cms = new CMS({
   config: './config/cms.json', // optional: where to read (and first write) the file
@@ -60,7 +60,7 @@ does not edit this file. Run the CMS under a supervisor (systemd, pm2, Docker) t
 | `disableReplication` | `false` | Turn off the replication plugin. It is on by default: its routes are mounted and records sync to any peers you list. `netPort` additionally opens a TCP port for peers to connect to. See [REPLICATION.md](REPLICATION.md). |
 | `sync` | not set | Turn on the sync plugin by giving it a block. See [SYNC.md](SYNC.md). An empty block (`{}`) turns it on too. |
 | `import` | not set | Turn on the Google Sheets import by giving it a block. See [IMPORT.md](IMPORT.md). |
-| `importFromRemote` | `true` | The plugin that copies records from another node-cms. See [IMPORT.md](IMPORT.md). |
+| `importFromRemote` | `true` | The plugin that copies records from another embed-cms. See [IMPORT.md](IMPORT.md). |
 | `xlsx` | not set | Turn on the Excel export and import routes (`true`). See [IMPORT.md](IMPORT.md). |
 | `anonymousRead` | not set | A list of resource names anyone may read without logging in. At each start the CMS adds them to the read rights of the `anonymous` group. |
 | `wsRecordUpdates` | `true` | Broadcast record changes over a websocket, so an open admin sees edits made elsewhere. |
@@ -76,7 +76,7 @@ combinations spelled out:
 | `disableAuthentication` | `disableJwtLogin` | What happens |
 |---|---|---|
 | `false` | `true` | **The default.** HTTP Basic authentication. The browser shows its own login prompt for the admin, and REST clients send an `Authorization: Basic` header. |
-| `true` | `false` | Login page. The admin shows a login form; a successful login stores a JWT (valid 24 hours) in the `nodeCmsJwt` cookie. API clients get the token from `POST /admin/login` and send it back as an `x-access-token` header, a `token` query parameter or the cookie. |
+| `true` | `false` | Login page. The admin shows a login form; a successful login stores a JWT (valid 24 hours) in the `embedCmsJwt-<mid>` cookie (named after the `mid` of the server, so that two CMS on one host do not clear each other's login; the session cookie is `embedCmsSid-<mid>`, or the `session.name` you set). API clients get the token from `POST /admin/login` and send it back as an `x-access-token` header, a `token` query parameter or the cookie. |
 | `false` | `false` | Both. The admin shows the login page and uses the JWT cookie; REST clients can still send Basic credentials. |
 | `true` | `true` | No authentication at all. Everyone is the `anonymous` user and gets the rights of the `anonymous` group. |
 
@@ -148,7 +148,7 @@ records go to `leveldb`, a LevelDB folder per resource, and the attachments are 
 
 | `dbEngine.type` | What it is | Needs |
 |---|---|---|
-| `leveldb` (the default) | a LevelDB folder per resource, read from disk | nothing (the `classic-level` package comes with node-cms) |
+| `leveldb` (the default) | a LevelDB folder per resource, read from disk | nothing (the `classic-level` package comes with embed-cms) |
 | `sqlite` | one SQLite file per resource, read from disk | nothing (it is part of Node 22; Node marks it experimental) |
 | `jsondown` | all records in memory, saved to one JSON file per resource | nothing |
 | `mongodb` | one collection per resource | a MongoDB server |
@@ -180,7 +180,7 @@ Without a `url`, each start creates a database with a new, time-based name. Alwa
 start with an error instead of falling back to the default, so a typo never opens an empty store beside your content.
 
 A resource that already has a `db.json` and no LevelDB store keeps using the file when no `dbEngine` is set (and logs a
-warning), so updating node-cms never starts a server on an empty store. Setting a different engine on a server that
+warning), so updating embed-cms never starts a server on an empty store. Setting a different engine on a server that
 already has content does not move the content: the new store starts empty. See
 [Changing the engine](STORAGE.md#changing-the-engine). The same test suite runs against all five engines (see
 [TESTING.md](TESTING.md#driver-contract-suite)).

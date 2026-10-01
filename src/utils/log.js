@@ -2,10 +2,10 @@
  * The admin logs like a product, not like a debugging session: the browser console shows warnings and errors only.
  * The step-by-step messages ("will check data", "adding plugin"...) go through log.debug(), which stays silent unless
  * debugging is switched on:
- *   - in the console:  localStorage.setItem('node-cms.debug', '1')   (and reload; remove the key to switch it off)
+ *   - in the console:  localStorage.setItem('embed-cms.debug', '1')   (and reload; remove the key to switch it off)
  *   - or for one visit: add ?debug to the address
  */
-const KEY = 'node-cms.debug'
+const KEY = 'embed-cms.debug'
 
 function defaultStorage () {
   try {
@@ -34,7 +34,7 @@ export function debugEnabled (storage = defaultStorage(), search = defaultSearch
 export const log = {
   debug (...args) {
     if (debugEnabled()) {
-      console.debug('[node-cms]', ...args)
+      console.debug('[embed-cms]', ...args)
     }
   }
 }

@@ -13,7 +13,7 @@
           <a v-if="entry._type === '_settingsLink'" class="link" :href="entry.url" target="_blank" rel="noopener noreferrer" :class="{active: isActiveLink(entry.url)}">{{ entry.name }}</a>
           <!-- a group of links with its heading -->
           <template v-else>
-            <div class="node-cms-title">{{ entry.title }}</div>
+            <div class="embed-cms-title">{{ entry.title }}</div>
             <a v-for="(link, y) in entry.links" :key="y" class="link" :href="link.url" target="_blank" rel="noopener noreferrer" :class="{active: isActiveLink(link.url)}">{{ link.name }}</a>
           </template>
           <v-divider v-if="i < settingsData.linksGroups.length - 1" />
@@ -28,9 +28,9 @@
         </v-btn>
       </template>
       <div class="system-info-wrapper">
-        <div class="node-cms-title flex">
+        <div class="embed-cms-title flex">
           <span>{{ $filters.translate('TL_SYSTEM') }}</span>
-          <span class="node-cms-version text">v{{ getNodeCmsVersion() }}</span>
+          <span class="embed-cms-version text">v{{ getEmbedCmsVersion() }}</span>
         </div>
         <div class="stats cpu">
           <div class="stat-head"><span>CPU</span><span>{{ Math.round(system.cpu.usage) }}%</span></div>
@@ -112,7 +112,7 @@
     isEditing.value = editing
   }
 
-  function getNodeCmsVersion() {
+  function getEmbedCmsVersion() {
     return _.get(properties.config, 'version', 'X.X.X')
   }
 
@@ -268,7 +268,7 @@
   padding: var(--cms-space-4);
   color: $system-info-color;
   background-color: $system-info-background;
-  .node-cms-title {
+  .embed-cms-title {
     @include h6;
     color: $system-info-color;
   }
@@ -276,13 +276,13 @@
 
 .system-info-wrapper {
   gap: var(--cms-space-4);
-  .node-cms-title.flex {
+  .embed-cms-title.flex {
     @include h5;
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
-  .node-cms-version {
+  .embed-cms-version {
     font-size: var(--cms-fs-sm);
     font-weight: var(--cms-fw-regular);
     color: var(--cms-text-muted);
@@ -339,7 +339,7 @@
 
 .links-wrapper {
   gap: var(--cms-space-1);
-  .node-cms-title {
+  .embed-cms-title {
     font-weight: var(--cms-fw-semibold);
     user-select: none;
     padding: var(--cms-space-1) var(--cms-space-2);

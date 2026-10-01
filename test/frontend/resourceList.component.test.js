@@ -77,7 +77,7 @@ describe('ResourceList (the expanded sidebar)', () => {
       await list({ groupedList: few() })
       await group('Shop').get('.group-toggle').trigger('click')
       expect(isOpen('Shop')).toBe(false)
-      expect(JSON.parse(window.localStorage.getItem('node-cms.nav.groups'))).toMatchObject({ shop: false })
+      expect(JSON.parse(window.localStorage.getItem('embed-cms.nav.groups'))).toMatchObject({ shop: false })
       wrapper.unmount()
       await list({ groupedList: few() })
       expect(isOpen('Shop')).toBe(false)

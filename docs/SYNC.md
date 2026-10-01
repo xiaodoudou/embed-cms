@@ -1,6 +1,6 @@
 # Sync
 
-The sync plugin copies the records of chosen resources from one node-cms to another, on demand. The typical case is
+The sync plugin copies the records of chosen resources from one embed-cms to another, on demand. The typical case is
 staging and production: editors prepare content on staging, check it, and then push it to production in one go.
 
 Sync is simpler than [replication](REPLICATION.md). It talks plain HTTP, matches records by their `unique` fields

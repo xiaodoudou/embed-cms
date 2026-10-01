@@ -21,7 +21,7 @@ const options = {
 
 
 /*
-node-cms A
+embed-cms A
   config: {
     peersByResource: {
       markets: ['http://localhost:9991'],
@@ -31,7 +31,7 @@ node-cms A
     type: 'downstream'
   }
 
-node-cms B
+embed-cms B
   config: {
     peersByResource: {
       markets: ['http://localhost:9991', 'http://localhost:9993'],
@@ -43,7 +43,7 @@ node-cms B
 
 */
 
-// TODO: hugo - change the way the unit tests are being run, only 1 instance of node-cms should be started except for the replication/sync/import tests which need several node-cms instances running at the same time
+// TODO: hugo - change the way the unit tests are being run, only 1 instance of embed-cms should be started except for the replication/sync/import tests which need several embed-cms instances running at the same time
 
 
 // Peer process management for replication tests
@@ -60,7 +60,7 @@ function getRandomPort() {
 const runPeerTests = process.env.RUN_PEER_TESTS === '1'
 
 function launchPeers(done) {
-  if (_.get(process, 'env.NODE_CMS_OVERRIDE_CONFIG', false)) {
+  if (_.get(process, 'env.EMBED_CMS_OVERRIDE_CONFIG', false)) {
     // If this is a peer, do not launch more peers
     done && done()
     return
@@ -98,7 +98,7 @@ function launchPeers(done) {
       env: {
         ...process.env,
         NODE_ENV: 'test',
-        NODE_CMS_OVERRIDE_CONFIG: JSON.stringify(peerConfig)
+        EMBED_CMS_OVERRIDE_CONFIG: JSON.stringify(peerConfig)
       },
       stdio: 'inherit',
       shell: true
@@ -162,7 +162,7 @@ if (runPeerTests) {
       await cms.bootstrap(server)
       logger.info('########### server started ###########')
       logger.info(`${pkg.name} started at http://localhost:${server.address().port}/admin`)
-      if (!_.get(process, 'env.NODE_CMS_OVERRIDE_CONFIG', false)) {
+      if (!_.get(process, 'env.EMBED_CMS_OVERRIDE_CONFIG', false)) {
         spawnRunTests(true)
       }
     })

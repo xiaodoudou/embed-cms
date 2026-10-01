@@ -125,7 +125,7 @@ describe('App', () => {
 
     it('puts where you are in the title of the browser tab: the resource, then the product', async () => {
       await mountApp('/?id=products')
-      expect(document.title).toBe('Products · Node CMS')
+      expect(document.title).toBe('Products · Embed CMS')
     })
 
     it('opens no record by itself', async () => {

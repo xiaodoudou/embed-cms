@@ -1,25 +1,25 @@
 # Getting started
 
-The [README](../README.md) runs node-cms from a clone and adds a first resource. This guide picks up from there and builds
-a small but real project: node-cms inside your own Express server, a few related resources, public read access for
+The [README](../README.md) runs embed-cms from a clone and adds a first resource. This guide picks up from there and builds
+a small but real project: embed-cms inside your own Express server, a few related resources, public read access for
 your site, editors with limited rights, and the steps to production. Each section stands on its own, so skip what you
 don't need.
 
 If a word is unfamiliar (resource, locale, paragraph), [CONCEPTS.md](CONCEPTS.md) explains it in a few lines.
 
-## 1. Add node-cms to your project
+## 1. Add embed-cms to your project
 
-node-cms is an Express application you mount in yours. In your project folder:
+embed-cms is an Express application you mount in yours. In your project folder:
 
 ```sh
-npm install git+https://github.com/xiaodoudou/node-cms-private.git express
+npm install git+https://github.com/xiaodoudou/embed-cms.git express
 ```
 
 The install builds the admin app as it goes (it takes a minute or two, for the build tools). If you add admin pages of
-your own in `node-cms/plugins/` at the root of your project, rebuild it so they are included:
+your own in `embed-cms/plugins/` at the root of your project, rebuild it so they are included:
 
 ```sh
-cd node_modules/node-cms
+cd node_modules/embed-cms
 npm install --include=dev
 npm run build
 cd ../..
@@ -29,7 +29,7 @@ Then a `server.js`:
 
 ```js
 const express = require('express')
-const CMS = require('node-cms')
+const CMS = require('embed-cms')
 
 const cms = new CMS({ mid: 'webnode1' })
 const app = express()
@@ -47,7 +47,7 @@ process.on('SIGTERM', cms.shutdown('SIGTERM'))
 ```
 
 `node server.js` creates `cms.json`, `resources/` and `data/` in the current folder. (To try a project's resources without writing
-any code, the `cms` command that comes with node-cms does the same: run `npx cms` in the project folder, and set `PORT`
+any code, the `cms` command that comes with embed-cms does the same: run `npx cms` in the project folder, and set `PORT`
 to change its port from 9990.) Pass `bootstrap` the HTTP server, as
 above: the admin uses it for live updates over a websocket.
 
@@ -61,7 +61,7 @@ can't change it later without making existing records read-only, so pick it now.
 my-site/
 ├── cms.json              written at the first start, then yours to edit
 ├── data/                 the content: one folder per resource (keep it out of git, back it up)
-├── node-cms/plugins/     your own admin pages (Vue), built into the admin app
+├── embed-cms/plugins/     your own admin pages (Vue), built into the admin app
 ├── resources/
 │   ├── articles.js       one file per resource; the file name is the resource name
 │   ├── authors.js
@@ -183,7 +183,7 @@ the admin exits the process on purpose.
 | You see | Why, and what to do |
 |---|---|
 | `Machine id should be an 8 digit string` when saving | `mid` isn't 8 characters. Fix it before you have records. |
-| `The admin app is not built` (503) on `/admin` | node-cms was installed without its build (with `--omit=dev`, or `NODE_CMS_SKIP_BUILD` set). Run the rebuild of step 1. |
+| `The admin app is not built` (503) on `/admin` | embed-cms was installed without its build (with `--omit=dev`, or `EMBED_CMS_SKIP_BUILD` set). Run the rebuild of step 1. |
 | `401` from the API | No credentials, and the `anonymous` group can't read that resource. Use `anonymousRead` or send a login. |
 | `404` for a record | No record has that id, or it was removed. |
 | A new field doesn't show up | Restart: resource files are read at start-up. |

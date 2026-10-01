@@ -13,7 +13,7 @@ const RECORDS = [
   ['a3', { n: 3, title: { enUS: 'Gamma' } }],
   ['b1', { n: 4, title: { enUS: 'Alpha again' } }]
 ]
-const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'node-cms-engine-'))
+const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'embed-cms-engine-'))
 const remove = (folder) => fs.rmSync(folder, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })
 
 describe('local storage engines', () => {

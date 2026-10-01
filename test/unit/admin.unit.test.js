@@ -118,23 +118,13 @@ describe('admin plugin (unit)', () => {
     })
   })
 
-  describe('cms-config editor', () => {
-    it('refuses anonymous users', async () => {
+  describe('removed routes', () => {
+    it('/admin/cms-config no longer exists (the configuration file is not editable from the admin)', async () => {
       const get = await request(app.url).get('/admin/cms-config')
       const post = await request(app.url).post('/admin/cms-config').send({ port: 1 })
-      expect(get.status).to.equal(403)
-      expect(post.status).to.equal(403)
+      expect(get.status).to.be.oneOf([401, 403, 404])
+      expect(post.status).to.be.oneOf([401, 403, 404])
     })
-    it('refuses users who are not in the admins group', async () => {
-      const { agent } = await loginAs('editor', 'editorPass')
-      const get = await agent.get('/admin/cms-config')
-      const post = await agent.post('/admin/cms-config').send({ port: 1 })
-      expect(get.status).to.equal(403)
-      expect(post.status).to.equal(403)
-    })
-  })
-
-  describe('removed routes', () => {
     it('/admin/replicate no longer exists (replication is triggered through /replicator)', async () => {
       const res = await request(app.url).get('/admin/replicate/articles').query({ host: 'localhost', port: 1 })
       expect(res.status).to.be.oneOf([401, 403, 404])

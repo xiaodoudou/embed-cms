@@ -35,7 +35,7 @@
   import _ from 'lodash'
   import { sanitizeHtml } from '@u/sanitizeHtml'
   import { buildEntries, searchEntries, moveHighlight } from '@u/switcherModel'
-  import TranslateService from '@s/TranslateService'
+  import { getResourceLabel } from '@u/recordLabel'
   import Notification from '@m/Notification'
 
   export default {
@@ -74,8 +74,7 @@
     methods: {
       sanitizeHtml,
       labelOf (item) {
-        const name = _.get(item, 'displayname', false)
-        return name ? TranslateService.get(name) : _.get(item, 'title', '')
+        return getResourceLabel(item)
       },
       currentLabel () {
         return this.selectedItem ? this.labelOf(this.selectedItem) : ''

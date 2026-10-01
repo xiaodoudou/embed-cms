@@ -161,7 +161,7 @@ Users and rights are content too, in the **CMS** group of the menu.
 3. Create your own administrator in the `admins` group, sign in with it, and delete `localAdmin`.
 
 The `admins` group gets every right on every resource at each start, so a new resource is never locked away from it.
-The built-in pages of the System menu (Syslog, Cms Config, and Replicator when replication runs) are for the `admins`
+The built-in plugin pages (Syslog in the CMS menu, and Replicator in the System menu when replication runs) are for the `admins`
 group only, which gets them in its **plugins** list at every start.
 
 ## 6. Go to production

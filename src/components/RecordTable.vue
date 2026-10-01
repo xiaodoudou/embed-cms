@@ -93,7 +93,7 @@
   import NotificationsService from '@s/NotificationsService'
   import RequestService from '@s/RequestService'
   import ResourceService from '@s/ResourceService'
-  import { getRecordLabel, recordMessage } from '@u/recordLabel'
+  import { getRecordLabel, getResourceLabel, recordMessage } from '@u/recordLabel'
   import {
     buildColumns, fieldsFromSchema, applyPrefs, loadPrefs, savePrefs, clearPrefs, toggleColumn, moveColumn, nextSort, sortRows, sortValue, matchesSearch,
     visibleLocales, richTextToPlain, isColumnHidden, attachmentOf, DENSITIES
@@ -146,7 +146,7 @@
     },
     computed: {
       resourceTitle () {
-        return this.resource.displayname ? TranslateService.get(this.resource.displayname) : this.resource.title
+        return getResourceLabel(this.resource)
       },
       clonedRecordList () {
         return _.isArray(this.recordList) ? this.recordList : []

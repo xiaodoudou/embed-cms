@@ -35,9 +35,8 @@ const cms = new CMS({
 })
 ```
 
-The CMS reads its configuration once, at start-up. Restart the process after you edit `cms.json`. Members of the
-`admins` group can also edit it from the admin, on the **Cms Config** page of the System menu. Saving there rewrites the file, keeping a
-backup, and then exits the process, so run the CMS under a supervisor (systemd, pm2, Docker) that starts it again.
+The CMS reads its configuration once, at start-up. Restart the process after you edit `cms.json`; the admin
+does not edit this file. Run the CMS under a supervisor (systemd, pm2, Docker) that starts it again.
 
 ## Core
 
@@ -104,7 +103,7 @@ documented in [SECURITY.md](../SECURITY.md), with a recommended production confi
 
 ## Logs
 
-The admin has a log page (**Syslog**, in the System menu) fed by `/api/_syslog`. The `syslog` block decides where those lines come
+The admin has a log page (**Syslog**, in the CMS menu) fed by `/api/_syslog`. The `syslog` block decides where those lines come
 from. The behaviour depends on the operating system, so read this table carefully:
 
 | `syslog` | On Linux | On macOS and Windows |

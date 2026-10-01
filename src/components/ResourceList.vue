@@ -53,6 +53,7 @@
   import SearchField from '@c/SearchField.vue'
   import ResourceService from '@s/ResourceService'
   import { groupSettingsName } from '@u/navModel'
+  import { getResourceLabel } from '@u/recordLabel'
 
   const STORAGE_KEY = 'node-cms.nav.groups'
 
@@ -176,7 +177,7 @@
         return this.selectedItem === resource
       },
       getResourceTitle (resource) {
-        return resource.displayname ? TranslateService.get(resource.displayname) : resource.title
+        return getResourceLabel(resource)
       },
       // Splits a title into matched and unmatched parts for the filter highlight (no v-html)
       segments (title) {

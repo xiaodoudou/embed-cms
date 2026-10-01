@@ -1,6 +1,6 @@
 /**
- * @fileoverview Node CMS - A flexible content management system
- * @author Node CMS Team
+ * @fileoverview Embed CMS - A flexible content management system
+ * @author Embed CMS Team
  * @see {@link ./lib/jsdoc-types.js} For complete type definitions
  */
 /**
@@ -106,7 +106,7 @@ class CMS {
    * @param {Object} [options.auth] - Authentication configuration
    *
    * @example
-   * const CMS = require('node-cms')
+   * const CMS = require('embed-cms')
    * const cms = new CMS({
    *   resources: './resources',
    *   data: './data',
@@ -315,7 +315,7 @@ class CMS {
       this._app.use(csrf)
     }
     if (!options.disableJwtLogin) {
-      // the JWT login keeps its token in the nodeCmsJwt cookie, which the REST API reads, also when Basic is on
+      // the JWT login keeps its token in the embedCmsJwt cookie, which the REST API reads, also when Basic is on
       this._app.use(cookieParser())
     }
     if (!options.disableAuthentication) {
@@ -331,7 +331,7 @@ class CMS {
       // Enables session with jwt token auth
       this._app.use((req, res, next) => {
         if (!req.headers.authorization) {
-          const token = _.get(req, 'session.nodeCmsUser.token', false)
+          const token = _.get(req, 'session.embedCmsUser.token', false)
           if (token) {
             req.headers.authorization = token
           } else if (_.get(req, 'query.jwt', false)) {
@@ -425,7 +425,7 @@ class CMS {
         logger.error(`Error closing resource "${res.name}" database:`, closeErr)
       }
     }
-    logger.warn('<!> All node-cms databases are now closed. <!>')
+    logger.warn('<!> All embed-cms databases are now closed. <!>')
   }
 
   shutdown (signal) {
@@ -693,11 +693,11 @@ class CMS {
 }
 
 /**
- * @module node-cms
- * @description Node CMS - A flexible content management system
+ * @module embed-cms
+ * @description Embed CMS - A flexible content management system
  *
  * @example
- * const CMS = require('node-cms')
+ * const CMS = require('embed-cms')
  * const cms = new CMS(config)
  * const api = cms.api()
  *
@@ -708,7 +708,7 @@ class CMS {
  */
 
 /**
- * @typedef {Object} module:node-cms.ResourceAPI
+ * @typedef {Object} module:embed-cms.ResourceAPI
  * @description Complete Resource API interface available through api('resourceName')
  * @property {function(Object=, Object=): Promise<Array<Object>>} list - List all records matching query
  * @property {function(string|Object, Object=): Promise<Object>} find - Find a single record by ID or query
@@ -727,10 +727,10 @@ class CMS {
  */
 
 /**
- * Node CMS Constructor
+ * Embed CMS Constructor
  * @class
  * @name CMS
- * @memberof module:node-cms
+ * @memberof module:embed-cms
  */
 exports = module.exports = CMS
 

@@ -31,7 +31,7 @@ describe('importFromRemote requests (security)', () => {
   before(async () => {
     remote = await listen((req, res) => res.end('remote file'))
     foreign = await listen((req, res) => res.end('foreign file'))
-    dir = await fs.mkdtemp(path.join(os.tmpdir(), 'node-cms-import-'))
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), 'embed-cms-import-'))
   })
   after(async () => {
     await remote.close()
@@ -51,7 +51,7 @@ describe('importFromRemote requests (security)', () => {
 
   it('sends the login cookie and Authorization header to the remote', async () => {
     await service().getAttachment(`${remote.url}/file.bin`, path.join(dir, 'a.bin'), 1)
-    expect(remote.requests[0].headers.cookie).to.equal('nodeCmsJwt=a-jwt-token')
+    expect(remote.requests[0].headers.cookie).to.equal('embedCmsJwt=a-jwt-token')
     expect(remote.requests[0].headers.authorization).to.match(/^Basic /)
   })
 

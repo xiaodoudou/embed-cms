@@ -14,7 +14,7 @@ describe('Authentication Plugin API', () => {
     expect(res.body).to.have.property('username', 'localAdmin')
     // Check for JWT cookie
     const cookies = res.headers['set-cookie'] || []
-    const jwtCookie = cookies.find(c => c.startsWith('nodeCmsJwt='))
+    const jwtCookie = cookies.find(c => c.startsWith('embedCmsJwt='))
     expect(jwtCookie, 'JWT cookie should be set').to.exist
     // Optionally, decode and check the JWT
     const token = jwtCookie && jwtCookie.split('=')[1].split(';')[0]
@@ -33,7 +33,7 @@ describe('Authentication Plugin API', () => {
     expect(res.body).to.have.property('error', 'Not authenticated')
     // Should not set JWT cookie
     const cookies = res.headers['set-cookie'] || []
-    const jwtCookie = cookies.find(c => c.startsWith('nodeCmsJwt='))
+    const jwtCookie = cookies.find(c => c.startsWith('embedCmsJwt='))
     expect(jwtCookie).to.not.exist
   })
 })

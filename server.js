@@ -6,7 +6,7 @@ const pkg = require('./package.json')
 const logger = require('./lib/logger')
 const { cliOptions } = require('./lib/cliOptions')
 
-// the development harness in a clone of node-cms, the project's own cms.json anywhere else
+// the development harness in a clone of embed-cms, the project's own cms.json anywhere else
 const options = cliOptions(process.cwd(), __dirname)
 const cms = new CMS(options)
 

@@ -18,7 +18,7 @@ const PUBLISHED_SESSION_SECRET = 'MdjIwFRi9ezT'
  * @returns {Promise<{cms: object, dataDir: string}>}
  */
 async function buildCms (overrides, nodeEnv, dataDir) {
-  dataDir = dataDir || await fs.mkdtemp(path.join(os.tmpdir(), 'node-cms-test-'))
+  dataDir = dataDir || await fs.mkdtemp(path.join(os.tmpdir(), 'embed-cms-test-'))
   return withNodeEnv(nodeEnv, () => {
     const cms = getCMSInstance({
       ...baseOptions,
@@ -260,7 +260,7 @@ describe('authentication hardening (security)', () => {
         const payload = jwt.decode(res.body.token)
         expect(payload).to.not.have.property('password')
         expect(JSON.stringify(payload)).to.not.match(/[0-9a-f]{128,}|\$scrypt\$/)
-        const cookie = valueOf(cookieOf(res, 'nodeCmsJwt'))
+        const cookie = valueOf(cookieOf(res, 'embedCmsJwt'))
         expect(jwt.decode(cookie)).to.not.have.property('password')
       } finally {
         await app.close()
@@ -389,7 +389,7 @@ describe('authentication hardening (security)', () => {
         const admin = await createUser(app)
         const res = await request(app.url).post('/admin/login').set('X-Forwarded-Proto', 'https')
           .send({ username: admin.username, password: admin.password })
-        const jwtCookie = cookieOf(res, 'nodeCmsJwt')
+        const jwtCookie = cookieOf(res, 'embedCmsJwt')
         const sessionCookie = cookieOf(res, 'connect.sid')
         expect(jwtCookie, 'JWT cookie').to.match(/HttpOnly/i)
         expect(jwtCookie).to.match(/SameSite=Lax/i)
@@ -466,9 +466,9 @@ describe('authentication hardening (security)', () => {
         const agent = request.agent(app.url)
         const login = await agent.post('/admin/login').send({ username: ADMIN[0], password: ADMIN[1] })
         const token = login.body.token
-        expect((await request(app.url).get('/admin/login').set('Cookie', `nodeCmsJwt=${token}`)).body.username, 'valid before logout').to.equal(ADMIN[0])
+        expect((await request(app.url).get('/admin/login').set('Cookie', `embedCmsJwt=${token}`)).body.username, 'valid before logout').to.equal(ADMIN[0])
         await agent.get('/admin/logout')
-        const replay = await request(app.url).get('/admin/login').set('Cookie', `nodeCmsJwt=${token}`)
+        const replay = await request(app.url).get('/admin/login').set('Cookie', `embedCmsJwt=${token}`)
         expect(replay.body.username, 'cookie replay').to.equal(undefined)
       } finally {
         await app.close()

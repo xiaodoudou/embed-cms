@@ -93,7 +93,7 @@ the authentication plugin.
 
 The authentication plugin (`lib/plugins/authentication`) owns `POST /admin/login`, `/admin/logout`, the `_users`,
 `_groups` and `_settings` resources, and the `routesToAuth` list of admin and plugin routes that need a login. It knows
-two ways to log in: HTTP Basic (the default) and a JWT in the `nodeCmsJwt` cookie. See
+two ways to log in: HTTP Basic (the default) and a JWT in the `embedCmsJwt` cookie. See
 [CONFIG.md](CONFIG.md#authentication).
 
 ## 3. The REST plugin finds the resource and checks the rights

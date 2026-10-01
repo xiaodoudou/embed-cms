@@ -7,7 +7,7 @@ finds the resource, checks the caller's rights and parses the query exactly as `
 
 ```js
 const express = require('express')
-const CMS = require('node-cms')
+const CMS = require('embed-cms')
 
 const cms = new CMS({ mid: 'webnode1' })
 const { mw } = new CMS.RestHelper()
@@ -40,7 +40,7 @@ const server = app.listen(3000, () => cms.bootstrap(server))
 | Middleware | Use it as | What it does |
 |---|---|---|
 | `mw.find_resource(ctx)` | a factory | Answers `404` if `:resource` isn't a declared resource; otherwise sets `req.resource`. |
-| `mw.authorize(ctx)` | a factory (returns two middlewares) | Identifies the caller (Basic header, or a JWT in `token`, `x-access-token` or the `nodeCmsJwt` cookie; anonymous otherwise) and checks the right that matches the HTTP method: `GET` read, `POST` create, `PUT` update, `DELETE` remove, and `attachments` for writes to an `/attachments` URL. Answers `401` when the group lacks it. Sets `req.body._updatedBy`. |
+| `mw.authorize(ctx)` | a factory (returns two middlewares) | Identifies the caller (Basic header, or a JWT in `token`, `x-access-token` or the `embedCmsJwt` cookie; anonymous otherwise) and checks the right that matches the HTTP method: `GET` read, `POST` create, `PUT` update, `DELETE` remove, and `attachments` for writes to an `/attachments` URL. Answers `401` when the group lacks it. Sets `req.body._updatedBy`. |
 | `mw.parse_query` | as is | Parses `?query=` as JSON, refuses operators outside the allowed list, and copies the other query parameters (as strings) into `req.options`. |
 | `mw.list_resources(ctx)` | a factory, as a handler | Answers the declaration of every resource (schema, locales and so on, with `title` and `mid`). |
 

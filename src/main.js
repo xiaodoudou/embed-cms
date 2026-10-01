@@ -72,7 +72,7 @@ const app = createApp({
     return h(mountEl.getAttribute('type') === 'login' ? LoginApp : App)
   }
 })
-window.nodeCms = app
+window.embedCms = app
 app.config.globalProperties.$filters = {
   translate: TranslateFilter,
   truncate: TruncateFilter
@@ -142,6 +142,6 @@ window.addEventListener('load', async function () {
   window.disableJwtLogin = _.get(config, 'disableJwtLogin', false)
   window.noLogin = window.disableJwtLogin && _.get(config, 'disableAuthentication', false)
   app.mount('#app')
-  window.nodeCms = app
+  window.embedCms = app
 })
 window.Vue = Vue

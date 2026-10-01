@@ -49,7 +49,7 @@ describe('both login modes on (security)', () => {
         expect((await agent.get('/api/articles')).status).to.be.oneOf([401, 403])
       })
       it('does not accept a forged token cookie', async () => {
-        const res = await request(app.url).get('/api/articles').set('Cookie', 'nodeCmsJwt=forged.token.value')
+        const res = await request(app.url).get('/api/articles').set('Cookie', 'embedCmsJwt=forged.token.value')
         expect(res.status).to.be.oneOf([401, 403])
       })
       it('still accepts Basic credentials from a client without cookies', async () => {

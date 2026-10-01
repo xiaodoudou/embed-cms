@@ -135,9 +135,9 @@ These rules apply to all projects unless overridden by project-specific instruct
 
 ---
 
-## 3. Project-Specific Rules: `node-cms`
+## 3. Project-Specific Rules: `embed-cms`
 
-These rules provide deep context for the `node-cms` repository.
+These rules provide deep context for the `embed-cms` repository.
 
 ### 3.1. Architecture Overview
 - **Core:** A flexible CMS built on Express.js. The main class is exported from `index.js`. Core data logic is in `lib/resource.js`.

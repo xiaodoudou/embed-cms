@@ -42,7 +42,7 @@ describe('admin plugin (unit)', () => {
     it('answers 401 for wrong credentials and sets no cookie', async () => {
       const { res } = await loginAs('localAdmin', 'wrong')
       expect(res.status).to.equal(401)
-      expect(res.headers['set-cookie'] || []).to.satisfy(c => !c.some(x => x.startsWith('nodeCmsJwt=')))
+      expect(res.headers['set-cookie'] || []).to.satisfy(c => !c.some(x => x.startsWith('embedCmsJwt=')))
     })
     it('does not distinguish an unknown user from a wrong password', async () => {
       const wrong = await loginAs('localAdmin', 'wrong')
@@ -145,7 +145,7 @@ describe('admin plugin (unit)', () => {
       const fonts = await request(app.url).get('/admin/fonts/..%2f..%2fpackage.json')
       const js = await request(app.url).get('/admin/js/..%2f..%2fpackage.json')
       for (const res of [fonts, js]) {
-        expect(res.text || '').to.not.include('"name": "node-cms"')
+        expect(res.text || '').to.not.include('"name": "embed-cms"')
       }
     })
     it('serves the i18n config', async () => {

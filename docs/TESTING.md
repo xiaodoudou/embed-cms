@@ -199,7 +199,7 @@ sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres'"
 sudo apt-get install -y mongodb-org-server
 mongod --dbpath ~/mongo-data --bind_ip 127.0.0.1 --fork --logpath ~/mongod.log
 
-git clone /mnt/d/path/to/node-cms ~/node-cms && cd ~/node-cms && npm ci   # a copy on the Linux disk: much faster than /mnt
+git clone /mnt/d/path/to/embed-cms ~/embed-cms && cd ~/embed-cms && npm ci   # a copy on the Linux disk: much faster than /mnt
 REQUIRE_DATABASES=1 \
 TEST_POSTGRES_URL=postgres://postgres:postgres@localhost:5432/postgres \
 TEST_MONGODB_URL=mongodb://localhost:27017 npm run test:unit            # 803 passing, 0 failing, about 30 seconds

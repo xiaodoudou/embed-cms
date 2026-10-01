@@ -1,12 +1,12 @@
-# The node-cms documentation
+# The embed-cms documentation
 
 Start with the page that matches what you're doing. Every topic has one page that owns it; the others link there
 rather than repeat it, so if two pages ever disagree, the owner is right (and the other one is a bug worth reporting).
 
-## New to node-cms
+## New to embed-cms
 
-1. [**README**](../README.md): what node-cms is, and a running CMS with a first resource in five minutes.
-2. [**Getting started**](GETTING_STARTED.md): node-cms inside your own Express app, related resources, public reads,
+1. [**README**](../README.md): what embed-cms is, and a running CMS with a first resource in five minutes.
+2. [**Getting started**](GETTING_STARTED.md): embed-cms inside your own Express app, related resources, public reads,
    editor accounts, going to production, and the errors people hit most.
 3. [**Concepts**](CONCEPTS.md): resource, field, locale, attachment, paragraph, users and groups, view, plugin. Read it
    when a word in the other pages is unfamiliar.
@@ -33,9 +33,9 @@ rather than repeat it, so if two pages ever disagree, the owner is right (and th
   checklist, and how to report a vulnerability.
 - [**Replication**](REPLICATION.md): keeping several servers in step, continuously.
 - [**Sync**](SYNC.md): copying chosen resources between two servers, such as staging and production.
-- [**Import and export**](IMPORT.md): Google Sheets, Excel files, and copying from another node-cms.
+- [**Import and export**](IMPORT.md): Google Sheets, Excel files, and copying from another embed-cms.
 
-## Working on node-cms
+## Working on embed-cms
 
 - [**Contributing**](../CONTRIBUTING.md): setting up, running the app while you work, tests, CI, commit messages.
 - [**Architecture**](ARCHITECTURE.md): one request followed from the admin to the store and back.

@@ -181,7 +181,7 @@ describe('replication security', () => {
   })
 
   describe('a peer that names a resource', () => {
-    const outside = path.join(os.tmpdir(), `node-cms-traversal-${crypto.randomBytes(4).toString('hex')}`)
+    const outside = path.join(os.tmpdir(), `embed-cms-traversal-${crypto.randomBytes(4).toString('hex')}`)
     let node
     afterEach(async () => {
       if (node) {

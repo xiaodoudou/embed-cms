@@ -1,5 +1,5 @@
 {
-  "name": "node-cms",
+  "name": "embed-cms",
   "version": "3.0.0",
   "description": "Content management system, written in node.js, uses leveldb as an asset and content store.",
   "main": "index.js",
@@ -37,8 +37,8 @@
     "test": "node --no-deprecation test/server.js",
     "test:unit": "mocha test/unit test/security",
     "unit": "mocha -w test/unit test/security",
-    "mongodb": "ulimit -n 1000 && mongod --ipv6 --dbpath=../node-cms-mongodb-data",
-    "mongodb-auth": "ulimit -n 1000 && mongod --tlsMode requireTLS --tlsCertificateKeyFile ./ssl/server.pem --tlsCAFile ./ssl/ca.pem --bind_ip localhost --dbpath=../node-cms-mongodb-data",
+    "mongodb": "ulimit -n 1000 && mongod --ipv6 --dbpath=../embed-cms-mongodb-data",
+    "mongodb-auth": "ulimit -n 1000 && mongod --tlsMode requireTLS --tlsCertificateKeyFile ./ssl/server.pem --tlsCAFile ./ssl/ca.pem --bind_ip localhost --dbpath=../embed-cms-mongodb-data",
     "test:frontend": "vitest run",
     "test:all": "npm run test:unit && npm run test:frontend && npm test",
     "test:coverage": "c8 mocha test/unit test/security",
@@ -51,7 +51,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/xiaodoudou/node-cms-private.git"
+    "url": "git+https://github.com/xiaodoudou/embed-cms.git"
   },
   "keywords": [
     "cms",

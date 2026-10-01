@@ -1,12 +1,12 @@
 <div align="center">
 
-# node-cms
+# embed-cms
 
 > A headless CMS for Node.js: describe your content in JavaScript files, get an admin app, a REST API and a JavaScript API
 
 [![License](https://img.shields.io/badge/License-GPL--3.0--only-blue?style=flat-square)](LICENSE) [![Node](https://img.shields.io/badge/Node-%3E%3D22.12-339933?style=flat-square)](#try-it-in-five-minutes) [![Storage](https://img.shields.io/badge/Storage-JSON%20%7C%20MongoDB%20%7C%20PostgreSQL-orange?style=flat-square)](docs/CONFIG.md) [![Express](https://img.shields.io/badge/Express-mountable-lightgrey?style=flat-square)](docs/GETTING_STARTED.md) [![Locales](https://img.shields.io/badge/Content-translatable-blueviolet?style=flat-square)](docs/CONCEPTS.md) [![Tests](https://img.shields.io/badge/Tests-unit%20%7C%20security%20%7C%20frontend-brightgreen?style=flat-square)](docs/TESTING.md)
 
-You describe your content in plain JavaScript files, one per resource, and node-cms gives you three things from them: an admin app where editors write and translate that content, a REST API that serves it to your sites and apps, and a JavaScript API for your own server code.
+You describe your content in plain JavaScript files, one per resource, and embed-cms gives you three things from them: an admin app where editors write and translate that content, a REST API that serves it to your sites and apps, and a JavaScript API for your own server code.
 
 ![The admin app: the default resources, and a record open in the editor](docs/ui/form-light-1280x720.png)
 
@@ -23,8 +23,8 @@ translations, images and files, users and rights, and can keep several servers i
 You need [Node.js](https://nodejs.org/) 22.12 or later and git.
 
 ```sh
-git clone https://github.com/xiaodoudou/node-cms-private.git node-cms
-cd node-cms
+git clone https://github.com/xiaodoudou/embed-cms.git embed-cms
+cd embed-cms
 npm install          # also builds the admin app into dist/, the first time
 node server.js
 ```
@@ -77,7 +77,7 @@ curl -u localAdmin:localAdmin -X POST http://localhost:9990/api/articles \
 ```
 
 That's the whole loop: describe a resource, edit it in the admin, read it over the API. The
-[getting started guide](docs/GETTING_STARTED.md) takes it further: putting node-cms inside your own Express app, letting
+[getting started guide](docs/GETTING_STARTED.md) takes it further: putting embed-cms inside your own Express app, letting
 everyone read the articles without a password, relations between resources, and going to production.
 
 ## Before you go to production

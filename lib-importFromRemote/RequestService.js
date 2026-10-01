@@ -36,7 +36,7 @@ class RequestService {
   }
 
   setAuth(jwtToken) {
-    this.auth = `nodeCmsJwt=${jwtToken}`
+    this.auth = `embedCmsJwt=${jwtToken}`
     this.basicAuth = 'Basic ' + Buffer.from(this.username + ':' + this.password).toString('base64')
   }
 

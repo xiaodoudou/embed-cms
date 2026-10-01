@@ -2,13 +2,12 @@
   <span class="brand-logo" :class="{'on-dark': onDark}" role="img" :aria-label="name">
     <svg class="brand-mark" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" focusable="false">
       <rect width="32" height="32" rx="8" class="mark-bg" />
-      <path d="M10 22V10l12 12V10" class="mark-line" />
-      <circle cx="10" cy="22" r="2.6" class="mark-node" />
-      <circle cx="10" cy="10" r="2.6" class="mark-node" />
-      <circle cx="22" cy="22" r="2.6" class="mark-node" />
+      <path d="M22 10H10V22H22M10 16H18" class="mark-line" />
       <circle cx="22" cy="10" r="2.6" class="mark-node" />
+      <circle cx="18" cy="16" r="2.6" class="mark-node" />
+      <circle cx="22" cy="22" r="2.6" class="mark-node" />
     </svg>
-    <span v-if="!markOnly" class="brand-word" aria-hidden="true">Node<span class="brand-word-light"> CMS</span></span>
+    <span v-if="!markOnly" class="brand-word" aria-hidden="true">Embed<span class="brand-word-light"> CMS</span></span>
   </span>
 </template>
 
@@ -16,7 +15,7 @@
   defineProps({
     markOnly: { type: Boolean, default: false },
     onDark: { type: Boolean, default: false },
-    name: { type: String, default: 'Node CMS' }
+    name: { type: String, default: 'Embed CMS' }
   })
 </script>
 

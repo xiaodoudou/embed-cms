@@ -5,20 +5,20 @@
         <main class="login-canvas">
           <div class="login-brand"><brand-logo /></div>
           <form novalidate @submit.prevent="login">
-            <h1 class="node-cms-title">
+            <h1 class="embed-cms-title">
               {{ $filters.translate('TL_LOGIN') }}
             </h1>
             <div class="login-field">
               <label for="cms-login-username">{{ $filters.translate('TL_USERNAME') }}</label>
               <input
-                id="cms-login-username" ref="username" v-model="username" autofocus type="text" name="nodeCmsUsername" autocomplete="username"
+                id="cms-login-username" ref="username" v-model="username" autofocus type="text" name="embedCmsUsername" autocomplete="username"
                 autocapitalize="none" spellcheck="false" :aria-invalid="loginFailed ? 'true' : 'false'" :aria-describedby="loginFailed ? 'cms-login-error' : undefined"
               >
             </div>
             <div class="login-field">
               <label for="cms-login-password">{{ $filters.translate('TL_PASSWORD') }}</label>
               <input
-                id="cms-login-password" ref="password" v-model="password" type="password" name="nodeCmsPassword" autocomplete="current-password"
+                id="cms-login-password" ref="password" v-model="password" type="password" name="embedCmsPassword" autocomplete="current-password"
                 :aria-invalid="loginFailed ? 'true' : 'false'" :aria-describedby="loginFailed ? 'cms-login-error' : undefined"
               >
             </div>
@@ -184,7 +184,7 @@
   transform: scale(1.25);
   transform-origin: center;
 }
-.node-cms-title {
+.embed-cms-title {
   margin: 0 0 var(--cms-space-5);
   font-size: var(--cms-fs-xl);
   line-height: var(--cms-lh-tight);

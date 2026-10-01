@@ -36,7 +36,7 @@ const cacheControl = () => ({
 
 export default defineConfig(({ mode }) => {
   return {
-    root: mode === 'development' ? __dirname : viteUtils.nodeCmsSrcPath,
+    root: mode === 'development' ? __dirname : viteUtils.embedCmsSrcPath,
     base: './',
     publicDir: `${mode === 'development' ? '.' : '..'}/public`,
     css: {
@@ -58,7 +58,7 @@ export default defineConfig(({ mode }) => {
       extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue'],
       alias: viteUtils.resolveAliases({
         '@s': 'services',
-        // the folder createPluginsSymlink settled on: the project's node-cms/plugins, else the bundled src/.plugins
+        // the folder createPluginsSymlink settled on: the project's embed-cms/plugins, else the bundled src/.plugins
         '@p': viteUtils.plugins.source,
         '@static': 'static',
         '@a': 'assets',
@@ -84,7 +84,7 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks: (id) => {
-            if (id.includes('node_modules') && !id.includes('node-cms/src')) {
+            if (id.includes('node_modules') && !id.includes('embed-cms/src')) {
               const moduleName = _.get(path.dirname(id).split('/node_modules/').pop().split('/'), '[0]', false)
               if (!moduleName) {
                 return defaultVendorsFilename
@@ -100,7 +100,7 @@ export default defineConfig(({ mode }) => {
           }
         },
         input: {
-          main: path.resolve(viteUtils.nodeCmsSrcPath, 'index.html')
+          main: path.resolve(viteUtils.embedCmsSrcPath, 'index.html')
         }
       }
     }

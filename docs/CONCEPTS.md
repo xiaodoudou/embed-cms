@@ -1,6 +1,6 @@
 # Concepts
 
-node-cms has a small vocabulary. Once these words click, the rest of the documentation reads easily. Each section says
+embed-cms has a small vocabulary. Once these words click, the rest of the documentation reads easily. Each section says
 what the thing is, why it exists, and where to read more.
 
 Here is how the main ideas relate. Each box is explained below.
@@ -71,7 +71,7 @@ that writes over the API is trusted to send valid data. [FIELDS.md](FIELDS.md) h
 
 ## Locale
 
-"Language" means two separate things in node-cms, and it helps to keep them apart:
+"Language" means two separate things in embed-cms, and it helps to keep them apart:
 
 - **Content locales** are the languages your content is written in. A resource lists them in `locales`, and every
   field then holds one value per locale, `{ "title": { "enUS": "Hello", "zhCN": "你好" } }`, unless it says
@@ -151,7 +151,7 @@ Each one lives in `lib/plugins/`, is turned on by an option of [CONFIG.md](CONFI
 mounts its own routes. In code, `cms.use(Plugin, options)` installs one.
 
 The admin has plugin **pages** too: Syslog, Replicator, Cms Import, Sync. A project can add its own Vue pages in
-`node-cms/plugins/`, which the admin build picks up.
+`embed-cms/plugins/`, which the admin build picks up.
 
 ## System resources
 

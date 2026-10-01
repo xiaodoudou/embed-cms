@@ -6,7 +6,7 @@
         <v-btn elevation="0" class="delete" :disabled="isEmpty(multiselectItems)" @click="onClickDelete">{{ $filters.translate('TL_DELETE') }}</v-btn>
       </div>
     </div>
-    <div class="scroll-wrapper" :class="{'scrolled-to-bottom': scrolledToBottom}" @scroll="onScroll">
+    <div ref="scroller" class="scroll-wrapper" :class="{'scrolled-to-bottom': scrolledToBottom, scrollable}" @scroll="onScroll">
       <div class="selected-records-list">
         <div v-for="item in multiselectItems" :key="item._id" class="selected-record">
           <!-- the same chip as the tags of the fields: soft indigo, with its own close button -->
@@ -44,13 +44,35 @@
     data () {
       return {
         scrolledToBottom: false,
+        scrollable: false,
         size: _.size,
         isEmpty: _.isEmpty
       }
     },
+    watch: {
+      multiselectItems () {
+        this.$nextTick(this.measure)
+      }
+    },
+    mounted () {
+      this.measure()
+      window.addEventListener('resize', this.measure)
+    },
+    beforeUnmount () {
+      window.removeEventListener('resize', this.measure)
+    },
     methods: {
       onScroll ({ target: { scrollTop, clientHeight, scrollHeight } }) {
         this.scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 50
+      },
+      // the fade that hints at more records below only shows when there are more records below
+      measure () {
+        const el = this.$refs.scroller
+        if (!el) {
+          return
+        }
+        this.scrollable = el.scrollHeight > el.clientHeight + 1
+        this.scrolledToBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 50
       },
       deselectItem (item) {
         this.$emit('changeMultiselectItems', _.filter(this.multiselectItems, i => i._id !== item._id))
@@ -107,6 +129,12 @@
 .multiselect-title {
   margin: 0;
   @include h3;
+}
+.selected-records-list:after {
+  opacity: 0;
+}
+.scroll-wrapper.scrollable:not(.scrolled-to-bottom) .selected-records-list:after {
+  opacity: 1;
 }
 .selected-records-list {
   display: flex;

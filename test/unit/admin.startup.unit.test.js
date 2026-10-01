@@ -43,7 +43,7 @@ describe('admin plugin start-up (unit)', () => {
       const res = await request(app.url).get('/admin/').timeout({ response: 3000 })
       expect(res.status).to.equal(200)
       expect(res.text).to.not.include('__TITLE__')
-      expect(res.text).to.include('<title>node-cms</title>')
+      expect(res.text).to.include('<title>Node CMS</title>')
       expect(res.text).to.include('window.type = "index"')
     })
     it('redirects /admin to /admin/', async () => {

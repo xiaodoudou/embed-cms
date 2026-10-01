@@ -121,7 +121,10 @@ Everyone who logs in is a **user**, and every user belongs to one **group**. Rig
 | `attachments` | Adding, changing and removing files. |
 | `plugins` | Seeing admin pages by name, such as `Syslog`. |
 
-Users and groups are ordinary resources (`_users`, `_groups`), edited in the admin's **CMS** menu. Two groups always
+Users and groups are ordinary resources (`_users`, `_groups`), edited in the admin's **CMS** menu. A user also carries two
+preferences for their own admin: a **Theme** (light or dark, when [dark mode](CONFIG.md#features-you-can-switch) is on) and a
+**Language** (one of the [admin's languages](CONFIG.md#features-you-can-switch)). Both apply when they log in, and at once when
+they save their own user. Two groups always
 exist. **`admins`** is given every right on every resource at each start. **`anonymous`** is the group of requests
 without a login, and has no rights until you give it some, for example with [`anonymousRead`](CONFIG.md#features-you-can-switch).
 How people log in (browser prompt or login page) is set in [CONFIG.md](CONFIG.md#authentication).

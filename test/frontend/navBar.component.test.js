@@ -54,11 +54,10 @@ describe('NavBar (the top bar)', () => {
       expect(wrapper.find('.brand .logo').exists()).toBe(false)
     })
 
-    it('shows the title from the settings, and puts it in the title of the browser tab', async () => {
+    it('shows the title from the settings', async () => {
       ResourceService.cache.mockResolvedValue([{ title: 'Acme CMS' }])
       await bar()
       expect(wrapper.find('.brand-title').text()).toBe('Acme CMS')
-      expect(document.title).toBe('Acme CMS')
     })
 
     it('shows the logo from the settings in front of the title', async () => {

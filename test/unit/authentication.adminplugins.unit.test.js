@@ -12,6 +12,26 @@ describe('admins group plugins (unit)', () => {
     expect(authentication().adminsGroup.plugins).to.include('Syslog')
   })
 
+  it('offers on the user the languages the admin is translated into, English when none is configured', () => {
+    const field = authentication().usersSchema().schema.find((item) => item.field === 'language')
+    expect(field.source).to.deep.equal(['enUS'])
+    expect(field.default).to.equal('enUS')
+  })
+
+  it('offers the configured languages, and starts from the default one', () => {
+    const auth = authentication()
+    const cms = auth.cms
+    const original = cms._options
+    try {
+      cms._options = { ...original, admin: { language: { defaultLocale: 'zhCN', locales: ['enUS', 'zhCN'] } } }
+      const field = auth.usersSchema().schema.find((item) => item.field === 'language')
+      expect(field.source).to.deep.equal(['enUS', 'zhCN'])
+      expect(field.default).to.equal('zhCN')
+    } finally {
+      cms._options = original
+    }
+  })
+
   it('gives the admins group the Replicator plugin by default (the page only shows when replication runs)', () => {
     // src/utils/pluginPages.js: ['CmsReplicator', 'Replicator']
     expect(authentication().adminsGroup.plugins).to.include('Replicator')

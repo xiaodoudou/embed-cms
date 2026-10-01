@@ -27,7 +27,8 @@ vi.mock('@s/ResourceService', () => ({
     setSchemas: vi.fn(),
     get: vi.fn(),
     cache: vi.fn(),
-    getSchema: vi.fn(() => ({}))
+    getSchema: vi.fn(() => ({})),
+    events: { on: vi.fn(), off: vi.fn() }
   }
 }))
 
@@ -46,7 +47,6 @@ const stubs = {
   UploadPanel: stub('UploadPanel'),
   ToastHost: stub('ToastHost'),
   AppDialog: stub('AppDialog'),
-  LocaleList: stub('LocaleList'),
   Loading: stub('Loading'),
   RecordList: { ...RecordList, template: undefined, render: () => null, name: 'RecordList', props: ['list', 'selectedItem', 'resource'], emits: ['select-item', 'select-multiselect', 'change-multiselect-items', 'update-record-list'] },
   RecordEditor: { name: 'RecordEditor', props: ['record', 'resource', 'locale', 'userLocale'], emits: ['update:record', 'update:locale', 'update-record-list', 'back'], template: '<div class="stub-RecordEditor" />' }
@@ -97,7 +97,7 @@ beforeEach(() => {
   TranslateService.config = { locales: ['enUS'], defaultLocale: 'enUS' }
   window.localStorage.clear()
   ResourceService.getAll.mockReset().mockResolvedValue(resources)
-  ResourceService.get.mockReset().mockImplementation((title) => records[title].map((record) => ({ ...record })))
+  ResourceService.get.mockReset().mockImplementation((title) => (records[title] || []).map((record) => ({ ...record })))
   ResourceService.cache.mockReset().mockImplementation(async (title) => records[title].map((record) => ({ ...record })))
   LoginService.getStatus.mockClear()
 })
@@ -121,6 +121,11 @@ describe('App', () => {
       await mountApp('/?id=products')
       expect(wrapper.vm.selectedResource.title).toBe('products')
       expect(recordList().props('list').map((record) => record._id)).toEqual(['mu0aaaaa', 'mu0bbbbb', 'mu0ccccc'])
+    })
+
+    it('puts where you are in the title of the browser tab: the resource, then the product', async () => {
+      await mountApp('/?id=products')
+      expect(document.title).toBe('Products · Node CMS')
     })
 
     it('opens no record by itself', async () => {

@@ -95,11 +95,7 @@
         return _.get(this.settingsData, 'logo[0].url', false)
       },
       hasLogoOrTitle () {
-        const title = _.get(this.settingsData, 'title', false)
-        if (title) {
-          window.document.title = title
-        }
-        return this.getLogo() || title
+        return this.getLogo() || _.get(this.settingsData, 'title', false)
       },
       // the top bar shows the settings (logo, title, links): follow them when they are saved
       onResourceCached (resource) {

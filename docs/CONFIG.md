@@ -64,8 +64,8 @@ does not edit this file. Run the CMS under a supervisor (systemd, pm2, Docker) t
 | `xlsx` | not set | Turn on the Excel export and import routes (`true`). See [IMPORT.md](IMPORT.md). |
 | `anonymousRead` | not set | A list of resource names anyone may read without logging in. At each start the CMS adds them to the read rights of the `anonymous` group. |
 | `wsRecordUpdates` | `true` | Broadcast record changes over a websocket, so an open admin sees edits made elsewhere. |
-| `disableDarkMode` | `true` | With `true`, the login page and the admin are always light. With `false`, the login page follows the system's light or dark preference, and the admin follows each user's **Theme**, with a switch in the top bar. |
-| `admin.language` | English only | The admin's languages: `{ "defaultLocale": "enUS", "locales": ["enUS", "zhCN"] }`. The older form `admin.config.language` is read too. |
+| `disableDarkMode` | `true` | With `true`, the login page and the admin are always light. With `false`, the login page follows the system's light or dark preference, and the admin follows each user's **Theme**, with a switch in the top bar (and the field of the user, which applies as soon as you save your own). |
+| `admin.language` | English only | The admin's languages: `{ "defaultLocale": "enUS", "locales": ["enUS", "zhCN"] }`. The older form `admin.config.language` is read too. Each user chooses one of them in the **Language** field of their user, and the admin opens in it (and its date pickers speak it); a user without one gets `defaultLocale`. There is no language switch in the app bar, and the field only offers the languages listed here. |
 | `toolbarTitle` | not set | Text shown in the admin's top bar. A string, or one text per admin language: `{ "enUS": "Newsroom", "zhCN": "新闻室" }`. |
 
 ## Authentication

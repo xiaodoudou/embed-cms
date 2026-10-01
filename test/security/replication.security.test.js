@@ -145,7 +145,7 @@ describe('replication security', () => {
       a = b = undefined
     })
 
-    it('replicate a record from one node to the other when they share the secret (hardened profile)', async () => {
+    it('replicate a record from one node to the other when they share the secret', async () => {
       a = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: {}, secret, settleDelay: 0 } }))
       b = await startNode('bbbbbbbb', hardened({ replication: { peers: [], peersByResource: {}, secret, settleDelay: 0 } }))
       const record = await a.cms.api()('comments').create({ title: { enUS: 'from A' } })
@@ -168,15 +168,7 @@ describe('replication security', () => {
       expect(await b.cms.api()('comments').list()).to.have.length(0)
     })
 
-    it('replicate without a secret with the legacy profile (existing behaviour)', async () => {
-      a = await startNode('aaaaaaaa', { replication: { peers: [], peersByResource: {}, settleDelay: 0 } })
-      b = await startNode('bbbbbbbb', { replication: { peers: [], peersByResource: {}, settleDelay: 0 } })
-      const record = await a.cms.api()('comments').create({ title: { enUS: 'legacy' } })
-      await replicate(b, a)
-      expect(await waitFor(async () => (await b.cms.api()('comments').list()).some(item => item._id === record._id))).to.equal(true)
-    })
-
-    it('refuse to boot with a replication port and no secret when the profile is hardened', async () => {
+    it('refuse to boot with a replication port and no secret by default', async () => {
       let error
       try {
         a = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: {} } }))
@@ -208,17 +200,7 @@ describe('replication security', () => {
       }, options)
     })
 
-    it('cannot make the server create folders outside of its data directory (legacy profile)', async () => {
-      node = await startNode('aaaaaaaa', { replication: { peers: [], peersByResource: {}, settleDelay: 0 } })
-      // <data>/<name>/json: the name climbs out of the data directory
-      const relative = path.relative(node.dataDir, outside)
-      await nameResource(node.netPort, relative, undefined)
-      await sleep(300)
-      expect(fs.existsSync(outside), 'a folder was created outside of the data directory').to.equal(false)
-      expect(node.cms._resourceNames).to.not.include(relative)
-    })
-
-    it('cannot make the server create a resource it does not have (hardened profile)', async () => {
+    it('cannot make the server create a resource it does not have', async () => {
       const secret = randomSecret()
       node = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: {}, secret, settleDelay: 0 } }))
       const before = [...node.cms._resourceNames]
@@ -228,7 +210,7 @@ describe('replication security', () => {
       expect(fs.existsSync(path.join(node.dataDir, 'somethingnew'))).to.equal(false)
     })
 
-    it('cannot read anything without the secret (hardened profile)', async () => {
+    it('cannot read anything without the secret', async () => {
       const secret = randomSecret()
       node = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: {}, secret, settleDelay: 0 } }))
       const seen = []
@@ -246,7 +228,7 @@ describe('replication security', () => {
     })
   })
 
-  describe('records sent by an authenticated peer (hardened profile)', () => {
+  describe('records sent by an authenticated peer', () => {
     const secret = randomSecret()
     let node, existing
     const otherRecordId = 'lkjhgfdscccccccc12345678' // 8 characters of time, machine cccccccc, 8 of random

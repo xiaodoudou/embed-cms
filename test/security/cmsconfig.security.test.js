@@ -7,12 +7,12 @@ const { startApp, ADMIN, hardened, createUser } = require('../helpers/app')
 // the Cms Config page reads and rewrites cms.json (secrets included) and restarts the server: admins only
 describe('cms-config editor (security)', () => {
   const profiles = {
-    legacy: { disableJwtLogin: true },
-    hardened: hardened({ disableJwtLogin: true, security: { localAdmin: true } })
+    'development defaults': { disableJwtLogin: true },
+    'production like': hardened({ disableJwtLogin: true, security: { localAdmin: true } })
   }
 
   Object.entries(profiles).forEach(([profile, options]) => {
-    describe(`Basic authentication mode (${profile} profile)`, () => {
+    describe(`Basic authentication mode (${profile})`, () => {
       let app, admin, editor, configBefore
       before(async () => {
         app = await startApp(options)
@@ -65,7 +65,7 @@ describe('cms-config editor (security)', () => {
         const res = await request(app.url).get('/admin/cms-config').set('Authorization', `Bearer ${admin.password}`)
         expect(res.status).to.equal(403)
       })
-      if (profile === 'hardened') {
+      if (profile === 'production like') {
         it('lets an admin save (the weak secret check answers, after the admin check)', async () => {
           // a configuration without secrets is refused by security.strongSecrets: nothing is written, no restart
           const res = await post(admin, {})

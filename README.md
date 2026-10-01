@@ -1,14 +1,22 @@
+<div align="center">
+
 # node-cms
 
-node-cms is a headless content management system for Node.js. You describe your content in plain JavaScript files, one
-per resource, and node-cms gives you three things from them: an admin app where editors write and translate that content,
-a REST API that serves it to your sites and apps, and a JavaScript API for your own server code.
+> A headless CMS for Node.js: describe your content in JavaScript files, get an admin app, a REST API and a JavaScript API
 
-It stores everything in JSON files by default, so there is no database to set up; MongoDB and PostgreSQL are there when
-you need them. It runs on its own or inside an existing Express app, handles translations, images and files, users and
+[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE) [![Node](https://img.shields.io/badge/Node-%3E%3D22.12-339933?style=flat-square)](#try-it-in-five-minutes) [![Storage](https://img.shields.io/badge/Storage-JSON%20%7C%20MongoDB%20%7C%20PostgreSQL-orange?style=flat-square)](docs/CONFIG.md) [![Express](https://img.shields.io/badge/Express-mountable-lightgrey?style=flat-square)](docs/GETTING_STARTED.md) [![Locales](https://img.shields.io/badge/Content-translatable-blueviolet?style=flat-square)](docs/CONCEPTS.md) [![Tests](https://img.shields.io/badge/Tests-unit%20%7C%20security%20%7C%20frontend-brightgreen?style=flat-square)](docs/TESTING.md)
+
+You describe your content in plain JavaScript files, one per resource, and node-cms gives you three things from them: an admin app where editors write and translate that content, a REST API that serves it to your sites and apps, and a JavaScript API for your own server code.
+
+![The admin app: the default resources, and a record open in the editor](docs/ui/form-light-1280x720.png)
+
+</div>
+
+---
+
+It keeps your content in a LevelDB-style key-value store by default, held in memory and saved to a file on disk, so
+there is no database to set up; MongoDB and PostgreSQL are there when you need them. It runs on its own or inside an existing Express app, handles translations, images and files, users and
 rights, and can keep several servers in step.
-
-![The admin app: a list of records and the editor](docs/ui/form-light-1280x720.png)
 
 ## Try it in five minutes
 
@@ -76,7 +84,7 @@ everyone read the articles without a password, relations between resources, and 
 
 Two things in this quick start are only fit for your laptop. The `localAdmin` account has a published password (the
 server logs an error at every start until you change it), and `cms.json` holds secrets whose default values are published
-too. Run with `NODE_ENV=production` and follow [SECURITY.md](SECURITY.md): the hardened profile refuses to start with
+too. Run with `NODE_ENV=production` and follow [SECURITY.md](SECURITY.md): production mode refuses to start with
 those defaults.
 
 ## Documentation
@@ -91,6 +99,6 @@ those defaults.
 ## Contributing, security, license
 
 Setting up a development copy, running the tests and writing commits: [CONTRIBUTING.md](CONTRIBUTING.md). Reporting a
-vulnerability: [SECURITY.md](SECURITY.md#reporting-a-vulnerability). Known bugs: [docs/BUGS.md](docs/BUGS.md).
+vulnerability: [SECURITY.md](SECURITY.md#reporting-a-vulnerability).
 
-Authors: Edouard Durand, Kong Yim, Louis Wang, Hugo Barbier. Released under the [MIT license](LICENSE).
+Authors: Edouard Durand, Hugo Barbier. Released under the [MIT license](LICENSE).

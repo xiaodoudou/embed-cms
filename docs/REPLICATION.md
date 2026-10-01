@@ -75,7 +75,7 @@ make it useful:
 | `replication.peers` | The peers of every resource. Each peer is `{ host, port, url, direction }`: `host` and `port` reach its `netPort`, `url` is its REST API, ending in `/api/`, for files. |
 | `replication.peersByResource` | Peers per resource name. Replaces `peers` for that resource. |
 | `replication.auth` | `{ username, password }` sent as Basic credentials when downloading files from a peer that requires a login. |
-| `replication.secret` | A shared secret. Both sides prove they know it (HMAC-SHA256 challenge) before any resource is named. Required with the `hardened` profile when `netPort` is set. |
+| `replication.secret` | A shared secret. Both sides prove they know it (HMAC-SHA256 challenge) before any resource is named. Required when `netPort` is set (unless `security.strictReplication` is turned off). |
 | `replication.strictTypes` | Make `direction` matter (see below). Off by default. |
 | `replication.settleDelay` | Milliseconds to wait for the peer to flush before syncing files (`2000`). |
 | `replication.maxRecordBytes` | Largest record accepted from a peer with `strictReplication` (4 MB). |
@@ -138,5 +138,5 @@ await cms.$replicator.syncResource('articles')
 
 The replication port can read and write every record of the resources it serves. Set `replication.secret` on every node,
 firewall the port to the peers, and run it on a private network or a tunnel: the secret authenticates peers, it doesn't
-encrypt the traffic. With the `hardened` profile (`strictReplication`), a peer may only ask for resources this node has,
+encrypt the traffic. With `strictReplication` (on by default), a peer may only ask for resources this node has,
 and what it sends is validated. Details in [SECURITY.md](../SECURITY.md).

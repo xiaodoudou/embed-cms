@@ -28,7 +28,7 @@ rather than repeat it, so if two pages ever disagree, the owner is right (and th
 ## Running it
 
 - [**Configuration**](CONFIG.md): every option of `cms.json`, authentication, logs, storage engines.
-- [**Security**](../SECURITY.md): the security profiles, the recommended production configuration, the hardening
+- [**Security**](../SECURITY.md): the security settings, the recommended production configuration, the hardening
   checklist, and how to report a vulnerability.
 - [**Replication**](REPLICATION.md): keeping several servers in step, continuously.
 - [**Sync**](SYNC.md): copying chosen resources between two servers, such as staging and production.
@@ -41,22 +41,12 @@ rather than repeat it, so if two pages ever disagree, the owner is right (and th
 - [**Testing**](TESTING.md): how the test suites are built, the helpers, the driver contract suite, the benchmark.
 - [**Admin UI design**](UI_REDESIGN.md): the palette, the shared components and the design rules a test enforces.
 
-## Known problems
-
-- [**Bugs**](BUGS.md): backend and API bugs found while checking these docs against the code, with their evidence.
-- [**UI bugs**](UI_BUGS.md): problems in the admin app.
-
-## History
-
-- [**Backend audit**](BACKEND_AUDIT.md): the security and performance audit that led to the hardening work, every finding
-  with the test that proves its fix, and the benchmark results. Read the summary at the top; the rest is the record.
-
 ## Who owns what
 
 | Topic | Owner |
 |---|---|
 | Options of `cms.json` (except security) | [CONFIG.md](CONFIG.md) |
-| Security options, profiles, production configuration | [SECURITY.md](../SECURITY.md) |
+| Security options, production configuration | [SECURITY.md](../SECURITY.md) |
 | Field types and their options | [FIELDS.md](FIELDS.md) and [`fields/`](fields/) |
 | Routes, record shape, JavaScript methods, hooks | [API.md](API.md) |
 | Words and ideas | [CONCEPTS.md](CONCEPTS.md) |

@@ -169,7 +169,7 @@ group only, which gets them in its **plugins** list at every start.
 Before the first real user, work through the [hardening checklist](../SECURITY.md#hardening-checklist). The short
 version:
 
-- run with `NODE_ENV=production`, which selects the `hardened` security profile;
+- run with `NODE_ENV=production`, which requires strong secrets and creates no `localAdmin` (every other protection is on already);
 - set `auth.secret` and `session.secret` to long random values, or the server refuses to start;
 - make sure no `localAdmin` account is left with its default password;
 - behind a reverse proxy, set `trustProxy` and serve the admin over HTTPS;

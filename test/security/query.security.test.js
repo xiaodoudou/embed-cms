@@ -56,7 +56,7 @@ describe('catastrophic regular expressions (security)', () => {
   })
 
   describe('over REST', () => {
-    it('answers 400 at once instead of blocking the server (hardened profile)', async () => {
+    it('answers 400 at once instead of blocking the server', async () => {
       const app = await startApp(hardened())
       try {
         const admin = await createUser(app)

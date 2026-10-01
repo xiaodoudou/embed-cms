@@ -25,7 +25,7 @@ const connect = (httpUrl, headers = {}) => new Promise((resolve) => {
 const cookiesOf = (res) => res.headers['set-cookie'].map(c => c.split(';')[0]).join('; ')
 
 describe('record update websocket (security)', () => {
-  describe('hardened profile', () => {
+  describe('the default settings', () => {
     let app, cookie
     before(async () => {
       app = await startApp(hardened({ security: { allowedOrigins: ['https://admin.example'] } }))
@@ -88,7 +88,7 @@ describe('record update websocket (security)', () => {
     })
   })
 
-  describe('JWT cookie mode (hardened profile)', () => {
+  describe('JWT cookie mode', () => {
     it('accepts the cookies of a logged in user and rejects the other clients', async () => {
       const app = await startApp(hardened({ disableAuthentication: true }))
       try {
@@ -102,7 +102,7 @@ describe('record update websocket (security)', () => {
     })
   })
 
-  describe('Basic authentication mode (hardened profile)', () => {
+  describe('Basic authentication mode', () => {
     it('accepts a client that carries valid credentials', async () => {
       const app = await startApp(hardened({ disableJwtLogin: true }))
       try {
@@ -112,19 +112,6 @@ describe('record update websocket (security)', () => {
         const wrong = `Basic ${Buffer.from(`${user.username}:wrong`).toString('base64')}`
         expect((await connect(app.url, { Authorization: wrong })).status).to.equal(401)
         expect((await connect(app.url)).status).to.equal(401)
-      } finally {
-        await app.close()
-      }
-    })
-  })
-
-  describe('legacy profile', () => {
-    it('accepts anyone (existing behaviour)', async () => {
-      const app = await startApp()
-      try {
-        const result = await connect(app.url, { Origin: 'https://evil.example' })
-        expect(result.state).to.equal('open')
-        result.ws.close()
       } finally {
         await app.close()
       }

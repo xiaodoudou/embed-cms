@@ -6,12 +6,12 @@ const { startApp, ADMIN, hardened, createUser } = require('../helpers/app')
 // with the JWT login and calls the REST API with the cookies of that login
 describe('both login modes on (security)', () => {
   const profiles = {
-    legacy: {},
-    hardened: hardened({ security: { localAdmin: true } })
+    'development defaults': {},
+    'production like': hardened({ security: { localAdmin: true } })
   }
 
   Object.entries(profiles).forEach(([profile, options]) => {
-    describe(`${profile} profile`, () => {
+    describe(`${profile}`, () => {
       let app, editor
       before(async () => {
         app = await startApp(options)
@@ -55,13 +55,11 @@ describe('both login modes on (security)', () => {
       it('still accepts Basic credentials from a client without cookies', async () => {
         expect((await request(app.url).get('/api/articles').auth(...ADMIN)).status).to.equal(200)
       })
-      if (profile === 'hardened') {
-        it('rejects a cross-site write that rides on the login cookies', async () => {
-          const agent = await login(...ADMIN)
-          const res = await agent.post('/api/articles').set('Origin', 'https://evil.example').send({ title: { enUS: 'forged' } })
-          expect(res.status).to.equal(403)
-        })
-      }
+      it('rejects a cross-site write that rides on the login cookies', async () => {
+        const agent = await login(...ADMIN)
+        const res = await agent.post('/api/articles').set('Origin', 'https://evil.example').send({ title: { enUS: 'forged' } })
+        expect(res.status).to.equal(403)
+      })
     })
   })
 })

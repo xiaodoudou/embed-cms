@@ -43,7 +43,7 @@ describe('authentication (unit)', () => {
       const record = await auth.users.find({ username: 'editor' })
       const user = await auth.users.json.find(record._id)
       expect(user.password).to.not.equal('editorPass')
-      expect(user.password).to.match(/^[0-9a-f]{1024}$/)
+      expect(user.password).to.match(/^[$]scrypt[$]/)
       expect(user.salt).to.be.a('string')
     })
     it('does not return the password through the REST API', async () => {
@@ -71,7 +71,7 @@ describe('authentication (unit)', () => {
         await auth.authenticate('victim', `wrong${i}`, req)
       }
       const blocked = await auth.authenticate('victim', 'victimPass', req)
-      expect(blocked.error.message).to.match(/blocked/)
+      expect(blocked.error.message).to.match(/too many failed attempts/i)
     })
     it('does not block the same user from another ip', async () => {
       const { result } = await auth.authenticate('victim', 'victimPass', { headers: {}, ip: '10.0.0.10' })
@@ -83,7 +83,7 @@ describe('authentication (unit)', () => {
         await auth.authenticate('editor', `wrong${i}`, req(i))
       }
       const blocked = await auth.authenticate('editor', 'editorPass', req(99))
-      expect(blocked.error && blocked.error.message).to.match(/blocked/)
+      expect(blocked.error && blocked.error.message).to.match(/too many failed attempts/i)
     })
   })
 

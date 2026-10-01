@@ -85,22 +85,22 @@ Who may do what is decided by groups, not by these switches: see [Users, groups 
 
 | Option | Default | What it does |
 |---|---|---|
-| `auth.secret` | a value published in the source | Signs JWTs. Must be longer than 16 characters. **Replace it**: the `hardened` security profile refuses to start with the published value. |
+| `auth.secret` | a value published in the source | Signs JWTs. Must be longer than 16 characters. **Replace it**: with `NODE_ENV=production` the CMS refuses to start with the published value. |
 | `session.secret` | a value published in the source | Signs the session cookie. Replace it too. |
-| `session.resave`, `session.saveUninitialized` | `true`, `true` | Passed to `express-session`. The `hardened` profile forces both to `false`. |
+| `session.resave`, `session.saveUninitialized` | `true`, `true` | Passed to `express-session`. Both are forced to `false` (a session is only stored once a login wrote to it). |
 | `routesToAuth` | `/api/_syslog`, `/api/system`, `/admin/resources`, `/admin/paragraphs`, `/import`, `/importFromRemote`, `/replicator`, `/resources` | Routes that require a login before anything else runs. The REST API checks rights on every request anyway, so this list is about the admin and plugin routes. If you set it, you replace the whole list. |
 | `disableAnonymous` | `false` | Refuse every request authenticated as the `anonymous` user, whatever rights that group has. |
-| `blockRetry` | off (`legacy` profile), `{ "retry": 10, "duration": 5 }` (`hardened`) | Lock an account after `retry` failed logins from one address, for `duration` minutes. `false` turns it off. |
+| `blockRetry` | `{ "retry": 10, "duration": 5 }` | Lock an account after `retry` failed logins from one address, for `duration` minutes. `false` turns it off. |
 
 On a fresh data folder the CMS creates the `admins` and `anonymous` groups and a `localAdmin` user with the password
 `localAdmin`, and logs an error at every start while that password is unchanged. Change it, or delete the account once you
-have your own administrator. The `hardened` profile doesn't create it at all.
+have your own administrator. With `NODE_ENV=production` it is not created at all.
 
 ## Security
 
 `security.*`, `trustProxy`, `imageConcurrency`, `attachmentCleanupGrace` and the `replication.secret` family are
 documented in [SECURITY.md](../SECURITY.md), with a recommended production configuration. In short: run with
-`NODE_ENV=production` and you get the `hardened` profile, which turns on every protection.
+`NODE_ENV=production`: every protection is on by default, and production also requires strong secrets and creates no `localAdmin`.
 
 ## Logs
 

@@ -8,6 +8,9 @@ work on it, the tests, and how commits are written here. For how the code fits t
 
 You need Node.js 22.12 or later (CI runs Node 22) and git.
 
+Use npm 10 or 11: npm 12 refuses by default the dependencies fetched from a URL, and `vue3-shortkey` (a fork, pinned to a commit)
+is one of them. It is a development dependency, only bundled into the admin, so the published package does not need it.
+
 ```sh
 git clone https://github.com/xiaodoudou/embed-cms.git embed-cms
 cd embed-cms

@@ -26,7 +26,6 @@ import CustomForm from '@c/CustomForm.vue'
 // Pages
 import PluginPage from '@c/pages/PluginPage.vue'
 import Syslog from '@c/pages/Syslog.vue'
-import CmsConfig from '@c/pages/CmsConfig.vue'
 import CmsImport from '@c/pages/CmsImport.vue'
 import SyncResource from '@c/pages/SyncResource.vue'
 import CmsReplicator from '@c/pages/CmsReplicator.vue'
@@ -102,7 +101,6 @@ app.use(router)
   .component('CustomMultiSelect', CustomMultiSelect)
   .component('PluginPage', PluginPage)
   .component('Syslog', Syslog)
-  .component('CmsConfig', CmsConfig)
   .component('CmsImport', CmsImport)
   .component('SyncResource', SyncResource)
   .component('CmsReplicator', CmsReplicator)
@@ -140,7 +138,7 @@ window.addEventListener('load', async function () {
     // the replicator's routes need a login: not asked from the login page
     isLoginPage ? false : replicationEnabled((url) => RequestService.get(url), `${window.location.pathname}../replicator/resources`)
   ])
-  _.each(pluginPages(config, { replication }), (page) => addPlugin(page.title, page.displayname))
+  _.each(pluginPages(config, { replication }), (page) => addPlugin(page.title, page.displayname, page.group))
   window.disableJwtLogin = _.get(config, 'disableJwtLogin', false)
   window.noLogin = window.disableJwtLogin && _.get(config, 'disableAuthentication', false)
   app.mount('#app')

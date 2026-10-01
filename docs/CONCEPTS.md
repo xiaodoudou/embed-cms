@@ -150,7 +150,7 @@ A plugin is a feature you can switch on or off: the REST API, the admin, replica
 Each one lives in `lib/plugins/`, is turned on by an option of [CONFIG.md](CONFIG.md#features-you-can-switch), and
 mounts its own routes. In code, `cms.use(Plugin, options)` installs one.
 
-The admin has plugin **pages** too: Syslog, Cms Config, Replicator, Cms Import, Sync. A project can add its own Vue pages in
+The admin has plugin **pages** too: Syslog, Replicator, Cms Import, Sync. A project can add its own Vue pages in
 `node-cms/plugins/`, which the admin build picks up.
 
 ## System resources

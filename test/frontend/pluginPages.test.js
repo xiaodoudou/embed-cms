@@ -7,13 +7,18 @@ const names = (config, options) => pluginPages(config, options).map((page) => pa
 const ROOT = path.resolve(__dirname, '../..')
 
 describe('plugin pages added to the menu', () => {
-  it('always offers Syslog and Cms Config', () => {
-    expect(names({})).toEqual(['Syslog', 'Cms Config'])
-    expect(pluginPages({})[1]).toEqual({ title: 'CmsConfig', displayname: 'Cms Config' })
+  it('always offers Syslog, and no page to edit the configuration file', () => {
+    expect(names({})).toEqual(['Syslog'])
+    expect(names({})).not.toContain('Cms Config')
+  })
+
+  it('lists Syslog in the CMS group, with the pages that run the CMS, and the others in System', () => {
+    expect(pluginPages({})[0]).toEqual({ title: 'Syslog', displayname: 'Syslog', group: 'CMS' })
+    expect(pluginPages({ import: {} }).slice(1).every((page) => !page.group)).toBe(true)
   })
 
   it('offers Cms Import and Sync Resource when their plugins are on', () => {
-    expect(names({ import: {}, sync: {} })).toEqual(['Syslog', 'Cms Config', 'Cms Import', 'Sync Resource'])
+    expect(names({ import: {}, sync: {} })).toEqual(['Syslog', 'Cms Import', 'Sync Resource'])
     expect(names({ sync: { disablePlugin: true } })).not.toContain('Sync Resource')
   })
 
@@ -36,7 +41,7 @@ describe('plugin pages added to the menu', () => {
   })
 
   it('adds no Import from remote page, which was a placeholder, even with the plugin on (it is by default)', () => {
-    expect(names({ importFromRemote: { local: {}, remote: {} } })).toEqual(['Syslog', 'Cms Config'])
+    expect(names({ importFromRemote: { local: {}, remote: {} } })).toEqual(['Syslog'])
     const main = fs.readFileSync(path.join(ROOT, 'src/main.js'), 'utf8')
     expect(main).not.toContain('ImportFromRemote')
     expect(main).toContain('pluginPages(config')

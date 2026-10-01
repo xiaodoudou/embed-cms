@@ -14,9 +14,9 @@ You describe your content in plain JavaScript files, one per resource, and node-
 
 ---
 
-It keeps your content in a LevelDB-style key-value store by default, held in memory and saved to a file on disk, so
-there is no database to set up; MongoDB and PostgreSQL are there when you need them. It runs on its own or inside an existing Express app, handles translations, images and files, users and
-rights, and can keep several servers in step.
+It keeps your content in a LevelDB database on disk by default, so there is no database server to set up; SQLite, MongoDB
+and PostgreSQL are there when you need them. It runs on its own or inside an existing Express app, handles
+translations, images and files, users and rights, and can keep several servers in step.
 
 ## Try it in five minutes
 

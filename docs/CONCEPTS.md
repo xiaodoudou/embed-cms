@@ -35,7 +35,7 @@ module.exports = {
 }
 ```
 
-Each resource keeps its records apart from the others: its own JSON file (or table, or collection) and its own folder of
+Each resource keeps its records apart from the others: its own LevelDB folder (or file, table or collection) and its own folder of
 files. A record is one item of a resource, one article, with an `_id` the CMS gives it.
 
 The keys a declaration can have:

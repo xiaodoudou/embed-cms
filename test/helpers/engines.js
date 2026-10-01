@@ -3,7 +3,7 @@ const { Client } = require('pg')
 const { MongoClient } = require('mongodb')
 
 /**
- * The storage engines the driver contract suite runs against. The json file store is always there; PostgreSQL and MongoDB
+ * The storage engines the driver contract suite runs against. The json file store, SQLite and LevelDB are always there; PostgreSQL and MongoDB
  * take part when a server answers (TEST_POSTGRES_URL, default postgres://postgres:postgres@localhost:5432/postgres;
  * TEST_MONGODB_URL, default mongodb://localhost:27017). Each run works in a database of its own, dropped afterwards.
  * @returns {Array<{name: string, prepare: function(): Promise<null|{options: object, teardown: function(): Promise<void>}>}>}
@@ -13,7 +13,15 @@ function engines () {
   return [
     {
       name: 'json file store',
-      prepare: async () => ({ options: {}, teardown: async () => {} })
+      prepare: async () => ({ options: { dbEngine: { type: 'jsondown' } }, teardown: async () => {} })
+    },
+    {
+      name: 'SQLite',
+      prepare: async () => ({ options: { dbEngine: { type: 'sqlite' } }, teardown: async () => {} })
+    },
+    {
+      name: 'LevelDB',
+      prepare: async () => ({ options: { dbEngine: { type: 'leveldb' } }, teardown: async () => {} })
     },
     {
       name: 'PostgreSQL',

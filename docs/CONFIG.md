@@ -50,7 +50,7 @@ backup, and then exits the process, so run the CMS under a supervisor (systemd, 
 | `mode` | `"normal"` | In `normal` mode, code that asks for an undeclared resource (`cms.resource('logs')`, `cms.api()('logs')`) gets one created on the fly, without a schema. With any other value (the code base uses `"strict"`) only declared resources exist. The REST API never creates resources: an unknown name answers 404 in both modes. |
 | `mid` | a time-based id, written to `cms.json` on first boot | Machine id: **exactly 8 characters**, or every create fails with `Machine id should be an 8 digit string`. It is part of every record id and tells replication peers apart, so each node of a cluster needs its own. Don't change it once records exist: records whose id carries another `mid` count as foreign and can't be edited. |
 | `ns` | `[]` | Extra path segments between `data` and the resource folders, to keep several sites in one data folder. |
-| `dbEngine` | none: JSON files on disk | Store records in MongoDB or PostgreSQL instead. See [Storage engines](#storage-engines). |
+| `dbEngine` | none: LevelDB on disk | Which store keeps the records: `leveldb`, `sqlite`, `jsondown`, `mongodb` or `postgres`. See [Storage engines](#storage-engines). |
 
 ## Features you can switch
 
@@ -135,9 +135,26 @@ log lines.
 
 ## Storage engines
 
-By default every resource keeps its records in a JSON file (`<data>/<resource>/json/`) and its attachments as files next
-to it (`<data>/<resource>/blob/`). That needs no database server and is what the tests and the benchmark use. To keep
-records in a database server instead, add `dbEngine`:
+Every resource keeps its records in a store, and you choose which kind with `dbEngine.type`. Without `dbEngine` the
+records go to `leveldb`, a LevelDB folder per resource, and the attachments are files next to it
+(`<data>/<resource>/blob/`). That needs no database server.
+
+| `dbEngine.type` | What it is | Needs |
+|---|---|---|
+| `leveldb` (the default) | a LevelDB folder per resource, read from disk | nothing (the `classic-level` package comes with node-cms) |
+| `sqlite` | one SQLite file per resource, read from disk | nothing (it is part of Node 22; Node marks it experimental) |
+| `jsondown` | all records in memory, saved to one JSON file per resource | nothing |
+| `mongodb` | one collection per resource | a MongoDB server |
+| `postgres` | one table per resource | a PostgreSQL server |
+
+[STORAGE.md](STORAGE.md) compares them: speed, memory, what a crash loses, and when to pick which. The three that need no
+server are one line in `cms.json`:
+
+```json
+{ "dbEngine": { "type": "sqlite" } }
+```
+
+Their files sit in `<data>/<resource>/json/` (`db.json`, `db.sqlite` or `leveldb/`). The server engines also take a `url`:
 
 ```json
 { "dbEngine": { "type": "postgres", "url": "db.internal:5432/cms" } }
@@ -152,8 +169,14 @@ records in a database server instead, add `dbEngine`:
 | `postgres` | `host:port/database`; one table per resource | Environment variables `POSTGRES_USER` and `POSTGRES_PASSWORD`; `POSTGRES_HOST`, `POSTGRES_PORT` and `POSTGRES_DB` override the url; `POSTGRES_SSL` turns on TLS. |
 | `mongodb` | `host:port/database` (the CMS adds `mongodb://`); one collection per resource | Put credentials in the url (`user:password@host:27017/cms`); `MONGODB_PROTOCOL=mongodb+srv` for an SRV address. |
 
-Without a `url`, each start creates a database with a new, time-based name. Always set one. The same test suite runs
-against all three engines (see [TESTING.md](TESTING.md#driver-contract-suite)).
+Without a `url`, each start creates a database with a new, time-based name. Always set one. An unknown `type` stops the
+start with an error instead of falling back to the default, so a typo never opens an empty store beside your content.
+
+A resource that already has a `db.json` and no LevelDB store keeps using the file when no `dbEngine` is set (and logs a
+warning), so updating node-cms never starts a server on an empty store. Setting a different engine on a server that
+already has content does not move the content: the new store starts empty. See
+[Changing the engine](STORAGE.md#changing-the-engine). The same test suite runs against all five engines (see
+[TESTING.md](TESTING.md#driver-contract-suite)).
 
 ## A complete example
 

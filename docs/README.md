@@ -28,6 +28,7 @@ rather than repeat it, so if two pages ever disagree, the owner is right (and th
 ## Running it
 
 - [**Configuration**](CONFIG.md): every option of `cms.json`, authentication, logs, storage engines.
+- [**Storage engines**](STORAGE.md): JSON file, SQLite, LevelDB, MongoDB or PostgreSQL: how they compare, what a crash loses, how to switch.
 - [**Security**](../SECURITY.md): the security settings, the recommended production configuration, the hardening
   checklist, and how to report a vulnerability.
 - [**Replication**](REPLICATION.md): keeping several servers in step, continuously.

@@ -41,7 +41,10 @@
     "mongodb-auth": "ulimit -n 1000 && mongod --tlsMode requireTLS --tlsCertificateKeyFile ./ssl/server.pem --tlsCAFile ./ssl/ca.pem --bind_ip localhost --dbpath=../node-cms-mongodb-data",
     "test:frontend": "vitest run",
     "test:all": "npm run test:unit && npm run test:frontend && npm test",
-    "test:coverage": "c8 mocha test/unit test/security"
+    "test:coverage": "c8 mocha test/unit test/security",
+    "bench:stores": "node --expose-gc test/bench/stores.js",
+    "bench:stores:crash": "node test/bench/stores.js --crash",
+    "migrate-store": "node scripts/migrate-store.js"
   },
   "engines": {
     "node": "^22.12.0"
@@ -86,6 +89,7 @@
     "ansi-html": "0.0.9",
     "basic-auth-connect": "^1.0.0",
     "body-parser": "^1.20.2",
+    "classic-level": "^3.0.0",
     "cli-progress": "^3.12.0",
     "codemirror": "^5.65.20",
     "codemirror-editor-vue3": "^2.8.0",

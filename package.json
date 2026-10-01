@@ -144,7 +144,7 @@
     "vue-draggable-next": "^2.3.0",
     "vue-json-viewer": "^3.0.4",
     "vue-router": "^4.6.3",
-    "vue-virtual-scroller": "^2.0.0-beta.8",
+    "vue-virtual-scroller": "^3.0.5",
     "vue3-shortkey": "git+https://github.com/Zegfault/vue3-shortkey.git#da8ee7ead0c618de22a227da2274d88c33e29aae",
     "vuetify": "^3.10.9",
     "ws": "^8.18.0"

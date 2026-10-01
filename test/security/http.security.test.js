@@ -21,7 +21,7 @@ const cookiesOf = (res) => res.headers['set-cookie'].map(c => c.split(';')[0]).j
 
 describe('HTTP hardening (security)', () => {
   describe('security headers', () => {
-    it('sends a Content-Security-Policy and the other protective headers on every response (hardened profile)', async () => {
+    it('sends a Content-Security-Policy and the other protective headers on every response', async () => {
       const app = await startApp(hardened())
       try {
         for (const route of ['/admin/config', '/api/articles', '/no/such/route']) {
@@ -49,7 +49,7 @@ describe('HTTP hardening (security)', () => {
       }
     })
 
-    it('sends HSTS only over https (hardened profile)', async () => {
+    it('sends HSTS only over https', async () => {
       const app = await startApp(hardened({ trustProxy: 1 }))
       try {
         const plain = await request(app.url).get('/admin/config')
@@ -73,16 +73,6 @@ describe('HTTP hardening (security)', () => {
       }
     })
 
-    it('keeps the historic headers with the legacy profile', async () => {
-      const app = await startApp()
-      try {
-        const res = await request(app.url).get('/admin/config')
-        expect(res.headers['content-security-policy']).to.equal(undefined)
-        expect(res.headers['x-content-type-options']).to.equal('nosniff')
-      } finally {
-        await app.close()
-      }
-    })
   })
 
   describe('cross origin access to the event streams', () => {
@@ -92,7 +82,7 @@ describe('HTTP hardening (security)', () => {
       return cookiesOf(res)
     }
 
-    it('does not answer with a wildcard origin (hardened profile)', async () => {
+    it('does not answer with a wildcard origin', async () => {
       const app = await startApp(hardened())
       try {
         const cookie = await login(app)
@@ -122,20 +112,10 @@ describe('HTTP hardening (security)', () => {
       }
     })
 
-    it('keeps the wildcard with the legacy profile (existing behaviour)', async () => {
-      const app = await startApp()
-      try {
-        const cookie = await login(app)
-        const res = await headersOf(`${app.url}/api/system`, { Cookie: cookie })
-        expect(res.headers['access-control-allow-origin']).to.equal('*')
-      } finally {
-        await app.close()
-      }
-    })
   })
 
   describe('error responses', () => {
-    it('answers a rejected query with a 400 json body and no stack trace (hardened profile)', async () => {
+    it('answers a rejected query with a 400 json body and no stack trace', async () => {
       const app = await startApp(hardened())
       try {
         const admin = await createUser(app)
@@ -150,7 +130,7 @@ describe('HTTP hardening (security)', () => {
       }
     })
 
-    it('answers malformed json with a 400 json body and no stack trace (hardened profile)', async () => {
+    it('answers malformed json with a 400 json body and no stack trace', async () => {
       const app = await startApp(hardened())
       try {
         const admin = await createUser(app)
@@ -177,7 +157,7 @@ describe('HTTP hardening (security)', () => {
       }
     })
 
-    it('answers a rejected or malformed query with a 400 json body with the legacy profile too (#20)', async () => {
+    it('answers a rejected or malformed query with a 400 json body (#20)', async () => {
       const app = await startApp()
       try {
         for (const query of [JSON.stringify({ $where: '1' }), '{not json']) {
@@ -192,7 +172,7 @@ describe('HTTP hardening (security)', () => {
       }
     })
 
-    it('answers a malformed query with a 400 json body (hardened profile)', async () => {
+    it('answers a malformed query with a 400 json body', async () => {
       const app = await startApp(hardened())
       try {
         const admin = await createUser(app)

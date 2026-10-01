@@ -88,8 +88,8 @@ checked required fields, formats and patterns. `ResourceService` then sends the 
 ## 2. Express and the authentication plugin
 
 The request enters the app built in `index.js`, which applies in order: security headers (helmet, or the stricter set of
-the `hardened` profile), compression, the session (when a login mode is on), the CSRF guard (with the `hardened`
-profile) and the authentication plugin.
+`security.headers`, on by default), compression, the session (when a login mode is on), the CSRF guard (`security.csrf`) and
+the authentication plugin.
 
 The authentication plugin (`lib/plugins/authentication`) owns `POST /admin/login`, `/admin/logout`, the `_users`,
 `_groups` and `_settings` resources, and the `routesToAuth` list of admin and plugin routes that need a login. It knows
@@ -154,7 +154,7 @@ other nodes: records over its TCP protocol, files over HTTP. See [REPLICATION.md
 | The log page: `/api/_syslog`, server-sent events | `lib/SyslogManager.js` |
 | CPU, memory and disk for the admin's top bar: `/api/system` | `lib/SystemManager.js` |
 | Image resizing and smart cropping | `lib/util/imageOptimization.js`, `lib/util/smartcrop.js` |
-| Security settings and their profiles | `lib/util/securityOptions.js`, [SECURITY.md](../SECURITY.md) |
+| Security settings and their defaults | `lib/util/securityOptions.js`, [SECURITY.md](../SECURITY.md) |
 | Sync, import, Excel, import from remote | `lib/plugins/sync`, `import`, `xlsx`, `importFromRemote`, `lib-import*/` |
 | The `cms` command | `server.js` |
 | Type definitions for editors and TypeScript users | `index.d.ts`, `types/`, `lib/jsdoc-types.js` |

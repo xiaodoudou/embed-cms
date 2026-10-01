@@ -9,7 +9,7 @@ describe('replicator: syncing one record (unit)', () => {
   let app
   let agent
   before(async () => {
-    app = await startApp()
+    app = await startApp({ replication: { peers: [], peersByResource: {}, secret: 'a-test-replication-secret' } })
     // these routes are protected by the login session
     agent = request.agent(app.url)
     await agent.post('/admin/login').send({ username: ADMIN[0], password: ADMIN[1] })

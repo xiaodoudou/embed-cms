@@ -103,14 +103,13 @@ Things to know:
 
 - Allowed operators: `$eq $ne $gt $gte $lt $lte $in $nin $all $size $mod $exists $regex $options $and $or $nor $not
   $elemMatch`. Anything else, `$where` included, is refused, as are queries nested deeper than 10 levels and patterns
-  longer than 200 characters. With the `hardened` profile, regular expressions that can backtrack badly are refused too.
+  longer than 200 characters. Regular expressions that can backtrack badly are refused too.
 - **There is no sort parameter.** Records come back in creation order (by `_id` in the default store, by creation time
   in MongoDB and PostgreSQL). Sort on your side if you need another order.
 - **Without `limit` you get every record.** Always page lists that can grow.
 - The filter runs in the CMS, over every record of the resource, whatever the storage engine. That is fast for
-  thousands of records and slower for hundreds of thousands (see the benchmark in
-  [BACKEND_AUDIT.md](BACKEND_AUDIT.md#appendix-b-performance-results-phase-5)).
-- A refused query answers `400` with the reason as JSON, in every profile; so does a `query` that isn't valid JSON.
+  thousands of records and slower for hundreds of thousands.
+- A refused query answers `400` with the reason as JSON, always; so does a `query` that isn't valid JSON.
 
 ### Attachments
 
@@ -138,7 +137,7 @@ Send one file per request: only the first file of a request is kept. Other text 
 | `DELETE /api/:resource/:id/attachments` | Remove several: a JSON array of `{ "_id": … }`. |
 
 The admin checks `accept`, `limit` and `maxCount` of a file field before it uploads. The REST API only enforces
-`maxCount`, on `image` fields. With the `hardened` profile, uploads also get size limits, and HTML, SVG or script files
+`maxCount`, on `image` fields. Uploads also get size limits, and HTML, SVG or script files
 download instead of opening in the browser (see `strictUploads` and `safeAttachments` in
 [SECURITY.md](../SECURITY.md#settings)).
 

@@ -106,7 +106,7 @@ describe('authentication hardening (security)', () => {
   })
 
   describe('built-in localAdmin account', () => {
-    it('is not created when the hardened profile is on', async () => {
+    it('is not created', async () => {
       const app = await startApp(hardened())
       try {
         const found = await app.cms.$authentication.users.json.find({ username: 'localAdmin' })
@@ -155,7 +155,7 @@ describe('authentication hardening (security)', () => {
   })
 
   describe('password hashing', () => {
-    it('stores new passwords with scrypt in a versioned format when the hardened profile is on', async () => {
+    it('stores new passwords with scrypt in a versioned format', async () => {
       const app = await startApp(hardened())
       try {
         const user = await createUser(app)
@@ -170,12 +170,12 @@ describe('authentication hardening (security)', () => {
       }
     })
 
-    it('keeps writing the historic format outside of production (existing behaviour)', async () => {
+    it('writes scrypt outside of production too', async () => {
       const app = await startApp()
       try {
         const user = await createUser(app)
         const record = await app.cms.$authentication.users.json.find({ username: user.username })
-        expect(record.password).to.match(/^[0-9a-f]{1024}$/)
+        expect(record.password).to.match(/^[$]scrypt[$]/)
       } finally {
         await app.close()
       }
@@ -237,7 +237,7 @@ describe('authentication hardening (security)', () => {
       }
     })
 
-    it('hides password and salt from GET /api/_users/:id when the hardened profile is on', async () => {
+    it('hides password and salt from GET /api/_users/:id', async () => {
       const app = await startApp(hardened())
       try {
         const admin = await createUser(app)
@@ -249,7 +249,7 @@ describe('authentication hardening (security)', () => {
       }
     })
 
-    it('puts neither the hash nor the salt in the JWT or in the login response when the hardened profile is on', async () => {
+    it('puts neither the hash nor the salt in the JWT or in the login response', async () => {
       const app = await startApp(hardened())
       try {
         const admin = await createUser(app)
@@ -267,7 +267,7 @@ describe('authentication hardening (security)', () => {
       }
     })
 
-    it('invalidates a session token when the password changes (hardened profile)', async () => {
+    it('invalidates a session token when the password changes', async () => {
       const app = await startApp(hardened())
       try {
         const admin = await createUser(app)
@@ -311,7 +311,7 @@ describe('authentication hardening (security)', () => {
       }
     })
 
-    it('answers 429 with Retry-After and the same message for an existing and an unknown account (hardened profile)', async () => {
+    it('answers 429 with Retry-After and the same message for an existing and an unknown account', async () => {
       const app = await startApp(hardened({ blockRetry: { retry: 2, duration: 1 } }))
       try {
         const admin = await createUser(app)
@@ -333,7 +333,7 @@ describe('authentication hardening (security)', () => {
       }
     })
 
-    it('blocks an address that tries many different accounts (hardened profile)', async () => {
+    it('blocks an address that tries many different accounts', async () => {
       const app = await startApp(hardened({ blockRetry: { retry: 2, duration: 1 } }))
       try {
         let last
@@ -380,23 +380,10 @@ describe('authentication hardening (security)', () => {
       }
     })
 
-    it('keeps the historic lockout answer with the legacy profile and an explicit blockRetry', async () => {
-      const app = await startApp({ blockRetry: { retry: 1, duration: 1 } })
-      try {
-        let last
-        for (let i = 0; i < 4; i++) {
-          last = await request(app.url).post('/admin/login').send({ username: ADMIN[0], password: `wrong-${i}` })
-        }
-        expect(last.status).to.equal(500)
-        expect(last.body.error).to.match(/is blocked for/)
-      } finally {
-        await app.close()
-      }
-    })
   })
 
   describe('cookies and sessions', () => {
-    it('sets HttpOnly and SameSite on the JWT and session cookies, and Secure over https (hardened profile)', async () => {
+    it('sets HttpOnly and SameSite on the JWT and session cookies, and Secure over https', async () => {
       const app = await startApp(hardened({ trustProxy: 1 }))
       try {
         const admin = await createUser(app)
@@ -415,7 +402,7 @@ describe('authentication hardening (security)', () => {
       }
     })
 
-    it('does not create a session for an anonymous request (hardened profile)', async () => {
+    it('does not create a session for an anonymous request', async () => {
       const app = await startApp(hardened())
       try {
         const a = await request(app.url).get('/admin/config')
@@ -427,7 +414,7 @@ describe('authentication hardening (security)', () => {
       }
     })
 
-    it('does not create a session for a Basic authenticated API call (hardened profile)', async () => {
+    it('does not create a session for a Basic authenticated API call', async () => {
       const app = await startApp(hardened())
       try {
         const admin = await createUser(app)
@@ -442,9 +429,9 @@ describe('authentication hardening (security)', () => {
     it('issues a new session id on login and the old one no longer identifies anyone', async () => {
       const app = await startApp()
       try {
-        const first = await request(app.url).get('/admin/config')
+        const first = await request(app.url).post('/admin/login').send({ username: ADMIN[0], password: ADMIN[1] })
         const before = valueOf(cookieOf(first, 'connect.sid'))
-        expect(before, 'an anonymous request got a session in the legacy profile').to.be.a('string')
+        expect(before, 'a login gets a session').to.be.a('string')
         const login = await request(app.url).post('/admin/login').set('Cookie', `connect.sid=${before}`)
           .send({ username: ADMIN[0], password: ADMIN[1] })
         expect(login.status).to.equal(200)
@@ -585,17 +572,6 @@ describe('authentication hardening (security)', () => {
       })
     })
 
-    it('is not enforced with the legacy profile (existing behaviour)', async () => {
-      const app = await startApp({ disableAuthentication: true })
-      try {
-        const login = await request(app.url).post('/admin/login').send({ username: ADMIN[0], password: ADMIN[1] })
-        const res = await request(app.url).post('/api/articles').set('Cookie', cookiesOf(login))
-          .set('Origin', 'https://evil.example').send({ title: 'legacy' })
-        expect(res.status).to.equal(200)
-      } finally {
-        await app.close()
-      }
-    })
   })
 
   describe('a production boot (NODE_ENV=production)', () => {
@@ -605,7 +581,7 @@ describe('authentication hardening (security)', () => {
         session: { secret: randomSecret() }
       }))
       try {
-        expect(app.cms.security.profile).to.equal('hardened')
+        expect(app.cms.security).to.include({ localAdmin: false, strongSecrets: true })
         const user = await createUser(app)
         const agent = request.agent(app.url)
         const login = await agent.post('/admin/login').send({ username: user.username, password: user.password })
@@ -626,7 +602,7 @@ describe('authentication hardening (security)', () => {
   describe('configuration exposed to the browser', () => {
     const remote = { remote: { host: 'cms.example.com', username: 'importer', password: randomSecret(8) } }
 
-    it('does not send credentials from the import options through /admin/config (hardened profile)', async () => {
+    it('does not send credentials from the import options through /admin/config', async () => {
       const app = await startApp(hardened({ importFromRemote: remote }))
       try {
         const res = await request(app.url).get('/admin/config')
@@ -638,7 +614,7 @@ describe('authentication hardening (security)', () => {
       }
     })
 
-    it('requires a login for /admin/_groups (hardened profile)', async () => {
+    it('requires a login for /admin/_groups', async () => {
       const app = await startApp(hardened())
       try {
         const anonymous = await request(app.url).get('/admin/_groups')
@@ -653,7 +629,7 @@ describe('authentication hardening (security)', () => {
       }
     })
 
-    it('redacts secrets in GET /admin/cms-config and keeps them when the placeholder is saved back (hardened profile)', async () => {
+    it('redacts secrets in GET /admin/cms-config and keeps them when the placeholder is saved back', async () => {
       const app = await startApp(hardened())
       try {
         const admin = await createUser(app)

@@ -48,7 +48,7 @@ turns off replication (`lib/cliOptions.js`). Run anywhere else, it starts a plai
 `resources/` are the field catalogue, one resource per family of field types, which is also what the field documentation's
 screenshots show.
 
-`npm run serve-prod` runs the built app with `NODE_ENV=production`, so with the `hardened` security profile: it refuses to
+`npm run serve-prod` runs the built app with `NODE_ENV=production`, so it refuses to
 start with the default secrets and doesn't create `localAdmin`. That's on purpose; see [SECURITY.md](SECURITY.md).
 
 ## Tests
@@ -91,11 +91,10 @@ Run the first three locally before you push. `npm run knip` finds unused files, 
 ## Making a change
 
 - **One concern per commit**, small enough to review. A refactor and a behaviour change are two commits.
-- **A bug fix comes with a test** that fails without the fix. If you fix something listed in
-  [docs/BUGS.md](docs/BUGS.md) or [docs/UI_BUGS.md](docs/UI_BUGS.md), remove its entry in the same commit.
-- **Security-relevant behaviour goes behind the profile.** A protection that would change what an existing deployment
-  sees becomes a `security.*` setting with a `legacy` and a `hardened` value (`lib/util/securityOptions.js`), and is
-  documented in `SECURITY.md`.
+- **A bug fix comes with a test** that fails without the fix.
+- **Protections are on by default.** A protection becomes a `security.*` setting that defaults to on
+  (`lib/util/securityOptions.js`), so a deployment can turn one off for a reason but never gets one silently missing. It
+  is documented in `SECURITY.md`.
 - **UI code follows the design system**: colours, sizes and spacing come from `src/styles/tokens.css`; texts go through
   the translation files in `i18n/`, in English and Chinese.
 - **Update the documentation in the same change.** A new option goes into [docs/CONFIG.md](docs/CONFIG.md), a new field

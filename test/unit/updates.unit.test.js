@@ -4,8 +4,9 @@ const { expect } = require('chai')
 const UpdatesManager = require('../../lib/UpdatesManager')
 const { startApp, ADMIN } = require('../helpers/app')
 
-const connect = (app) => new Promise((resolve, reject) => {
-  const ws = new WebSocket(app.url.replace('http', 'ws'))
+// the update socket needs a login: the cookies of one are sent with the upgrade
+const connect = (app, cookie) => new Promise((resolve, reject) => {
+  const ws = new WebSocket(app.url.replace('http', 'ws'), { headers: { Cookie: cookie } })
   const messages = []
   ws.on('message', m => messages.push(JSON.parse(m)))
   ws.on('open', () => resolve({ ws, messages }))
@@ -23,10 +24,13 @@ const waitFor = async (check, timeout = 3000) => {
 
 describe('record update websocket (unit)', () => {
   let app
+  let cookie
   const clients = []
 
   before(async () => {
     app = await startApp()
+    const login = await request(app.url).post('/admin/login').send({ username: ADMIN[0], password: ADMIN[1] })
+    cookie = login.headers['set-cookie'].map(c => c.split(';')[0]).join('; ')
   })
   afterEach(() => {
     while (clients.length) clients.pop().ws.terminate()
@@ -36,7 +40,7 @@ describe('record update websocket (unit)', () => {
   })
 
   const open = async () => {
-    const client = await connect(app)
+    const client = await connect(app, cookie)
     clients.push(client)
     return client
   }

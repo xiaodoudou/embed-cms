@@ -58,8 +58,13 @@ describe('admin plugin (unit)', () => {
       expect(res.body).to.not.have.property('auth')
       expect(res.body).to.not.have.property('session')
     })
-    it('/admin/_groups only lists group names and plugins', async () => {
+    it('/admin/_groups needs a login', async () => {
       const res = await request(app.url).get('/admin/_groups')
+      expect(res.status).to.be.oneOf([401, 403])
+    })
+    it('/admin/_groups only lists group names and plugins', async () => {
+      const { agent } = await loginAs('localAdmin', 'localAdmin')
+      const res = await agent.get('/admin/_groups')
       expect(res.status).to.equal(200)
       const names = res.body.map(g => g.name)
       expect(names).to.include.members(['admins', 'anonymous', 'editors'])

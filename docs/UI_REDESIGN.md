@@ -22,7 +22,6 @@ describe the app are kept below.
 
 To re-theme the admin, change the values in `tokens.css` and the two colour maps at the top of `src/vuetify.js`. To
 build a component, follow the [rules at the end](#design-system-rules-enforced-by-testfrontenddesignsystemtestjs).
-Known UI problems are tracked in [UI_BUGS.md](UI_BUGS.md).
 
 The screenshots in `docs/ui/` were taken during the redesign. Only the ones this page shows are kept up to date.
 
@@ -207,7 +206,7 @@ Done: palette and surfaces, dark chrome with logo variant, button system and ref
 
 Partly done: the dropdown type-ahead is the field's own input (no separate search box inside the menu); read-only and disabled surfaces are applied to the input, select, date, switch and JSON controls, while the wysiwyg, code and colour editors only follow the shared border, radius and focus tokens; table search and the syslog filter: the table uses `SearchField`, the syslog filter keeps its terminal styling with its own clear button and now handles Escape (not verified in a browser because the plugin page needs a group with plugin access).
 
-Known issues are tracked in [UI_BUGS.md](UI_BUGS.md). `Ctrl/Cmd+B` not toggling the sidebar inside a text field is deliberate: there it means bold.
+`Ctrl/Cmd+B` not toggling the sidebar inside a text field is deliberate: there it means bold.
 
 Fixed since the previous hand-off: `CmsImport.executeXlsx` now posts to `import/executeXlsx`; "1 resources match" is pluralised in both languages; the table no longer builds a regular expression from what is typed in the search field.
 

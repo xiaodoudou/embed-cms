@@ -37,7 +37,7 @@ it('lists articles', async () => {
 
 `startApp(overrides, { dataDir, keepData, beforeMount })` can boot a second time on the same data (`keepData` keeps the folder
 when the first app closes), and can hand the host express app to `beforeMount` before the CMS is mounted.
-Other helpers: `hardened(overrides)` (selects the hardened security profile with fresh random secrets), `randomSecret()`,
+Other helpers: `hardened(overrides)` (a production like app: fresh random secrets, the strict secret policy and no built-in `localAdmin`), `randomSecret()`,
 `createUser(app)` and `withNodeEnv(value, fn)`. Secrets in tests are always generated, never literals.
 
 The shared test options (`test/cmsInstance.js`) turn on both login modes (`disableJwtLogin: false`,
@@ -48,8 +48,8 @@ The shared test options (`test/cmsInstance.js`) turn on both login modes (`disab
 - JWT mode (pass `disableAuthentication: true`; `disableJwtLogin` is already `false`): cookies are parsed and the JWT
   cookie authenticates every route.
 
-The security behaviour has two profiles (see `SECURITY.md`). Tests run on the `legacy` profile unless they call
-`hardened()`; a security regression test normally runs on both, to show what the default keeps and what the profile fixes.
+Every protection is on by default (see `SECURITY.md`). Tests run with the development defaults (`localAdmin` and the
+default secrets allowed) unless they call `hardened()`; a security regression test normally runs on both.
 
 ## Quiet logs
 
@@ -68,7 +68,7 @@ what is logged patches `logger.warn` and friends itself (see `test/unit/logging.
 
 | Path | Covers |
 |---|---|
-| `test/security/` | One regression test per finding of `docs/BACKEND_AUDIT.md`: `auth` (passwords, sessions, login limits, revocation), `http` (headers, CSRF, CORS, errors), `uploads`, `query`, `rest`, `importFromRemote` (SSRF), `replication` (handshake, peer validation), `websocket` |
+| `test/security/` | One regression test per finding of the backend security audit: `auth` (passwords, sessions, login limits, revocation), `http` (headers, CSRF, CORS, errors), `uploads`, `query`, `rest`, `importFromRemote` (SSRF), `replication` (handshake, peer validation), `websocket` |
 | `test/unit/authentication*` | Passwords, login, retry blocking, group permissions, JWT handling |
 | `test/unit/driver*`, `resource*`, `locking*` | CRUD, hooks, unique keys, concurrency, attachments, import maps |
 | `test/unit/stores*`, `jsondown*`, `queryNeedles*`, `paging*`, `importMap*` | `JsonStore`, `FileStore` (including path traversal), the JSON file engine (ordering, ranges, atomic and sliced flush, corrupt files), the text prefilter of queries, paging, the indexed import map |

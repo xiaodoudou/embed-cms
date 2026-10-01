@@ -239,28 +239,37 @@ describe('security utilities (unit)', () => {
   })
 
   describe('security settings', () => {
-    it('follows NODE_ENV for the profile', async () => {
-      expect(await withNodeEnv('production', () => resolveSecurity({}).profile)).to.equal('hardened')
-      expect(await withNodeEnv(undefined, () => resolveSecurity({}).profile)).to.equal('legacy')
-      expect(await withNodeEnv('development', () => resolveSecurity({}).profile)).to.equal('legacy')
+    it('has every protection on in development and in production', async () => {
+      for (const env of ['production', undefined, 'development']) {
+        const settings = await withNodeEnv(env, () => resolveSecurity({}))
+        expect(settings, String(env)).to.include({ csrf: 'origin', passwordHash: 'scrypt', hideCredentials: true, uniformErrors: true, safeRegex: true, wsAuth: true })
+        expect(settings.cookies).to.deep.equal({ httpOnly: true, sameSite: 'lax', secure: 'auto' })
+        expect(settings.blockRetry).to.deep.equal({ retry: 10, duration: 5 })
+      }
     })
 
-    it('lets the configuration pick a profile and override single settings', async () => {
+    it('follows NODE_ENV only for the built-in localAdmin and the weak secret refusal', async () => {
+      expect(await withNodeEnv('production', () => resolveSecurity({}))).to.include({ localAdmin: false, strongSecrets: true })
+      expect(await withNodeEnv(undefined, () => resolveSecurity({}))).to.include({ localAdmin: true, strongSecrets: false })
+      expect(await withNodeEnv('development', () => resolveSecurity({}))).to.include({ localAdmin: true, strongSecrets: false })
+    })
+
+    it('lets the configuration override single settings', async () => {
       await withNodeEnv('production', () => {
-        const legacy = resolveSecurity({ security: { profile: 'legacy' } })
-        expect(legacy).to.include({ localAdmin: true, csrf: 'off', passwordHash: 'legacy', strongSecrets: false })
         const mixed = resolveSecurity({ security: { localAdmin: true, csrf: 'off' } })
         expect(mixed).to.include({ localAdmin: true, csrf: 'off', passwordHash: 'scrypt', strongSecrets: true })
       })
-      const hardened = resolveSecurity({ security: { profile: 'hardened' } })
-      expect(hardened).to.include({ localAdmin: false, csrf: 'origin', passwordHash: 'scrypt', hideCredentials: true })
-      expect(hardened.blockRetry).to.deep.equal({ retry: 10, duration: 5 })
+      expect(resolveSecurity({ security: { strongSecrets: true } }).strongSecrets).to.equal(true)
+    })
+
+    it('refuses the profile setting of earlier releases', () => {
+      expect(() => resolveSecurity({ security: { profile: 'legacy' } })).to.throw(/security.profile was removed/)
+      expect(() => resolveSecurity({ security: { profile: 'hardened' } })).to.throw(/security.profile was removed/)
     })
 
     it('keeps the lockout as configured, and false turns it off', () => {
       expect(resolveSecurity({ blockRetry: { retry: 3, duration: 2 } }).blockRetry).to.deep.equal({ retry: 3, duration: 2 })
-      expect(resolveSecurity({ security: { profile: 'hardened' }, blockRetry: false }).blockRetry).to.equal(undefined)
-      expect(resolveSecurity({}).blockRetry).to.equal(undefined)
+      expect(resolveSecurity({ blockRetry: false }).blockRetry).to.equal(undefined)
     })
 
     it('rejects unsupported values', () => {

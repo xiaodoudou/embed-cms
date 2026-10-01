@@ -3,7 +3,7 @@ const os = require('os')
 const path = require('path')
 const request = require('supertest')
 const { expect } = require('chai')
-const { startApp, ADMIN, hardened, createUser } = require('../helpers/app')
+const { startApp, hardened, createUser } = require('../helpers/app')
 
 const IMAGE = path.join(__dirname, '..', 'man.jpg')
 const HTML = Buffer.from('<html><script>alert(document.domain)</script></html>')
@@ -53,7 +53,7 @@ describe('uploads and attachments (security)', () => {
     })
   })
 
-  describe('limits (hardened profile)', () => {
+  describe('limits', () => {
     it('refuse a file above security.limits.upload.fileSize with 413', async () => {
       const limited = await startApp(hardened({ security: { limits: { upload: { fileSize: 1000 } } } }))
       try {
@@ -84,20 +84,9 @@ describe('uploads and attachments (security)', () => {
       }
     })
 
-    it('are not applied with the legacy profile (existing behaviour)', async () => {
-      const legacy = await startApp()
-      try {
-        const id = (await request(legacy.url).post('/api/articles').auth(...ADMIN).send({ title: 'x' })).body._id
-        const res = await request(legacy.url).post(`/api/articles/${id}/attachments`).auth(...ADMIN)
-          .attach('image', Buffer.alloc(5000, 1), 'big.bin')
-        expect(res.status).to.equal(200)
-      } finally {
-        await legacy.close()
-      }
-    })
   })
 
-  describe('file names (hardened profile)', () => {
+  describe('file names', () => {
     it('keep only the last path segment and no control characters', async () => {
       const res = await upload(fs.readFileSync(IMAGE), 'man.jpg', { _filename: '..\\..\\etc/../evil\u0000\r\n.jpg' })
       expect(res.status).to.equal(200)
@@ -119,7 +108,7 @@ describe('uploads and attachments (security)', () => {
     })
   })
 
-  describe('content types (hardened profile)', () => {
+  describe('content types', () => {
     it('are taken from the content of the file when it is recognisable', async () => {
       const res = await upload(fs.readFileSync(IMAGE), 'photo.html', { _filename: 'photo.html' })
       expect(res.status).to.equal(200)
@@ -136,7 +125,7 @@ describe('uploads and attachments (security)', () => {
   describe('serving', () => {
     const attachmentUrl = (record) => `/api/articles/${articleId}/attachments/${record._id}`
 
-    it('sends a script bearing document as a download with a sandbox policy (hardened profile)', async () => {
+    it('sends a script bearing document as a download with a sandbox policy', async () => {
       const record = (await upload(HTML, 'page.html', { _filename: 'page.html' })).body
       expect(record._contentType).to.equal('text/html')
       const res = await request(app.url).get(attachmentUrl(record)).auth(...auth)
@@ -170,22 +159,9 @@ describe('uploads and attachments (security)', () => {
       expect(res.headers['content-disposition']).to.match(/^attachment/)
     })
 
-    it('serves an html attachment inline with the legacy profile (existing behaviour)', async () => {
-      const legacy = await startApp()
-      try {
-        const id = (await request(legacy.url).post('/api/articles').auth(...ADMIN).send({ title: 'x' })).body._id
-        const record = (await request(legacy.url).post(`/api/articles/${id}/attachments`).auth(...ADMIN)
-          .field('_filename', 'page.html').attach('image', HTML, 'page.html')).body
-        const res = await request(legacy.url).get(`/api/articles/${id}/attachments/${record._id}`).auth(...ADMIN)
-        expect(res.headers['content-type']).to.match(/^text\/html/)
-        expect(res.headers['content-disposition']).to.equal(undefined)
-      } finally {
-        await legacy.close()
-      }
-    })
   })
 
-  describe('attachment metadata (hardened profile)', () => {
+  describe('attachment metadata', () => {
     it('cannot be rewritten through PUT: the content type, size, checksum and id stay', async () => {
       const record = (await upload(fs.readFileSync(IMAGE), 'man.jpg', { _filename: 'man.jpg' })).body
       const res = await request(app.url).put(`/api/articles/${articleId}/attachments/${record._id}`).auth(...auth)
@@ -198,18 +174,6 @@ describe('uploads and attachments (security)', () => {
       expect(res.body.order).to.equal(3)
     })
 
-    it('can be rewritten with the legacy profile (existing behaviour)', async () => {
-      const legacy = await startApp()
-      try {
-        const id = (await request(legacy.url).post('/api/articles').auth(...ADMIN).send({ title: 'x' })).body._id
-        const record = (await request(legacy.url).post(`/api/articles/${id}/attachments`).auth(...ADMIN)
-          .field('_filename', 'man.jpg').attach('image', fs.readFileSync(IMAGE), 'man.jpg')).body
-        const res = await request(legacy.url).put(`/api/articles/${id}/attachments/${record._id}`).auth(...ADMIN).send({ _contentType: 'text/html' })
-        expect(res.body._contentType).to.equal('text/html')
-      } finally {
-        await legacy.close()
-      }
-    })
   })
 
   describe('malformed input', () => {

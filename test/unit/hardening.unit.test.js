@@ -114,13 +114,11 @@ describe('image concurrency (unit)', () => {
     }
   }
 
-  it('has no limit with the legacy profile', async () => {
-    expect(await limiterOf({})).to.deep.equal({ concurrency: 0, maxQueue: Infinity })
-  })
-  it('runs one operation per core, and lets 100 wait, with the hardened profile', async () => {
+  it('runs one operation per core, and lets 100 wait', async () => {
+    expect(await limiterOf({})).to.deep.equal({ concurrency: os.cpus().length, maxQueue: 100 })
     expect(await limiterOf(hardened())).to.deep.equal({ concurrency: os.cpus().length, maxQueue: 100 })
   })
-  it('follows imageConcurrency in either profile', async () => {
+  it('follows imageConcurrency', async () => {
     expect((await limiterOf({ imageConcurrency: 2 })).concurrency).to.equal(2)
     expect((await limiterOf(hardened({ imageConcurrency: 3 }))).concurrency).to.equal(3)
     expect((await limiterOf(hardened({ imageConcurrency: 0 }))).concurrency).to.equal(0)

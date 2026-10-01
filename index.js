@@ -138,12 +138,11 @@ class CMS {
     this.security = resolveSecurity(options)
     // reachable from the stores, which only see the options
     options.securitySettings = this.security
-    // image operations at once: a burst of requests is worked off in turn, not all together. No limit with the legacy
-    // profile (as before the limit existed), one per core with the hardened one, where at most 100 may wait as well.
-    // imageConcurrency overrides the default (0 for no limit).
+    // image operations at once: a burst of requests is worked off in turn, not all together: one per core, and at most
+    // 100 may wait as well. imageConcurrency overrides the default (0 for no limit).
     ImageOptimization.configure({
-      concurrency: options.imageConcurrency !== undefined ? options.imageConcurrency : (this.security.hardened ? os.cpus().length : 0),
-      maxQueue: this.security.hardened ? 100 : Infinity
+      concurrency: options.imageConcurrency !== undefined ? options.imageConcurrency : os.cpus().length,
+      maxQueue: 100
     })
     // ensure required folders are in place
     fsExtra.mkdirpSync(path.resolve(options.resources))
@@ -289,11 +288,9 @@ class CMS {
         throw new Error(`config.auth.secret isn't long enough, adjust the value to have minimum ${this.requiredKeyLength} characters`)
       }
       let sessionOptions = _.extend({ cookie: {} }, this.options.session)
-      if (this.security.hardened) {
-        // sameSite and secure follow the security settings, a cookie option written in the configuration still wins
-        sessionOptions.cookie = _.pickBy({ sameSite: this.security.cookies.sameSite, secure: this.security.cookies.secure, httpOnly: this.security.cookies.httpOnly }, value => value !== false)
-        _.extend(sessionOptions.cookie, _.get(this.options, 'session.cookie'))
-      }
+      // sameSite and secure follow the security settings, a cookie option written in the configuration still wins
+      sessionOptions.cookie = _.pickBy({ sameSite: this.security.cookies.sameSite, secure: this.security.cookies.secure, httpOnly: this.security.cookies.httpOnly }, value => value !== false)
+      _.extend(sessionOptions.cookie, _.get(this.options, 'session.cookie'))
       if (this.security.strictSessions) {
         // a session is only stored once something was written to it (a login)
         sessionOptions.resave = false

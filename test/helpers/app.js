@@ -68,8 +68,8 @@ async function startApp (overrides = {}, extra = {}) {
 const randomSecret = (bytes = 24) => crypto.randomBytes(bytes).toString('hex')
 
 /**
- * Options that select the hardened security profile with strong, freshly generated secrets.
- * The shared test options carry the published default session secret, which the hardened profile refuses.
+ * Options for a production like app: strong, freshly generated secrets, the strict secret policy and no built-in localAdmin.
+ * The shared test options carry the published default session secret, which that policy refuses.
  * @param {object} [overrides]
  * @returns {object}
  */
@@ -77,7 +77,7 @@ const hardened = (overrides = {}) => ({
   auth: { secret: randomSecret() },
   session: { secret: randomSecret(), resave: true, saveUninitialized: true },
   ...overrides,
-  security: { profile: 'hardened', ...(overrides.security || {}) }
+  security: { strongSecrets: true, localAdmin: false, ...(overrides.security || {}) }
 })
 
 /**

@@ -55,7 +55,7 @@ describe('logging of refused requests (unit)', () => {
     })
   })
 
-  describe('hardened profile', () => {
+  describe('the default settings', () => {
     let app
     let admin
     before(async () => {

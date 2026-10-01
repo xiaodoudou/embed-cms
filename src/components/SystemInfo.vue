@@ -50,7 +50,9 @@
         <div class="stats two-by-two">
           <div v-if="system.network != 'not supported'" class="stats network">
             <div class="stat-head"><span>{{ $filters.translate('TL_NETWORK') }}</span></div>
-            <small class="text">{{ convertBytes(system.network.total.outputMb) }} <v-icon icon="$arrowUp" size="x-small" aria-label="upload" /> / {{ convertBytes(system.network.total.inputMb) }} <v-icon icon="$arrowDown" size="x-small" aria-label="download" /></small>
+            <!-- the live traffic (per second); the total since boot is the tooltip, and what shows until a second report gives a rate -->
+            <small v-if="system.network.rate" class="text" :title="`${convertBytes(system.network.total.outputMb)} / ${convertBytes(system.network.total.inputMb)}`">{{ formatRate(system.network.rate.outputBytesPerSec) }} <v-icon icon="$arrowUp" size="x-small" aria-label="upload" /> / {{ formatRate(system.network.rate.inputBytesPerSec) }} <v-icon icon="$arrowDown" size="x-small" aria-label="download" /></small>
+            <small v-else class="text">{{ convertBytes(system.network.total.outputMb) }} <v-icon icon="$arrowUp" size="x-small" aria-label="upload" /> / {{ convertBytes(system.network.total.inputMb) }} <v-icon icon="$arrowDown" size="x-small" aria-label="download" /></small>
           </div>
           <div class="stats uptime">
             <div class="stat-head"><span>{{ $filters.translate('TL_UPTIME') }}</span></div>
@@ -191,6 +193,18 @@
 
   function timeAgo(current) {
     return Dayjs().subtract(parseInt(current, 10), 'second').fromNow()
+  }
+
+  // bytes per second, as a person reads a connection speed
+  function formatRate(bytesPerSecond) {
+    const units = ['B/s', 'KB/s', 'MB/s', 'GB/s']
+    let value = bytesPerSecond || 0
+    let unit = 0
+    while (value >= 1024 && unit < units.length - 1) {
+      value /= 1024
+      unit++
+    }
+    return `${unit === 0 ? Math.round(value) : value.toFixed(value < 10 ? 1 : 0)} ${units[unit]}`
   }
 
   function convertBytes(megaBytes) {

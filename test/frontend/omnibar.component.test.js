@@ -190,6 +190,21 @@ describe('Omnibar (the quick switcher)', () => {
       expect(rows()[rows().length - 1].classList.contains('highlighted')).toBe(true)
     })
 
+    it('keeps Tab inside the switcher: it walks the results, and Shift+Tab walks back, instead of leaving for the page behind', async () => {
+      await omnibar()
+      await open()
+      await typeText('o')
+      expect(rows().length).toBeGreaterThan(2)
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+      field().dispatchEvent(event)
+      await flushPromises()
+      expect(event.defaultPrevented).toBe(true)
+      expect(rows()[1].classList.contains('highlighted')).toBe(true)
+      await key('Tab', { shiftKey: true })
+      expect(rows()[0].classList.contains('highlighted')).toBe(true)
+      expect(visible()).toBe(true)
+    })
+
     it('opens the highlighted result with Enter, and closes', async () => {
       await omnibar()
       await open()

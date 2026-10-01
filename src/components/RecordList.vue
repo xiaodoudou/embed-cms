@@ -485,7 +485,8 @@
           return this.$emit('selectItem', item)
         }
         this.lastSelectedItem = item._id
-        if (!clickedCheckbox) {
+        // choosing several records: a click on a row adds or removes it, like its box, instead of starting over with that one
+        if (!clickedCheckbox && !this.multiselect) {
           this.localMultiselectItems = [item]
           this.$emit('selectItem', item)
         } else {

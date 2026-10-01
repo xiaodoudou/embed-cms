@@ -20,7 +20,7 @@ module.exports = {
         jsonEditorOptions: {
           type: 'object',
           properties: {
-            enabled: { type: 'boolean', default: true },
+            enabled: { type: 'boolean', format: 'checkbox', default: true },
             title: { type: 'string' },
             count: { type: 'integer', minimum: 0, maximum: 10, default: 1 },
             mode: { type: 'string', enum: ['fast', 'balanced', 'thorough'], default: 'balanced' }

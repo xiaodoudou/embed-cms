@@ -140,6 +140,34 @@ describe('admin plugin (unit)', () => {
     })
   })
 
+  describe('without any authentication (both switches on)', () => {
+    let open
+    before(async () => {
+      open = await startApp({ disableJwtLogin: true, disableAuthentication: true })
+    })
+    after(async () => {
+      await open.close()
+    })
+
+    it('serves the schemas of the paragraphs, which the admin needs to open (it answered 401, and the admin reloaded for ever)', async () => {
+      const res = await request(open.url).get('/admin/paragraphs')
+      expect(res.status).to.equal(200)
+    })
+
+    it('gives the anonymous visitor every right, so that the admin has something to show and its groups can be edited', async () => {
+      const resources = await request(open.url).get('/admin/resources')
+      expect(resources.status).to.equal(200)
+      expect(resources.body.length).to.be.greaterThan(0)
+      const created = await request(open.url).post('/api/articles').send({ title: 'Written without a login' })
+      expect(created.status).to.equal(200)
+    })
+
+    it('signs what the visitor writes as the anonymous visitor, not "anonymous~false"', async () => {
+      const created = await request(open.url).post('/api/articles').send({ title: 'Signed' })
+      expect(created.body._updatedBy).to.equal('anonymous~anonymous')
+    })
+  })
+
   describe('removed routes', () => {
     it('/admin/cms-config no longer exists (the configuration file is not editable from the admin)', async () => {
       const get = await request(app.url).get('/admin/cms-config')

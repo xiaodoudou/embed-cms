@@ -141,6 +141,20 @@ describe('App', () => {
       expect(LoginService.logout).toHaveBeenCalled()
       error.mockRestore()
     })
+
+    it('does not log out, which would reload the page for ever, when there is no login at all', async () => {
+      window.noLogin = true
+      try {
+        ResourceService.getAll.mockRejectedValue(new Error('down'))
+        LoginService.logout.mockClear()
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+        await mountApp('/')
+        expect(LoginService.logout).not.toHaveBeenCalled()
+        error.mockRestore()
+      } finally {
+        delete window.noLogin
+      }
+    })
   })
 
   describe('the open record is in the address', () => {

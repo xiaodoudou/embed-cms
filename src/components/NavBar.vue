@@ -31,7 +31,7 @@
 
 <script>
   import _ from 'lodash'
-  import TranslateService from '@s/TranslateService'
+  import { getResourceLabel } from '@u/recordLabel'
   import SystemInfo from '@c/SystemInfo'
   import BrandLogo from '@c/BrandLogo'
   import Omnibar from '@c/Omnibar'
@@ -116,7 +116,7 @@
       },
       getSelectedItemName () {
         const displayname = _.get(this.selectedItem, 'displayname', false)
-        return displayname ? TranslateService.get(displayname) : _.get(this.selectedItem, 'name', false)
+        return displayname ? getResourceLabel(this.selectedItem) : _.get(this.selectedItem, 'name', false)
       }
     }
   }

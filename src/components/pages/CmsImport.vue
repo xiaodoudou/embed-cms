@@ -41,7 +41,7 @@
         </v-card>
         <div class="other-actions margin-top">
           <v-btn rounded density="compact" :disabled="loading || !uploadedXlsx" @click="checkXlsxStatus()">Check Difference</v-btn>
-          <v-btn rounded density="compact" :disabled="loading || !uploadedXlsx" @click="executeXlsx()">Import from Remote</v-btn>
+          <v-btn rounded density="compact" :disabled="loading || !uploadedXlsx" @click="executeXlsx()">Import file</v-btn>
         </div>
         <div v-if="status || error">
           <h6 v-if="type == 0">Difference:</h6>
@@ -54,7 +54,7 @@
               <p>remove: {{ item.remove || 0 }}</p>
             </div>
           </div>
-          <pre v-else-if="error" v-html="error" />
+          <pre v-else-if="error" v-html="sanitizeHtml(error)" />
         </div>
       </div>
     </v-card>
@@ -63,7 +63,11 @@
 
 <script>
   import RequestService from '@s/RequestService'
+  import NotificationsService from '@s/NotificationsService'
+  import TranslateService from '@s/TranslateService'
+  import { importCounts } from '@u/recordLabel'
   import _ from 'lodash'
+  import { sanitizeHtml } from '@u/sanitizeHtml'
   export default {
     data () {
       return {
@@ -81,6 +85,7 @@
       this.config = data.import
     },
     methods: {
+      sanitizeHtml,
       getRules () {
         return [
           (value) => !value || value.type === 'text/xlsx' || value.type === 'text/xls' || value.type === 'text/csv' || 'Only XLSX/XLS/CSV files allowed'
@@ -97,14 +102,16 @@
       },
       async onChangeXlsxFile (event, files = false) {
         this.uploadedXlsx = null
-        const file = _.first(files || _.get(event, 'target.files', event)) || event
+        // the change event holds the files, a drop hands them over, and some Vuetify versions hand over the file itself
+        const file = _.first(files || _.get(event, 'target.files', event)) || (event instanceof Blob ? event : null)
         if (!file) {
           return
         }
         this.uploadedXlsx = file
       },
       openFile () {
-        window.open(`https://docs.google.com/spreadsheets/d/${this.config.gsheetId}/edit`, '_blank').focus()
+        // a blocked pop-up gives no window
+        window.open(`https://docs.google.com/spreadsheets/d/${this.config.gsheetId}/edit`, '_blank')?.focus()
       },
       async checkStatus () {
         this.loading = true
@@ -113,11 +120,14 @@
         this.$loading.start('cms-import')
         this.type = 0
         await this.$nextTick()
+        NotificationsService.send(TranslateService.get('TL_IMPORT_STARTED', { name: 'Difference check' }), 'info')
         try {
           this.status = await RequestService.get('../import/status')
+          NotificationsService.send(TranslateService.get('TL_IMPORT_DONE', { name: 'Difference check', counts: importCounts(this.status) }), 'success')
         } catch (error) {
           this.status = null
           this.error = _.get(error, 'message', error)
+          NotificationsService.send(TranslateService.get('TL_IMPORT_FAILED', { name: 'Import', error: _.toString(this.error) }), 'error')
         }
         this.$loading.stop('cms-import')
         this.loading = false
@@ -129,11 +139,14 @@
         this.type = 1
         this.$loading.start('cms-import')
         await this.$nextTick()
+        NotificationsService.send(TranslateService.get('TL_IMPORT_STARTED', { name: 'Import from remote' }), 'info')
         try {
           this.status = await RequestService.get('../import/execute')
+          NotificationsService.send(TranslateService.get('TL_IMPORT_DONE', { name: 'Import from remote', counts: importCounts(this.status) }), 'success')
         } catch (error) {
           this.status = null
           this.error = _.get(error, 'message', error)
+          NotificationsService.send(TranslateService.get('TL_IMPORT_FAILED', { name: 'Import', error: _.toString(this.error) }), 'error')
         }
         this.$loading.stop('cms-import')
         this.loading = false
@@ -145,13 +158,16 @@
         this.$loading.start('xlsx-import')
         this.type = 0
         await this.$nextTick()
+        NotificationsService.send(TranslateService.get('TL_IMPORT_STARTED', { name: 'Difference check (Excel)' }), 'info')
         try {
           const formData = new FormData()
           formData.append('xlsx', this.uploadedXlsx)
           this.status = await RequestService.post('../import/statusXlsx', formData)
+          NotificationsService.send(TranslateService.get('TL_IMPORT_DONE', { name: 'Difference check (Excel)', counts: importCounts(this.status) }), 'success')
         } catch (error) {
           this.status = null
           this.error = _.get(error, 'message', error)
+          NotificationsService.send(TranslateService.get('TL_IMPORT_FAILED', { name: 'Import', error: _.toString(this.error) }), 'error')
         }
         this.$loading.stop('xlsx-import')
         this.loading = false
@@ -163,13 +179,16 @@
         this.type = 1
         this.$loading.start('xlsx-import')
         await this.$nextTick()
+        NotificationsService.send(TranslateService.get('TL_IMPORT_STARTED', { name: 'Excel import' }), 'info')
         try {
           const formData = new FormData()
           formData.append('xlsx', this.uploadedXlsx)
-          this.status = await RequestService.post('../import/statusXlsx', formData)
+          this.status = await RequestService.post('../import/executeXlsx', formData)
+          NotificationsService.send(TranslateService.get('TL_IMPORT_DONE', { name: 'Excel import', counts: importCounts(this.status) }), 'success')
         } catch (error) {
           this.status = null
           this.error = _.get(error, 'message', error)
+          NotificationsService.send(TranslateService.get('TL_IMPORT_FAILED', { name: 'Import', error: _.toString(this.error) }), 'error')
         }
         this.$loading.stop('xlsx-import')
         this.loading = false
@@ -182,59 +201,73 @@
 @use '@a/scss/variables.scss' as *;
 @use '@a/scss/mixins.scss' as *;
 .cms-import {
-  margin: 16px;
-  padding: 16px;
+  margin: var(--cms-space-4) var(--cms-space-6) var(--cms-space-6);
+  padding: var(--cms-space-6);
+  max-width: var(--cms-content-max);
   background-color: $layout-card-background;
-  border-radius: 12px;
+  border: 1px solid var(--cms-border);
+  border-radius: var(--cms-radius-lg);
   h5 {
-    @include h5;
-    margin-bottom: 8px;
+    @include h3;
+    margin-bottom: var(--cms-space-2);
   }
   h6 {
     @include h6;
+    font-weight: var(--cms-fw-semibold);
+    margin-top: var(--cms-space-4);
   }
   .divider {
-    border-bottom: 1px solid $imag-grey;
-    margin: 16px 0;
+    border-bottom: 1px solid var(--cms-border);
+    margin: var(--cms-space-6) 0;
     &.dashed {
-      border-bottom: 1px dashed $imag-grey;
+      border-bottom: 1px dashed var(--cms-border-strong);
     }
   }
   .other-actions {
-    .v-btn {
-      margin-bottom: 0;
-    }
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cms-space-2);
     &.margin-top {
-      margin-top: 16px;
+      margin-top: var(--cms-space-4);
     }
   }
   .v-btn {
     background-color: $cms-import-btn-background !important;
     color: $cms-import-btn-color !important;
-    margin-bottom: 16px;
+    &.v-btn--disabled {
+      background-color: var(--cms-surface-3) !important;
+      color: var(--cms-text-muted) !important;
+    }
   }
-  .v-btn + .v-btn {
-    margin-left: 8px;
-  }
-   .subtext {
-    padding-left: 16px;
-  }
-  .v-btn__content {
-    text-transform: none;
+  .subtext {
+    @include subtext;
+    color: var(--cms-text-muted);
+    margin-bottom: var(--cms-space-2);
   }
   .file-input-card {
+    position: relative;
     cursor: pointer;
-    background-color: $imag-light-grey;
+    background-color: var(--cms-surface-2);
+    border: 2px dashed var(--cms-border-strong);
+    border-radius: var(--cms-radius-md);
+    color: var(--cms-text);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 32px 16px;
+    text-align: center;
+    padding: var(--cms-space-8) var(--cms-space-4);
     user-select: none;
+    &:focus-within {
+      outline: 2px solid var(--cms-focus-ring);
+      outline-offset: 2px;
+    }
     &.bold {
-      font-weight: bold;
+      font-weight: var(--cms-fw-semibold);
     }
     &.drag-and-drop {
-      background-color: $imag-grey;
+      background-color: var(--cms-primary-soft);
+      border-color: var(--cms-primary);
+      color: var(--cms-on-primary-soft);
     }
   }
   .hidden-field {
@@ -249,30 +282,17 @@
   .v-slide-group__content {
     padding: 0 !important;
   }
-  .v-chip, .subtext {
-    @include subtext;
-  }
   .v-chip {
+    @include subtext;
     background-color: $cms-import-resource-background !important;
     color: $cms-import-resource-color !important;
-    padding: 4px 8px;
+    padding: var(--cms-space-1) var(--cms-space-2);
     .v-chip__content {
       padding: 0;
       line-height: 1;
     }
   }
 }
-/*
-  $cms-import-title-background: var(--cms-import-resource-background);
-  $cms-import-title-color: var(--cms-import-resource-color);
-  $cms-import-section-background: var(--cms-import-section-background);
-  $cms-import-section-color: var(--cms-import-section-color);
-  $cms-import-resource-background: var(--cms-import-resource-background);
-  $cms-import-resource-color: var(--cms-import-resource-color);
-  $cms-import-btn-background: var(--cms-import-btn-background);
-  $cms-import-btn-color: var(--cms-import-btn-color);
-*/
-
 </style>
 
 <style lang="scss">
@@ -283,22 +303,38 @@
   .v-btn__content {
     text-transform: none;
     letter-spacing: 0;
-    @include h6;
-    font-weight: 700;
-    font-style: normal;
+    @include cta-text;
   }
   .status {
-    margin-left: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cms-space-3);
+    margin-top: var(--cms-space-2);
   }
   .status-resource {
+    min-width: 160px;
+    padding: var(--cms-space-3);
+    border: 1px solid var(--cms-border);
+    border-radius: var(--cms-radius-md);
+    background: var(--cms-surface-2);
     strong {
-      font-size: 14px;
-      font-synthesis: initial !important;
+      font-size: var(--cms-fs-base);
     }
     p {
-      font-size: 12px;
-      margin-left: 8px;
+      margin: 0;
+      font-size: var(--cms-fs-sm);
+      color: var(--cms-text-muted);
     }
+  }
+  pre {
+    margin-top: var(--cms-space-2);
+    padding: var(--cms-space-3);
+    overflow: auto;
+    border-radius: var(--cms-radius-md);
+    background: var(--cms-code-bg);
+    color: var(--cms-error);
+    font-family: var(--cms-font-mono);
+    font-size: var(--cms-fs-sm);
   }
 }
 </style>

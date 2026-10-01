@@ -1,0 +1,65 @@
+@use "../variables.scss" as *;
+@use "../mixins.scss" as *;
+
+// Form field layout shared by every input type in the record editor.
+// Labels sit above the control (not beside it) so they never squeeze the input
+// on narrow screens, and every control keeps the same height and focus ring.
+.vue-form-generator {
+  .v-input.v-text-field,
+  .v-input.v-autocomplete,
+  .v-input.v-select,
+  .v-input.v-combobox,
+  .v-input.v-textarea {
+    grid-template-areas: "prepend" "control" "append" "messages";
+    grid-template-columns: minmax(0, 1fr);
+
+    > .v-input__prepend {
+      padding: 0 0 var(--cms-space-1);
+      margin: 0;
+      align-items: center;
+      opacity: 1;
+    }
+
+    > .v-input__append {
+      padding: 0;
+      margin: 0;
+    }
+  }
+
+  .field-label {
+    padding-left: 0;
+  }
+
+  .help-block {
+    padding-left: 0;
+  }
+}
+
+.help-block {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--cms-space-1);
+  margin-top: var(--cms-space-1);
+  color: var(--cms-text-muted);
+  font-size: var(--cms-fs-sm);
+  line-height: var(--cms-lh-base);
+  font-weight: var(--cms-fw-regular);
+  filter: none;
+}
+
+// Unsaved (dirty) fields get a warning coloured label marker
+.dirty .field-label::after {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: var(--cms-space-2);
+  border-radius: var(--cms-radius-pill);
+  background: var(--cms-warning);
+  vertical-align: middle;
+}
+
+.dirty .v-field {
+  border-color: var(--cms-warning);
+}

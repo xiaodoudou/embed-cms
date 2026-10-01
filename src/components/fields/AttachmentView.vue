@@ -1,6 +1,6 @@
 <template>
   <div class="attachment-view">
-    <form v-if="!disabled" enctype="multipart/form-data">
+    <form enctype="multipart/form-data">
       <field-label :schema="schema" />
       <v-card
         v-if="!isFieldDisabled()"
@@ -10,7 +10,7 @@
       >
         <v-file-input
           ref="input"
-          :theme="theme" flat :rules="getRules()" prepend-icon="" :label="getPlaceholder()" :placeholder="getPlaceholder()" :clearable="false" hide-details="auto"
+          :theme="theme" flat :rules="getRules()" prepend-icon="" prepend-inner-icon="$upload" :label="getPlaceholder()" :placeholder="getPlaceholder()" :clearable="false" hide-details="auto"
           density="compact" :variant="getVariant()" rounded persistent-placeholder single-line :multiple="isForMultipleImages()" :accept="schema.accept"
           @change="onUploadChanged" @update:focused="onFieldFocus"
         >
@@ -19,10 +19,10 @@
       </v-card>
     </form>
     <preview-multiple
-      :attachments="getAttachments()" :schema="schema" :theme="theme" :is-image="isImage" :disabled="disabled" :on-end-drag="onEndDrag" :image-size="imageSize" :get-image-src="getImageSrc"
+      :attachments="getAttachments()" :schema="schema" :theme="theme" :is-image="isImage" :disabled="isLocked()" :on-end-drag="onEndDrag" :image-size="imageSize" :get-image-src="getImageSrc"
       :remove-image="removeImage"
     />
-    <file-input-errors v-if="!disabled" field-type="file" :schema="schema" :is-for-multiple-images="isForMultipleImages" :get-max-count="getMaxCount" />
+    <file-input-errors file-type="file" :schema="schema" :is-for-multiple-images="isForMultipleImages" :get-max-count="getMaxCount" />
   </div>
 </template>
 

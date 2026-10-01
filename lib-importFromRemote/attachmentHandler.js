@@ -2,7 +2,7 @@ const path = require('path')
 const _ = require('lodash')
 const fs = require('fs-extra')
 const pAll = require('p-all')
-const { filterAttachments, md5FileAsync } = require('./utils')
+const { filterAttachments, md5FileAsync, safeJoin } = require('./utils')
 
 async function downloadBinaries(importer) {
   const bar = importer.multibar.create(_.size(importer.binaryMap), 0, { name: 'Downloading binaries' })
@@ -15,7 +15,7 @@ async function downloadBinaries(importer) {
           _.each(attachments, (attachment) => {
             funcs2.push(async () => {
               const filename = path.basename(_.first(attachment.url.split('?')))
-              const filePath = path.resolve(path.join('.', 'cached', resource, _.get(item, _.first(uniqueKeys)), field, filename))
+              const filePath = safeJoin(path.join('.', 'cached'), resource, _.get(item, _.first(uniqueKeys)), field, filename)
               try {
                 if (!fs.existsSync(filePath)) {
                   await importer.remoteApi().getAttachment(attachment.url, filePath)

@@ -1,10 +1,13 @@
+import { log } from '@u/log'
 import _ from 'lodash'
 import RequestService from './RequestService'
 import Mustache from 'mustache'
+import { reactive } from 'vue'
 
 class TranslateService {
   constructor () {
-    this.dict = {}
+    // reactive: the app renders before the dictionaries are loaded, and what it rendered must fill in when they arrive
+    this.dict = reactive({})
     this.locale = 'enUS'
   }
 
@@ -39,7 +42,11 @@ class TranslateService {
   }
 
   translationNotFound(key) {
-    console.info(`Did not find any translation for ${key}`,
+    // nothing is missing while the dictionary is still loading
+    if (_.isEmpty(this.dict[this.locale])) {
+      return
+    }
+    log.debug(`Did not find any translation for ${key}`,
       {
         key,
         locale: this.locale,

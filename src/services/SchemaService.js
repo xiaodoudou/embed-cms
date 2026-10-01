@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import * as Mustache from 'mustache'
+import Mustache from 'mustache'
 import TranslateServiceLib from '@s/TranslateService'
 import FormService from '@s/FormService'
 import ResourceService from './ResourceService'
@@ -17,6 +17,7 @@ class SchemaService {
       const name = field.label && TranslateService.get(field.label)
       const label = `${name || field.field}${isLocalised ? ` (${TranslateService.get(`TL_${locale.toUpperCase()}`)})` : ''}`
       const schema = _.extend({}, this.typeMapper[field.input], {
+        input: field.input,
         label,
         model: isLocalised ? `${field.field}.${locale}` : field.field,
         originalModel: field.field,
@@ -24,7 +25,8 @@ class SchemaService {
         disabled: disabled || _.get(field, 'options.disabled', _.get(field, 'disabled', false)),
         readonly: _.get(field, 'options.readonly', false),
         required: !!field.required,
-        options: field.options,
+        // a hint can be declared on the field or in its options
+        options: field.hint && !_.get(field, 'options.hint') ? _.extend({}, field.options, { hint: field.hint }) : field.options,
         hint: field.hint,
         resource,
         locale,
@@ -34,6 +36,10 @@ class SchemaService {
       _.each(field.options, (val, key) => {
         _.set(schema, key, val)
       })
+      // a hint can be one text per language
+      if (_.isPlainObject(_.get(schema, 'options.hint'))) {
+        schema.options = { ...schema.options, hint: TranslateService.get(schema.options.hint) }
+      }
       if (field.input === 'paragraph') {
         schema.key = field.key
       }
@@ -47,17 +53,6 @@ class SchemaService {
         schema.selectOptions.label = _.map(schema.labels, (label, value) => {
           return { value, text: _.get(label, locale, label) }
         })
-      } else if (field.input === 'multiselect' && _.get(schema, 'labels', false)) {
-        if (!_.isObject(_.first(field.source))) {
-          const values = []
-          _.each(field.source, (value) => {
-            values.push({
-              text: _.get(schema, `labels.${value}`, value),
-              value
-            })
-          })
-          field.source = values
-        }
       }
       if (field.input === 'select' || field.input === 'pillbox') {
         schema.selectOptions.selectLabel = TranslateService.get('TL_MULTISELECT_SELECT_LABEL')
@@ -69,6 +64,9 @@ class SchemaService {
         if (field.input === 'pillbox') {
           schema.selectOptions.min = field.min
           schema.selectOptions.max = field.max
+          // the limits are rules of the field too (see utils/fieldValidation)
+          schema.min = field.min
+          schema.max = field.max
         }
       }
       return schema

@@ -1,217 +1,347 @@
-<!-- eslint-disable vue/no-v-for-template-key -->
 <template>
-  <div class="vue-table-generator vue-form-generator table">
-    <v-data-table-virtual
-      v-model="localSelectedRecords"
-      :theme="theme" :sort-by="sortBy"
-      height="73vh" density="compact" multi-sort show-select sticky :no-data-text="$filters.translate('TL_NO_DATA_FOUND')" :item-value="item => item._id" fixed-header :items="tableData" :headers="columns"
-      @update:sort-by="onChangeSortBy"
-    >
-      <template v-for="field in getFields('switch')" :key="field.model" #[`item.${field.model}`]="{item}">
-        <div class="checkbox">
-          <v-icon size="small" :class="{displayed: getVal(item, field.model)}" icon="$checkBold" />
-        </div>
-      </template>
-      <template v-for="field in getFields('ImageView')" :key="field.model" #[`item.${field.model}`]="{item}">
-        <img v-if="getSrc(item, field)" class="vue-table-generator-field image" :src="getSrc(item, field)">
-        <span v-else>{{ $filters.translate('TL_NO_IMAGE') }}</span>
-      </template>
-      <template #[`item.__ACTIONS__`]="{item}">
-        <div class="vue-table-generator-field table-column-actions">
-          <v-btn size="small" variant="flat" icon @click="edit(item)"><v-icon icon="$noteEditOutline" /></v-btn>
-          <v-btn size="small" variant="flat" class="delete-btn" icon @click="remove(item)"><v-icon icon="$trashCanOutline" /></v-btn>
-        </div>
-      </template>
-    </v-data-table-virtual>
+  <div
+    class="cms-table" :class="[`density-${density}`, {'scrolled-x': scrolledX, 'scrollable-right': canScrollRight, narrow: isNarrow}]"
+    :style="{'--cms-table-first-w': `${firstWidth}px`}"
+  >
+    <div ref="scroller" class="cms-table-scroll" @scroll.passive="onScroll">
+      <table
+        class="cms-table-grid" role="grid" :aria-label="label" aria-multiselectable="true" :aria-rowcount="rows.length + 1" :aria-colcount="columns.length + 2"
+        :aria-busy="loading ? 'true' : 'false'" :style="{width: `${totalWidth}px`}" @keydown="onKeydown" @focusin="onFocusIn"
+      >
+        <colgroup>
+          <col class="col-check">
+          <col v-for="(column, index) in columns" :key="column.key" :style="{width: `${widths[index]}px`}">
+          <col class="col-actions">
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col" class="col-check sticky-left">
+              <input
+                type="checkbox" class="cms-check" :checked="selectionState === 'all'" :indeterminate="selectionState === 'some'"
+                :aria-label="$filters.translate('TL_SELECT_ALL_ROWS')" :disabled="rows.length === 0" @change="$emit('update:selected', toggleAll())"
+              >
+            </th>
+            <th
+              v-for="(column, index) in columns" :key="column.key" scope="col" :aria-sort="ariaSort(column)"
+              :class="{'sticky-left first': index === 0, 'align-right': column.align === 'right', sorted: !!sortEntry(column)}"
+            >
+              <button
+                v-if="column.sortable" type="button" class="th-btn" :title="sortHint(column)"
+                @click="$emit('sort', column.key, $event.shiftKey)"
+              >
+                <span class="th-label">{{ column.label }}</span>
+                <span v-if="showLocaleBadge && column.locale" class="th-badge">{{ localeLabel(column.locale) }}</span>
+                <span v-if="sortEntry(column)" class="th-sort" aria-hidden="true">
+                  <v-icon size="14" :icon="sortEntry(column).order === 'asc' ? '$arrowUp' : '$arrowDown'" />
+                  <span v-if="sortBy.length > 1" class="th-sort-rank">{{ sortRank(column) }}</span>
+                </span>
+              </button>
+              <span v-else class="th-btn static">
+                <span class="th-label">{{ column.label }}</span>
+                <span v-if="showLocaleBadge && column.locale" class="th-badge">{{ localeLabel(column.locale) }}</span>
+              </span>
+            </th>
+            <th scope="col" class="col-actions sticky-right"><span class="th-label">{{ $filters.translate('TL_ACTIONS') }}</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <template v-if="loading">
+            <tr v-for="n in 8" :key="`skeleton-${n}`" class="skeleton-row" aria-hidden="true">
+              <td :colspan="columns.length + 2"><span class="skeleton-bar" :style="{width: `${40 + ((n * 17) % 45)}%`}" /></td>
+            </tr>
+          </template>
+          <template v-else>
+            <tr v-if="windowState.padTop" class="spacer" aria-hidden="true" :style="{height: `${windowState.padTop}px`}"><td :colspan="columns.length + 2" /></tr>
+            <tr
+              v-for="(row, offset) in visibleRows" :key="row._id" class="data-row" :class="{selected: isSelected(row)}" :data-row="windowState.start + offset"
+              :aria-rowindex="windowState.start + offset + 2" :aria-selected="isSelected(row) ? 'true' : 'false'" :tabindex="isActive(windowState.start + offset, -1) ? 0 : -1"
+              @click="onRowClick($event, row)"
+            >
+              <td class="col-check sticky-left" data-cell="0" :tabindex="isActive(windowState.start + offset, 0) ? 0 : -1">
+                <input
+                  type="checkbox" class="cms-check" tabindex="-1" :checked="isSelected(row)" :aria-label="$filters.translate('TL_SELECT_ROW')"
+                  @click.stop="onCheck($event, row)"
+                >
+              </td>
+              <td
+                v-for="(column, index) in columns" :key="column.key" :data-cell="index + 1" :tabindex="isActive(windowState.start + offset, index + 1) ? 0 : -1"
+                :class="{'sticky-left first': index === 0, 'align-right': column.align === 'right', [`kind-${column.kind}`]: true}"
+              >
+                <table-cell :column="column" :record="row" :helpers="helpers" />
+              </td>
+              <td class="col-actions sticky-right" :data-cell="columns.length + 1" :tabindex="isActive(windowState.start + offset, columns.length + 1) ? 0 : -1">
+                <span class="row-actions">
+                  <button
+                    type="button" class="cms-icon-btn" :tabindex="activeRow === windowState.start + offset ? 0 : -1" :title="$filters.translate('TL_EDIT_RECORD')"
+                    :aria-label="`${$filters.translate('TL_EDIT_RECORD')}: ${rowName(row)}`" @click.stop="$emit('edit', row)"
+                  >
+                    <v-icon size="16" icon="$noteEditOutline" />
+                  </button>
+                  <button
+                    type="button" class="cms-icon-btn danger" :tabindex="activeRow === windowState.start + offset ? 0 : -1" :title="$filters.translate('TL_DELETE_RECORD')"
+                    :aria-label="`${$filters.translate('TL_DELETE_RECORD')}: ${rowName(row)}`" @click.stop="$emit('remove', row)"
+                  >
+                    <v-icon size="16" icon="$trashCanOutline" />
+                  </button>
+                </span>
+              </td>
+            </tr>
+            <tr v-if="windowState.padBottom" class="spacer" aria-hidden="true" :style="{height: `${windowState.padBottom}px`}"><td :colspan="columns.length + 2" /></tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
 <script>
   import _ from 'lodash'
   import TranslateService from '@s/TranslateService'
+  import TableCell from '@c/TableCell.vue'
+  import {
+    distributeWidths, rowWindow, scrollTopForRow, moveFocus, selectionState, toggleAllIds, toggleId, selectRange, DENSITY_ROW_HEIGHT
+  } from '@u/tableModel'
 
+  const NARROW_WIDTH = 560
+  const NARROW_FIRST_WIDTH = 150
+
+  /**
+   * The grid: a native table in its own scroll container with a sticky header row, sticky checkbox and first column,
+   * a sticky actions column, fixed row heights and windowed rendering, sortable headers and grid keyboard navigation.
+   * It only renders and reports intent (sort, select, edit, remove); RecordTable owns the data.
+   */
   export default {
+    components: { TableCell },
     props: {
-      resource: { type: Object, default: () => ({}) },
-      schema: { type: Object, default: () => ({}) },
-      items: { type: Array, default: () => [] },
-      locale: { type: [String, Boolean], default: false },
-      options: { type: Object, default: () => ({}) },
-      selectedRecords: { type: Array, default: () => [] },
-      theme: { type: String, default: 'default' }
+      columns: { type: Array, default: () => [] },
+      rows: { type: Array, default: () => [] },
+      selected: { type: Array, default: () => [] },
+      sortBy: { type: Array, default: () => [] },
+      density: { type: String, default: 'default' },
+      loading: { type: Boolean, default: false },
+      label: { type: String, default: '' },
+      showLocaleBadge: { type: Boolean, default: false },
+      helpers: { type: Object, default: () => ({}) },
+      rowName: { type: Function, default: (row) => _.get(row, '_id', '') }
     },
+    emits: ['update:selected', 'sort', 'open', 'edit', 'remove'],
     data () {
       return {
-        localSelectedRecords: [],
-        columns: [],
-        sourceData: [],
-        tableData: [],
-        filteredColumns: [],
-        itemsSelected: [],
-        sortBy: []
+        scrollTop: 0,
+        viewportHeight: 600,
+        viewportWidth: 0,
+        scrolledX: false,
+        canScrollRight: false,
+        rowHeight: DENSITY_ROW_HEIGHT.default,
+        headHeight: 40,
+        checkWidth: 44,
+        actionsWidth: 84,
+        active: { row: 0, col: -1 },
+        lastChecked: null,
+        resizeObserver: null
       }
     },
     computed: {
-      orderedItem () {
-        return this.items
+      ids () {
+        return _.map(this.rows, '_id')
       },
-      schemaFields () {
-        let fields = this.schema.fields
-        let newFields = []
-        _.each(fields, (field) => {
-          if (_.get(field, 'options.breakdown', false)) {
-            _.each(this.resource.locales, (locale, localeIndex) => {
-              if (field.model === `${field.originalModel}.${locale}`) {
-                field.localised = false
-                field.options.localeIndex = localeIndex + 1
-              } else {
-                let newField = _.cloneDeep(field)
-                newField.localised = false
-                const name = field.originalModel && TranslateService.get(field.originalModel)
-                newField.label = `${name} (${TranslateService.get(`TL_${locale.toUpperCase()}`)})`
-                newField.model = `${field.originalModel}.${locale}`
-                _.set(newField, 'options.localeIndex', localeIndex + 1)
-                newFields.push(newField)
-              }
-            })
-          }
-          field.disabled = true
-        })
-        fields = fields.concat(newFields)
-        let list = _.filter(fields, (item) => _.isNumber(_.get(item, 'options.index', false)))
-        if (_.isEmpty(list)) {
-          return this.schema.fields
+      selectionState () {
+        return selectionState(this.selected, this.ids)
+      },
+      windowState () {
+        return rowWindow({ scrollTop: this.scrollTop, viewportHeight: this.viewportHeight, rowHeight: this.rowHeight, total: this.rows.length })
+      },
+      visibleRows () {
+        return this.rows.slice(this.windowState.start, this.windowState.end)
+      },
+      activeRow () {
+        return this.active.row
+      },
+      // phones: the first column keeps a short sticky width so other columns stay reachable, actions scroll with the row
+      isNarrow () {
+        return this.viewportWidth > 0 && this.viewportWidth < NARROW_WIDTH
+      },
+      widths () {
+        const widths = distributeWidths(this.columns, this.viewportWidth, this.checkWidth + this.actionsWidth)
+        if (this.isNarrow && widths.length > 0) {
+          widths[0] = Math.min(widths[0], NARROW_FIRST_WIDTH)
         }
-        return _.sortBy(list, (i) => `${i.options.index}${_.get(i, 'options.localeIndex', 0)}`)
+        return widths
+      },
+      firstWidth () {
+        return _.get(this.widths, '[0]', 0)
+      },
+      totalWidth () {
+        return this.checkWidth + _.sum(this.widths) + this.actionsWidth
       }
     },
     watch: {
-      items () {
-        this.resetRecordsFiltering()
+      density () {
+        this.$nextTick(this.measure)
       },
-      localSelectedRecords () {
-        this.$emit('update:selectedRecords', this.localSelectedRecords)
+      rows () {
+        // keep the tab stop on an existing row, and the window inside the new length
+        this.active = { row: _.clamp(this.active.row, 0, Math.max(0, this.rows.length - 1)), col: this.active.col }
+        this.$nextTick(this.measure)
+      },
+      columns () {
+        this.$nextTick(this.updateScrollState)
       }
     },
     mounted () {
-      this.resetRecordsFiltering()
-      this.createTableColumns()
+      this.measure()
+      if (typeof ResizeObserver !== 'undefined') {
+        this.resizeObserver = new ResizeObserver(() => this.measure())
+        this.resizeObserver.observe(this.$refs.scroller)
+      }
+    },
+    beforeUnmount () {
+      if (this.resizeObserver) {
+        this.resizeObserver.disconnect()
+      }
     },
     methods: {
-      getSrc (item, field) {
-        const url = _.get(this.findAttachmentForField(item, field), 'url', false)
-        return url ? url + '?resize=autox50' : false
+      localeLabel (locale) {
+        return TranslateService.get(`TL_${_.toUpper(locale)}`)
       },
-      findAttachmentForField (item, field) {
-        return _.find(_.get(item, '_attachments', []), (attachment) => {
-          if (field.localised) {
-            return _.get(attachment, '_fields.locale', false) === field.locale && attachment._name === field.originalModel
-          }
-          return attachment._name === field.originalModel
-        })
-      },
-      getFields (type) {
-        return _.filter(this.schemaFields, {type: type})
-      },
-      getVal (item, key, defaultVal = false) {
-        return _.get(item, key, defaultVal)
-      },
-      onChangeSortBy (sortBy) {
-        this.sortBy = sortBy
-      },
-      resetRecordsFiltering () {
-        this.sourceData = this.orderedItem
-        this.tableData = this.sourceData.slice(0)
-      },
-      createTableColumns () {
-        const columns = _.map(this.schemaFields, (field) => {
-          const column = {
-            value: field.model,
-            key: field.model,
-            title: field.label,
-            sortable: true,
-            ellipsis: {
-              showTitle: true,
-              lineClamp: _.get(field, 'options.lineClamp', 1)
-            }
-          }
-          _.each(['sortBy', 'align'], (key) => {
-            const val = _.get(field, `options.${key}`, false)
-            if (val !== false) {
-              _.set(column, key, val)
-            }
-          })
-          return column
-        })
-        columns.push({
-          value: '__ACTIONS__',
-          key: '__ACTIONS__',
-          sortable: false,
-          title: TranslateService.get('TL_ACTIONS'),
-          width: 75
-        })
-        this.columns = columns
-      },
-      edit (item) {
-        this.$emit('edit', item)
-      },
-      remove (item) {
-        this.$emit('remove', item)
-      },
-      isRecordSelected (record) {
-        return _.includes(this.localSelectedRecords, _.get(record, '_id', false))
-      },
-      onSelectRecord (rowId, val) {
-        if (val) {
-          this.localSelectedRecords.push(rowId)
-        } else {
-          this.localSelectedRecords = _.filter(this.localSelectedRecords, (id) => id !== rowId)
+      // Real heights are measured (touch devices enlarge the rows), the constants are only the first guess
+      measure () {
+        const scroller = this.$refs.scroller
+        if (!scroller) {
+          return
         }
-        this.$emit('update:selectedRecords', this.localSelectedRecords)
+        this.viewportHeight = scroller.clientHeight
+        this.viewportWidth = scroller.clientWidth
+        // fixed column widths come from the design tokens
+        const style = window.getComputedStyle(scroller)
+        this.checkWidth = parseFloat(style.getPropertyValue('--cms-table-check-w')) || this.checkWidth
+        this.actionsWidth = parseFloat(style.getPropertyValue('--cms-table-actions-w')) || this.actionsWidth
+        const row = scroller.querySelector('tbody tr.data-row')
+        const head = scroller.querySelector('thead tr')
+        this.rowHeight = row ? row.getBoundingClientRect().height || this.rowHeight : DENSITY_ROW_HEIGHT[this.density] || this.rowHeight
+        this.headHeight = head ? head.getBoundingClientRect().height || this.headHeight : this.headHeight
+        this.updateScrollState()
       },
-      searchBy (items, fieldKey) {
-        this.tableData = this.sourceData.filter(
-          (x) => items.length === 0 || items.includes(_.get(x, fieldKey))
-        )
+      updateScrollState () {
+        const scroller = this.$refs.scroller
+        if (!scroller) {
+          return
+        }
+        this.scrolledX = scroller.scrollLeft > 0
+        this.canScrollRight = scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 1
       },
-      editRow (row) {
-        console.info('editRow', row)
+      onScroll () {
+        const scroller = this.$refs.scroller
+        this.scrollTop = scroller.scrollTop
+        this.updateScrollState()
       },
-      getFieldType (field) {
-        return _.get(field, 'overrideType', _.get(field, 'type', false))
+      // ---- sorting
+      sortEntry (column) {
+        return _.find(this.sortBy, { key: column.key })
+      },
+      sortRank (column) {
+        return _.findIndex(this.sortBy, { key: column.key }) + 1
+      },
+      ariaSort (column) {
+        if (!column.sortable) {
+          return undefined
+        }
+        const entry = this.sortEntry(column)
+        return !entry ? 'none' : entry.order === 'asc' ? 'ascending' : 'descending'
+      },
+      sortHint (column) {
+        return `${TranslateService.get('TL_SORT_BY')}: ${column.label} (${TranslateService.get('TL_SORT_SHIFT_HINT')})`
+      },
+      // ---- selection
+      isSelected (row) {
+        return _.includes(this.selected, row._id)
+      },
+      toggleAll () {
+        return toggleAllIds(this.selected, this.ids)
+      },
+      onCheck (event, row) {
+        const next = event.shiftKey && this.lastChecked ? selectRange(this.selected, this.ids, this.lastChecked, row._id) : toggleId(this.selected, row._id)
+        this.lastChecked = row._id
+        this.$emit('update:selected', next)
+      },
+      onRowClick (event, row) {
+        if (event.target.closest('a, button, input, .col-check')) {
+          return
+        }
+        // a text selection made by dragging must not open the record
+        const selection = window.getSelection && window.getSelection()
+        if (selection && !selection.isCollapsed && selection.toString().length > 0) {
+          return
+        }
+        this.$emit('open', row)
+      },
+      // ---- keyboard
+      isActive (row, col) {
+        return this.active.row === row && this.active.col === col
+      },
+      positionOf (target) {
+        const tr = target && target.closest ? target.closest('tr[data-row]') : null
+        if (!tr) {
+          return null
+        }
+        const td = target.closest('td[data-cell]')
+        return { row: Number(tr.dataset.row), col: td ? Number(td.dataset.cell) : -1 }
+      },
+      onFocusIn (event) {
+        const position = this.positionOf(event.target)
+        if (position) {
+          this.active = position
+        }
+      },
+      async focusPosition (position) {
+        const scroller = this.$refs.scroller
+        this.active = position
+        const top = scrollTopForRow({ index: position.row, scrollTop: this.scrollTop, viewportHeight: this.viewportHeight, rowHeight: this.rowHeight, headerHeight: this.headHeight })
+        if (top !== null) {
+          scroller.scrollTop = top
+          this.scrollTop = top
+        }
+        await this.$nextTick()
+        const selector = position.col === -1 ? `tr[data-row="${position.row}"]` : `tr[data-row="${position.row}"] td[data-cell="${position.col}"]`
+        const element = scroller.querySelector(selector)
+        if (element) {
+          element.focus()
+        }
+      },
+      onKeydown (event) {
+        const position = this.positionOf(event.target)
+        if (!position) {
+          return
+        }
+        const row = this.rows[position.row]
+        const onControl = event.target.matches && event.target.matches('button, input, a')
+        if (event.key === 'Enter' && !onControl && row) {
+          event.preventDefault()
+          this.$emit('open', row)
+          return
+        }
+        if (event.key === ' ' && !onControl && row) {
+          event.preventDefault()
+          this.$emit('update:selected', toggleId(this.selected, row._id))
+          this.lastChecked = row._id
+          return
+        }
+        if ((event.ctrlKey || event.metaKey) && _.toLower(event.key) === 'a' && !onControl) {
+          event.preventDefault()
+          this.$emit('update:selected', _.union(this.selected, this.ids))
+          return
+        }
+        if (event.key === 'Escape' && this.selected.length > 0 && !onControl) {
+          this.$emit('update:selected', [])
+          return
+        }
+        const pageSize = Math.max(1, Math.floor((this.viewportHeight - this.headHeight) / this.rowHeight) - 1)
+        const next = moveFocus(position, event.key, { rowCount: this.rows.length, colCount: this.columns.length + 2, pageSize, ctrl: event.ctrlKey || event.metaKey })
+        if (next !== position) {
+          event.preventDefault()
+          this.focusPosition(next)
+        }
       }
     }
   }
 </script>
-
-<style lang="scss" scoped>
-@use '@a/scss/variables.scss' as *;
-@use '@a/scss/mixins.scss' as *;
-.vue-table-generator {
-  display: block;
-  overflow: hidden;
-}
-#table-top{
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px
-}
-.empty-data {
-  text-align: center;
-  padding-top: 36px;
-  @include h4;
-}
-.table-column-actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  button {
-    background-color: $table-row-icon-background;
-  }
-  .v-icon {
-    color: $table-row-icon-color;
-  }
-}
-</style>

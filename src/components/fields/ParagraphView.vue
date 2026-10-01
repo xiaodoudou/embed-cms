@@ -1,72 +1,80 @@
 <template>
-  <div class="paragraph-view" :class="{'can-add-more': !blockMoreItems()}" :style="{ '--paragraph-level': getParagraphLevel() }">
-    <div v-if="!blockMoreItems()" class="paragraph-header-bar">
-      <v-autocomplete
-        ref="input" :ripple="false" :menu-props="menuProps" :theme="theme" transition="none" :model-value="selectedType" :items="types" :item-title="getLabel" item-value="title" hide-details
-        rounded density="compact" persistent-placeholder variant="solo-filled" flat :rules="[validateField]" :disabled="disabled || schema.disabled" menu-icon="$chevronDown" @update:model-value="onChangeType"
-      >
-        <template #prepend><field-label :schema="schema" /></template>
-        <template #label />
-      </v-autocomplete>
-      <div class="add-btn-wrapper">
-        <v-btn elevation="0" class="add-new-item" rounded :disabled="blockMoreItems()" @click="onClickAddNewItem"><span>{{ $filters.translate('TL_ADD') }}</span></v-btn>
-        <v-btn v-if="hasFileOrImageTypes" elevation="0" class="add-multiple-items" rounded :disabled="blockMoreItems()" @click="toggleMultipleDropZone">
-          <span>{{ $filters.translate('TL_ADD_MULTIPLE') }}</span>
-        </v-btn>
-      </div>
+  <div class="paragraph-field">
+    <!-- the label sits above the box, like the label of every other field -->
+    <field-label class="paragraph-label" :schema="schema" />
+    <div v-if="schema.options && schema.options.hint" class="help-block paragraph-hint">
+      <v-icon size="small" icon="$information" />
+      <span>{{ schema.options.hint }}</span>
     </div>
-    <div v-if="showMultipleDropZone" class="multiple-drop-zone" :class="{ 'drag-over': isDragOver }" @click="$refs.fileInput.click()" @drop="onDropFiles" @dragover.prevent="onDragOver" @dragenter.prevent="onDragEnter" @dragleave.prevent="onDragLeave">
-      <div class="drop-zone-content">
-        <v-icon size="48" icon="$cloudUpload" />
-        <div class="drop-zone-text">
-          <div class="primary-text">{{ $filters.translate('TL_DRAG_AND_DROP_FILES_HERE') }}</div>
-          <div class="secondary-text">{{ $filters.translate('TL_OR_CLICK_TO_SELECT_FILES') }}</div>
-          <div class="supported-types">
-            {{ $filters.translate('TL_SUPPORTED_TYPES') }}: {{ getSupportedExtensions() }}
-          </div>
-          <div v-if="getDefaultParagraph()" class="default">{{ $filters.translate('TL_DRAG_AND_DROP_DEFAULT') }}: {{ getDefaultParagraph() }}</div>
+    <div class="paragraph-view" :class="{'can-add-more': !blockMoreItems()}" :style="{ '--paragraph-level': getParagraphLevel() }">
+      <div v-if="!blockMoreItems()" class="paragraph-header-bar">
+        <v-autocomplete
+          ref="input" :ripple="false" :menu-props="menuProps" :theme="theme" transition="none" :model-value="selectedType" :items="types" :item-title="getLabel" item-value="title" hide-details
+          rounded density="compact" persistent-placeholder variant="solo-filled" flat :rules="[validateField]" :disabled="disabled || schema.disabled" menu-icon="$chevronDown" @update:model-value="onChangeType"
+        >
+          <template #label />
+        </v-autocomplete>
+        <div class="add-btn-wrapper">
+          <v-btn elevation="0" class="add-new-item" :disabled="blockMoreItems()" @click="onClickAddNewItem"><span>{{ $filters.translate('TL_ADD') }}</span></v-btn>
+          <v-btn v-if="hasFileOrImageTypes" elevation="0" class="add-multiple-items" variant="outlined" :disabled="blockMoreItems()" @click="toggleMultipleDropZone">
+            <span>{{ $filters.translate('TL_ADD_MULTIPLE') }}</span>
+          </v-btn>
         </div>
-        <input ref="fileInput" type="file" multiple style="display: none" :accept="getAllAcceptedTypes()" @change="onSelectFiles">
       </div>
-    </div>
-    <div class="paragraph-content">
-      <draggable
-        v-if="schema && subResourcesLoaded" :key="`${schema.model}-${key}`" :list="items" :class="{disabled, 'dynamic-layout-container': isDynamicLayoutContainer}" draggable=".item" v-bind="dragOptions" handle=".handle" :group="`${schema.model}-${key}`" ghost-class="ghost" :force-fallback="true"
-        @end="onEndDrag"
-      >
-        <v-card v-for="(item, idx) in items" :key="`paragraph-item-${idx}`" :theme="theme" elevation="0" :class="getItemClasses(idx, item)" :style="getItemStyles(item)" :data-index="`${idx + 1}/${items.length}`">
-          <v-card-title class="handle paragraph-header">
-            <div class="paragraph-title">{{ getLabel(item) }}</div>
-            <div class="add-btn-wrapper">
-              <v-btn class="remove-item" :disabled="disabled || schema.disabled" variant="text" icon rounded size="small" @click="onClickRemoveItem(item)">
-                <v-icon icon="$trashCanOutline" />
-              </v-btn>
+      <div v-if="showMultipleDropZone" class="multiple-drop-zone" :class="{ 'drag-over': isDragOver }" @click="$refs.fileInput.click()" @drop="onDropFiles" @dragover.prevent="onDragOver" @dragenter.prevent="onDragEnter" @dragleave.prevent="onDragLeave">
+        <div class="drop-zone-content">
+          <v-icon size="48" icon="$cloudUpload" />
+          <div class="drop-zone-text">
+            <div class="primary-text">{{ $filters.translate('TL_DRAG_AND_DROP_FILES_HERE') }}</div>
+            <div class="secondary-text">{{ $filters.translate('TL_OR_CLICK_TO_SELECT_FILES') }}</div>
+            <div class="supported-types">
+              {{ $filters.translate('TL_SUPPORTED_TYPES') }}: {{ getSupportedExtensions() }}
             </div>
-          </v-card-title>
-          <div class="item-main-wrapper">
-            <div class="item-main">
-              <div v-if="item.showConvert || item.cannotConvert" class="convert-paragraph">
-                <div v-if="item.cannotConvert" class="error-message">{{ $filters.translate('TL_INVALID_PARAGRAPH_CANNOT_BE_CONVERTED') }}</div>
-                <div v-else class="error-message">{{ $filters.translate('TL_INVALID_PARAGRAPH_WOULD_YOU_LIKE_TO_CONVERT_IT') }}</div>
-                <json-viewer :value="item" tabindex="-1" />
-                <template v-if="item.showConvert">
-                  <div class="convert-action">
-                    <v-select
-                      :model-value="item.showConvert" :menu-props="menuProps" :theme="theme" transition="none" :items="types" hide-details rounded density="compact" persistent-placeholder variant="solo-filled"
-                      flat
-                    >
-                      <template #prepend><field-label :schema="{label: $filters.translate('TL_CONVERT_TO')}" /></template>
-                      <template #label />
-                    </v-select>
-                    <v-btn elevation="0" rounded @click="convertParagraph(item)">{{ $filters.translate('TL_CONVERT') }}</v-btn>
-                  </div>
-                </template>
-              </div>
-              <custom-form v-else :schema="getSchema(item, idx)" :model="item" :paragraph-index="idx" :paragraph-level="blockMoreItems() ? paragraphLevel : paragraphLevel + 1" @error="onError" @input="onModelUpdated" />
-            </div>
+            <div v-if="getDefaultParagraph()" class="default">{{ $filters.translate('TL_DRAG_AND_DROP_DEFAULT') }}: {{ getDefaultParagraph() }}</div>
           </div>
-        </v-card>
-      </draggable>
+          <input ref="fileInput" type="file" multiple style="display: none" :accept="getAllAcceptedTypes()" @change="onSelectFiles">
+        </div>
+      </div>
+      <div class="paragraph-content">
+        <draggable
+          v-if="schema && subResourcesLoaded" :key="`${schema.model}-${key}`" :list="items" :class="{disabled, 'dynamic-layout-container': isDynamicLayoutContainer}" draggable=".item" v-bind="dragOptions" handle=".handle" :group="`${schema.model}-${key}`" ghost-class="ghost" :force-fallback="true"
+          @end="onEndDrag"
+        >
+          <v-card v-for="(item, idx) in items" :key="`paragraph-item-${idx}`" :theme="theme" elevation="0" :class="getItemClasses(idx, item)" :style="getItemStyles(item)">
+            <span v-if="isDynamicLayoutContainer" class="slots-badge" :title="getSlotsLabel(item)" :aria-label="getSlotsLabel(item)">{{ getItemSlots(item) }}/{{ parentSlots }}</span>
+            <v-card-title class="handle paragraph-header">
+              <div class="paragraph-title">{{ getLabel(item) }}</div>
+              <div class="add-btn-wrapper">
+                <v-btn class="remove-item" :disabled="disabled || schema.disabled" variant="text" icon rounded size="small" @click="onClickRemoveItem(item)">
+                  <v-icon icon="$trashCanOutline" />
+                </v-btn>
+              </div>
+            </v-card-title>
+            <div class="item-main-wrapper">
+              <div class="item-main">
+                <div v-if="item.showConvert || item.cannotConvert" class="convert-paragraph">
+                  <div v-if="item.cannotConvert" class="error-message">{{ $filters.translate('TL_INVALID_PARAGRAPH_CANNOT_BE_CONVERTED') }}</div>
+                  <div v-else class="error-message">{{ $filters.translate('TL_INVALID_PARAGRAPH_WOULD_YOU_LIKE_TO_CONVERT_IT') }}</div>
+                  <json-viewer :value="item" tabindex="-1" />
+                  <template v-if="item.showConvert">
+                    <div class="convert-action">
+                      <v-select
+                        :model-value="item.showConvert" :menu-props="menuProps" :theme="theme" transition="none" :items="types" hide-details rounded density="compact" persistent-placeholder variant="solo-filled"
+                        flat
+                      >
+                        <template #prepend><field-label :schema="{label: $filters.translate('TL_CONVERT_TO')}" /></template>
+                        <template #label />
+                      </v-select>
+                      <v-btn elevation="0" rounded @click="convertParagraph(item)">{{ $filters.translate('TL_CONVERT') }}</v-btn>
+                    </div>
+                  </template>
+                </div>
+                <custom-form v-else :schema="getSchema(item, idx)" :model="item" :paragraph-index="idx" :paragraph-level="blockMoreItems() ? paragraphLevel : paragraphLevel + 1" @error="onError" @input="onModelUpdated" />
+              </div>
+            </div>
+          </v-card>
+        </draggable>
+      </div>
     </div>
   </div>
 </template>
@@ -183,49 +191,37 @@
           classes.push('not-highlighted')
         }
         if (this.isDynamicLayoutContainer) {
-          let slots = _.get(item, '_value.slots') || _.get(item, 'slots')
-          if (!slots) {
-            try {
-              const paragraphType = _.get(item, '_type') || _.get(item, 'title')
-              if (paragraphType) {
-                const paragraphSchema = ResourceService.getParagraphSchema(paragraphType)
-                const layoutSlots = _.get(paragraphSchema, 'layout.slots')
-                if (layoutSlots) {
-                  slots = layoutSlots
-                }
-              }
-            } catch (error) {
-              console.error(`Error: `, error)
-            }
-          }
-          if (!slots) {
-            slots = 2
-          }
+          const slots = this.getItemSlots(item)
           classes.push('dynamic-layout-item')
           classes.push(`slots-${slots}`)
+          // a quarter of the row or less: widened to a third on tablets (see the styles)
+          if (slots * 4 <= this.parentSlots) {
+            classes.push('slots-narrow')
+          }
         }
         return classes
       },
+      // the block's slots: its own `slots`, else its paragraph type's layout.slots, else 2
+      getItemSlots(item) {
+        let slots = _.get(item, '_value.slots') || _.get(item, 'slots')
+        if (!slots) {
+          try {
+            const paragraphType = _.get(item, '_type') || _.get(item, 'title')
+            if (paragraphType) {
+              slots = _.get(ResourceService.getParagraphSchema(paragraphType), 'layout.slots')
+            }
+          } catch (error) {
+            console.warn('Could not get paragraph schema for slots:', _.get(item, '_type'), error)
+          }
+        }
+        return slots || 2
+      },
+      getSlotsLabel(item) {
+        return this.$filters.translate('TL_BLOCK_WIDTH_SLOTS', { slots: this.getItemSlots(item), total: this.parentSlots })
+      },
       getItemStyles(item) {
         if (this.isDynamicLayoutContainer) {
-          let slots = _.get(item, '_value.slots') || _.get(item, 'slots')
-          if (!slots) {
-            try {
-              const paragraphType = _.get(item, '_type') || _.get(item, 'title')
-              if (paragraphType) {
-                const paragraphSchema = ResourceService.getParagraphSchema(paragraphType)
-                const layoutSlots = _.get(paragraphSchema, 'layout.slots')
-                if (layoutSlots) {
-                  slots = layoutSlots
-                }
-              }
-            } catch (error) {
-              console.warn('Could not get paragraph schema for slots:', _.get(item, '_type'), error)
-            }
-          }
-          if (!slots) {
-            slots = 2
-          }
+          const slots = this.getItemSlots(item)
           const percentage = (slots / this.parentSlots) * 100
           const itemsPerRow = Math.floor(this.parentSlots / slots)
           const totalGapInRow = Math.max(0, (itemsPerRow - 1) * 16)
@@ -268,8 +264,7 @@
       },
       getTypes() {
         this.types = _.compact(_.map(_.get(this, 'schema.types', []), (type)=> {
-          let schema = false
-          schema = ResourceService.getParagraphSchema(type)
+          const schema = ResourceService.getParagraphSchema(type)
           if (schema) {
             schema.input = 'group'
             schema.label = _.get(schema, 'displayname', schema.title)
@@ -810,6 +805,21 @@
 <style lang="scss" scoped>
 @use '@a/scss/variables.scss' as *;
 @use '@a/scss/mixins.scss' as *;
+// the label, then the box that holds the blocks
+.paragraph-field {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  > .paragraph-view {
+    flex: 1 1 auto;
+  }
+  // the hint of the whole block sits under the label, before the box
+  > .paragraph-hint {
+    margin: 0 0 var(--cms-space-2);
+  }
+}
+
 .paragraph-view {
   width: 100%;
   border: 2px $paragraph-top-bar-background solid;
@@ -838,18 +848,18 @@
 }
 
 .multiple-drop-zone {
-  border: 2px dashed #ccc;
+  border: 2px dashed var(--cms-border-strong);
   border-radius: 8px;
   padding: 32px;
   margin: 16px 0;
   text-align: center;
-  background-color: #fafafa;
+  background-color: var(--cms-surface-2);
   cursor: pointer;
   transition: all 0.3s ease;
 
   &:hover, &.drag-over {
-    border-color: var(--v-theme-primary, #1976d2);
-    background-color: rgba(var(--v-theme-primary-rgb, 25, 118, 210), 0.04);
+    border-color: var(--cms-primary);
+    background-color: var(--cms-primary-soft);
   }
 
   .drop-zone-content {
@@ -866,10 +876,10 @@
     .primary-text {
       font-size: 18px;
       font-weight: 500;
-      color: var(--v-theme-on-surface, #212121);
+      color: var(--cms-text);
     }
     .secondary-text, .supported-types, .default {
-      color: var(--v-theme-on-surface-variant, #757575);
+      color: var(--cms-text-muted);
     }
     .secondary-text {
       font-size: 14px;
@@ -895,7 +905,7 @@
     cursor: pointer;
   }
   .handle {
-    border-radius: 0px !important;
+    border-radius: 6px 6px 0 0 !important; /* follows the rounded border of the card (8px less its 2px border) */
     @include h5;
   }
   .file-item-handle {
@@ -943,28 +953,17 @@
 .disabled {
   pointer-events: none;
 }
-.add-new-item, .remove-item, .add-multiple-items {
-  color: $btn-action-color !important;
+// Add / remove buttons use the shared button system (base.css); only alignment lives here
+.add-new-item, .add-multiple-items {
+  height: 40px;
+}
+.remove-item {
   max-height: 34px;
-  button {
-    &:before {
-      transform: translate(50%, 0);
-    }
-  }
-  span {
-    @include cta-text;
-    text-transform: none;
-    text-transform: uppercase !important;
-    letter-spacing: 0;
-  }
 }
 .add-btn-wrapper {
   display: flex;
-  gap: 8px;
-
-  .add-new-item, .add-multiple-items {
-    background-color: $btn-action-background !important;
-  }
+  align-items: flex-end;
+  gap: var(--cms-space-2);
 }
 .paragraph-footer, .paragraph-header, .paragraph-header-bar {
   display: flex;
@@ -978,22 +977,24 @@
   position: -webkit-sticky;
   position: sticky;
   top: calc(var(--paragraph-level, 0) * 80px);
-  background-color: var(--v-theme-surface, white);
-  border-bottom: 1px solid var(--v-theme-outline, #e0e0e0);
-  padding: 16px 8px;
+  background-color: var(--cms-surface-2);
+  border-bottom: 1px solid var(--cms-border);
+  padding: 12px 8px;
   margin-top: 0;
-  z-index: calc(5000 - var(--paragraph-level, 0)) !important; /* Higher level headers appear on top, above other components */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 8px 8px 0 0;
-  backdrop-filter: blur(8px);
+  /* above the blocks it slides over, below menus and dialogs; a deeper level sits below its parent */
+  z-index: calc(30 - var(--paragraph-level, 0));
+  /* a hairline, not a shadow: the bar is part of the box, the top corners follow the box (8px less its 2px border) */
+  border-radius: 6px 6px 0 0;
 
   /* Ensure sticky positioning works in nested contexts */
   align-self: flex-start;
   width: 100%;
-
-  /* Force sticky positioning to work */
-  contain: layout style paint;
-
+  contain: layout style;
+}
+// the top corners of a block's header follow the rounded border of its card (8px less the 2px border);
+// the selector is specific enough to win over Vuetify's rules for the first child of a card
+.v-card.item > .v-card-title.paragraph-header {
+  border-radius: 6px 6px 0 0;
 }
 .paragraph-header {
   background-color: $paragraph-top-bar-background;
@@ -1005,6 +1006,8 @@
   height: 34px;
   padding-right: 0;
   padding-left: 16px;
+  // the top corners follow the rounded border of the block card (8px less its 2px border)
+  border-radius: 6px 6px 0 0;
   .paragraph-title {
     height: 100%;
     @include subtext;
@@ -1024,7 +1027,7 @@
     @include cta-text;
   }
   .error-message {
-    color: $imag-orange;
+    color: $cms-warning;
   }
   .v-btn {
     color: $btn-action-color;
@@ -1154,19 +1157,20 @@
       .item-main {
         overflow: hidden;
       }
-      &::before {
-        content: attr(data-index);
+      .slots-badge {
         position: absolute;
         top: 2px;
         left: 50%;
-        background: rgba(0, 0, 0, 0.1);
+        background: var(--cms-overlay-hover);
         font-size: 10px;
+        line-height: 1.2;
         padding: 2px 4px;
         border-radius: 2px;
-        color: #666;
+        color: var(--cms-text-muted);
         z-index: 10;
-        pointer-events: none;
         transform: translate(-50%, 0);
+        cursor: default;
+        user-select: none;
       }
     }
 
@@ -1181,10 +1185,8 @@
 
     @media (max-width: 1024px) and (min-width: 769px) {
       .dynamic-layout-item {
-        // On tablets, ensure items don't get too small
-        &[style*="flex-basis: calc(8.33%"], // 1/12
-        &[style*="flex-basis: calc(16.67%"], // 2/12
-        &[style*="flex-basis: calc(25%"] { // 3/12
+        // On tablets, blocks of a quarter of the row or less are widened to a third
+        &.slots-narrow {
           width: calc(33.33% - 10.667px) !important;
           max-width: calc(33.33% - 10.667px) !important;
           flex-basis: calc(33.33% - 10.667px) !important;

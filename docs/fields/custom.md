@@ -1,38 +1,5 @@
-# Custom Field Types
+# Custom field types
 
-Some field types are custom or advanced and may require additional configuration or a custom Vue component. Examples include:
+The `input` value of a field selects a component through `src/services/FormService.js` (`typeMapper`). The table of every supported type, its component and its documentation page is in [`docs/FIELDS.md`](../FIELDS.md).
 
-- `customCode`
-- `customTreeView`
-- `colorPicker`
-- `customDatetimePicker`
-- `customMultiSelect`
-- `customInput`
-- `customTextarea`
-- `customCheckbox`
-- `customInputTag`
-- `jsonEditor`
-- `wysiwygField`
-- `paragraphView`
-- `imageView`
-- `attachmentView`
-
-## Declaration
-```js
-{
-  field: 'customField',
-  input: 'customType',
-  // Additional options as required by the component
-}
-```
-
-## Usage
-- Used for specialized UI or data handling.
-- Requires the corresponding component to be registered in the frontend.
-
-## Options
-- Vary by field/component. Refer to the component's documentation or source code for details.
-
----
-
-For any field type not listed above, check the `src/components/fields/` directory for its implementation and options.
+A value that is not a key of `typeMapper` is not rendered. To add a type, register it in `typeMapper` with the Vue component to use and, when needed, a `validator`, then document it with a page in this folder.

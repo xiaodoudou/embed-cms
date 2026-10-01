@@ -1,0 +1,71 @@
+name: Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npx eslint lib src index.js test/unit test/security test/helpers test/bench
+      - name: Backend unit and security tests
+        run: npm run test:unit
+      - name: Frontend tests
+        run: npm run test:frontend
+      - name: Legacy integration suite
+        run: npm test
+        env:
+          TEST_PORT: 9985
+      - name: Production build
+        run: npm run build
+      - name: Dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+  # The driver contract suite (test/unit/drivers.contract.test.js) runs the same tests against the json file store,
+  # PostgreSQL and MongoDB. Here both servers are service containers, and a server that does not answer fails the job
+  # (REQUIRE_DATABASES) instead of skipping its part of the suite.
+  drivers:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Driver contract suite
+        run: npx mocha test/unit/drivers.contract.test.js
+        env:
+          REQUIRE_DATABASES: '1'
+          TEST_POSTGRES_URL: postgres://postgres:postgres@localhost:5432/postgres
+          TEST_MONGODB_URL: mongodb://localhost:27017

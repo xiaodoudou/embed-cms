@@ -4,15 +4,15 @@
       <v-card-title>
         <span class="text-h5">CMS Configuration Editor</span>
         <v-spacer />
-        <v-chip :color="hasChanges ? 'warning' : 'success'" :text-color="hasChanges ? 'white' : 'white'" small>
+        <v-chip :color="hasChanges ? 'warning' : 'success'" variant="flat" size="small">
           {{ hasChanges ? 'Modified' : 'Saved' }}
         </v-chip>
       </v-card-title>
       <v-card-text>
-        <v-alert v-if="alert.show" :type="alert.type" class="mb-4" dismissible @click:close="alert.show = false">
+        <v-alert v-if="alert.show" :type="alert.type" class="mb-4" closable role="alert" @click:close="alert.show = false">
           {{ alert.message }}
         </v-alert>
-        <v-textarea v-model="configContent" rows="20" variant="outlined" :error="!isValidJson" :error-messages="jsonError" :disabled="loading" class="mb-4" @input="validateJson" />
+        <v-textarea v-model="configContent" rows="20" aria-label="CMS configuration (JSON)" spellcheck="false" variant="outlined" :error="!isValidJson" :error-messages="jsonError" :disabled="loading" class="mb-4" @input="validateJson" />
         <div class="d-flex justify-end">
           <v-btn color="secondary" :disabled="loading" class="mr-2" @click="loadConfig">
             <v-icon left icon="$refresh" /> Reset
@@ -39,6 +39,8 @@
 </template>
 
 <script>
+  import _ from 'lodash'
+
   export default {
     name: 'CmsConfig',
     data() {
@@ -65,10 +67,14 @@
       await this.loadConfig()
     },
     methods: {
+      // next to this admin, wherever it is mounted (the path may or may not end with a slash)
+      configUrl() {
+        return `${_.trimEnd(window.location.pathname, '/')}/cms-config`
+      },
       async loadConfig() {
         this.loading = true
         try {
-          const response = await fetch(`${window.location.pathname}/cms-config`)
+          const response = await fetch(this.configUrl())
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`)
           }
@@ -100,13 +106,21 @@
           return this.showAlert('error', 'Please fix JSON errors before saving')
         }
         // Show confirmation dialog for server restart
-        if (!confirm('Saving will restart the server. Are you sure you want to continue?')) {
+        const confirmed = await window.DialogService.ask({
+          event: 'saveConfig',
+          destructive: true,
+          title: 'Save and restart the server?',
+          message: 'Saving will restart the server. Are you sure you want to continue?',
+          confirm: 'Save and restart',
+          cancel: 'Cancel'
+        })
+        if (!confirmed) {
           return
         }
         this.loading = true
         try {
           const parsedConfig = JSON.parse(this.configContent)
-          const response = await fetch('/admin/cms-config', {
+          const response = await fetch(this.configUrl(), {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -150,50 +164,73 @@
   }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .cms-config {
-  padding: 16px;
+  padding: var(--cms-space-6);
+  max-width: var(--cms-content-max);
+  margin: 0 auto;
   .v-card {
+    border: 1px solid var(--cms-border);
+    border-radius: var(--cms-radius-lg);
     .v-card-title {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--cms-space-2);
+      padding: var(--cms-space-5) var(--cms-space-6) var(--cms-space-2);
       .text-h5 {
-        font-weight: bold;
-      }
-      .v-chip {
-        margin-left: 8px;
+        font-size: var(--cms-fs-xl);
+        font-weight: var(--cms-fw-semibold);
       }
     }
     .v-card-text {
+      padding: var(--cms-space-4) var(--cms-space-6) var(--cms-space-6);
       .mb-4 {
-        margin-bottom: 16px;
+        margin-bottom: var(--cms-space-4);
       }
       .d-flex {
         display: flex;
+        flex-wrap: wrap;
+        gap: var(--cms-space-2);
         justify-content: flex-end;
         .mr-2 {
-          margin-right: 8px;
+          margin-right: 0;
         }
       }
       .my-4 {
-        margin-top: 16px;
-        margin-bottom: 16px;
+        margin-top: var(--cms-space-4);
+        margin-bottom: var(--cms-space-4);
       }
       .mt-4 {
-        margin-top: 16px;
+        margin-top: var(--cms-space-4);
       }
       .text-caption {
-        font-size: 12px;
+        font-size: var(--cms-fs-sm);
+        color: var(--cms-text-muted);
+        opacity: 1;
       }
       .text-subtitle-1 {
-        font-size: 16px;
-        font-weight: 500;
+        font-size: var(--cms-fs-md);
+        font-weight: var(--cms-fw-semibold);
       }
     }
     .v-textarea {
-      font-family: 'Courier New', monospace;
+      font-family: var(--cms-font-mono);
       :deep(.v-field__input) {
-        font-family: 'Courier New', monospace;
-        font-size: 14px;
+        font-family: var(--cms-font-mono);
+        font-size: var(--cms-fs-sm);
       }
+    }
+  }
+}
+
+@media (max-width: 599.98px) {
+  .cms-config {
+    padding: var(--cms-space-3);
+    .v-card .v-card-text,
+    .v-card .v-card-title {
+      padding-left: var(--cms-space-4);
+      padding-right: var(--cms-space-4);
     }
   }
 }

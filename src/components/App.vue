@@ -1,69 +1,97 @@
 <template>
   <v-app :class="{'unclickable': isLoading}">
     <v-theme-provider :theme="getTheme()">
-      <v-snackbar
-        v-model="showSnackBar" transition="scroll-y-reverse-transition" multi-line
-        location="centered" class="notification elevation-10" :timeout="notification.type === 'error' ? -1 : 1000" :class="getNotificationClass()" @update:model-value="resetNotification()"
-      >
-        <p>{{ notification.message }}</p>
-        <template #actions>
-          <v-btn rounded @click="resetNotification()">
-            <v-icon icon="$closeCircleOutline" />
-          </v-btn>
-        </template>
-      </v-snackbar>
-      <v-dialog v-model="displayDialog" location="centered" max-width="500" class="discard-changes" :class="`event-${recordDialog.event}`" @keydown="cancelDialog">
-        <v-card :title="recordDialog.title || $filters.translate('TL_ARE_YOU_SURE_YOU_WANT_TO_DISCARD')">
-          <v-card-text v-if="recordDialog.message" class="message">{{ recordDialog.message }}</v-card-text>
-          <v-card-actions>
-            <v-btn variant="outlined" rounded @click="cancelDialog()">{{ recordDialog.cancel || $filters.translate('TL_CANCEL') }}</v-btn>
-            <v-btn variant="outlined" rounded class="apply" @click="confirmDialog()">{{ recordDialog.confirm || $filters.translate('TL_CONFIRM') }}</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+      <toast-host />
+      <app-dialog
+        :model-value="displayDialog" :title="dialogTitle" :message="dialogMessage" :type="dialogType" :icon="dialogIcon"
+        :confirm-text="recordDialog.confirm || $filters.translate('TL_LEAVE_WITHOUT_SAVING')" :cancel-text="recordDialog.cancel || $filters.translate('TL_KEEP_EDITING')"
+        @confirm="confirmDialog()" @cancel="cancelDialog()"
+      />
+      <upload-panel v-if="user" />
       <div v-if="user" class="cms-layout">
+        <a class="cms-skip-link" href="#cms-main" @click.prevent="focusMain">{{ $filters.translate('TL_SKIP_TO_CONTENT') }}</a>
         <updates-notifier v-if="selectedResource && config && config.wsRecordUpdates" :selected-resource="selectedResource" :selected-record="selectedRecord" @reload-resource="reloadResource" />
-        <div class="cms-inner-layout">
+        <div class="cms-inner-layout" :class="{'nav-open': navOpen}">
           <nav-bar
-            v-if="resourceList.length > 0" :config="config" :toolbar-title="toolbarTitle" :locale-class="{locale:localeList && localeList.length > 1}" :select-resource-group-callback="selectResourceGroup" :select-resource-callback="selectResource" :grouped-list="groupedList" :selected-resource-group="selectedResourceGroup"
-            :selected-item="selectedResource || selectedPlugin"
-          />
-          <div class="resources">
+            v-if="resourceList.length > 0" :config="config" :toolbar-title="toolbarTitle" :select-resource-callback="selectResourceAndCloseNav" :grouped-list="groupedList"
+            :selected-item="selectedResource || selectedPlugin" :nav-open="navOpen" :rail="navMode === 'rail'" @toggle-nav="toggleNav"
+          >
             <locale-list v-if="localeList" :locale-list="localeList" />
-          </div>
-          <div class="records" :class="{'full-width': selectedResource && selectedResource.maxCount === 1}">
-            <template v-if="selectedResource && (!selectedResource.view || selectedResource.view == 'list')">
-              <record-list
-                v-if="selectedResource" :list="recordList" :locale="locale" :selected-item="selectedRecord"
-                :grouped-list="groupedList"
-                :resource-group="selectedResourceGroup" :resource="selectedResource" :select-resource-callback="selectResource"
-                :multiselect="multiselect" :multiselect-items="multiselectItems"
-                @select-item="selectRecord"
-                @change-multiselect-items="onChangeMultiselectItems"
-                @select-multiselect="onSelectMultiselect"
-                @update-record-list="updateRecordList"
+          </nav-bar>
+          <div class="cms-body">
+            <div class="cms-nav-wrap" :class="`mode-${navMode}`" :style="navStyle">
+              <aside id="cms-nav" class="cms-nav" :class="{open: navOpen, 'is-rail': navMode === 'rail'}" :aria-label="$filters.translate('TL_NAVIGATION')" @keydown.esc="closeNav">
+                <nav-rail
+                  v-if="resourceList.length > 0 && navMode === 'rail'" ref="navRail" :select-resource-callback="selectResourceAndCloseNav" :grouped-list="groupedList"
+                  :selected-item="selectedResource || selectedPlugin" @toggle="toggleRail"
+                />
+                <resource-list
+                  v-else-if="resourceList.length > 0" ref="resourceList" :select-resource-callback="selectResourceAndCloseNav" :grouped-list="groupedList"
+                  :selected-item="selectedResource || selectedPlugin" :auto-select="false" :crumb-hint="crumbHint" :collapsible="navMode === 'expanded'" @collapse="toggleRail"
+                />
+              </aside>
+              <div
+                v-if="navMode === 'expanded'" class="nav-resizer" role="separator" aria-orientation="vertical" tabindex="0" aria-controls="cms-nav"
+                :aria-label="$filters.translate('TL_RESIZE_SIDEBAR')" :aria-valuenow="navWidth" :aria-valuemin="navBounds.min" :aria-valuemax="navBounds.max"
+                :title="$filters.translate('TL_RESIZE_SIDEBAR')" @pointerdown="startResize" @keydown="onResizeKey" @dblclick="resetNavWidth"
               />
-              <record-editor
-                v-if="selectedRecord && !multiselect" :key="selectedRecord._id" v-model:record="selectedRecord" v-model:locale="locale" :resource="selectedResource"
-                :user-locale="TranslateService.locale" @update-record-list="updateRecordList"
-              />
-              <multiselect-page
-                v-if="selectedResource && multiselect"
-                :multiselect-items="multiselectItems"
-                :locale="locale"
-                :resource="selectedResource"
-                :record-list="recordList"
-                @cancel="onCancelMultiselectPage"
-                @change-multiselect-items="onChangeMultiselectItems"
-                @update-record-list="updateRecordList"
-              />
-            </template>
-            <record-table
-              v-if="selectedResource && selectedResource.view == 'table'"
-              v-model:record="selectedRecord" v-model:locale="locale" :grouped-list="groupedList" :resource-group="selectedResourceGroup" :select-resource-callback="selectResource" :record-list="recordList" :resource="selectedResource" :user-locale="TranslateService.locale"
-              @unset-record="unsetSelectedRecord" @update-record-list="updateRecordList"
-            />
-            <plugin-page v-if="selectedPlugin" :plugin="selectedPlugin" />
+            </div>
+            <div v-if="navOpen" class="cms-nav-scrim" aria-hidden="true" @click="closeNav" />
+            <div class="cms-content">
+              <nav v-if="selectedResource || selectedPlugin" class="cms-crumbs" :aria-label="$filters.translate('TL_YOU_ARE_HERE')">
+                <ol>
+                  <li v-if="currentGroupLabel" class="crumb-item" @mouseenter="crumbHint = 'group'" @mouseleave="crumbHint = ''">
+                    <!-- a group is not a page: clicking it shows where you are in the menu -->
+                    <button type="button" class="crumb-group crumb-link" :title="$filters.translate('TL_SHOW_IN_MENU')" :aria-label="`${$filters.translate('TL_SHOW_IN_MENU')}: ${currentGroupLabel}`" @click="locateInMenu">{{ currentGroupLabel }}</button>
+                  </li>
+                  <li class="crumb-item" @mouseenter="crumbHint = 'resource'" @mouseleave="crumbHint = ''">
+                    <button v-if="currentRecordLabel" type="button" class="crumb crumb-link" :title="currentResourceLabel" @click="selectCurrentResource">{{ currentResourceLabel }}</button>
+                    <span v-else class="crumb" :title="currentResourceLabel" aria-current="page">{{ currentResourceLabel }}</span>
+                  </li>
+                  <li v-if="currentRecordLabel" class="crumb-item"><span class="crumb crumb-record" :title="currentRecordLabel" aria-current="page">{{ currentRecordLabel }}</span></li>
+                </ol>
+              </nav>
+              <main id="cms-main" ref="main" class="records" tabindex="-1" :class="{'full-width': selectedResource && selectedResource.maxCount === 1, 'has-selection': hasSelection, 'is-plugin': !!selectedPlugin || showDesignSystem, 'is-design': showDesignSystem}">
+                <template v-if="selectedResource && (!selectedResource.view || selectedResource.view == 'list')">
+                  <record-list
+                    v-if="selectedResource && selectedResource.maxCount !== 1" :list="recordList" :locale="locale" :selected-item="selectedRecord"
+                    :grouped-list="groupedList"
+                    :resource-group="selectedResourceGroup" :resource="selectedResource" :select-resource-callback="selectResource"
+                    :multiselect="multiselect" :multiselect-items="multiselectItems"
+                    @select-item="selectRecord"
+                    @change-multiselect-items="onChangeMultiselectItems"
+                    @select-multiselect="onSelectMultiselect"
+                    @update-record-list="updateRecordList"
+                  />
+                  <record-editor
+                    v-if="selectedRecord && !multiselect" :key="selectedRecord._id" v-model:record="selectedRecord" v-model:locale="locale" :resource="selectedResource"
+                    :user-locale="TranslateService.locale" @update-record-list="updateRecordList" @back="onBackToList"
+                  />
+                  <multiselect-page
+                    v-if="selectedResource && multiselect"
+                    :multiselect-items="multiselectItems"
+                    :locale="locale"
+                    :resource="selectedResource"
+                    :record-list="recordList"
+                    @cancel="onCancelMultiselectPage"
+                    @change-multiselect-items="onChangeMultiselectItems"
+                    @update-record-list="updateRecordList"
+                  />
+                  <div v-if="!selectedRecord && !multiselect && recordList" class="cms-empty cms-editor-empty">
+                    <div class="cms-empty-icon"><v-icon icon="$noteEditOutline" size="28" /></div>
+                    <h2 class="cms-empty-title">{{ $filters.translate('TL_NO_RECORD_SELECTED') }}</h2>
+                    <p class="cms-empty-text">{{ $filters.translate('TL_NO_RECORD_SELECTED_HINT') }}</p>
+                  </div>
+                </template>
+                <record-table
+                  v-if="selectedResource && selectedResource.view == 'table'"
+                  v-model:record="selectedRecord" v-model:locale="locale" :grouped-list="groupedList" :resource-group="selectedResourceGroup" :select-resource-callback="selectResource" :record-list="recordList" :resource="selectedResource" :user-locale="TranslateService.locale"
+                  @unset-record="unsetSelectedRecord" @update-record-list="updateRecordList"
+                />
+                <plugin-page v-if="selectedPlugin" :plugin="selectedPlugin" />
+                <design-system v-if="showDesignSystem" />
+              </main>
+            </div>
           </div>
           <loading v-if="isLoading" />
         </div>
@@ -73,6 +101,7 @@
 </template>
 
 <script>
+  import { log } from '@u/log'
   import _ from 'lodash'
   import pAll from 'p-all'
 
@@ -86,22 +115,43 @@
   import Loading from '@c/Loading.vue'
   import LocaleList from '@c/LocaleList.vue'
   import NavBar from '@c/NavBar.vue'
+  import ResourceList from '@c/ResourceList.vue'
   import RecordList from '@c/RecordList.vue'
   import MultiselectPage from '@c/MultiselectPage.vue'
   import RecordEditor from '@c/RecordEditor.vue'
   import RecordTable from '@c/RecordTable.vue'
   import UpdatesNotifier from '@c/UpdatesNotifier.vue'
+  import UploadPanel from '@c/UploadPanel.vue'
+  import AppDialog from '@c/AppDialog.vue'
+  import ToastHost from '@c/ToastHost.vue'
+  import DesignSystem from '@c/pages/DesignSystem.vue'
+  import UploadService from '@s/UploadService'
+  import { applyThemeToDocument, pickTheme } from '@u/theme'
+  import { getRecordLabel, getResourceLabel } from '@u/recordLabel'
+  import NavRail from '@c/NavRail.vue'
+  import { readPreference, writePreference, readNumber } from '@u/preferences'
+  import { resolveNavMode, toggledPref, clampNavWidth, resizeByKey, orderGroups, NAV_DEFAULT_WIDTH, NAV_MIN_WIDTH, NAV_MAX_WIDTH } from '@u/navModel'
+
+  // Wide screens open the sidebar, narrower ones start as a rail, phones use the off-canvas drawer
+  const WIDE_QUERY = '(min-width: 1280px)'
+  const DRAWER_QUERY = '(max-width: 767.98px)'
 
   export default {
     components: {
       NavBar,
+      NavRail,
+      ResourceList,
       RecordList,
       MultiselectPage,
       RecordEditor,
       Loading,
       LocaleList,
       RecordTable,
-      UpdatesNotifier
+      UpdatesNotifier,
+      UploadPanel,
+      AppDialog,
+      ToastHost,
+      DesignSystem
     },
     mixins: [Notification],
     data () {
@@ -113,11 +163,13 @@
         localeList: [],
         recordList: [],
         allowedPlugins: [],
+        crumbHint: '',
         notification: {},
         showSnackBar: false,
         toolbarTitle: false,
         selectedResourceGroup: null,
         selectedRecord: null,
+        loadingRecords: false,
         selectedPlugin: null,
         isLoading: false,
         TranslateService,
@@ -125,11 +177,66 @@
         multiselect: false,
         multiselectItems: [],
         isEditing: false,
+        navOpen: false,
+        isWide: true,
+        isDrawer: false,
+        wideMedia: null,
+        drawerMedia: null,
+        navPref: readPreference('nav.mode', null),
+        navWidth: readNumber('nav.width', NAV_MIN_WIDTH, NAV_MAX_WIDTH, NAV_DEFAULT_WIDTH),
+        navBounds: { min: NAV_MIN_WIDTH, max: NAV_MAX_WIDTH },
         recordDialog: false,
         displayDialog: false
       }
     },
     computed: {
+      navMode () {
+        return resolveNavMode({ pref: this.navPref, wide: this.isWide, drawer: this.isDrawer })
+      },
+      navStyle () {
+        return this.navMode === 'expanded' ? { '--cms-nav-width': `${this.navWidth}px` } : {}
+      },
+      // Leave/discard dialogs come from DialogService without a title; delete dialogs pass their own
+      dialogType () {
+        if (_.get(this.recordDialog, 'destructive', false) || !_.get(this.recordDialog, 'title', false)) {
+          return 'destructive'
+        }
+        return 'warning'
+      },
+      dialogIcon () {
+        return _.startsWith(_.get(this.recordDialog, 'event', ''), 'delete') ? '$trashCanOutline' : '$alertOutline'
+      },
+      dialogTitle () {
+        return _.get(this.recordDialog, 'title', false) || TranslateService.get('TL_UNSAVED_CHANGES')
+      },
+      dialogMessage () {
+        return _.get(this.recordDialog, 'message', false) || (_.get(this.recordDialog, 'title', false) ? '' : TranslateService.get('TL_ARE_YOU_SURE_YOU_WANT_TO_DISCARD'))
+      },
+      currentItem () {
+        return this.selectedResource || this.selectedPlugin
+      },
+      currentGroupLabel () {
+        const item = this.currentItem
+        const group = _.find(this.groupedList, (g) => _.includes(_.get(g, 'list', []), item) || _.some(g.list, (r) => r.title === _.get(item, 'title')))
+        return group ? TranslateService.get(group.name) : ''
+      },
+      currentResourceLabel () {
+        return getResourceLabel(this.currentItem)
+      },
+      currentRecordLabel () {
+        // a resource with a single record is one page: the crumb ends at the resource name, not at the record id
+        if (!this.selectedResource || !this.selectedRecord || this.multiselect || this.selectedResource.maxCount === 1) {
+          return ''
+        }
+        return getRecordLabel(this.selectedResource, this.selectedRecord, this.locale) || TranslateService.get('TL_NEW_RECORD_CRUMB')
+      },
+      // Dev reference for the button/dialog/toast system: #/?id=design-system
+      showDesignSystem () {
+        return _.get(this.$route, 'query.id', '') === 'design-system'
+      },
+      hasSelection () {
+        return !!this.selectedRecord && !this.multiselect
+      },
       groupedList () {
         const others = { name: 'TL_OTHERS' }
         const plugins = { name: 'TL_PLUGINS' }
@@ -184,15 +291,7 @@
             others.list.push(item)
           }
         })
-        list = _.cloneDeep(list)
-        groups = _.orderBy(groups, (item) => {
-          if (item.name === 'CMS') {
-            return String.fromCharCode(0x00)
-          } else if (item === others) {
-            return String.fromCharCode(0xff)
-          }
-          return `${TranslateService.get(item.name, 'enUS')}`.toLowerCase()
-        }, 'asc')
+        groups = orderGroups(groups, (name) => TranslateService.get(name), TranslateService.locale)
         return _.filter(groups, (group) => group.list && group.list.length !== 0)
       },
       pluginList () {
@@ -206,30 +305,58 @@
       }
     },
     watch: {
-      '$route': function () {
+      '$route': function (to, from) {
+        NotificationsService.clearContextual()
         if (this.$route.query.id != null) {
+          const current = _.get(this.selectedResource || this.selectedPlugin, 'title')
+          if (current === this.$route.query.id) {
+            // same resource: only the record changed (the browser's back and forward buttons)
+            if (_.get(to, 'query.record') !== _.get(from, 'query.record')) {
+              this.applyRouteRecord()
+            }
+            return
+          }
           const allResources = this.getResourcesAndPlugins()
           if (allResources.length > 0) {
             this.selectResource(_.find(allResources, {title: this.$route.query.id}))
           }
         }
+      },
+      // the open record is in the address (?id=resource&record=id): a link opens it and back returns to the previous one
+      selectedRecord () {
+        this.syncRouteRecord()
       }
     },
+    created () {
+      // a save empties and refills the selection within a few ticks: only the settled state goes to the address
+      this.syncRouteRecord = _.debounce(this.writeRouteRecord, 60)
+    },
     unmounted () {
+      document.removeEventListener('keydown', this.onDocumentKeydown)
+      document.removeEventListener('keydown', this.onGlobalKeydown)
+      _.each([this.wideMedia, this.drawerMedia], (media) => media && media.removeEventListener('change', this.onMediaChange))
       LoadingService.events.off('has-loading', this.onLoading)
       NotificationsService.events.off('notification', this.onGetNotification)
+      UploadService.events.off('uploaded', this.onRetriedUpload)
       window.DialogService.events.off('dialog', this.onGetRecordEdition)
       window.DialogService.events.off('dialog:show', this.onGetRecordEditionShowDialog)
       window.DialogService.events.off('dialog:confirm', this.onGetRecordEditionConfirm)
     },
     async mounted () {
+      this.wideMedia = window.matchMedia(WIDE_QUERY)
+      this.drawerMedia = window.matchMedia(DRAWER_QUERY)
+      this.onMediaChange()
+      this.wideMedia.addEventListener('change', this.onMediaChange)
+      this.drawerMedia.addEventListener('change', this.onMediaChange)
+      document.addEventListener('keydown', this.onGlobalKeydown)
       LoadingService.events.on('has-loading', this.onLoading)
       this.$loading.start('init')
       LoginService.onLogout(() => {
-        console.info('User logged out')
+        log.debug('User logged out')
         window.location.reload()
       })
       NotificationsService.events.on('notification', this.onGetNotification)
+      UploadService.events.on('uploaded', this.onRetriedUpload)
       window.DialogService.events.on('dialog', this.onGetRecordEdition)
       window.DialogService.events.on('dialog:show', this.onGetRecordEditionShowDialog)
       window.DialogService.events.on('dialog:confirm', this.onGetRecordEditionConfirm)
@@ -249,9 +376,12 @@
         })
         ResourceService.setSchemas(this.resourceList)
         this.localeList = TranslateService.config.locales
-        if (this.$route.query.id != null) {
-          const resource = _.find(_.union(this.pluginList, this.resourceList), {title: this.$route.query.id})
-          this.selectResource(resource)
+        const routed = this.$route.query.id != null ? _.find(_.union(this.pluginList, this.resourceList), {title: this.$route.query.id}) : undefined
+        if (routed) {
+          this.selectResource(routed)
+        } else if (!this.showDesignSystem) {
+          // normal navigation starts on the first resource of the first group (the design system page stays empty)
+          this.selectResource(_.first(_.get(_.first(this.groupedList), 'list', [])))
         }
       } catch (error) {
         console.error('Error while getting resources: ', error)
@@ -259,6 +389,113 @@
       }
     },
     methods: {
+      // A failed upload that succeeded on retry: refresh the record so the file shows up
+      onRetriedUpload (meta) {
+        NotificationsService.send(TranslateService.get('TL_UPLOAD_DONE'), 'success')
+        if (_.get(meta, 'resource') === _.get(this.selectedResource, 'title') && !this.isEditing) {
+          this.reloadResource(_.get(meta, 'recordId', false))
+        }
+      },
+      onMediaChange () {
+        this.isWide = this.wideMedia.matches
+        this.isDrawer = this.drawerMedia.matches
+        if (!this.isDrawer) {
+          this.navOpen = false
+        }
+      },
+      // Sidebar rail: toggle button, Ctrl/Cmd+B (not inside text fields, where it means bold)
+      toggleRail () {
+        this.navPref = toggledPref(this.navMode)
+        writePreference('nav.mode', this.navPref)
+      },
+      onGlobalKeydown (event) {
+        if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && _.toLower(event.key) === 'b') {
+          const target = event.target
+          const tag = _.toLower(_.get(target, 'tagName', ''))
+          if (_.includes(['input', 'textarea', 'select'], tag) || _.get(target, 'isContentEditable', false)) {
+            return
+          }
+          event.preventDefault()
+          if (this.navMode === 'drawer') {
+            this.toggleNav()
+          } else {
+            this.toggleRail()
+          }
+        }
+      },
+      // Sidebar width: drag, arrow keys, double-click to reset. Remembered.
+      startResize (event) {
+        event.preventDefault()
+        const left = event.currentTarget.parentElement.getBoundingClientRect().left
+        const onMove = (move) => {
+          this.navWidth = clampNavWidth(move.clientX - left)
+        }
+        const onUp = () => {
+          window.removeEventListener('pointermove', onMove)
+          window.removeEventListener('pointerup', onUp)
+          writePreference('nav.width', this.navWidth)
+        }
+        window.addEventListener('pointermove', onMove)
+        window.addEventListener('pointerup', onUp)
+      },
+      onResizeKey (event) {
+        if (!_.includes(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'], event.key)) {
+          return
+        }
+        event.preventDefault()
+        this.navWidth = resizeByKey(this.navWidth, event.key)
+        writePreference('nav.width', this.navWidth)
+      },
+      resetNavWidth () {
+        this.navWidth = NAV_DEFAULT_WIDTH
+        writePreference('nav.width', this.navWidth)
+      },
+      toggleNav () {
+        this.navOpen = !this.navOpen
+        if (this.navOpen) {
+          document.addEventListener('keydown', this.onDocumentKeydown)
+          this.$nextTick(() => {
+            const first = document.querySelector('#cms-nav button')
+            if (first) {
+              first.focus()
+            }
+          })
+        } else {
+          document.removeEventListener('keydown', this.onDocumentKeydown)
+        }
+      },
+      onDocumentKeydown (event) {
+        if (event.key === 'Escape') {
+          document.removeEventListener('keydown', this.onDocumentKeydown)
+          this.closeNav()
+        }
+      },
+      closeNav () {
+        document.removeEventListener('keydown', this.onDocumentKeydown)
+        if (this.navOpen) {
+          this.navOpen = false
+          this.$nextTick(() => {
+            const toggle = document.getElementById('cms-nav-toggle')
+            if (toggle) {
+              toggle.focus()
+            }
+          })
+        }
+      },
+      async selectResourceAndCloseNav (resource, force = false) {
+        document.removeEventListener('keydown', this.onDocumentKeydown)
+        this.navOpen = false
+        return this.selectResource(resource, force)
+      },
+      focusMain () {
+        const main = _.get(this.$refs, 'main', false)
+        if (main) {
+          main.focus()
+        }
+      },
+      onBackToList () {
+        this.selectRecord(null)
+      },
       async reloadResource(id = false) {
         console.warn(`Will reload resource:${this.selectedResource.name} - id: ${id}`)
         await this.selectResource(this.selectedResource, true)
@@ -282,12 +519,15 @@
         try {
           this.user = await LoginService.getStatus()
           this.allowedPlugins = await LoginService.getPlugins()
-          console.info('Plugins available:', this.allowedPlugins)
-          if (_.get(ConfigService, 'config.disableDarkMode', false)) {
+          log.debug('Plugins available:', this.allowedPlugins)
+          const theme = pickTheme(ConfigService.config, _.get(this.user, 'theme', 'light'))
+          if (theme === 'light') {
             this.user.theme = 'light'
-            this.$vuetify.theme.dark = false
-          } else {
-            this.$vuetify.theme.dark = _.get(this.user, 'theme', 'light') === 'dark'
+          }
+          this.$vuetify.theme.dark = theme === 'dark'
+          const themeName = applyThemeToDocument(theme)
+          if (_.isFunction(_.get(this.$vuetify, 'theme.change'))) {
+            this.$vuetify.theme.change(themeName)
           }
           this.$forceUpdate()
         } catch (error) {
@@ -296,10 +536,7 @@
         }
       },
       getTheme () {
-        if (ConfigService.config.disableDarkMode) {
-          return 'light'
-        }
-        return _.get(this.$vuetify, 'theme.dark', false) ? 'dark' : 'light'
+        return pickTheme(ConfigService.config, _.get(this.$vuetify, 'theme.global.name', 'light'))
       },
       resetNotification () {
         this.showSnackBar = false
@@ -315,9 +552,16 @@
       getNotificationClass () {
         return `notification-${this.notification.type}`
       },
-      cancelDialog() {
+      closeDialog() {
         this.recordDialog = false
         this.displayDialog = false
+      },
+      cancelDialog() {
+        const onCancel = _.get(this.recordDialog, 'onCancel', false)
+        this.closeDialog()
+        if (_.isFunction(onCancel)) {
+          onCancel()
+        }
       },
       confirmDialog() {
         window.DialogService.confirm(this.recordDialog)
@@ -331,10 +575,25 @@
       },
       async onGetRecordEditionConfirm (data) {
         window.DialogService.send(false)
-        this.cancelDialog()
+        this.closeDialog()
         if (data.callback) {
           return data.callback()
         }
+      },
+      // "where am I in the menu?": opens the menu if it is a drawer, then shows the group of the current page
+      async locateInMenu () {
+        if (this.navMode === 'drawer' && !this.navOpen) {
+          this.toggleNav()
+          await this.$nextTick()
+        }
+        const menu = this.$refs.navRail || this.$refs.resourceList
+        if (menu && menu.locate) {
+          menu.locate()
+        }
+      },
+      // the resource crumb, while a record is open: back to the resource
+      selectCurrentResource () {
+        this.selectResource(this.selectedResource)
       },
       async selectResourceGroup (resourceGroup) {
         this.selectedResourceGroup = resourceGroup
@@ -347,7 +606,7 @@
           return window.DialogService.show({event: 'selectResource', callback: ()=> this.selectResource(resource)})
         }
         try {
-          if (_.get(this.$router, 'history.current.query.id', false) !== resource.title) {
+          if (this.$route.query.id !== resource.title) {
             this.$router.push({query: {id: resource.title}}).catch(error => console.error('Router throw an error:', error))
           }
           if (resource.type === 'plugin') {
@@ -363,6 +622,7 @@
           if (!this.selectedResource) {
             return
           }
+          this.loadingRecords = true
           this.locale = _.first(this.selectedResource.locales)
           this.$loading.start('selectResource')
           await this.cacheRelatedResources(resource)
@@ -371,10 +631,18 @@
           if (_.get(resource, 'maxCount', 0) === 1) {
             const first = _.get(this.recordList, '[0]', false)
             this.selectRecord(!first ? { _local: true } : first)
+          } else if (this.$route.query.record && this.$route.query.id === resource.title) {
+            // opened from a link (or a reload): the record named in the address
+            const linked = _.find(this.recordList, {_id: this.$route.query.record})
+            if (linked) {
+              this.selectRecord(linked, true)
+            }
           }
+          this.loadingRecords = false
           this.$loading.stop('selectResource')
         } catch (error) {
           console.error('Error happen during selectResource:', error)
+          this.loadingRecords = false
         }
       },
       async cacheRelatedResources (resource) {
@@ -423,6 +691,41 @@
           }
         }), {concurrency: 10})
       },
+      writeRouteRecord (replace = false) {
+        if (!this.selectedResource || this.selectedResource.type === 'plugin' || this.loadingRecords) {
+          return
+        }
+        const id = _.get(this.selectedRecord, '_id') || undefined
+        if (id === (this.$route.query.record || undefined)) {
+          return
+        }
+        const query = {id: this.selectedResource.title}
+        if (id) {
+          query.record = id
+        }
+        this.$router[replace === true ? 'replace' : 'push']({query}).catch(error => console.error('Router throw an error:', error))
+      },
+      // the address names another record than the one open: open it (or leave the record, when the address has none)
+      applyRouteRecord () {
+        if (!this.recordList) {
+          return
+        }
+        const wanted = this.$route.query.record
+        // the address already says what is open (the app wrote it itself: a new blank record has no id in it): nothing to do
+        if ((_.get(this.selectedRecord, '_id') || undefined) === (wanted || undefined)) {
+          return
+        }
+        const record = wanted ? _.find(this.recordList, {_id: wanted}) : null
+        if (wanted && !record) {
+          return
+        }
+        if (this.isEditing && this.selectedRecord !== record) {
+          // unsaved edits: the address goes back to the record that stays open until the leave is confirmed
+          this.writeRouteRecord(true)
+          return window.DialogService.show({event: 'selectRecord', callback: () => this.selectRecord(record, true)})
+        }
+        this.selectRecord(record)
+      },
       selectRecord (record, force = false) {
         if (!force && this.isEditing && this.selectedRecord !== record) {
           return window.DialogService.show({event: 'selectRecord', callback: ()=> this.selectRecord(record)})
@@ -451,8 +754,10 @@
           await this.$nextTick()
           this.recordList = _.sortBy(data, item => -item._updatedAt)
           let updatedRecord = _.find(this.recordList, { _id: _.get(record, '_id') })
-          updatedRecord = _.isUndefined(updatedRecord) ? {_local: true} : updatedRecord
-          this.selectRecord(updatedRecord)
+          // A removed record leaves the list view on a blank new record, the table view on the table
+          updatedRecord = _.isUndefined(updatedRecord) ? (_.get(this.selectedResource, 'view') === 'table' ? null : {_local: true}) : updatedRecord
+          // after a save or a delete the editor state is replaced on purpose: no leave prompt
+          this.selectRecord(updatedRecord, true)
         } catch (error) {
           console.error('Error happen during updateRecordList:', error)
         }
@@ -470,96 +775,264 @@
 <style lang="scss">
 @use '@a/scss/variables.scss' as *;
 @use '@a/scss/mixins.scss' as *;
+
 .cms-layout {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  overflow: auto;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+
   .cms-inner-layout {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     flex: 1 1 0;
-    height: 100vh;
-    min-width: 1080px;
-    overflow-y: auto;
-    .resources {
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
-      align-items: stretch;
-      flex-grow: 0;
-      width: 270px;
-      border-right: 1px solid #c7c7c7;
-      overflow: hidden;
-      .node-cms-title {
-        padding: 2px;
-        text-transform: capitalize;
-        font-weight: bold;
-        color: black;
-      }
-      ul {
-        border-bottom: 1px solid #c7c7c7;
-        padding: 1px;
-        li {
-          padding: 0px 12px;
-          cursor: pointer;
-          user-select: none;
-          .icon {
-            width: 16px;
-            height: 16px;
-            display: inline-block;
-            background: #6af;
-            box-shadow: 0px 0px 0px 1px #06d inset;
-            border-radius: 2px;
-            vertical-align: -2px;
-            margin-right: 10px;
-          }
-          &:hover {
-            background-color: #eff;
-            box-shadow: 0px 0px 1px 0px #09f inset;
-          }
-          &.selected {
-            font-weight: bold;
-            background-color: #f1ffee;
-            color: #4c4c4c;
-            box-shadow: 0px 0px 1px 0px #008a00 inset;
-            cursor: auto;
-          }
-          &.selected .icon {
-              background: #2ac12a;
-              box-shadow: 0px 0px 0px 1px #008a00 inset;
-          }
-        }
-      }
+    min-height: 0;
+    height: 100dvh;
+    width: 100%;
+  }
+
+  .cms-body {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  // The sidebar wrapper animates between the expanded width and the rail; the content never jumps because it is clipped
+  .cms-nav-wrap {
+    position: relative;
+    flex: 0 0 auto;
+    display: flex;
+    width: var(--cms-nav-width);
+    transition: width var(--cms-motion-nav) var(--cms-ease);
+
+    &.mode-rail {
+      width: var(--cms-rail-width);
     }
-    .records {
-      background-color: $record-editor-background;
-      flex: 1 1 0;
-      display: flex;
-      align-items: stretch;
-      overflow-y: auto;
-      &.full-width {
-        overflow-x: hidden;
-        flex-direction: column;
-        .record-list {
-          max-width: 100vw;
-          width: 100vw;
-          height: auto;
-          flex-shrink: 0;
-        }
+
+    &.mode-drawer {
+      display: contents;
+    }
+  }
+
+  .cms-nav {
+    flex: 1 1 auto;
+    min-width: 0;
+    background: var(--cms-nav-bg);
+    border-right: 1px solid var(--cms-border);
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    // the rail scrolls without a scrollbar over the badges
+    &.is-rail {
+      scrollbar-width: none;
+      &::-webkit-scrollbar {
+        display: none;
       }
     }
   }
 
-  .border-wrapper  {
-    border: 1px solid rgba(0,0,0,.42);
-    border-radius: 4px;
-    z-index: 1;
+  // drag handle on the right edge of the expanded sidebar
+  .nav-resizer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: -3px;
+    z-index: 3;
+    width: 6px;
+    cursor: col-resize;
+    touch-action: none;
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 2px;
+      width: 2px;
+      background: transparent;
+      transition: background-color var(--cms-motion-fast) var(--cms-ease);
+    }
+    &:hover::after,
+    &:focus-visible::after {
+      background: var(--cms-chrome-accent);
+    }
+    &:focus-visible {
+      outline: none;
+    }
+  }
+
+  .cms-nav-scrim {
+    display: none;
+  }
+
+  .cms-content {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cms-crumbs {
+    flex: 0 0 auto;
+    padding: var(--cms-space-2) var(--cms-space-4);
+    background: var(--cms-crumb-bg);
+    border-bottom: 1px solid var(--cms-border);
+    font-size: var(--cms-fs-sm);
+    color: var(--cms-text-muted);
+    ol {
+      display: flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      gap: var(--cms-space-2);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      min-width: 0;
+    }
+    li {
+      display: flex;
+      align-items: center;
+      gap: var(--cms-space-2);
+      min-width: 0;
+      &:not(:first-child)::before {
+        content: '/';
+        color: var(--cms-border-strong);
+      }
+      // long middle segments shrink first (they truncate), the last segment stays readable
+      flex: 0 1000 auto;
+      &:last-child {
+        flex: 0 1 auto;
+        min-width: 14ch;
+      }
+    }
+    .crumb-group,
+    .crumb {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    // a crumb that leads somewhere: the resource (back to it), the group (shows it in the menu)
+    .crumb-link {
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+      border-radius: var(--cms-radius-sm);
+      &:hover {
+        color: var(--cms-primary);
+        text-decoration: underline;
+      }
+      &:focus-visible {
+        outline: 2px solid var(--cms-focus-ring);
+        outline-offset: 2px;
+      }
+    }
+    .crumb[aria-current='page'],
+    .crumb-record {
+      color: var(--cms-text);
+      font-weight: var(--cms-fw-semibold);
+    }
+  }
+
+  .records {
+    background-color: $record-editor-background;
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: stretch;
     overflow: hidden;
-    padding-top: 6px;
+    outline: none;
+
+    &.is-plugin {
+      overflow: auto;
+    }
+
+    &.full-width {
+      overflow-x: hidden;
+      flex-direction: column;
+
+      .record-list {
+        max-width: 100%;
+        width: 100%;
+        min-width: 0;
+        height: auto;
+        flex-shrink: 0;
+        border-right: 0;
+      }
+    }
+  }
+
+  .cms-editor-empty {
+    flex: 1 1 0;
+    align-self: center;
+  }
+
+  .records.is-design > :not(.design-system) {
+    display: none;
   }
 }
+
+// Phones: the navigation is an off-canvas drawer (wider screens keep the sidebar or the rail).
+@media (max-width: 767.98px) {
+  .cms-layout {
+    .cms-nav {
+      position: fixed;
+      top: var(--cms-appbar-height);
+      bottom: 0;
+      left: 0;
+      z-index: var(--cms-z-drawer);
+      width: min(var(--cms-nav-width), calc(100vw - 48px));
+      flex: none;
+      box-shadow: var(--cms-shadow-3);
+      transform: translateX(-102%);
+      visibility: hidden;
+      transition: transform var(--cms-motion-base) var(--cms-ease), visibility 0s linear var(--cms-motion-base);
+
+      &.open {
+        transform: none;
+        visibility: visible;
+        transition: transform var(--cms-motion-base) var(--cms-ease), visibility 0s;
+      }
+    }
+
+    .cms-nav-scrim {
+      display: block;
+      position: fixed;
+      inset: var(--cms-appbar-height) 0 0 0;
+      z-index: calc(var(--cms-z-drawer) - 1);
+      background: var(--cms-scrim);
+    }
+  }
+}
+
+// Phones: list and editor are two steps of one flow.
+@media (max-width: 767.98px) {
+  .cms-layout .records:not(.full-width) {
+    &.has-selection .record-list {
+      display: none;
+    }
+
+    .record-list {
+      width: 100%;
+      min-width: 0;
+      max-width: none;
+      border-right: 0;
+    }
+
+    .cms-editor-empty {
+      display: none;
+    }
+  }
+}
+
 // NOTE: For ordered lists
 .flip-list-move {
   transition: transform 0.2s;
@@ -571,22 +1044,19 @@
 
 .ghost {
   opacity: 0.5;
-  background: #c8ebfb;
+  background: $cms-primary-soft;
 }
+
 .sort-records {
   .v-field__input {
     padding-top: 0;
     padding-bottom: 0;
   }
 }
+
 .discard-changes {
   .v-overlay__content > div {
-    padding: 15px;
-  }
-  .apply {
-    color: $btn-action-color;
-    background-color: $btn-action-background;
-    @include cta-text;
+    padding: var(--cms-space-2);
   }
 }
 </style>

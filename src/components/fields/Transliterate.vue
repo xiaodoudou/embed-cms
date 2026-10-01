@@ -1,29 +1,36 @@
 <template>
-  <v-text-field
-    ref="input"
-    :theme="theme"
-    :class="[schema.labelClasses]"
-    :model-value="_value"
-    :readonly="isReadonly"
-    autocomplete="off"
-    :variant="getVariant()"
-    :flat="get('flat')"
-    :rounded="get('rounded')"
-    :density="get('density')"
-    :disabled="disabled"
-    persistent-placeholder
-    hide-details
-    @update:model-value="onChangeData"
-  >
-    <template #prepend><field-label :schema="schema" /></template>
-    <template #label />
-  </v-text-field>
+  <div class="transliterate-field">
+    <v-text-field
+      ref="input"
+      :theme="theme"
+      :class="[schema.labelClasses]"
+      :model-value="_value"
+      :readonly="isReadonly"
+      autocomplete="off"
+      :variant="getVariant()"
+      :flat="get('flat')"
+      :rounded="get('rounded')"
+      :density="get('density')"
+      :disabled="disabled"
+      persistent-placeholder
+      hide-details
+      @update:model-value="onChangeData"
+    >
+      <template #prepend><field-label :schema="schema" /></template>
+      <template #label />
+    </v-text-field>
+    <div v-if="showHint()" class="help-block">
+      <v-icon size="small" icon="$information" />
+      <span>{{ schema.options.hint }}</span>
+    </div>
+  </div>
 </template>
 
 <script>
   import _ from 'lodash'
   import { slugify } from 'transliteration'
   import AbstractField from '@m/AbstractField'
+  import { localeOf } from '@u/fieldValidation'
 
   export default {
     mixins: [AbstractField],
@@ -44,7 +51,12 @@
           console.warn('Transliterate field requires options.valueFrom to be specified')
           return ''
         }
-        return _.get(this.model, sourceField, '')
+        const raw = _.get(this.model, sourceField, '')
+        // a localised source holds one value per locale: use this field's locale, or the first one for a shared field,
+        // so switching the editing language does not rewrite the slug
+        const locale = localeOf(this.schema) || _.first(_.get(this.schema, 'resource.locales', []))
+        const value = _.isPlainObject(raw) ? _.get(raw, locale, '') : raw
+        return _.isString(value) ? value : ''
       },
       // Check if the transliterate field is empty
       isFieldEmpty() {

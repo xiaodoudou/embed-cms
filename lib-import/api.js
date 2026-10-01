@@ -2,47 +2,78 @@ const path = require('path')
 const fs = require('fs-extra')
 const _ = require('lodash')
 
+/**
+ * The Authorization header for a CMS login.
+ * @param {{username?: string, password?: string}} [auth]
+ * @returns {{Authorization?: string}}
+ */
+const authHeaders = (auth) => {
+  if (!_.get(auth, 'username')) {
+    return {}
+  }
+  return { Authorization: 'Basic ' + Buffer.from(`${auth.username}:${auth.password || ''}`).toString('base64') }
+}
+
+/**
+ * Client of the CMS REST api used by the cms-import command.
+ * Requests carry the credentials as Basic authentication and, after login(), the session it opened, which the
+ * routes behind the admin login (/admin/resources) need when the CMS uses its JWT login.
+ * @param {{protocol?: string, host: string, prefix?: string}} config
+ * @param {{username?: string, password?: string}} [auth]
+ */
 exports = module.exports = (config, auth) => {
   config.protocol = config.protocol || 'http://'
+  // prefix is optional: the CMS may be mounted at the root
+  const prefix = config.prefix || ''
+  const baseUrl = () => `${config.protocol}${config.host}${prefix}`
   const schemaMap = {}
+  let cookie = null
+  const headers = (extra = {}) => _.extend({}, authHeaders(auth), cookie ? { Cookie: cookie } : {}, extra)
   return (resource) => {
     return {
-      create: async (item) => {
-        const response = await fetch(`${config.protocol}${config.host}${config.prefix}/api/${resource}`, {
+      /**
+       * Opens a session with the credentials. A CMS without the JWT login answers without one: Basic is enough there.
+       * @returns {Promise<boolean>} whether a session was opened
+       */
+      login: async () => {
+        const response = await fetch(`${baseUrl()}/admin/login`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...auth
-          },
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(_.pick(auth, ['username', 'password']))
+        })
+        const cookies = _.isFunction(response.headers.getSetCookie) ? response.headers.getSetCookie() : []
+        if (!response.ok || _.isEmpty(cookies)) {
+          return false
+        }
+        cookie = _.map(cookies, item => item.split(';')[0]).join('; ')
+        return true
+      },
+      create: async (item) => {
+        const response = await fetch(`${baseUrl()}/api/${resource}`, {
+          method: 'POST',
+          headers: headers({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(item)
         })
         return response.json()
       },
       list: async (query) => {
-        const response = await fetch(`${config.protocol}${config.host}${config.prefix}/api/${resource}?query=${JSON.stringify(query) || ''}`, {
-          headers: {
-            ...auth
-          }
+        const response = await fetch(`${baseUrl()}/api/${resource}?query=${JSON.stringify(query) || ''}`, {
+          headers: headers()
         })
         return response.json()
       },
       update: async (id, item) => {
-        const response = await fetch(`${config.protocol}${config.host}${config.prefix}/api/${resource}/${id}`, {
+        const response = await fetch(`${baseUrl()}/api/${resource}/${id}`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            ...auth
-          },
+          headers: headers({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(item)
         })
         return response.json()
       },
       remove: async (id) => {
-        const response = await fetch(`${config.protocol}${config.host}${config.prefix}/api/${resource}/${id}`, {
+        const response = await fetch(`${baseUrl()}/api/${resource}/${id}`, {
           method: 'DELETE',
-          headers: {
-            ...auth
-          }
+          headers: headers()
         })
         return response.json()
       },
@@ -51,12 +82,11 @@ exports = module.exports = (config, auth) => {
         message = `uploading ${path.relative(path.resolve('.'), path.normalize(filepath))} ... ....`
         console.log(message)
         const formData = new FormData()
-        formData.append(fieldname, fs.createReadStream(filepath))
-        const response = await fetch(`${config.protocol}${config.host}${config.prefix}/api/${resource}/${id}/attachments`, {
+        // the built-in FormData takes a Blob, not a stream
+        formData.append(fieldname, new Blob([await fs.readFile(filepath)]), path.basename(filepath))
+        const response = await fetch(`${baseUrl()}/api/${resource}/${id}/attachments`, {
           method: 'POST',
-          headers: {
-            ...auth
-          },
+          headers: headers(),
           body: formData
         })
         return response.json()
@@ -65,35 +95,36 @@ exports = module.exports = (config, auth) => {
         let message
         message = 'remove ' + aid + ' ... ....'
         console.log(message)
-        const response = await fetch(`${config.protocol}${config.host}${config.prefix}/api/${resource}/${id}/attachments/${aid}`, {
+        const response = await fetch(`${baseUrl()}/api/${resource}/${id}/attachments/${aid}`, {
           method: 'DELETE',
-          headers: {
-            ...auth
-          }
+          headers: headers()
         })
         const body = await response.json()
         console.log(message + 'done')
         return body
       },
       resources: async () => {
-        const response = await fetch(`${config.protocol}${config.host}${config.prefix}/admin/resources`, {
-          headers: {
-            ...auth
-          }
+        const response = await fetch(`${baseUrl()}/admin/resources`, {
+          headers: headers()
         })
+        if (!response.ok) {
+          throw new Error(`could not read the resources of ${baseUrl()}: ${response.status} ${response.statusText}`)
+        }
         const resources = await response.json()
         _.each(resources, resource => {
-          schemaMap[resource.name] = resource.schema
+          schemaMap[resource.name || resource.title] = resource.schema
         })
         return resources
       },
       getUniqueKeys () {
         const uniqueKeyField = _.filter(schemaMap[resource], item => item.unique || item.xlsxKey)
         if (_.isEmpty(uniqueKeyField)) {
-          throw new Error(`${this.name} didn't have unique key field`)
+          throw new Error(`${resource} didn't have unique key field`)
         }
         return _.map(uniqueKeyField, 'field')
       }
     }
   }
 }
+
+exports.authHeaders = authHeaders

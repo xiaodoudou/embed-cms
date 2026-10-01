@@ -48,6 +48,8 @@
           styleSelectedText: this.getOpt('styleSelectedText', true),
           mode: this.getOpt('mode', 'text/javascript'),
           keyMap: 'sublime',
+          // a disabled editor also loses its cursor
+          readOnly: this.disabled || this.schema.disabled ? 'nocursor' : !!this.schema.readonly,
           matchBrackets: this.getOpt('matchBrackets', true),
           showCursorWhenSelecting: this.getOpt('showCursorWhenSelecting', true),
           theme: 'dracula',

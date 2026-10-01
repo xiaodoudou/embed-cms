@@ -3,8 +3,8 @@
     <field-label :schema="schema" />
     <div class="border-wrapper">
       <v-card v-if="editor" class="editor" rounded elevation="0">
-        <tiptap-menu-bar class="editor__header" :editor="editor" :buttons="getButtons()" />
-        <editor-content class="editor-content" :editor="editor" />
+        <tiptap-menu-bar class="editor__header" :class="{locked: isLocked()}" :editor="editor" :buttons="getButtons()" />
+        <editor-content class="editor-content" :editor="editor" @click="focusEditor" />
       </v-card>
       <div v-if="wysiwygError.length > 0" class="error-message">{{ wysiwygError }}</div>
     </div>
@@ -25,6 +25,8 @@
   import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
   import TiptapMenuBar from './TiptapMenuBar.vue'
   import AbstractField from '@m/AbstractField'
+  import TranslateService from '@s/TranslateService'
+  import { isEmptyRichText } from '@u/dirtyTracker'
   const lowlight = createLowlight()
   lowlight.register('javascript', CustomHighlight)
 
@@ -42,11 +44,17 @@
     watch: {
       model () {
         this.updateObj()
+      },
+      disabled () {
+        if (this.editor) {
+          this.editor.setEditable(!this.isLocked())
+        }
       }
     },
     mounted () {
       this.editor = new Editor({
         content: this._value,
+        editable: !this.isLocked(),
         extensions: [
           StarterKit.configure({history: true, code: true, codeBlock: false, blockquote: true}),
           Superscript,
@@ -68,16 +76,26 @@
       this.loaded = true
       this.updateObj()
     },
+    beforeUnmount () {
+      // the editor keeps listeners on the document and its own state: let it go
+      if (this.editor) {
+        this.editor.destroy()
+      }
+    },
     methods: {
+      // the editable node is only as tall as its text: a click on the empty area still focuses the end of the content
+      focusEditor (event) {
+        if (this.editor && !this.editor.isFocused && !event.target.closest('.ProseMirror')) {
+          this.editor.commands.focus('end')
+        }
+      },
       getVal() {
         return this.editor ? this.editor.getHTML() : ''
       },
       validateField () {
         const val = this.getVal()
-        if (this.schema.required && (_.isNull(val) || _.isUndefined(val) || val === '' || val === '<p></p>')) {
-          return 'T_FIELD_IS_REQUIRED'
-        } else if (_.isFunction(this.schema.validator)) {
-          return !!this.schema.validator(val, this.schema.model, this.model)
+        if (this.schema.required && (_.isNil(val) || val === '' || isEmptyRichText(val))) {
+          return TranslateService.get('TL_FIELD_IS_REQUIRED')
         }
         return ''
       },
@@ -114,14 +132,14 @@
 @use '@a/scss/variables.scss' as *;
 @use '@a/scss/mixins.scss' as *;
 .wysiwyg-wrapper .editor-content pre{
-  background-color: #282a36 !important;
-  border-radius:4px !important;
+  background-color: var(--cms-code-surface) !important;
+  border-radius: var(--cms-radius-xs) !important;
 }
 
-/* Syntax highlighting */
+/* Syntax highlighting: colours come from the --cms-syntax-* tokens */
 .tiptap .hljs-comment,
 .tiptap .hljs-quote {
-  color: #616161;
+  color: var(--cms-syntax-comment);
 }
 
 .tiptap .hljs-variable,
@@ -131,36 +149,38 @@
 .tiptap .hljs-name,
 .tiptap .hljs-regexp,
 .tiptap .hljs-link,
-.tiptap .hljs-name,
 .tiptap .hljs-selector-id,
 .tiptap .hljs-selector-class {
-  color: #f98181;
+  color: var(--cms-syntax-function);
 }
 
 .tiptap .hljs-number,
 .tiptap .hljs-meta,
 .tiptap .hljs-built_in,
 .tiptap .hljs-builtin-name,
-.tiptap .hljs-literal,
 .tiptap .hljs-type,
 .tiptap .hljs-params {
-  color: #fbbc88;
+  color: var(--cms-syntax-number);
+}
+
+.tiptap .hljs-literal {
+  color: var(--cms-syntax-literal);
 }
 
 .tiptap .hljs-string,
-.tiptap .hljs-symbol,
-.tiptap .hljs-bullet {
-  color: #b9f18d;
-}
-
 .tiptap .hljs-title,
 .tiptap .hljs-section {
-  color: #faf594;
+  color: var(--cms-syntax-string);
+}
+
+.tiptap .hljs-symbol,
+.tiptap .hljs-bullet {
+  color: var(--cms-syntax-symbol);
 }
 
 .tiptap .hljs-keyword,
 .tiptap .hljs-selector-tag {
-  color: #70cff8;
+  color: var(--cms-syntax-keyword);
 }
 
 .tiptap .hljs-emphasis {
@@ -174,24 +194,48 @@
 .wysiwyg-wrapper {
   position: relative;
   .border-wrapper {
+    margin-top: var(--cms-space-1);
     padding: 0;
-    border: none;
+    border: 1px solid var(--cms-border-strong);
+    border-radius: var(--cms-radius-md);
+    overflow: hidden;
+    background-color: $wysiwyg-editor-background;
+    transition: border-color var(--cms-motion-fast) var(--cms-ease), box-shadow var(--cms-motion-fast) var(--cms-ease);
+    &:hover {
+      border-color: var(--cms-text-muted);
+    }
+    // focus looks like a text field: accent border and the same halo
+    &:focus-within {
+      border-color: var(--cms-primary);
+      box-shadow: 0 0 0 3px var(--cms-field-ring);
+    }
   }
   .editor {
     background-color: $wysiwyg-editor-background;
     border-radius: 0 !important;
   }
+  // a locked editor keeps its toolbar for orientation, but it does nothing
+  .editor__header.locked {
+    opacity: 0.5;
+    pointer-events: none;
+  }
   .editor__header {
+    display: flex;
     flex-wrap: wrap;
-    background-color: $wysiwyg-toolbar-background;
-    border: 2px solid $wysiwyg-toolbar-border;
+    gap: 2px;
+    padding: var(--cms-space-1) var(--cms-space-2);
+    // same surface as the text area, so that the whole thing reads as one field box like a text field
+    background-color: $wysiwyg-editor-background;
+    border-bottom: 1px solid $wysiwyg-toolbar-border;
   }
   .editor-content {
-    margin: 16px;
-    font-size: 14px;
+    padding: var(--cms-space-3) var(--cms-space-4);
+    min-height: 96px;
+    font-size: var(--cms-fs-base);
     font-style: normal;
-    font-weight: 300;
-    line-height: normal;
+    font-weight: var(--cms-fw-regular);
+    line-height: var(--cms-lh-base);
+    color: var(--cms-text);
     cursor: text;
     * {
       font-synthesis: initial !important;
@@ -203,7 +247,7 @@
       font-weight: 700;
     }
     a {
-      color: $imag-blue;
+      color: var(--cms-primary);
     }
     ul li {
       list-style: disc;
@@ -213,13 +257,13 @@
     }
     blockquote {
       padding-left: 1rem;
-      border-left: 3px solid rgba(#0D0D0D, 0.1);
+      border-left: 3px solid var(--cms-border-strong);
     }
 
     pre {
-      background: #2e2b29;
+      background: var(--cms-code-surface);
       border-radius: .5rem;
-      color: white;
+      color: var(--cms-code-text);
       font-family: JetBrainsMono, monospace;
       margin: 1.5rem 0;
       padding: .75rem 1rem;
@@ -234,7 +278,7 @@
     /* Code styling */
     .hljs-comment,
     .hljs-quote {
-      color: #616161;
+      color: var(--cms-syntax-comment);
     }
 
     .hljs-template-variable,
@@ -247,7 +291,7 @@
     .hljs-selector-id,
     .hljs-selector-class,
     .hljs-variable {
-      color: #50fa7b;
+      color: var(--cms-syntax-function);
     }
 
     .hljs-number,
@@ -256,39 +300,39 @@
     .hljs-builtin-name,
     .hljs-type,
     .hljs-params{
-      color: #fbbc88;
+      color: var(--cms-syntax-number);
     }
     .hljs-literal{
-      color:#bd93f9;
+      color: var(--cms-syntax-literal);
     }
 
     .hljs-symbol,
     .hljs-bullet
     {
-      color: #b9f18d;
+      color: var(--cms-syntax-symbol);
     }
 
     .hljs-title,
     .hljs-string,
     .hljs-section {
-      color: #faf594;
+      color: var(--cms-syntax-string);
       &.function_{
-        color:#50fa7b;
+        color: var(--cms-syntax-function);
       }
     }
     .hljs-title{
       &.class_{
-        color:#50fa7b;
+        color: var(--cms-syntax-function);
       }
     }
     .hljs-property,
     .hljs-attr{
-      color:#66d9ef;
+      color: var(--cms-syntax-property);
     }
     .hljs-keyword,
     .hljs-operator,
     .hljs-selector-tag {
-      color: #ff79c6;
+      color: var(--cms-syntax-keyword);
     }
 
     .hljs-emphasis {
@@ -299,7 +343,8 @@
       font-weight: 700;
     }
   }
-  .ProseMirror:focus {
+  .ProseMirror:focus,
+  .ProseMirror:focus-visible {
     outline: none;
   }
   .editor-content {
@@ -319,16 +364,8 @@
   }
   .error-message {
     @include error;
-    color: $imag-orange;
-  }
-}
-.v-theme--dark {
-  .wysiwyg-wrapper {
-    .editor-content {
-      blockquote {
-        border-color: rgba(white, 0.1);
-      }
-    }
+    padding: var(--cms-space-2) var(--cms-space-4);
+    color: var(--cms-error);
   }
 }
 </style>

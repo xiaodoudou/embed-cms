@@ -21,9 +21,10 @@ cms.json.backup*
 syslog.log
 storage
 test-data-simple
-test/smartCropAssets
 test-*.js
 preloads
 old_preloads
 oss-config-*.json
 compare-preload-diff.txt
+
+coverage

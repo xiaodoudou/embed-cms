@@ -8,14 +8,12 @@ class LoadingService {
   start (name) {
     this.isShow = true
     this.list.push(name)
-    // console.info('start', name, this.list)
     this.checkLoading()
   }
 
   stop (name) {
     this.list = _.filter(this.list, item => item !== name)
     this.list = _.compact(this.list)
-    // console.info('stop', name, this.list)
     this.checkLoading()
   }
 

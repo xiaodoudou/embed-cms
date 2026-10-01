@@ -1,67 +1,77 @@
 <template>
   <div class="system-info">
-    <v-menu v-if="settingsData && settingsData.linksGroups && settingsData.linksGroups.length > 0" content-class="links-menu" location="bottom" :close-on-content-click="false" transition="slide-y-transition">
+    <theme-switch v-if="!config.disableDarkMode" />
+    <v-menu v-if="settingsData && settingsData.linksGroups && settingsData.linksGroups.length > 0" content-class="links-menu" location="bottom end" :close-on-content-click="false">
       <template #activator="{ props }">
-        <v-btn icon v-bind="props">
+        <v-btn icon variant="text" v-bind="props" :aria-label="$filters.translate('TL_LINKS')">
           <v-icon icon="$dotsVertical" />
         </v-btn>
       </template>
       <div class="links-wrapper">
-        <div v-for="(group, i) in settingsData.linksGroups" :key="i" class="group">
-          <div class="node-cms-title">{{ group.title }}</div>
-          <a v-for="(link, y) in group.links" :key="y" class="link" :href="link.url" target="_blank" :class="{active: isActiveLink(link.url)}">{{ link.name }}</a>
+        <div v-for="(entry, i) in settingsData.linksGroups" :key="i" class="group">
+          <!-- a single link -->
+          <a v-if="entry._type === '_settingsLink'" class="link" :href="entry.url" target="_blank" rel="noopener noreferrer" :class="{active: isActiveLink(entry.url)}">{{ entry.name }}</a>
+          <!-- a group of links with its heading -->
+          <template v-else>
+            <div class="node-cms-title">{{ entry.title }}</div>
+            <a v-for="(link, y) in entry.links" :key="y" class="link" :href="link.url" target="_blank" rel="noopener noreferrer" :class="{active: isActiveLink(link.url)}">{{ link.name }}</a>
+          </template>
           <v-divider v-if="i < settingsData.linksGroups.length - 1" />
         </div>
       </div>
     </v-menu>
 
-    <v-menu content-class="system-info-menu" location="bottom" :close-on-content-click="false" transition="slide-y-transition">
+    <v-menu content-class="system-info-menu" location="bottom end" :close-on-content-click="false">
       <template #activator="{ props }">
-        <v-btn icon v-bind="props">
+        <v-btn icon variant="text" v-bind="props" :aria-label="$filters.translate('TL_SYSTEM')">
           <v-icon icon="$cogOutline" />
         </v-btn>
       </template>
       <div class="system-info-wrapper">
         <div class="node-cms-title flex">
           <span>{{ $filters.translate('TL_SYSTEM') }}</span>
-          <theme-switch v-if="!config.disableDarkMode" />
+          <span class="node-cms-version text">v{{ getNodeCmsVersion() }}</span>
         </div>
         <div class="stats cpu">
-          <div class="node-cms-title"><small><b>CPU Usage</b></small></div>
-          <v-progress-linear rounded :model-value="system.cpu.usage" />
+          <div class="stat-head"><span>CPU</span><span>{{ Math.round(system.cpu.usage) }}%</span></div>
+          <v-progress-linear rounded height="8" aria-label="CPU usage" :model-value="system.cpu.usage" />
           <small class="text">{{ system.cpu.count }} cores ({{ system.cpu.model }})</small>
         </div>
         <div class="stats ram">
-          <div class="node-cms-title"><small><b>Memory Usage</b></small></div>
-          <v-progress-linear rounded :model-value="100 - system.memory.freeMemPercentage" />
+          <div class="stat-head"><span>{{ $filters.translate('TL_MEMORY') }}</span><span>{{ Math.round(100 - system.memory.freeMemPercentage) }}%</span></div>
+          <v-progress-linear rounded height="8" aria-label="Memory usage" :model-value="100 - system.memory.freeMemPercentage" />
           <small class="text">{{ convertBytes(system.memory.usedMemMb) }} / {{ convertBytes(system.memory.totalMemMb) }}</small>
         </div>
         <div v-if="system.drive != 'not supported'" class="stats drive">
-          <div class="node-cms-title"><small><b>Disk Usage</b></small></div>
-          <v-progress-linear rounded :model-value="100 - system.drive.usedPercentage" />
+          <div class="stat-head"><span>{{ $filters.translate('TL_DISK') }}</span><span>{{ Math.round(system.drive.usedPercentage) }}%</span></div>
+          <v-progress-linear rounded height="8" aria-label="Disk usage" :model-value="system.drive.usedPercentage" />
           <small class="text">{{ convertBytes(system.drive.usedGb * 1024) }} / {{ convertBytes(system.drive.totalGb * 1024) }}</small>
         </div>
         <div class="stats two-by-two">
           <div v-if="system.network != 'not supported'" class="stats network">
-            <div class="node-cms-title"><small><b>Network Usage</b></small></div>
-            <small class="text">{{ convertBytes(system.network.total.outputMb) }} <v-icon icon="$arrowUp" /> / {{ convertBytes(system.network.total.inputMb) }} <v-icon icon="$arrowDown" /></small>
+            <div class="stat-head"><span>{{ $filters.translate('TL_NETWORK') }}</span></div>
+            <small class="text">{{ convertBytes(system.network.total.outputMb) }} <v-icon icon="$arrowUp" size="x-small" aria-label="upload" /> / {{ convertBytes(system.network.total.inputMb) }} <v-icon icon="$arrowDown" size="x-small" aria-label="download" /></small>
           </div>
           <div class="stats uptime">
-            <div class="node-cms-title"><small><b>Uptime:</b></small> <small class="text">{{ timeAgo(system.uptime) }}</small></div>
+            <div class="stat-head"><span>{{ $filters.translate('TL_UPTIME') }}</span></div>
+            <small class="text">{{ timeAgo(system.uptime) }}</small>
           </div>
-          <div class="stats node-cms-version">
-            <small class="text">v{{ getNodeCmsVersion() }}</small>
-          </div>
+        </div>
+        <!-- Basic login: the browser keeps the credentials until it closes, so there is no logout button to offer -->
+        <div v-if="!showLogoutButton" class="sign-out-hint">
+          <v-icon icon="$logout" size="small" aria-hidden="true" />
+          <span>{{ $filters.translate('TL_SIGN_OUT_HINT') }}</span>
         </div>
       </div>
     </v-menu>
-    <v-btn v-if="showLogoutButton" icon @click="logout()">
+    <v-btn v-if="showLogoutButton" icon variant="text" :aria-label="$filters.translate('TL_LOGOUT')" @click="logout()">
       <v-icon icon="$logout" />
     </v-btn>
   </div>
 </template>
 
 <script setup>
+  import { log } from '@u/log'
   import { ref, computed, onMounted, onUnmounted, getCurrentInstance } from 'vue'
   import _ from 'lodash'
   import Dayjs from 'dayjs'
@@ -69,6 +79,7 @@
   import LoginService from '@s/LoginService'
   import ThemeSwitch from '@c/ThemeSwitch'
   import { useTheme } from 'vuetify'
+  import { applyThemeToDocument } from '@u/theme'
 
   Dayjs.extend(relativeTime)
   const theme = useTheme()
@@ -126,8 +137,7 @@
             if (_.isFunction(theme.change)) {
               const userTheme = LoginService.user.theme
               theme.change(userTheme)
-              document.body.classList.remove('v-theme--dark', 'v-theme--light')
-              document.body.classList.add(`v-theme--${userTheme}`)
+              applyThemeToDocument(userTheme)
             } else {
               console.error(`Cannot call theme.change:`, theme)
             }
@@ -144,15 +154,20 @@
       eventSource.value.addEventListener('end', () => {
         eventSource.value.close()
         console.warn('System info stream ended')
-        connectToLogStream()
+        if (!destroyed.value) {
+          connectToLogStream()
+        }
       })
       eventSource.value.onerror = (error) => {
         console.error('Error in SSE connection:', error)
         eventSource.value.close()
+        if (destroyed.value) {
+          return
+        }
         if (reconnectAttempts.value < maxReconnectAttempts) {
           reconnectAttempts.value++
           const reconnectDelay = Math.min(1000 * Math.pow(2, reconnectAttempts.value), 30000)
-          console.log(`Attempting to reconnect system info stream in ${reconnectDelay}ms (attempt ${reconnectAttempts.value})`)
+          log.debug(`Attempting to reconnect system info stream in ${reconnectDelay}ms (attempt ${reconnectAttempts.value})`)
           setTimeout(() => connectToLogStream(), reconnectDelay)
         } else {
           console.error('Max reconnection attempts for system info reached. Giving up.')
@@ -203,7 +218,8 @@
       getCurrentInstance().proxy.$loading.stop('_syslog')
     }
     destroyed.value = true
-    clearTimeout(timer.value)
+    // the stream stays open (and reconnects when it fails) until it is closed
+    disconnectFromLogStream()
   })
 </script>
 <style lang="scss" scoped>
@@ -212,84 +228,11 @@
 .system-info {
   position: relative;
   display: flex;
-  padding: 4px;
-  box-sizing: border-box;
-  font-size: 11.2px;
-  font-weight: 400;
-  >button:last-child {
-    margin-left: vw(16px);
-  }
-  .stats {
-    font-size: 0;
-    .text {
-      text-overflow: ellipsis;
-      padding: 4px;
-    }
-    .progress {
-      margin: 0 4px;
-    }
-    .node-cms-title {
-      @include h6;
-      color: $system-info-color;
-    }
-  }
+  align-items: center;
+  gap: var(--cms-space-1);
   .v-icon {
     color: $navbar-system-info-icon-color;
   }
-}
-.system-info-wrapper, .links-wrapper {
-  min-width: 400px;
-  display: flex;
-  flex-direction: column;
-  @include blurred-background;
-  background-color: $system-info-background;
-  .node-cms-title {
-    @include h6;
-    color: $system-info-color;
-  }
-}
-.system-info-wrapper {
-  gap: 16px;
-  button {
-    user-select: none;
-    display: inline-block;
-    line-height: 20px;
-    text-align: center;
-    font-size: 12px;
-    box-sizing: border-box;
-    cursor: pointer;
-    i {
-      margin-right: 5px;
-    }
-  }
-  .node-cms-title {
-    &.flex {
-      @include h5;
-      color: $system-info-color;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-  }
-  small {
-    @include subtext;
-    color: $system-info-color;
- }
-}
-.system-info-menu, .links-menu {
-  background-color: transparent;
-  right: 0px;
-  left: auto !important;
-  width: auto;
-}
-
-.links-wrapper {
-  .node-cms-title {
-    font-weight: bold;
-  }
-}
-.v-input--selection-controls {
-  margin-top: 0;
 }
 </style>
 
@@ -297,56 +240,115 @@
 @use '@a/scss/variables.scss' as *;
 @use '@a/scss/mixins.scss' as *;
 
-.system-info-wrapper {
+.system-info-menu,
+.links-menu {
+  background-color: transparent;
+}
+
+.system-info-wrapper,
+.links-wrapper {
+  min-width: min(360px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  @include blurred-background;
+  padding: var(--cms-space-4);
   color: $system-info-color;
   background-color: $system-info-background;
+  .node-cms-title {
+    @include h6;
+    color: $system-info-color;
+  }
+}
+
+.system-info-wrapper {
+  gap: var(--cms-space-4);
+  .node-cms-title.flex {
+    @include h5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .node-cms-version {
+    font-size: var(--cms-fs-sm);
+    font-weight: var(--cms-fw-regular);
+    color: var(--cms-text-muted);
+  }
+  .stat-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--cms-space-1);
+    font-size: var(--cms-fs-sm);
+    font-weight: var(--cms-fw-semibold);
+  }
+  .stats .text,
+  small {
+    display: block;
+    margin-top: var(--cms-space-1);
+    font-size: var(--cms-fs-sm);
+    color: var(--cms-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .v-progress-linear {
-    margin: 8px 0;
-    .v-progress-linear__buffer {
-      background-color: $system-info-progress-bar-background;
+    .v-progress-linear__background {
+      background-color: $system-info-progress-bar-background !important;
+      opacity: 1;
     }
     .v-progress-linear__determinate {
-      border-radius: 100px;
       background-color: $system-info-progress-bar !important;
-      border-color: $system-info-progress-bar !important;
+    }
+  }
+  .stats.two-by-two {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--cms-space-4);
+    .stats {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+  }
+  .sign-out-hint {
+    display: flex;
+    align-items: center;
+    gap: var(--cms-space-2);
+    padding-top: var(--cms-space-3);
+    border-top: 1px solid var(--cms-border);
+    font-size: var(--cms-fs-sm);
+    color: var(--cms-text-muted);
+    .v-icon {
+      color: var(--cms-text-muted);
     }
   }
 }
-.links-menu {
+
+.links-wrapper {
+  gap: var(--cms-space-1);
   .node-cms-title {
+    font-weight: var(--cms-fw-semibold);
     user-select: none;
+    padding: var(--cms-space-1) var(--cms-space-2);
   }
   .link {
     display: block;
     @include h6;
-    background-color: transparent;
-    transition: background-color 0.15s;
+    padding: var(--cms-space-2) var(--cms-space-3);
+    border-radius: var(--cms-radius-sm);
+    color: var(--cms-text);
     text-decoration: none;
-    padding-left: 16px;
-    border-radius: 50px;
+    transition: background-color var(--cms-motion-fast) var(--cms-ease);
     &:hover {
-      background-color: $imag-blue;
+      background-color: var(--cms-surface-2);
     }
     &.active {
-      font-weight: bold;
-      background-color: $imag-purple;
-
+      font-weight: var(--cms-fw-semibold);
+      background-color: var(--cms-primary-soft);
+      color: var(--cms-on-primary-soft);
     }
   }
   .v-divider {
-    margin: 8px 0;
-    border-color: black;
-  }
-}
-.node-cms-version {
-  text-align: right;
-}
-.stats.two-by-two {
-  display: flex;
-  direction: row;
-  align-items: stretch;
-  .stats {
-    width: 50%;
+    margin: var(--cms-space-2) 0;
   }
 }
 </style>

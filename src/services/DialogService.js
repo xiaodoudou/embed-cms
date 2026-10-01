@@ -23,6 +23,16 @@ class DialogService {
     this.events.emit('dialog:show', data)
   }
 
+  /**
+   * Promise based confirmation through the shared dialog: resolves true on confirm,
+   * false on cancel/Escape. Same options as show().
+   */
+  ask (data) {
+    return new Promise((resolve) => {
+      this.show({ ...data, callback: () => resolve(true), onCancel: () => resolve(false) })
+    })
+  }
+
   confirm (data) {
     this.events.emit('dialog:confirm', data)
   }

@@ -8,7 +8,6 @@ class ConfigService {
   async init () {
     try {
       this.config = await RequestService.get(`${window.location.pathname}config`)
-      // console.info('Config:', data)
     } catch (error) {
       console.error('Error during init of ConfigService:', error)
     }

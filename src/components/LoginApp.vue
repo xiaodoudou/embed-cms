@@ -1,26 +1,38 @@
 <template>
   <v-app :class="{'unclickable': isLoading}">
-    <div v-if="loaded" class="cms-layout" :class="{displayed: showLoginForm}">
-      <div class="login-canvas">
-        <form @submit.prevent="login">
-          <div class="node-cms-title">
-            {{ $filters.translate('TL_LOGIN') }}
-          </div>
-          <input
-            ref="username" v-model="username" autofocus type="text" name="nodeCmsUsername" autocomplete="on"
-            :placeholder="$filters.translate('TL_USERNAME')"
-          >
-          <input ref="password" v-model="password" type="password" name="nodeCmsPassword" autocomplete="on" :placeholder="$filters.translate('TL_PASSWORD')">
-          <span v-if="loginFailed" class="error-message">{{ $filters.translate('TL_LOGIN_FAIL') }}</span>
-          <div class="login-btn-wrapper" :class="{disabled: !username || !password || loggingIn}">
-            <button :disabled="loggingIn">
-              {{ $filters.translate('TL_CONFIRM') }}
-            </button>
-          </div>
-        </form>
+    <v-theme-provider :theme="loginTheme">
+      <div v-if="loaded" class="cms-layout login-layout" :class="{displayed: showLoginForm}">
+        <main class="login-canvas">
+          <div class="login-brand"><brand-logo /></div>
+          <form novalidate @submit.prevent="login">
+            <h1 class="node-cms-title">
+              {{ $filters.translate('TL_LOGIN') }}
+            </h1>
+            <div class="login-field">
+              <label for="cms-login-username">{{ $filters.translate('TL_USERNAME') }}</label>
+              <input
+                id="cms-login-username" ref="username" v-model="username" autofocus type="text" name="nodeCmsUsername" autocomplete="username"
+                autocapitalize="none" spellcheck="false" :aria-invalid="loginFailed ? 'true' : 'false'" :aria-describedby="loginFailed ? 'cms-login-error' : undefined"
+              >
+            </div>
+            <div class="login-field">
+              <label for="cms-login-password">{{ $filters.translate('TL_PASSWORD') }}</label>
+              <input
+                id="cms-login-password" ref="password" v-model="password" type="password" name="nodeCmsPassword" autocomplete="current-password"
+                :aria-invalid="loginFailed ? 'true' : 'false'" :aria-describedby="loginFailed ? 'cms-login-error' : undefined"
+              >
+            </div>
+            <p v-if="loginFailed" id="cms-login-error" class="error-message" role="alert">{{ $filters.translate('TL_LOGIN_FAIL') }}</p>
+            <div class="login-btn-wrapper" :class="{disabled: !username || !password || loggingIn}">
+              <button type="submit" :disabled="loggingIn" :aria-disabled="!username || !password || loggingIn ? 'true' : 'false'">
+                {{ $filters.translate('TL_CONFIRM') }}
+              </button>
+            </div>
+          </form>
+        </main>
       </div>
-    </div>
-    <loading v-if="isLoading" />
+      <loading v-if="isLoading" />
+    </v-theme-provider>
   </v-app>
 </template>
 
@@ -28,6 +40,8 @@
   import _ from 'lodash'
 
   import Loading from '@c/Loading.vue'
+  import BrandLogo from '@c/BrandLogo.vue'
+  import { applyThemeToDocument, pickTheme } from '@u/theme'
   import LoadingService from '@s/LoadingService'
   import ConfigService from '@s/ConfigService'
   import TranslateService from '@s/TranslateService'
@@ -36,7 +50,8 @@
 
   export default {
     components: {
-      Loading
+      Loading,
+      BrandLogo
     },
     data () {
       return {
@@ -47,6 +62,7 @@
         isLoading: false,
         loggingIn: false,
         showLoginForm: false,
+        loginTheme: 'light',
         loaded: false,
         LoadingService,
         TranslateService
@@ -57,6 +73,8 @@
     },
     async mounted () {
       LoadingService.events.on('has-loading', this.onLoading)
+      // light until the configuration says whether dark mode is allowed, so the page does not flash dark then light
+      this.applyLoginTheme()
       this.$loading.start('init')
       try {
         const noLogin = _.get(window, 'noLogin', false)
@@ -64,6 +82,7 @@
           LoginService.init()
         }
         await ConfigService.init()
+        this.applyLoginTheme()
         await TranslateService.init()
         this.loaded = true
       } catch (error) {
@@ -78,6 +97,14 @@
       this.$loading.stop('init')
     },
     methods: {
+      // the system preference, unless dark mode is turned off (as the admin itself does)
+      applyLoginTheme () {
+        const prefersDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        this.loginTheme = applyThemeToDocument(pickTheme(ConfigService.config, prefersDark ? 'dark' : 'light'))
+        if (_.isFunction(_.get(this.$vuetify, 'theme.change'))) {
+          this.$vuetify.theme.change(this.loginTheme)
+        }
+      },
       async onLoading(isLoading) {
         await this.$nextTick()
         this.isLoading = isLoading
@@ -109,45 +136,116 @@
 </script>
 
 <style lang="scss" scoped>
+@use '@a/scss/mixins.scss' as *;
 
-.cms-layout {
-  background-color: #e9e9e9;
-  color: black;
+.login-layout {
+  align-items: center;
+  justify-content: center;
+  padding: var(--cms-space-4);
+  background-color: var(--cms-bg);
+  color: var(--cms-text);
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity var(--cms-motion-base) var(--cms-ease);
+  overflow: auto;
   &.displayed {
     opacity: 1;
   }
 }
+.login-canvas {
+  width: 100%;
+  max-width: 400px;
+  padding: var(--cms-space-8) var(--cms-space-8) var(--cms-space-6);
+  background: var(--cms-surface);
+  border: 1px solid var(--cms-border);
+  border-radius: var(--cms-radius-lg);
+  box-shadow: var(--cms-shadow-2);
+}
+.login-brand {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--cms-space-6);
+}
 .node-cms-title {
-  text-align: left;
-  font-size: 24px;
-  font-weight: 600;
-  text-transform: uppercase;
+  margin: 0 0 var(--cms-space-5);
+  font-size: var(--cms-fs-xl);
+  line-height: var(--cms-lh-tight);
+  font-weight: var(--cms-fw-semibold);
+  text-align: center;
+  text-transform: none;
+}
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cms-space-1);
+  margin-bottom: var(--cms-space-4);
+  label {
+    font-size: var(--cms-fs-sm);
+    font-weight: var(--cms-fw-semibold);
+    color: var(--cms-text);
+  }
 }
 input {
-  outline: none;
-  z-index: 1;
-  position: relative;
-  background: none;
   width: 100%;
-  padding: 0;
-  border: 0;
-  font-size: 16px;
-  border-bottom: 1px solid #757575;
-  margin-bottom: 15px;
+  height: 44px;
+  padding: 0 var(--cms-space-3);
+  font: inherit;
+  font-size: var(--cms-fs-md);
+  color: var(--cms-text);
+  background: var(--cms-surface);
+  border: 1px solid var(--cms-border-strong);
+  border-radius: var(--cms-radius-md);
+  transition: border-color var(--cms-motion-fast) var(--cms-ease), box-shadow var(--cms-motion-fast) var(--cms-ease);
+  &:hover {
+    border-color: var(--cms-text-muted);
+  }
+  &:focus-visible {
+    outline: none;
+    border-color: var(--cms-primary);
+    box-shadow: 0 0 0 3px var(--cms-primary-soft), 0 0 0 1px var(--cms-primary);
+  }
+  &[aria-invalid='true'] {
+    border-color: var(--cms-error);
+  }
 }
 .error-message {
-  display: block;
-  color: red;
-  font-style: italic;
-  text-align: center;
-  padding-top: 10px;
+  margin: 0 0 var(--cms-space-4);
+  padding: var(--cms-space-2) var(--cms-space-3);
+  border-radius: var(--cms-radius-sm);
+  background: var(--cms-error-soft);
+  color: var(--cms-error);
+  font-size: var(--cms-fs-sm);
+  font-weight: var(--cms-fw-medium);
 }
 .login-btn-wrapper {
   width: 100%;
-  display: flex;
-  justify-content: flex-end;
+  button {
+    width: 100%;
+    height: 44px;
+    border: 0;
+    border-radius: var(--cms-radius-md);
+    background: var(--cms-primary);
+    color: var(--cms-on-primary);
+    font: inherit;
+    font-size: var(--cms-fs-md);
+    font-weight: var(--cms-fw-semibold);
+    cursor: pointer;
+    transition: background-color var(--cms-motion-fast) var(--cms-ease);
+    &:hover:not(:disabled) {
+      background: var(--cms-primary-hover);
+    }
+    &:focus-visible {
+      outline: 2px solid var(--cms-focus-ring);
+      outline-offset: 2px;
+    }
+    &:disabled {
+      cursor: progress;
+      opacity: 0.7;
+    }
+  }
+  &.disabled button:not(:disabled) {
+    background: var(--cms-surface-3);
+    color: var(--cms-text-muted);
+    cursor: pointer;
+  }
 }
-
 </style>

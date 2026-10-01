@@ -71,6 +71,10 @@
   display: flex;
   justify-content: space-between;
   height: 34px;
+  // the same inset as the fields below it, and the top corners follow the rounded border of the group
+  padding: 0 16px;
+  border-radius: 6px 6px 0 0;
+  box-sizing: border-box;
 }
 .group {
   display: flex;

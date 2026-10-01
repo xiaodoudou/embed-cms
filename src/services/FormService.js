@@ -90,7 +90,8 @@ const customValidators = {
     }
     if (regexText && _.isString(regexText)) {
       const fragments = regexText.match(/\/(.*?)\/([gimy])?$/)
-      const regex = new RegExp(fragments[1], fragments[2] || '')
+      // a pattern is written /text/flags; plain text is taken as the pattern itself
+      const regex = new RegExp(fragments ? fragments[1] : regexText, fragments ? (fragments[2] || '') : '')
       if (!regex.test(value)) {
         return `${invalidFormat()} (${TranslateService.get(regexDescription)})`
       }
@@ -106,7 +107,7 @@ const customValidators = {
   number: (value, field, model) => checkNumber(field, value, model, 'number'),
   double: (value, field, model) => checkNumber(field, value, model, 'double'),
   integer: (value, field, model) => {
-    if (_.isUndefined(value)) {
+    if (_.isNil(value)) {
       value = ''
     }
     if (value.toString().indexOf('.') !== -1) {
@@ -209,7 +210,7 @@ let typeMapper = {
   },
   time: {
     type: 'CustomDatetimePicker',
-    format: 'HH:mm:ss a',
+    format: 'HH:mm:ss',
     customDatetimePickerOptions: {
       placeholder: 'HH:mm:ss'
     }

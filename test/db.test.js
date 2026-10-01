@@ -1,7 +1,7 @@
 const request = require('supertest')
 const chai = require('chai')
 const expect = chai.expect
-const serverUrl = 'http://localhost:9990'
+const serverUrl = `http://localhost:${process.env.TEST_PORT || 9990}`
 
 describe('Database Operations via API', () => {
   let createdIds = []
@@ -59,8 +59,7 @@ describe('Database Operations via API', () => {
       const getRes = await request(serverUrl)
         .get(`/api/articles/${id}`)
         .auth('localAdmin', 'localAdmin')
-      expect(getRes.status).to.equal(200)
-      expect(getRes.body).to.be.null
+      expect(getRes.status).to.equal(404)
     })
 
     it('should query records with filters', async () => {

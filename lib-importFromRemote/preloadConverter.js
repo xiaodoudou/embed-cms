@@ -1,7 +1,7 @@
 const path = require('path')
 const _ = require('lodash')
 const fs = require('fs-extra')
-const { getFilename, findMatches, getAttachmentFields } = require('./utils')
+const { getFilename, findMatches, getAttachmentFields, safeJoin } = require('./utils')
 
 function getPreloadAttachmentPath(importer, record, resource, uniqueKey, match, locale, attachment) {
   const recordKey = _.get(record, uniqueKey)
@@ -12,10 +12,10 @@ function getPreloadAttachmentPath(importer, record, resource, uniqueKey, match, 
       regroupedId = _.find(importer.config.regroupIDs, (item) => attachmentFilename.indexOf(item) !== -1)
     }
     if (regroupedId) {
-      return path.join(importer.assetsPath, regroupedId, attachmentFilename)
+      return safeJoin(importer.assetsPath, regroupedId, attachmentFilename)
     }
   }
-  return path.join(importer.assetsPath, resource, recordKey, `${match.path}${locale ? `.${locale}` : ''}`, attachmentFilename)
+  return safeJoin(importer.assetsPath, resource, recordKey, `${match.path}${locale ? `.${locale}` : ''}`, attachmentFilename)
 }
 
 function copyAttachmentToPreloads(importer, record, resource, uniqueKey, match, locale, attachment) {
@@ -23,7 +23,7 @@ function copyAttachmentToPreloads(importer, record, resource, uniqueKey, match, 
     if (_.isString(attachment) && _.startsWith(attachment, '_attachment://')) {
       return attachment
     }
-    const filePath = path.join('./cached', resource, _.get(record, uniqueKey), `${match.path}${locale ? `.${locale}` : ''}`, _.get(attachment, '_id', attachment))
+    const filePath = safeJoin('./cached', resource, _.get(record, uniqueKey), `${match.path}${locale ? `.${locale}` : ''}`, _.get(attachment, '_id', attachment))
     if (!fs.existsSync(filePath)) {
       throw new Error(`Attachment file does not exist: ${filePath}`)
     }

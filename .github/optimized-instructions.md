@@ -1,4 +1,4 @@
-# node-cms Optimized Copilot Instructions
+# embed-cms Optimized Copilot Instructions
 
 - Always use explicit, camelCase names for classes, functions, and variables.
 - Use lodash for type/array checks and chaining (`_.chain` for cascades).

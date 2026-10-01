@@ -1,9 +1,10 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import VueDatePicker from '@vuepic/vue-datepicker'
+import { VueDatePicker } from '@vuepic/vue-datepicker'
 import Dayjs from 'dayjs'
 import CustomDatetimePicker from '@c/fields/CustomDatetimePicker.vue'
 import { mountField } from './helpers/mountField.js'
+import TranslateService from '@s/TranslateService'
 
 // The three kinds of schema FormService prepares for the input types date, time and datetime (see src/services/FormService.js).
 const KINDS = {
@@ -34,7 +35,7 @@ const picker = (kind = 'date', model = {}, schema = {}, props = {}) => {
   return wrapper
 }
 const inner = () => wrapper.findComponent(VueDatePicker)
-const input = () => wrapper.get('input.dp__input')
+const input = () => wrapper.get('input.dp--input')
 // 2026-10-01 14:30:15 in the local time zone, as the pickers work in local time
 const LOCAL = new Date(2026, 9, 1, 14, 30, 15).getTime()
 
@@ -70,31 +71,34 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
   describe('what each kind offers', () => {
     it('a date field picks a day, without a time', () => {
       picker('date')
-      expect(inner().props()).toMatchObject({ enableTimePicker: false, timePicker: false, timePickerInline: false })
+      expect(inner().props('timePicker')).toBe(false)
+      expect(inner().props('timeConfig')).toMatchObject({ enableTimePicker: false, timePickerInline: false })
       expect(wrapper.vm.enableDatePicker).toBe(true)
       expect(wrapper.find('.date-now').exists()).toBe(false)
     })
 
     it('a time field picks a time, without a calendar', () => {
       picker('time')
-      expect(inner().props()).toMatchObject({ enableTimePicker: true, timePicker: true })
+      expect(inner().props('timePicker')).toBe(true)
+      expect(inner().props('timeConfig')).toMatchObject({ enableTimePicker: true })
       expect(wrapper.vm.enableDatePicker).toBe(false)
       expect(wrapper.find('.date-now').exists()).toBe(true)
     })
 
     it('a datetime field picks a day and a time together', () => {
       picker('datetime')
-      expect(inner().props()).toMatchObject({ enableTimePicker: true, timePicker: false, timePickerInline: true })
+      expect(inner().props('timePicker')).toBe(false)
+      expect(inner().props('timeConfig')).toMatchObject({ enableTimePicker: true, timePickerInline: true })
       expect(wrapper.vm.enableDatePicker).toBe(true)
       expect(wrapper.find('.date-now').exists()).toBe(true)
     })
 
     it('offers minutes and seconds only when the format shows them', () => {
       picker('datetime')
-      expect(inner().props()).toMatchObject({ enableMinutes: true, enableSeconds: true })
+      expect(inner().props('timeConfig')).toMatchObject({ enableMinutes: true, enableSeconds: true })
       wrapper.unmount()
       picker('datetime', {}, { format: 'YYYY-MM-DD HH:mm' })
-      expect(inner().props()).toMatchObject({ enableMinutes: true, enableSeconds: false })
+      expect(inner().props('timeConfig')).toMatchObject({ enableMinutes: true, enableSeconds: false })
     })
 
     it('takes its format from the schema, and has one to fall back to', () => {
@@ -111,12 +115,19 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
       expect(inner().props('textInput')).toMatchObject({ format: 'yyyy-MM-dd HH:mm:ss', enterSubmit: true, tabSubmit: true })
     })
 
-    it('uses English for enUS and Chinese for the other locales', () => {
-      picker('date')
-      expect(inner().props('locale')).toBe('en')
-      wrapper.unmount()
-      picker('date', {}, { locale: 'zhCN' })
-      expect(inner().props('locale')).toBe('zh')
+    it('speaks the language of the person, not the language of the field they edit', () => {
+      const original = TranslateService.locale
+      try {
+        TranslateService.setLocale('enUS')
+        picker('date', {}, { locale: 'zhCN' })
+        expect(inner().props('locale').code).toBe('en-US')
+        wrapper.unmount()
+        TranslateService.setLocale('zhCN')
+        picker('date', {}, { locale: 'enUS' })
+        expect(inner().props('locale').code).toBe('zh-CN')
+      } finally {
+        TranslateService.setLocale(original)
+      }
     })
 
     it('follows the dark theme', () => {
@@ -169,7 +180,7 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
 
     it('can be cleared by the person while it is editable', () => {
       picker('date')
-      expect(inner().props('clearable')).toBe(true)
+      expect(inner().props('inputAttrs').clearable).toBe(true)
     })
 
     it('formats the picked date for the field with the schema format', () => {
@@ -203,14 +214,16 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
       await flushPromises()
       expect(wrapper.classes()).toContain('is-readonly')
       expect(wrapper.find('.cms-field-lock').exists()).toBe(true)
-      expect(inner().props()).toMatchObject({ readonly: true, clearable: false })
+      expect(inner().props('readonly')).toBe(true)
+      expect(inner().props('inputAttrs').clearable).toBe(false)
       expect(input().element.value).toBe('2026-10-01 14:30:15')
     })
 
     it('a disabled field is greyed out, without the lock icon', () => {
       picker('date', {}, { disabled: true })
       expect(wrapper.classes()).toContain('is-disabled')
-      expect(inner().props()).toMatchObject({ disabled: true, clearable: false })
+      expect(inner().props('disabled')).toBe(true)
+      expect(inner().props('inputAttrs').clearable).toBe(false)
       expect(wrapper.find('.cms-field-lock').exists()).toBe(false)
     })
 
@@ -236,7 +249,7 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
     it('takes its kind from the input the schema names (a field inside a block of a blocks field)', () => {
       picker('datetime', {}, { originalModel: 'inside_a_block', input: 'datetime', resource: { schema: [] } })
       expect(wrapper.vm.fieldType).toBe('datetime')
-      expect(inner().props()).toMatchObject({ enableTimePicker: true, timePickerInline: true })
+      expect(inner().props('timeConfig')).toMatchObject({ enableTimePicker: true, timePickerInline: true })
     })
 
     it('prefers the input the schema names to the lookup in the resource', () => {
@@ -248,7 +261,7 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       picker('date', {}, { originalModel: 'missing' })
       expect(wrapper.vm.fieldType).toBe('date')
-      expect(inner().props('enableTimePicker')).toBe(false)
+      expect(inner().props('timeConfig').enableTimePicker).toBe(false)
       expect(error.mock.calls[0][0]).toContain('missing')
     })
   })

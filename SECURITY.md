@@ -1,6 +1,6 @@
 # Security
 
-node-cms holds content, user accounts and files, and often sits on the public internet, so its protections matter. The
+embed-cms holds content, user accounts and files, and often sits on the public internet, so its protections matter. The
 short version:
 
 - **Every protection is on by default**, in development and in production: CSRF checks, secure cookies, security
@@ -59,7 +59,7 @@ the default and what turning one off means. Only `strongSecrets` and `localAdmin
 | `allowedOrigins` | `[]` | Origins (`https://host`) that count as the same site for `csrf` and for the update websocket |
 | `cookies` | `httpOnly: true, sameSite: "lax", secure: "auto"` | Attributes of the JWT and session cookies. `secure: "auto"` needs `trustProxy` behind a TLS proxy |
 | `strictSessions` | `true` | No session is created for anonymous and Basic authenticated requests (`resave` and `saveUninitialized` are forced to `false`) |
-| `redactConfig` | `true` | `/admin/config` no longer carries the settings of `import`, `importFromRemote`, `sync`; `/admin/cms-config` masks secrets and keeps them when the placeholder is saved back |
+| `redactConfig` | `true` | `/admin/config` no longer carries the credentials of `import`, `importFromRemote`, `sync`, `syslog` |
 | `strictAdmin` | `true` | `/admin/_groups` needs a login, theme names are validated |
 | `headers` | `true` | Response headers from `lib/util/securityHeaders.js` (CSP, nosniff, frame options, Referrer-Policy, Permissions-Policy, COOP, HSTS over https, no `X-Powered-By`) instead of the historic helmet set |
 | `contentSecurityPolicy` | (default policy) | A policy string, or `false` for none |
@@ -210,10 +210,10 @@ Run with `NODE_ENV=production`, then check:
    `direction` on every peer before turning on `replication.strictTypes`.
 7. **Uploads.** Tune `limits.upload` to what your editors need. Do not add `text/html` or `image/svg+xml` to `inlineTypes`
    unless you trust everyone who can upload.
-8. **Config editor.** `/admin/cms-config` can rewrite `cms.json` and restarts the process: only members of the `admins`
-   group may use it. Keep that group small.
+8. **Configuration.** `cms.json` is not editable from the admin: nothing on the web can read or rewrite the secrets.
 9. **Logs.** `/api/_syslog` shows the log to every user who can log in: keep secrets out of log lines (the backend does not
-   write passwords or tokens) and give the `plugins` right of the group only to administrators.
+   write passwords or tokens) and give the `plugins` right of the group only to administrators. The log page and the log file
+   are bounded by `syslog.maxLineLength`, `syslog.maxFileSize` and `syslog.maxClientBuffer`.
 10. **Dependencies.** Run `npm audit --omit=dev` in CI (the workflow does).
 
 ## Not covered
@@ -227,6 +227,23 @@ Run with `NODE_ENV=production`, then check:
   guarantee in front of the query filter.
 
 ## Changelog
+
+### Embed CMS, after 3.0.0
+
+- **The configuration editor is removed.** `/admin/cms-config` (a page that rewrote `cms.json` from the browser and restarted the
+  process) no longer exists: nothing on the web can read or change the secrets, the ports or the plugin settings. Edit
+  `cms.json` on the server. Hardening item 8 and the `redactConfig` setting follow from it.
+- **The mode without any authentication works.** With `disableAuthentication` and `disableJwtLogin` both on, the admin used to reload
+  for ever (the schemas of the paragraphs answered 401), showed nothing (the `anonymous` group had no right) and signed writes
+  "anonymous~false". The `anonymous` group now has every right in that mode, and an error line in the log says so at every start.
+- **The log cannot exhaust the disk or the memory.** A line over `syslog.maxLineLength` is cut on the log page, a log file over
+  `syslog.maxFileSize` is rotated to `<path>.1`, and a page that stops reading is dropped after `syslog.maxClientBuffer` bytes
+  (see [CONFIG.md](docs/CONFIG.md)).
+- **The cookies are renamed with the product and named after the server** (`embedCmsJwt-<mid>` for the login token, `embedCmsSid-<mid>`
+  for the session, `embedCmsUser` for the session key): everyone is logged out once at the upgrade. Browsers share the cookies of
+  a host between its ports, so two CMS on `localhost` used to overwrite and clear each other's login; they now keep their own. A
+  client that sends the login token as a cookie must use the name of the server (the `x-access-token` header needs no name), and
+  `importFromRemote` now sends the token in that header.
 
 ### Backend hardening (merged in PR #1)
 

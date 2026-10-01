@@ -55,7 +55,9 @@ export function getResourceLabel (resource) {
   if (!resource) {
     return ''
   }
-  return resource.displayname ? TranslateService.get(resource.displayname) : (resource.title || resource.name || '')
+  // a plugin page has a `label` (a translation key) next to its `displayname`, which is what the rights of a group name
+  const name = resource.label || resource.displayname
+  return name ? TranslateService.get(name) : (resource.title || resource.name || '')
 }
 
 export default { getRecordLabel, getResourceLabel }

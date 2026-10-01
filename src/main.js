@@ -8,7 +8,7 @@ import VueCookies from 'vue-cookies'
 import VueShortkey from 'vue3-shortkey'
 import VueVirtualScroller from 'vue-virtual-scroller'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
-import VueDatePicker from '@vuepic/vue-datepicker'
+import { VueDatePicker } from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 import { VueDraggableNext } from 'vue-draggable-next'
 import vuetify from './vuetify.js'
@@ -26,7 +26,6 @@ import CustomForm from '@c/CustomForm.vue'
 // Pages
 import PluginPage from '@c/pages/PluginPage.vue'
 import Syslog from '@c/pages/Syslog.vue'
-import CmsConfig from '@c/pages/CmsConfig.vue'
 import CmsImport from '@c/pages/CmsImport.vue'
 import SyncResource from '@c/pages/SyncResource.vue'
 import CmsReplicator from '@c/pages/CmsReplicator.vue'
@@ -73,7 +72,7 @@ const app = createApp({
     return h(mountEl.getAttribute('type') === 'login' ? LoginApp : App)
   }
 })
-window.nodeCms = app
+window.embedCms = app
 app.config.globalProperties.$filters = {
   translate: TranslateFilter,
   truncate: TruncateFilter
@@ -102,7 +101,6 @@ app.use(router)
   .component('CustomMultiSelect', CustomMultiSelect)
   .component('PluginPage', PluginPage)
   .component('Syslog', Syslog)
-  .component('CmsConfig', CmsConfig)
   .component('CmsImport', CmsImport)
   .component('SyncResource', SyncResource)
   .component('CmsReplicator', CmsReplicator)
@@ -114,12 +112,13 @@ app.use(router)
   .use(VueVirtualScroller)
   .use(VueShortkey, {prevent: ['input', 'textarea']})
 
-function addPlugin (title, displayName, group = 'System', allowed = ['admins']) {
+function addPlugin (title, displayName, group = 'System', allowed = ['admins'], label = displayName) {
   window.plugins = window.plugins || []
   log.debug('adding plugin', displayName)
   window.plugins.push({
     title,
     displayname: displayName,
+    label,
     component: title,
     group,
     allowed,
@@ -140,10 +139,10 @@ window.addEventListener('load', async function () {
     // the replicator's routes need a login: not asked from the login page
     isLoginPage ? false : replicationEnabled((url) => RequestService.get(url), `${window.location.pathname}../replicator/resources`)
   ])
-  _.each(pluginPages(config, { replication }), (page) => addPlugin(page.title, page.displayname))
+  _.each(pluginPages(config, { replication }), (page) => addPlugin(page.title, page.displayname, page.group, undefined, page.label))
   window.disableJwtLogin = _.get(config, 'disableJwtLogin', false)
   window.noLogin = window.disableJwtLogin && _.get(config, 'disableAuthentication', false)
   app.mount('#app')
-  window.nodeCms = app
+  window.embedCms = app
 })
 window.Vue = Vue

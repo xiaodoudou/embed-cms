@@ -13,7 +13,7 @@
           <a v-if="entry._type === '_settingsLink'" class="link" :href="entry.url" target="_blank" rel="noopener noreferrer" :class="{active: isActiveLink(entry.url)}">{{ entry.name }}</a>
           <!-- a group of links with its heading -->
           <template v-else>
-            <div class="node-cms-title">{{ entry.title }}</div>
+            <div class="embed-cms-title">{{ entry.title }}</div>
             <a v-for="(link, y) in entry.links" :key="y" class="link" :href="link.url" target="_blank" rel="noopener noreferrer" :class="{active: isActiveLink(link.url)}">{{ link.name }}</a>
           </template>
           <v-divider v-if="i < settingsData.linksGroups.length - 1" />
@@ -28,9 +28,9 @@
         </v-btn>
       </template>
       <div class="system-info-wrapper">
-        <div class="node-cms-title flex">
+        <div class="embed-cms-title flex">
           <span>{{ $filters.translate('TL_SYSTEM') }}</span>
-          <span class="node-cms-version text">v{{ getNodeCmsVersion() }}</span>
+          <span class="embed-cms-version text">v{{ getEmbedCmsVersion() }}</span>
         </div>
         <div class="stats cpu">
           <div class="stat-head"><span>CPU</span><span>{{ Math.round(system.cpu.usage) }}%</span></div>
@@ -50,7 +50,9 @@
         <div class="stats two-by-two">
           <div v-if="system.network != 'not supported'" class="stats network">
             <div class="stat-head"><span>{{ $filters.translate('TL_NETWORK') }}</span></div>
-            <small class="text">{{ convertBytes(system.network.total.outputMb) }} <v-icon icon="$arrowUp" size="x-small" aria-label="upload" /> / {{ convertBytes(system.network.total.inputMb) }} <v-icon icon="$arrowDown" size="x-small" aria-label="download" /></small>
+            <!-- the live traffic (per second); the total since boot is the tooltip, and what shows until a second report gives a rate -->
+            <small v-if="system.network.rate" class="text" :title="`${convertBytes(system.network.total.outputMb)} / ${convertBytes(system.network.total.inputMb)}`">{{ formatRate(system.network.rate.outputBytesPerSec) }} <v-icon icon="$arrowUp" size="x-small" aria-label="upload" /> / {{ formatRate(system.network.rate.inputBytesPerSec) }} <v-icon icon="$arrowDown" size="x-small" aria-label="download" /></small>
+            <small v-else class="text">{{ convertBytes(system.network.total.outputMb) }} <v-icon icon="$arrowUp" size="x-small" aria-label="upload" /> / {{ convertBytes(system.network.total.inputMb) }} <v-icon icon="$arrowDown" size="x-small" aria-label="download" /></small>
           </div>
           <div class="stats uptime">
             <div class="stat-head"><span>{{ $filters.translate('TL_UPTIME') }}</span></div>
@@ -110,7 +112,7 @@
     isEditing.value = editing
   }
 
-  function getNodeCmsVersion() {
+  function getEmbedCmsVersion() {
     return _.get(properties.config, 'version', 'X.X.X')
   }
 
@@ -193,6 +195,18 @@
     return Dayjs().subtract(parseInt(current, 10), 'second').fromNow()
   }
 
+  // bytes per second, as a person reads a connection speed
+  function formatRate(bytesPerSecond) {
+    const units = ['B/s', 'KB/s', 'MB/s', 'GB/s']
+    let value = bytesPerSecond || 0
+    let unit = 0
+    while (value >= 1024 && unit < units.length - 1) {
+      value /= 1024
+      unit++
+    }
+    return `${unit === 0 ? Math.round(value) : value.toFixed(value < 10 ? 1 : 0)} ${units[unit]}`
+  }
+
   function convertBytes(megaBytes) {
     const sizes = ['MB', 'GB', 'TB']
     if (megaBytes === 0) {
@@ -254,7 +268,7 @@
   padding: var(--cms-space-4);
   color: $system-info-color;
   background-color: $system-info-background;
-  .node-cms-title {
+  .embed-cms-title {
     @include h6;
     color: $system-info-color;
   }
@@ -262,13 +276,13 @@
 
 .system-info-wrapper {
   gap: var(--cms-space-4);
-  .node-cms-title.flex {
+  .embed-cms-title.flex {
     @include h5;
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
-  .node-cms-version {
+  .embed-cms-version {
     font-size: var(--cms-fs-sm);
     font-weight: var(--cms-fw-regular);
     color: var(--cms-text-muted);
@@ -325,7 +339,7 @@
 
 .links-wrapper {
   gap: var(--cms-space-1);
-  .node-cms-title {
+  .embed-cms-title {
     font-weight: var(--cms-fw-semibold);
     user-select: none;
     padding: var(--cms-space-1) var(--cms-space-2);

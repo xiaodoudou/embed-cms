@@ -19,7 +19,7 @@
 
 <script>
   import _ from 'lodash'
-  import TranslateService from '@s/TranslateService'
+  import { getResourceLabel } from '@u/recordLabel'
 
   /** The resource title bar with the dropdown that lists the other resources of the same group (list and table view). */
   export default {
@@ -42,7 +42,7 @@
         if (!resource) {
           return ''
         }
-        return resource.displayname ? TranslateService.get(resource.displayname) : resource.title
+        return getResourceLabel(resource)
       },
       onSelect (resource) {
         if (resource !== this.resource && _.isFunction(this.selectCallback)) {

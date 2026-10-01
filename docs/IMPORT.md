@@ -1,12 +1,12 @@
 # Import and export
 
-Three tools move content into node-cms in bulk. Pick by where the content lives today:
+Three tools move content into embed-cms in bulk. Pick by where the content lives today:
 
 | The content is in | Use | Turned on by |
 |---|---|---|
 | a Google Sheet, or an Excel file shaped like one | the **import** plugin (Cms Import page) | an `import` block |
 | an Excel file you exported from the CMS, edited, and want back | the **xlsx** plugin | `"xlsx": true` |
-| another node-cms | **import from remote** | an `importFromRemote` block |
+| another embed-cms | **import from remote** | an `importFromRemote` block |
 
 All of them match records by the resource's `unique` fields: a row whose unique value already exists updates that
 record, a new value creates one. A resource without a `unique` field can't be imported reliably, so declare one first.
@@ -48,7 +48,7 @@ or from an uploaded `.xlsx` with the same sheets. Behind it: `GET /import/status
 Google Sheet, `POST /import/statusXlsx` and `POST /import/executeXlsx` (multipart field `xlsx`) for a file; without the
 file they answer `400` (`missing xlsx file`). The routes need a login.
 
-The downloaded sheets are cached under the system's temporary folder (`node-cms/import`) and fetched again when the
+The downloaded sheets are cached under the system's temporary folder (`embed-cms/import`) and fetched again when the
 sheet has changed.
 
 ### From the command line
@@ -101,7 +101,7 @@ curl -F xlsx=@articles.xlsx 'http://localhost:9990/xlsx/articles/import?token=â€
 
 A token in a URL ends up in browser history and proxy logs. Use a long one, and change it if a link leaks.
 
-## Copying from another node-cms: import from remote
+## Copying from another embed-cms: import from remote
 
 Import from remote logs in to two CMS servers over REST and copies the records and files of chosen resources from the
 remote to the local one. It is meant for one-off migrations, such as seeding a new server from an old one.

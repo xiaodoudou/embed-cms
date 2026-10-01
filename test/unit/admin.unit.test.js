@@ -30,10 +30,32 @@ describe('admin plugin (unit)', () => {
       expect(res.body).to.have.property('username', 'localAdmin')
       expect(res.body).to.not.have.property('password')
     })
+    it('tells the language and the theme the user chose, so the admin opens in them', async () => {
+      const user = await auth.users.find({ username: 'editor' })
+      await auth.users.update(user._id, { language: 'zhCN', theme: 'dark' })
+      const { agent } = await loginAs('editor', 'editorPass')
+      const status = await agent.get('/admin/login')
+      expect(status.status).to.equal(200)
+      expect(status.body).to.include({ username: 'editor', language: 'zhCN', theme: 'dark' })
+      await auth.users.update(user._id, { language: '', theme: 'light' })
+    })
+    it('names its cookies after the server, so that another CMS on the same host does not clear them', async () => {
+      const { res, agent } = await loginAs('localAdmin', 'localAdmin')
+      const names = (res.headers['set-cookie'] || []).map(c => c.split('=')[0])
+      expect(app.cms.cookieNames.jwt).to.match(/^embedCmsJwt-\w+$/)
+      expect(names).to.include(app.cms.cookieNames.jwt)
+      expect(names).to.not.include('embedCmsJwt')
+      // a login token under the cookie name of another server is not this server's login
+      const token = (res.headers['set-cookie'].find(c => c.startsWith(`${app.cms.cookieNames.jwt}=`)) || '').split('=')[1].split(';')[0]
+      const foreign = await request(app.url).get('/admin/login').set('Cookie', `embedCmsJwt-other000=${token}`)
+      expect(foreign.body.username).to.not.equal('localAdmin')
+      const own = await agent.get('/admin/login')
+      expect(own.body.username).to.equal('localAdmin')
+    })
     it('answers 401 for wrong credentials and sets no cookie', async () => {
       const { res } = await loginAs('localAdmin', 'wrong')
       expect(res.status).to.equal(401)
-      expect(res.headers['set-cookie'] || []).to.satisfy(c => !c.some(x => x.startsWith('nodeCmsJwt=')))
+      expect(res.headers['set-cookie'] || []).to.satisfy(c => !c.some(x => x.startsWith(`${app.cms.cookieNames.jwt}=`)))
     })
     it('does not distinguish an unknown user from a wrong password', async () => {
       const wrong = await loginAs('localAdmin', 'wrong')
@@ -118,23 +140,41 @@ describe('admin plugin (unit)', () => {
     })
   })
 
-  describe('cms-config editor', () => {
-    it('refuses anonymous users', async () => {
-      const get = await request(app.url).get('/admin/cms-config')
-      const post = await request(app.url).post('/admin/cms-config').send({ port: 1 })
-      expect(get.status).to.equal(403)
-      expect(post.status).to.equal(403)
+  describe('without any authentication (both switches on)', () => {
+    let open
+    before(async () => {
+      open = await startApp({ disableJwtLogin: true, disableAuthentication: true })
     })
-    it('refuses users who are not in the admins group', async () => {
-      const { agent } = await loginAs('editor', 'editorPass')
-      const get = await agent.get('/admin/cms-config')
-      const post = await agent.post('/admin/cms-config').send({ port: 1 })
-      expect(get.status).to.equal(403)
-      expect(post.status).to.equal(403)
+    after(async () => {
+      await open.close()
+    })
+
+    it('serves the schemas of the paragraphs, which the admin needs to open (it answered 401, and the admin reloaded for ever)', async () => {
+      const res = await request(open.url).get('/admin/paragraphs')
+      expect(res.status).to.equal(200)
+    })
+
+    it('gives the anonymous visitor every right, so that the admin has something to show and its groups can be edited', async () => {
+      const resources = await request(open.url).get('/admin/resources')
+      expect(resources.status).to.equal(200)
+      expect(resources.body.length).to.be.greaterThan(0)
+      const created = await request(open.url).post('/api/articles').send({ title: 'Written without a login' })
+      expect(created.status).to.equal(200)
+    })
+
+    it('signs what the visitor writes as the anonymous visitor, not "anonymous~false"', async () => {
+      const created = await request(open.url).post('/api/articles').send({ title: 'Signed' })
+      expect(created.body._updatedBy).to.equal('anonymous~anonymous')
     })
   })
 
   describe('removed routes', () => {
+    it('/admin/cms-config no longer exists (the configuration file is not editable from the admin)', async () => {
+      const get = await request(app.url).get('/admin/cms-config')
+      const post = await request(app.url).post('/admin/cms-config').send({ port: 1 })
+      expect(get.status).to.be.oneOf([401, 403, 404])
+      expect(post.status).to.be.oneOf([401, 403, 404])
+    })
     it('/admin/replicate no longer exists (replication is triggered through /replicator)', async () => {
       const res = await request(app.url).get('/admin/replicate/articles').query({ host: 'localhost', port: 1 })
       expect(res.status).to.be.oneOf([401, 403, 404])
@@ -146,7 +186,7 @@ describe('admin plugin (unit)', () => {
       const fonts = await request(app.url).get('/admin/fonts/..%2f..%2fpackage.json')
       const js = await request(app.url).get('/admin/js/..%2f..%2fpackage.json')
       for (const res of [fonts, js]) {
-        expect(res.text || '').to.not.include('"name": "node-cms"')
+        expect(res.text || '').to.not.include('"name": "embed-cms"')
       }
     })
     it('serves the i18n config', async () => {

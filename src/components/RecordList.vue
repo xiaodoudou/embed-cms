@@ -116,6 +116,7 @@
   import _ from 'lodash'
   import { sanitizeHtml, escapeHtml } from '@u/sanitizeHtml'
   import TranslateService from '@s/TranslateService'
+  import { getResourceLabel } from '@u/recordLabel'
   import Notification from '@m/Notification'
   import NotificationsService from '@s/NotificationsService'
   import LoginService from '@s/LoginService'
@@ -437,7 +438,7 @@
         if (!resource) {
           return ''
         }
-        return resource.displayname ? TranslateService.get(resource.displayname) : resource.title
+        return getResourceLabel(resource)
       },
       selectAll () {
         if (this.localMultiselectItems.length === this.filteredList.length) {
@@ -484,7 +485,8 @@
           return this.$emit('selectItem', item)
         }
         this.lastSelectedItem = item._id
-        if (!clickedCheckbox) {
+        // choosing several records: a click on a row adds or removes it, like its box, instead of starting over with that one
+        if (!clickedCheckbox && !this.multiselect) {
           this.localMultiselectItems = [item]
           this.$emit('selectItem', item)
         } else {

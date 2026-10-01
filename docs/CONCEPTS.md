@@ -1,6 +1,6 @@
 # Concepts
 
-node-cms has a small vocabulary. Once these words click, the rest of the documentation reads easily. Each section says
+embed-cms has a small vocabulary. Once these words click, the rest of the documentation reads easily. Each section says
 what the thing is, why it exists, and where to read more.
 
 Here is how the main ideas relate. Each box is explained below.
@@ -71,7 +71,7 @@ that writes over the API is trusted to send valid data. [FIELDS.md](FIELDS.md) h
 
 ## Locale
 
-"Language" means two separate things in node-cms, and it helps to keep them apart:
+"Language" means two separate things in embed-cms, and it helps to keep them apart:
 
 - **Content locales** are the languages your content is written in. A resource lists them in `locales`, and every
   field then holds one value per locale, `{ "title": { "enUS": "Hello", "zhCN": "你好" } }`, unless it says
@@ -121,9 +121,13 @@ Everyone who logs in is a **user**, and every user belongs to one **group**. Rig
 | `attachments` | Adding, changing and removing files. |
 | `plugins` | Seeing admin pages by name, such as `Syslog`. |
 
-Users and groups are ordinary resources (`_users`, `_groups`), edited in the admin's **CMS** menu. Two groups always
+Users and groups are ordinary resources (`_users`, `_groups`), edited in the admin's **CMS** menu. A user also carries two
+preferences for their own admin: a **Theme** (light or dark, when [dark mode](CONFIG.md#features-you-can-switch) is on) and a
+**Language** (one of the [admin's languages](CONFIG.md#features-you-can-switch)). Both apply when they log in, and at once when
+they save their own user. Two groups always
 exist. **`admins`** is given every right on every resource at each start. **`anonymous`** is the group of requests
-without a login, and has no rights until you give it some, for example with [`anonymousRead`](CONFIG.md#features-you-can-switch).
+without a login, and has no rights until you give it some, for example with [`anonymousRead`](CONFIG.md#features-you-can-switch)
+(unless both [login switches](CONFIG.md#authentication) are on, which opens everything to it).
 How people log in (browser prompt or login page) is set in [CONFIG.md](CONFIG.md#authentication).
 
 ## Group
@@ -150,8 +154,8 @@ A plugin is a feature you can switch on or off: the REST API, the admin, replica
 Each one lives in `lib/plugins/`, is turned on by an option of [CONFIG.md](CONFIG.md#features-you-can-switch), and
 mounts its own routes. In code, `cms.use(Plugin, options)` installs one.
 
-The admin has plugin **pages** too: Syslog, Cms Config, Replicator, Cms Import, Sync. A project can add its own Vue pages in
-`node-cms/plugins/`, which the admin build picks up.
+The admin has plugin **pages** too: Syslog, Replicator, Cms Import, Sync. A project can add its own Vue pages in
+`embed-cms/plugins/`, which the admin build picks up.
 
 ## System resources
 

@@ -35,7 +35,7 @@
   import _ from 'lodash'
   import { sanitizeHtml } from '@u/sanitizeHtml'
   import { buildEntries, searchEntries, moveHighlight } from '@u/switcherModel'
-  import TranslateService from '@s/TranslateService'
+  import { getResourceLabel } from '@u/recordLabel'
   import Notification from '@m/Notification'
 
   export default {
@@ -74,8 +74,7 @@
     methods: {
       sanitizeHtml,
       labelOf (item) {
-        const name = _.get(item, 'displayname', false)
-        return name ? TranslateService.get(name) : _.get(item, 'title', '')
+        return getResourceLabel(item)
       },
       currentLabel () {
         return this.selectedItem ? this.labelOf(this.selectedItem) : ''
@@ -124,6 +123,11 @@
         } else if (_.includes(['ArrowDown', 'ArrowUp'], event.key)) {
           event.preventDefault()
           this.highlightedItem = moveHighlight(this.highlightedItem, event.key, this.results.length)
+          this.scrollToResult()
+        } else if (event.key === 'Tab') {
+          // the switcher is a modal dialog and the field is its only stop: Tab walks the results instead of leaving for the page behind
+          event.preventDefault()
+          this.highlightedItem = moveHighlight(this.highlightedItem, event.shiftKey ? 'ArrowUp' : 'ArrowDown', this.results.length)
           this.scrollToResult()
         } else if (event.key === 'Enter') {
           event.preventDefault()
@@ -244,7 +248,6 @@
 
   .scroll-wrapper {
     overflow: auto;
-    @include custom-scrollbar;
   }
 }
 </style>

@@ -18,7 +18,7 @@ const PUBLISHED_SESSION_SECRET = 'MdjIwFRi9ezT'
  * @returns {Promise<{cms: object, dataDir: string}>}
  */
 async function buildCms (overrides, nodeEnv, dataDir) {
-  dataDir = dataDir || await fs.mkdtemp(path.join(os.tmpdir(), 'node-cms-test-'))
+  dataDir = dataDir || await fs.mkdtemp(path.join(os.tmpdir(), 'embed-cms-test-'))
   return withNodeEnv(nodeEnv, () => {
     const cms = getCMSInstance({
       ...baseOptions,
@@ -260,7 +260,7 @@ describe('authentication hardening (security)', () => {
         const payload = jwt.decode(res.body.token)
         expect(payload).to.not.have.property('password')
         expect(JSON.stringify(payload)).to.not.match(/[0-9a-f]{128,}|\$scrypt\$/)
-        const cookie = valueOf(cookieOf(res, 'nodeCmsJwt'))
+        const cookie = valueOf(cookieOf(res, app.cms.cookieNames.jwt))
         expect(jwt.decode(cookie)).to.not.have.property('password')
       } finally {
         await app.close()
@@ -389,8 +389,8 @@ describe('authentication hardening (security)', () => {
         const admin = await createUser(app)
         const res = await request(app.url).post('/admin/login').set('X-Forwarded-Proto', 'https')
           .send({ username: admin.username, password: admin.password })
-        const jwtCookie = cookieOf(res, 'nodeCmsJwt')
-        const sessionCookie = cookieOf(res, 'connect.sid')
+        const jwtCookie = cookieOf(res, app.cms.cookieNames.jwt)
+        const sessionCookie = cookieOf(res, app.cms.cookieNames.session)
         expect(jwtCookie, 'JWT cookie').to.match(/HttpOnly/i)
         expect(jwtCookie).to.match(/SameSite=Lax/i)
         expect(jwtCookie).to.match(/Secure/i)
@@ -430,14 +430,14 @@ describe('authentication hardening (security)', () => {
       const app = await startApp()
       try {
         const first = await request(app.url).post('/admin/login').send({ username: ADMIN[0], password: ADMIN[1] })
-        const before = valueOf(cookieOf(first, 'connect.sid'))
+        const before = valueOf(cookieOf(first, app.cms.cookieNames.session))
         expect(before, 'a login gets a session').to.be.a('string')
-        const login = await request(app.url).post('/admin/login').set('Cookie', `connect.sid=${before}`)
+        const login = await request(app.url).post('/admin/login').set('Cookie', `${app.cms.cookieNames.session}=${before}`)
           .send({ username: ADMIN[0], password: ADMIN[1] })
         expect(login.status).to.equal(200)
-        const after = valueOf(cookieOf(login, 'connect.sid'))
+        const after = valueOf(cookieOf(login, app.cms.cookieNames.session))
         expect(after, 'a new session cookie is issued').to.be.a('string').and.not.equal(before)
-        const stale = await request(app.url).get('/admin/login').set('Cookie', `connect.sid=${before}`)
+        const stale = await request(app.url).get('/admin/login').set('Cookie', `${app.cms.cookieNames.session}=${before}`)
         expect(stale.body.username).to.equal(undefined)
       } finally {
         await app.close()
@@ -466,9 +466,9 @@ describe('authentication hardening (security)', () => {
         const agent = request.agent(app.url)
         const login = await agent.post('/admin/login').send({ username: ADMIN[0], password: ADMIN[1] })
         const token = login.body.token
-        expect((await request(app.url).get('/admin/login').set('Cookie', `nodeCmsJwt=${token}`)).body.username, 'valid before logout').to.equal(ADMIN[0])
+        expect((await request(app.url).get('/admin/login').set('Cookie', `${app.cms.cookieNames.jwt}=${token}`)).body.username, 'valid before logout').to.equal(ADMIN[0])
         await agent.get('/admin/logout')
-        const replay = await request(app.url).get('/admin/login').set('Cookie', `nodeCmsJwt=${token}`)
+        const replay = await request(app.url).get('/admin/login').set('Cookie', `${app.cms.cookieNames.jwt}=${token}`)
         expect(replay.body.username, 'cookie replay').to.equal(undefined)
       } finally {
         await app.close()
@@ -510,9 +510,9 @@ describe('authentication hardening (security)', () => {
       })
 
       it('rejects a POST with a foreign Origin or Referer', async () => {
-        const origin = await request(app.url).post('/admin/cms-config').set('Cookie', cookie).set('Origin', 'https://evil.example').send({})
+        const origin = await request(app.url).post('/_users').set('Cookie', cookie).set('Origin', 'https://evil.example').send({})
         expect(origin.status).to.equal(403)
-        const referer = await request(app.url).post('/admin/cms-config').set('Cookie', cookie).set('Referer', 'https://evil.example/x').send({})
+        const referer = await request(app.url).post('/_users').set('Cookie', cookie).set('Referer', 'https://evil.example/x').send({})
         expect(referer.status).to.equal(403)
       })
 
@@ -624,35 +624,6 @@ describe('authentication hardening (security)', () => {
         const cookie = login.headers['set-cookie'].map(c => c.split(';')[0]).join('; ')
         const res = await request(app.url).get('/admin/_groups').set('Cookie', cookie)
         expect(res.status).to.equal(200)
-      } finally {
-        await app.close()
-      }
-    })
-
-    it('redacts secrets in GET /admin/cms-config and keeps them when the placeholder is saved back', async () => {
-      const app = await startApp(hardened())
-      try {
-        const admin = await createUser(app)
-        const login = await request(app.url).post('/admin/login').send({ username: admin.username, password: admin.password })
-        const cookie = login.headers['set-cookie'].map(c => c.split(';')[0]).join('; ')
-        const secret = app.cms.options.auth.secret
-        const res = await request(app.url).get('/admin/cms-config').set('Cookie', cookie)
-        expect(res.status).to.equal(200)
-        expect(JSON.stringify(res.body)).to.not.include(secret)
-        expect(JSON.stringify(res.body)).to.not.include(app.cms.options.session.secret)
-        // saving what was read must not overwrite the secrets with the placeholder; the endpoint exits the process
-        // one second after saving (a process manager restarts it), which the test must not do
-        const realExit = process.exit
-        process.exit = () => {}
-        try {
-          const save = await request(app.url).post('/admin/cms-config').set('Cookie', cookie).send(res.body)
-          expect(save.status).to.equal(200)
-          await new Promise(resolve => setTimeout(resolve, 1200))
-        } finally {
-          process.exit = realExit
-        }
-        const written = JSON.parse(await fs.readFile(path.join(app.dataDir, 'cms.json'), 'utf8'))
-        expect(written.auth.secret).to.equal(secret)
       } finally {
         await app.close()
       }

@@ -36,14 +36,16 @@ class RequestService {
   }
 
   setAuth(jwtToken) {
-    this.auth = `nodeCmsJwt=${jwtToken}`
+    // the token goes in the header the REST API reads (x-access-token), not in the cookie of the remote: that cookie is named after
+    // the remote's own `mid`, which is not known here
+    this.auth = jwtToken
     this.basicAuth = 'Basic ' + Buffer.from(this.username + ':' + this.password).toString('base64')
   }
 
   addAuthToRequest(options, url) {
     // credentials belong to the remote cms: a url in a record must never receive them
     if (this.auth && (!this.origin || !url || new URL(url).origin === this.origin)) {
-      _.set(options, 'headers.cookie', this.auth)
+      _.set(options, ['headers', 'x-access-token'], this.auth)
       _.set(options, 'headers.Authorization', this.basicAuth)
     }
   }

@@ -34,6 +34,12 @@ const PASSWORD_MANAGER_OFF = {
   autocomplete: 'off'
 }
 
+// An invalid token is what stops the suggestions: browsers ignore "off" for what they guess is an email or an address, and
+// Brave offers an email alias on any text field it takes for a sign-up form (an email, a link or a name next to a password).
+function autocompleteToken (input) {
+  return input.type === 'password' ? 'new-password' : 'nope'
+}
+
 export default {
   props: ['model', 'schema', 'formOptions', 'disabled', 'focused', 'paragraphLevel', 'paragraphIndex', 'theme'],
   data () {
@@ -95,7 +101,7 @@ export default {
       root.querySelectorAll('input, textarea').forEach((input) => {
         Object.entries(PASSWORD_MANAGER_OFF).forEach(([name, value]) => {
           // a password field asks for a new password, which is what stops the fill suggestion
-          input.setAttribute(name, name === 'autocomplete' && input.type === 'password' ? 'new-password' : value)
+          input.setAttribute(name, name === 'autocomplete' ? autocompleteToken(input) : value)
         })
       })
     },

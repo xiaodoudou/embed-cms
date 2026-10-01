@@ -1,6 +1,6 @@
 # API
 
-node-cms gives you two ways to reach your content. Both use the same resources, rights and hooks:
+embed-cms gives you two ways to reach your content. Both use the same resources, rights and hooks:
 
 - the **REST API** under `/api`, for websites, apps and scripts that talk HTTP;
 - the **JavaScript API**, `cms.api()`, for code that runs in the same process as the CMS: a server that renders pages,
@@ -178,7 +178,7 @@ The server checks `unique` fields (`400 Field 'slug' is duplicated`) and the rig
 promise.
 
 ```js
-const CMS = require('node-cms')
+const CMS = require('embed-cms')
 
 const cms = new CMS()
 await cms.bootstrap()

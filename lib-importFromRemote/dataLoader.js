@@ -8,7 +8,7 @@ const { findMatches, getAttachmentFields, getAttachments } = require('./utils')
 async function loadData(importer) {
   const resourcesToSync = _.filter(importer.config.resources, (resource) => {
     if (!importer.localSchemaMap[resource]) {
-      importer.logger.error(`${resource} not defined in local node-cms, will not import it`)
+      importer.logger.error(`${resource} not defined in local embed-cms, will not import it`)
       return false
     }
     return importer.remoteSchemaMap[resource]

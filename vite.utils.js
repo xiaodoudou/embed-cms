@@ -6,7 +6,7 @@ const crypto = require('crypto')
 
 class ViteUtils {
   constructor () {
-    this.isInNodeModules = __dirname.includes('/node_modules/node-cms') || __dirname.includes('\\node_modules\\node-cms')
+    this.isInNodeModules = __dirname.includes('/node_modules/embed-cms') || __dirname.includes('\\node_modules\\embed-cms')
     this.rootPath = path.join(__dirname, this.isInNodeModules ? '../../' : './')
     const pkgPath = path.join(this.rootPath, 'package.json')
     const pkg = require(pkgPath)
@@ -14,13 +14,13 @@ class ViteUtils {
     this.devPort = 10000 + this.serverPort
     this.baseUrl = 'http://localhost'
     this.websocketBaseUrl = 'ws://localhost'
-    this.nodeCmsMountPath = _.get(pkg, 'config.mountPath', '/')
-    console.log(`Node-cms mount path is: ${this.nodeCmsMountPath}`)
-    this.nodeCmsSrcPath = path.resolve(__dirname, 'src')
+    this.embedCmsMountPath = _.get(pkg, 'config.mountPath', '/')
+    console.log(`Embed-cms mount path is: ${this.embedCmsMountPath}`)
+    this.embedCmsSrcPath = path.resolve(__dirname, 'src')
     this.plugins = {
-      toBuild: path.resolve(this.nodeCmsSrcPath, 'plugins'),
-      source: path.resolve(this.rootPath, 'node-cms', 'plugins'),
-      fallback: path.resolve(this.nodeCmsSrcPath, '.plugins')
+      toBuild: path.resolve(this.embedCmsSrcPath, 'plugins'),
+      source: path.resolve(this.rootPath, 'embed-cms', 'plugins'),
+      fallback: path.resolve(this.embedCmsSrcPath, '.plugins')
     }
 
     this.createPluginsSymlink()
@@ -37,11 +37,11 @@ class ViteUtils {
   }
 
   getAliasPath = (folderPath) => {
-    return path.resolve(this.nodeCmsSrcPath, folderPath)
+    return path.resolve(this.embedCmsSrcPath, folderPath)
   }
 
   /**
-   * @param  {Object} aliasesMapping Configuration object for all vite aliases to resolve. All aliases starting with '@' will be prefixed with the node-cms src path
+   * @param  {Object} aliasesMapping Configuration object for all vite aliases to resolve. All aliases starting with '@' will be prefixed with the embed-cms src path
    * @returns {Object} All aliases with resolved paths
    */
   resolveAliases = (aliasesMapping) => {
@@ -55,7 +55,7 @@ class ViteUtils {
       return
     }
 
-    console.log(`Node-cms is loaded ${this.isInNodeModules ? 'as a dependency' : 'directly'}`)
+    console.log(`Embed-cms is loaded ${this.isInNodeModules ? 'as a dependency' : 'directly'}`)
     if (fs.existsSync(this.plugins.fallback) === false) {
       throw new Error(`No .plugins folder found @ ${this.plugins.fallback}`)
     }
@@ -86,21 +86,21 @@ class ViteUtils {
 
   getProxy = () => {
     this.proxy = {}
-    const regex = new RegExp(`^${this.nodeCmsMountPath}admin`, 'g')
-    const target = `${this.baseUrl}:${this.serverPort}${this.nodeCmsMountPath}admin`
-    _.set(this.proxy, `^${this.nodeCmsMountPath}(cms|i18n|config|login|logout|resources)`, {
+    const regex = new RegExp(`^${this.embedCmsMountPath}admin`, 'g')
+    const target = `${this.baseUrl}:${this.serverPort}${this.embedCmsMountPath}admin`
+    _.set(this.proxy, `^${this.embedCmsMountPath}(cms|i18n|config|login|logout|resources)`, {
       target
     })
-    _.set(this.proxy, `^${this.nodeCmsMountPath}admin/(fonts)`, {
+    _.set(this.proxy, `^${this.embedCmsMountPath}admin/(fonts)`, {
       target,
-      configure: (proxy) => this.handleProxyCall(`^${this.nodeCmsMountPath}admin/(fonts)`, proxy)
+      configure: (proxy) => this.handleProxyCall(`^${this.embedCmsMountPath}admin/(fonts)`, proxy)
     })
-    _.set(this.proxy, `^${this.nodeCmsMountPath}(admin)`, {
+    _.set(this.proxy, `^${this.embedCmsMountPath}(admin)`, {
       target,
       rewrite: (path) => path.replace(regex, ''),
-      configure: (proxy) => this.handleProxyCall(`^${this.nodeCmsMountPath}(admin)`, proxy)
+      configure: (proxy) => this.handleProxyCall(`^${this.embedCmsMountPath}(admin)`, proxy)
     })
-    _.set(this.proxy, `^${this.nodeCmsMountPath}(api|import|importFromRemote|sync|replicator)`, {
+    _.set(this.proxy, `^${this.embedCmsMountPath}(api|import|importFromRemote|sync|replicator)`, {
       target: `${this.baseUrl}:${this.serverPort}`
     })
     _.set(this.proxy, '^/(socket)', {
@@ -111,7 +111,7 @@ class ViteUtils {
       target: `${this.websocketBaseUrl}:${this.serverPort}`,
       configure: (proxy) => this.handleProxyCall(`${this.baseUrl}:${this.serverPort}`, proxy)
     })
-    if (this.isInNodeModules && this.nodeCmsMountPath !== '/') {
+    if (this.isInNodeModules && this.embedCmsMountPath !== '/') {
       _.set(this.proxy, '^/(api)', {
         target: `${this.baseUrl}:${this.serverPort}`
       })

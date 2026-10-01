@@ -37,7 +37,7 @@ describe('CustomInput (text, number, email...)', () => {
     const input = wrapper.get('input')
     expect(input.attributes('data-1p-ignore')).toBe('true')
     expect(input.attributes('data-lpignore')).toBe('true')
-    expect(input.attributes('autocomplete')).toBe('off')
+    expect(input.attributes('autocomplete')).toBe('nope')
   })
 
   it('asks for a new password, never a saved one, in a password field', async () => {

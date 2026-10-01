@@ -24,8 +24,7 @@ class RequestService {
       }
       return response
     }
-    let json = null
-    json = await response.json()
+    const json = await response.json()
     const code = _.get(json, 'code', _.get(response, 'status', 0))
     if (code === 0 && !response.ok) {
       throw response

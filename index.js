@@ -287,7 +287,9 @@ class CMS {
       } else if (_.get(secret, 'length', 0) <= this.requiredKeyLength) {
         throw new Error(`config.auth.secret isn't long enough, adjust the value to have minimum ${this.requiredKeyLength} characters`)
       }
-      let sessionOptions = _.extend({ cookie: {} }, this.options.session)
+      // resave and saveUninitialized default to what express-session does without them (true), said out loud: left out,
+      // it prints a deprecation warning at every start
+      let sessionOptions = _.extend({ cookie: {}, resave: true, saveUninitialized: true }, this.options.session)
       // sameSite and secure follow the security settings, a cookie option written in the configuration still wins
       sessionOptions.cookie = _.pickBy({ sameSite: this.security.cookies.sameSite, secure: this.security.cookies.secure, httpOnly: this.security.cookies.httpOnly }, value => value !== false)
       _.extend(sessionOptions.cookie, _.get(this.options, 'session.cookie'))

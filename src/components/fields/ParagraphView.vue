@@ -264,8 +264,7 @@
       },
       getTypes() {
         this.types = _.compact(_.map(_.get(this, 'schema.types', []), (type)=> {
-          let schema = false
-          schema = ResourceService.getParagraphSchema(type)
+          const schema = ResourceService.getParagraphSchema(type)
           if (schema) {
             schema.input = 'group'
             schema.label = _.get(schema, 'displayname', schema.title)

@@ -291,7 +291,6 @@
             others.list.push(item)
           }
         })
-        list = _.cloneDeep(list)
         groups = orderGroups(groups, (name) => TranslateService.get(name), TranslateService.locale)
         return _.filter(groups, (group) => group.list && group.list.length !== 0)
       },

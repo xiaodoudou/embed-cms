@@ -47,3 +47,38 @@ describe('replicator: syncing one record (unit)', () => {
     expect(calls[0]).to.have.length(3)
   })
 })
+
+// A write to a resource whose type is not 'normal' goes to the peers right away. A removed record is gone, so syncRecord
+// (which checks the record) cannot carry the delete: it travels with the resource's changes.
+describe('replicator: writes go to the peers right away (unit)', () => {
+  let app
+  before(async () => {
+    app = await startApp({ replication: { peers: [], peersByResource: {}, secret: 'a-test-replication-secret' } })
+  })
+  after(async () => { await app.close() })
+
+  it('syncs the record after a create and an update, and the resource after a remove', async () => {
+    const replicator = app.cms.$replicator
+    const resource = app.cms.resource('articles')
+    const saved = { syncRecord: replicator.syncRecord, syncResource: replicator.syncResource, hasPeers: replicator.hasPeers, type: resource.options.type }
+    const calls = []
+    replicator.syncRecord = async (name, id) => { calls.push(['record', name, id]) }
+    replicator.syncResource = async (name) => { calls.push(['resource', name]) }
+    replicator.hasPeers = () => true
+    resource.options.type = 'downstream'
+    try {
+      const articles = app.cms.api()('articles')
+      const created = await articles.create({ string: { enUS: `peers-${Date.now()}` } })
+      await articles.update(created._id, { rate: 2 })
+      await articles.remove(created._id)
+      expect(calls).to.deep.equal([
+        ['record', 'articles', created._id],
+        ['record', 'articles', created._id],
+        ['resource', 'articles']
+      ])
+    } finally {
+      Object.assign(replicator, { syncRecord: saved.syncRecord, syncResource: saved.syncResource, hasPeers: saved.hasPeers })
+      resource.options.type = saved.type
+    }
+  })
+})

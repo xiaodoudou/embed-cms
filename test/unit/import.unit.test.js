@@ -73,7 +73,10 @@ describe('import plugin, xlsx upload (unit)', () => {
   })
 
   it('answers an error for a request without a file', async () => {
-    const res = await agent.post('/import/statusXlsx')
-    expect(res.status).to.be.oneOf([400, 500])
+    for (const route of ['statusXlsx', 'executeXlsx']) {
+      const res = await agent.post(`/import/${route}`)
+      expect(res.status, route).to.equal(400)
+      expect(res.body.message, route).to.equal('missing xlsx file')
+    }
   })
 })

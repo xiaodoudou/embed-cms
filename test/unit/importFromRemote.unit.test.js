@@ -4,6 +4,7 @@ const { expect } = require('chai')
 const utils = require('../../lib-importFromRemote/utils')
 const ImportWrapper = require('../../lib-importFromRemote/index')
 const { startApp, ADMIN } = require('../helpers/app')
+const { muteConsole } = require('../helpers/console')
 
 describe('importFromRemote utilities (unit)', () => {
   describe('determineResourceOrder', () => {
@@ -106,6 +107,11 @@ describe('importFromRemote utilities (unit)', () => {
 })
 
 describe('ImportWrapper (unit)', () => {
+  // the failing imports below print the requests they could not make
+  let restoreConsole
+  beforeEach(() => { restoreConsole = muteConsole() })
+  afterEach(() => restoreConsole())
+
   it('reports a failure and is not left busy afterwards', async () => {
     const wrapper = new ImportWrapper()
     wrapper.multibar = undefined
@@ -118,6 +124,21 @@ describe('ImportWrapper (unit)', () => {
     expect(second).to.equal(false)
     expect(wrapper.ongoingImport).to.equal(false)
   }).timeout(20000)
+
+  it('prints no progress bars when the output is not a terminal', () => {
+    const wrapper = new ImportWrapper()
+    const written = []
+    const write = process.stderr.write
+    process.stderr.write = (chunk) => { written.push(String(chunk)); return true }
+    try {
+      wrapper.prepareImport({ resources: [] }, {}, null)
+      wrapper.multibar.create(3, 0, { name: 'Deleting local records' })
+      wrapper.stopProgress()
+    } finally {
+      process.stderr.write = write
+    }
+    expect(written.join('')).to.equal('')
+  })
 
   it('refuses to run without confirmation when nobody can be asked', async () => {
     const wrapper = new ImportWrapper()

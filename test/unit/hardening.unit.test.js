@@ -11,7 +11,6 @@ describe('hardening fixes (unit)', () => {
   describe('checkResourceLimits', () => {
     it('ends the operation with the error, so the lock is released, when the count cannot be read', async () => {
       const failure = new Error('database is down')
-      let released = false
       let reported
       const context = {
         resource: { options: { maxCount: 1 }, list: () => Promise.reject(failure) },
@@ -26,8 +25,7 @@ describe('hardening fixes (unit)', () => {
       context.resource.locked = true
       context._lockHeld = true
       h.releaseResource(context)
-      released = context.resource.locked === false
-      expect(released).to.equal(true)
+      expect(context.resource.locked).to.equal(false)
     })
   })
 

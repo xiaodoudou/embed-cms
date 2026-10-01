@@ -45,8 +45,8 @@ another resource takes the related record's unique value, not its id.
 
 The **Cms Import** page of the admin then shows what an import would change, and runs it, either from the Google Sheet
 or from an uploaded `.xlsx` with the same sheets. Behind it: `GET /import/status` and `GET /import/execute` for the
-Google Sheet, `POST /import/statusXlsx` and `POST /import/executeXlsx` (multipart field `xlsx`) for a file. The routes need
-a login.
+Google Sheet, `POST /import/statusXlsx` and `POST /import/executeXlsx` (multipart field `xlsx`) for a file; without the
+file they answer `400` (`missing xlsx file`). The routes need a login.
 
 The downloaded sheets are cached under the system's temporary folder (`node-cms/import`) and fetched again when the
 sheet has changed.

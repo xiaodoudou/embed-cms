@@ -83,6 +83,8 @@ describe('SyslogManager backlog and capture (unit)', () => {
       await fs.ensureFile(file)
       const originals = { out: process.stdout.write, err: process.stderr.write, log: console.log }
       try {
+        // the capture also passes every line on to the terminal: keep the markers out of the test output
+        process.stdout.write = () => true
         sys.setupConsoleCapture()
         process.stdout.write('direct-stdout-marker\n')
         console.log('console-log-marker')

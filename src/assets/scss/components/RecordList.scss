@@ -194,7 +194,8 @@
         padding: var(--cms-space-1) var(--cms-space-3);
         background-color: $sidebar-records-list-item-background;
         color: var(--cms-text);
-        transition: background-color var(--cms-motion-fast) var(--cms-ease), border-color var(--cms-motion-fast) var(--cms-ease);
+        // no colour transition: the list recycles its rows, so a row that stops showing the selected record would fade out of the
+        // selected look while it already shows another one (a record "selected" for a split second when the list is filtered or sorted)
         box-sizing: border-box;
       }
 

@@ -1,6 +1,6 @@
 /**
- * @fileoverview Node CMS - A flexible content management system
- * @author Node CMS Team
+ * @fileoverview Embed CMS - A flexible content management system
+ * @author Embed CMS Team
  * @see {@link ./lib/jsdoc-types.js} For complete type definitions
  */
 /**
@@ -31,6 +31,7 @@ const logger = require('./lib/logger')
 const { resolveSecurity } = require('./lib/util/securityOptions')
 const { ensureStrongSecrets } = require('./lib/util/secrets')
 const csrfGuard = require('./lib/util/csrf')
+const cookieNames = require('./lib/util/cookieNames')
 const securityHeaders = require('./lib/util/securityHeaders')
 const sendError = require('./lib/plugins/rest/sendError')
 
@@ -106,7 +107,7 @@ class CMS {
    * @param {Object} [options.auth] - Authentication configuration
    *
    * @example
-   * const CMS = require('node-cms')
+   * const CMS = require('embed-cms')
    * const cms = new CMS({
    *   resources: './resources',
    *   data: './data',
@@ -136,6 +137,8 @@ class CMS {
     this.options = (options = (this._options = _.extend({}, defaultConfig(), require(configPath), options)))
     // effective security settings (the profile follows NODE_ENV, see lib/util/securityOptions.js)
     this.security = resolveSecurity(options)
+    // the cookies are named after this server, so that other CMS on the same host (same cookies, other port) do not clash with it
+    this.cookieNames = cookieNames(options)
     // reachable from the stores, which only see the options
     options.securitySettings = this.security
     // image operations at once: a burst of requests is worked off in turn, not all together: one per core, and at most
@@ -289,7 +292,7 @@ class CMS {
       }
       // resave and saveUninitialized default to what express-session does without them (true), said out loud: left out,
       // it prints a deprecation warning at every start
-      let sessionOptions = _.extend({ cookie: {}, resave: true, saveUninitialized: true }, this.options.session)
+      let sessionOptions = _.extend({ cookie: {}, resave: true, saveUninitialized: true }, this.options.session, { name: this.cookieNames.session })
       // sameSite and secure follow the security settings, a cookie option written in the configuration still wins
       sessionOptions.cookie = _.pickBy({ sameSite: this.security.cookies.sameSite, secure: this.security.cookies.secure, httpOnly: this.security.cookies.httpOnly }, value => value !== false)
       _.extend(sessionOptions.cookie, _.get(this.options, 'session.cookie'))
@@ -310,12 +313,12 @@ class CMS {
       this._sessionMiddleware = session(sessionOptions)
       this._app.use(this._sessionMiddleware)
     }
-    const csrf = csrfGuard(this.security)
+    const csrf = csrfGuard(this.security, this.cookieNames)
     if (csrf) {
       this._app.use(csrf)
     }
     if (!options.disableJwtLogin) {
-      // the JWT login keeps its token in the nodeCmsJwt cookie, which the REST API reads, also when Basic is on
+      // the JWT login keeps its token in the cookie named this.cookieNames.jwt, which the REST API reads, also when Basic is on
       this._app.use(cookieParser())
     }
     if (!options.disableAuthentication) {
@@ -331,7 +334,7 @@ class CMS {
       // Enables session with jwt token auth
       this._app.use((req, res, next) => {
         if (!req.headers.authorization) {
-          const token = _.get(req, 'session.nodeCmsUser.token', false)
+          const token = _.get(req, 'session.embedCmsUser.token', false)
           if (token) {
             req.headers.authorization = token
           } else if (_.get(req, 'query.jwt', false)) {
@@ -425,7 +428,7 @@ class CMS {
         logger.error(`Error closing resource "${res.name}" database:`, closeErr)
       }
     }
-    logger.warn('<!> All node-cms databases are now closed. <!>')
+    logger.warn('<!> All embed-cms databases are now closed. <!>')
   }
 
   shutdown (signal) {
@@ -693,11 +696,11 @@ class CMS {
 }
 
 /**
- * @module node-cms
- * @description Node CMS - A flexible content management system
+ * @module embed-cms
+ * @description Embed CMS - A flexible content management system
  *
  * @example
- * const CMS = require('node-cms')
+ * const CMS = require('embed-cms')
  * const cms = new CMS(config)
  * const api = cms.api()
  *
@@ -708,7 +711,7 @@ class CMS {
  */
 
 /**
- * @typedef {Object} module:node-cms.ResourceAPI
+ * @typedef {Object} module:embed-cms.ResourceAPI
  * @description Complete Resource API interface available through api('resourceName')
  * @property {function(Object=, Object=): Promise<Array<Object>>} list - List all records matching query
  * @property {function(string|Object, Object=): Promise<Object>} find - Find a single record by ID or query
@@ -727,10 +730,10 @@ class CMS {
  */
 
 /**
- * Node CMS Constructor
+ * Embed CMS Constructor
  * @class
  * @name CMS
- * @memberof module:node-cms
+ * @memberof module:embed-cms
  */
 exports = module.exports = CMS
 

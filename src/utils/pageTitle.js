@@ -1,7 +1,7 @@
 import _ from 'lodash'
 
 // what the product is called when a site gives its admin no title of its own (Settings > Title)
-export const PRODUCT_NAME = 'Node CMS'
+export const PRODUCT_NAME = 'Embed CMS'
 
 /**
  * The title of the browser tab, from the most specific part to the site: "Gamma · Reference items · Newsroom".

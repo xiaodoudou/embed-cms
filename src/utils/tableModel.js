@@ -150,7 +150,7 @@ export function defaultHiddenKeys (columns, visibleCount = 8) {
   return columns.length <= visibleCount + 2 ? [] : _.map(_.drop(columns, visibleCount), 'key')
 }
 
-const PREF_PREFIX = 'node-cms.table.columns.'
+const PREF_PREFIX = 'embed-cms.table.columns.'
 
 export function loadPrefs (storage, resourceName) {
   try {

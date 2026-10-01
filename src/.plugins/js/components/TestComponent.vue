@@ -1,6 +1,6 @@
 <template>
   <div class="activations">
-    node-cms - Plugin example
+    embed-cms - Plugin example
   </div>
 </template>
 

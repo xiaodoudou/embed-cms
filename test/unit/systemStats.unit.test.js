@@ -32,7 +32,7 @@ describe('system stats (unit)', () => {
     ]
 
     it('picks the drive that holds the working directory', () => {
-      expect(driveShape(disks, 'D:\\claude\\node-cms')).to.deep.equal({ totalGb: 200, usedGb: 150, usedPercentage: 75 })
+      expect(driveShape(disks, 'D:\\claude\\embed-cms')).to.deep.equal({ totalGb: 200, usedGb: 150, usedPercentage: 75 })
     })
 
     it('prefers the longest matching mount point', () => {

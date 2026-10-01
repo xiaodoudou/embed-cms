@@ -18,7 +18,7 @@ const PUBLISHED_SESSION_SECRET = 'MdjIwFRi9ezT'
  * @returns {Promise<{cms: object, dataDir: string}>}
  */
 async function buildCms (overrides, nodeEnv, dataDir) {
-  dataDir = dataDir || await fs.mkdtemp(path.join(os.tmpdir(), 'node-cms-test-'))
+  dataDir = dataDir || await fs.mkdtemp(path.join(os.tmpdir(), 'embed-cms-test-'))
   return withNodeEnv(nodeEnv, () => {
     const cms = getCMSInstance({
       ...baseOptions,
@@ -260,7 +260,7 @@ describe('authentication hardening (security)', () => {
         const payload = jwt.decode(res.body.token)
         expect(payload).to.not.have.property('password')
         expect(JSON.stringify(payload)).to.not.match(/[0-9a-f]{128,}|\$scrypt\$/)
-        const cookie = valueOf(cookieOf(res, 'nodeCmsJwt'))
+        const cookie = valueOf(cookieOf(res, app.cms.cookieNames.jwt))
         expect(jwt.decode(cookie)).to.not.have.property('password')
       } finally {
         await app.close()
@@ -389,8 +389,8 @@ describe('authentication hardening (security)', () => {
         const admin = await createUser(app)
         const res = await request(app.url).post('/admin/login').set('X-Forwarded-Proto', 'https')
           .send({ username: admin.username, password: admin.password })
-        const jwtCookie = cookieOf(res, 'nodeCmsJwt')
-        const sessionCookie = cookieOf(res, 'connect.sid')
+        const jwtCookie = cookieOf(res, app.cms.cookieNames.jwt)
+        const sessionCookie = cookieOf(res, app.cms.cookieNames.session)
         expect(jwtCookie, 'JWT cookie').to.match(/HttpOnly/i)
         expect(jwtCookie).to.match(/SameSite=Lax/i)
         expect(jwtCookie).to.match(/Secure/i)
@@ -430,14 +430,14 @@ describe('authentication hardening (security)', () => {
       const app = await startApp()
       try {
         const first = await request(app.url).post('/admin/login').send({ username: ADMIN[0], password: ADMIN[1] })
-        const before = valueOf(cookieOf(first, 'connect.sid'))
+        const before = valueOf(cookieOf(first, app.cms.cookieNames.session))
         expect(before, 'a login gets a session').to.be.a('string')
-        const login = await request(app.url).post('/admin/login').set('Cookie', `connect.sid=${before}`)
+        const login = await request(app.url).post('/admin/login').set('Cookie', `${app.cms.cookieNames.session}=${before}`)
           .send({ username: ADMIN[0], password: ADMIN[1] })
         expect(login.status).to.equal(200)
-        const after = valueOf(cookieOf(login, 'connect.sid'))
+        const after = valueOf(cookieOf(login, app.cms.cookieNames.session))
         expect(after, 'a new session cookie is issued').to.be.a('string').and.not.equal(before)
-        const stale = await request(app.url).get('/admin/login').set('Cookie', `connect.sid=${before}`)
+        const stale = await request(app.url).get('/admin/login').set('Cookie', `${app.cms.cookieNames.session}=${before}`)
         expect(stale.body.username).to.equal(undefined)
       } finally {
         await app.close()
@@ -466,9 +466,9 @@ describe('authentication hardening (security)', () => {
         const agent = request.agent(app.url)
         const login = await agent.post('/admin/login').send({ username: ADMIN[0], password: ADMIN[1] })
         const token = login.body.token
-        expect((await request(app.url).get('/admin/login').set('Cookie', `nodeCmsJwt=${token}`)).body.username, 'valid before logout').to.equal(ADMIN[0])
+        expect((await request(app.url).get('/admin/login').set('Cookie', `${app.cms.cookieNames.jwt}=${token}`)).body.username, 'valid before logout').to.equal(ADMIN[0])
         await agent.get('/admin/logout')
-        const replay = await request(app.url).get('/admin/login').set('Cookie', `nodeCmsJwt=${token}`)
+        const replay = await request(app.url).get('/admin/login').set('Cookie', `${app.cms.cookieNames.jwt}=${token}`)
         expect(replay.body.username, 'cookie replay').to.equal(undefined)
       } finally {
         await app.close()

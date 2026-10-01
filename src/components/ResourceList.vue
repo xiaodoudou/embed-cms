@@ -55,7 +55,7 @@
   import { groupSettingsName } from '@u/navModel'
   import { getResourceLabel } from '@u/recordLabel'
 
-  const STORAGE_KEY = 'node-cms.nav.groups'
+  const STORAGE_KEY = 'embed-cms.nav.groups'
 
   export default {
     components: { SearchField },

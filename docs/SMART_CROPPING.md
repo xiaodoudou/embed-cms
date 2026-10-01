@@ -4,7 +4,7 @@ A resize to another aspect ratio has to cut something off. A plain resize cuts a
 isn't there: the face in a portrait taken off-centre, the product at the edge of a shot. Smart cropping keeps the most
 interesting part of the picture instead.
 
-It uses the *attention* strategy of [sharp](https://sharp.pixelplumbing.com/api-resize), the image library node-cms
+It uses the *attention* strategy of [sharp](https://sharp.pixelplumbing.com/api-resize), the image library embed-cms
 already uses for every resize. It looks for skin tones, saturated colours and fine detail, and frames the crop around
 them. There is nothing to install or configure, no model to load, and nothing leaves the server.
 

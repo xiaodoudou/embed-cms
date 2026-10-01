@@ -40,7 +40,7 @@ describe('record update websocket (security)', () => {
     })
 
     it('rejects a client with a session id that does not exist', async () => {
-      const result = await connect(app.url, { Cookie: 'connect.sid=s%3Anot-a-session.signature' })
+      const result = await connect(app.url, { Cookie: `${app.cms.cookieNames.session}=s%3Anot-a-session.signature` })
       expect(result).to.include({ state: 'rejected', status: 401 })
     })
 

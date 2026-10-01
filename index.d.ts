@@ -1,9 +1,9 @@
 /**
- * Node CMS TypeScript/JSDoc Definitions
- * This file is automatically loaded by IDEs when node-cms is used as a dependency
+ * Embed CMS TypeScript/JSDoc Definitions
+ * This file is automatically loaded by IDEs when embed-cms is used as a dependency
  */
 
-declare module 'node-cms' {
+declare module 'embed-cms' {
   /**
    * CMS Record with all standard fields
    */
@@ -226,7 +226,7 @@ declare module 'node-cms' {
     /**
      * Create a new CMS instance
      * @example
-     * const CMS = require('node-cms')
+     * const CMS = require('embed-cms')
      * const cms = new CMS({
      *   resources: './resources',
      *   data: './data'

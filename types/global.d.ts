@@ -1,26 +1,26 @@
 /**
- * @fileoverview Global JSDoc type definitions for Node CMS
+ * @fileoverview Global JSDoc type definitions for Embed CMS
  * Include this file or reference it in your project for IDE autocomplete
  */
 
 /**
  * @global
- * @namespace NodeCMS
+ * @namespace EmbedCMS
  */
 
 /**
- * @typedef {Object} NodeCMS.CMSRecord
+ * @typedef {Object} EmbedCMS.CMSRecord
  * @property {string} _id - Unique identifier for the record
  * @property {number} _createdAt - Creation timestamp
  * @property {number} _updatedAt - Last update timestamp
  * @property {number} [_publishedAt] - Published timestamp
  * @property {string} [_updatedBy] - Updated by user
- * @property {NodeCMS.Attachment[]} [_attachments] - Array of attached files
+ * @property {EmbedCMS.Attachment[]} [_attachments] - Array of attached files
  * @property {boolean} [_local] - Whether the record is local to this CMS instance
  */
 
 /**
- * @typedef {Object} NodeCMS.Attachment
+ * @typedef {Object} EmbedCMS.Attachment
  * @property {string} _id - Unique identifier for the attachment
  * @property {string} _name - Field name the attachment belongs to
  * @property {string} _filename - Original filename
@@ -35,7 +35,7 @@
  */
 
 /**
- * @typedef {Object} NodeCMS.QueryOptions
+ * @typedef {Object} EmbedCMS.QueryOptions
  * @property {number} [page] - Page number (0-based)
  * @property {number} [limit] - Number of records per page
  * @property {string} [locale] - Locale for localized content
@@ -43,16 +43,16 @@
 
 /**
  * Resource API methods available through api('resourceName')
- * @typedef {Object} NodeCMS.ResourceAPI
- * @property {function(Object=, NodeCMS.QueryOptions=): Promise<NodeCMS.CMSRecord[]>} list - List all records matching query
- * @property {function(string|Object, NodeCMS.QueryOptions=): Promise<NodeCMS.CMSRecord>} find - Find a single record by ID or query
+ * @typedef {Object} EmbedCMS.ResourceAPI
+ * @property {function(Object=, EmbedCMS.QueryOptions=): Promise<EmbedCMS.CMSRecord[]>} list - List all records matching query
+ * @property {function(string|Object, EmbedCMS.QueryOptions=): Promise<EmbedCMS.CMSRecord>} find - Find a single record by ID or query
  * @property {function(string|Object): Promise<boolean>} exists - Check if a record exists
- * @property {function(Object, Object=): Promise<NodeCMS.CMSRecord>} create - Create a new record
- * @property {function(string, Object, Object=): Promise<NodeCMS.CMSRecord>} update - Update an existing record
+ * @property {function(Object, Object=): Promise<EmbedCMS.CMSRecord>} create - Create a new record
+ * @property {function(string, Object, Object=): Promise<EmbedCMS.CMSRecord>} update - Update an existing record
  * @property {function(string): Promise<boolean>} remove - Remove a record
- * @property {function(string, Object): Promise<NodeCMS.Attachment>} createAttachment - Create an attachment for a record
- * @property {function(string, string, Object): Promise<NodeCMS.Attachment>} updateAttachment - Update an attachment
- * @property {function(string, string): Promise<NodeCMS.Attachment>} findAttachment - Find an attachment with its stream
+ * @property {function(string, Object): Promise<EmbedCMS.Attachment>} createAttachment - Create an attachment for a record
+ * @property {function(string, string, Object): Promise<EmbedCMS.Attachment>} updateAttachment - Update an attachment
+ * @property {function(string, string): Promise<EmbedCMS.Attachment>} findAttachment - Find an attachment with its stream
  * @property {function(string): Promise<ReadableStream>} findFile - Find a file stream by attachment ID
  * @property {function(string, string): Promise<boolean>} removeAttachment - Remove an attachment from a record
  * @property {function(): Promise<boolean>} cleanAttachment - Clean orphaned attachments

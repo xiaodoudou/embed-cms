@@ -1,4 +1,6 @@
 import _ from 'lodash'
+import { enUS } from 'date-fns/locale/en-US'
+import { zhCN } from 'date-fns/locale/zh-CN'
 
 /**
  * The language tag the browser and the date pickers understand, from the name of a locale of the CMS: 'zhCN' is 'zh-CN'.
@@ -8,6 +10,19 @@ import _ from 'lodash'
 export function localeTag (locale) {
   const found = /^([a-z]{2,3})([A-Z]{2})$/.exec(locale || '')
   return found ? `${found[1]}-${found[2]}` : 'en-US'
+}
+
+// the calendars the admin can speak: one per language it is translated into
+const DATE_LOCALES = { 'en-US': enUS, 'zh-CN': zhCN }
+
+/**
+ * The date-fns locale the date pickers need for a locale of the CMS ('zhCN'), English when there is none for it.
+ * @param {string} locale
+ * @returns {object}
+ */
+export function datePickerLocale (locale) {
+  const tag = localeTag(locale)
+  return DATE_LOCALES[tag] || _.find(DATE_LOCALES, (value, key) => key.split('-')[0] === tag.split('-')[0]) || enUS
 }
 
 /**
@@ -27,4 +42,4 @@ export function savedUserLanguage (resource, record, user, locales, current) {
   return _.includes(locales, record.language) && record.language !== current ? record.language : null
 }
 
-export default { localeTag, savedUserLanguage }
+export default { localeTag, datePickerLocale, savedUserLanguage }

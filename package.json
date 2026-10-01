@@ -1,6 +1,6 @@
 {
-  "name": "node-cms",
-  "version": "3.0.0",
+  "name": "embed-cms",
+  "version": "3.0.1",
   "description": "Content management system, written in node.js, uses leveldb as an asset and content store.",
   "main": "index.js",
   "types": "index.d.ts",
@@ -37,8 +37,8 @@
     "test": "node --no-deprecation test/server.js",
     "test:unit": "mocha test/unit test/security",
     "unit": "mocha -w test/unit test/security",
-    "mongodb": "ulimit -n 1000 && mongod --ipv6 --dbpath=../node-cms-mongodb-data",
-    "mongodb-auth": "ulimit -n 1000 && mongod --tlsMode requireTLS --tlsCertificateKeyFile ./ssl/server.pem --tlsCAFile ./ssl/ca.pem --bind_ip localhost --dbpath=../node-cms-mongodb-data",
+    "mongodb": "ulimit -n 1000 && mongod --ipv6 --dbpath=../embed-cms-mongodb-data",
+    "mongodb-auth": "ulimit -n 1000 && mongod --tlsMode requireTLS --tlsCertificateKeyFile ./ssl/server.pem --tlsCAFile ./ssl/ca.pem --bind_ip localhost --dbpath=../embed-cms-mongodb-data",
     "test:frontend": "vitest run",
     "test:all": "npm run test:unit && npm run test:frontend && npm test",
     "test:coverage": "c8 mocha test/unit test/security",
@@ -51,7 +51,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/xiaodoudou/node-cms-private.git"
+    "url": "git+https://github.com/xiaodoudou/embed-cms.git"
+  },
+  "bugs": {
+    "url": "https://github.com/xiaodoudou/embed-cms/issues"
+  },
+  "homepage": "https://github.com/xiaodoudou/embed-cms#readme",
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [
     "cms",
@@ -66,9 +73,9 @@
     ]
   },
   "bin": {
-    "cms": "./server.js",
-    "cms-import": "./import.js",
-    "cms-import-remote": "./importFromRemote.js"
+    "cms": "server.js",
+    "cms-import": "import.js",
+    "cms-import-remote": "importFromRemote.js"
   },
   "author": "Edouard Durand",
   "license": "GPL-3.0-only",
@@ -83,7 +90,7 @@
     "@tiptap/pm": "^3.16.0",
     "@tiptap/starter-kit": "^3.16.0",
     "@tiptap/vue-3": "^3.16.0",
-    "@vuepic/vue-datepicker": "^9.0.2",
+    "@vuepic/vue-datepicker": "^14.0.0",
     "abstract-level": "^3.1.1",
     "ali-oss": "^6.23.0",
     "ansi-html": "0.0.9",
@@ -96,6 +103,7 @@
     "commander": "^2.20.3",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.6",
+    "date-fns": "^4.4.0",
     "dayjs": "^1.11.19",
     "dompurify": "^3.4.16",
     "excel4node": "^1.8.0",
@@ -144,7 +152,7 @@
     "vue-draggable-next": "^2.3.0",
     "vue-json-viewer": "^3.0.4",
     "vue-router": "^4.6.3",
-    "vue-virtual-scroller": "^2.0.0-beta.8",
+    "vue-virtual-scroller": "^3.0.5",
     "vue3-shortkey": "git+https://github.com/Zegfault/vue3-shortkey.git#da8ee7ead0c618de22a227da2274d88c33e29aae",
     "vuetify": "^3.10.9",
     "ws": "^8.18.0"
@@ -158,7 +166,7 @@
     "@vitejs/plugin-vue-jsx": "^5.1.6",
     "@vue/test-utils": "^2.5.1",
     "c8": "^12.0.0",
-    "chai": "^4.2.0",
+    "chai": "^6.3.0",
     "cross-env": "^10.1.0",
     "del-cli": "^7.0.0",
     "eslint": "^10.11.0",
@@ -167,7 +175,7 @@
     "jsdom": "^29.1.1",
     "knip": "^5.88.1",
     "mocha": "^12.0.2",
-    "rollup-plugin-visualizer": "^6.0.11",
+    "rollup-plugin-visualizer": "^7.1.1",
     "supertest": "^7.0.0",
     "vite": "^6.4.1",
     "vite-plugin-vuetify": "^2.0.1",

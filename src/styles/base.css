@@ -1,5 +1,5 @@
 /*
- * Node CMS base styles: element defaults, accessibility helpers and the
+ * Embed CMS base styles: element defaults, accessibility helpers and the
  * Vuetify overrides shared by every screen. Colours, radii, spacing and type
  * sizes all come from tokens.css.
  */
@@ -1140,7 +1140,7 @@ a {
 
 /* ---- Empty required field after a failed save ----------------------------------- */
 /* The editor marks the fields that have no rule of their own (dates, times...) with .is-missing and the message. */
-.field-wrapper.is-missing .dp__input,
+.field-wrapper.is-missing .dp--input,
 .field-wrapper.is-missing .v-field,
 .field-wrapper.is-missing .file-input-card,
 .field-wrapper.is-missing .wysiwyg-wrapper .border-wrapper {

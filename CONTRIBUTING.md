@@ -9,8 +9,8 @@ work on it, the tests, and how commits are written here. For how the code fits t
 You need Node.js 22.12 or later (CI runs Node 22) and git.
 
 ```sh
-git clone https://github.com/xiaodoudou/node-cms-private.git node-cms
-cd node-cms
+git clone https://github.com/xiaodoudou/embed-cms.git embed-cms
+cd embed-cms
 npm ci
 ```
 
@@ -18,7 +18,7 @@ npm ci
 else to compile.
 
 The first `npm ci` also builds the admin app into `dist/` (`scripts/prepare.js`, the `prepare` script, which builds only
-when `dist/` is missing); set `NODE_CMS_SKIP_BUILD=1` to skip it. `npm pack` always rebuilds it first (`prepack`), and the
+when `dist/` is missing); set `EMBED_CMS_SKIP_BUILD=1` to skip it. `npm pack` always rebuilds it first (`prepack`), and the
 `files` list of `package.json` decides what the package contains: add a new top-level file there if the CMS needs it at
 run time.
 
@@ -31,6 +31,9 @@ There are two ways, depending on what you work on.
 ```sh
 node server.js            # http://localhost:9990/admin, localAdmin / localAdmin
 ```
+
+To see what the admin bundle is made of, build with `ANALYZE=1 npm run build`: it also writes `stats.html`, a map of the chunks
+(git-ignored).
 
 **The admin app, with hot reload.** Run the backend and Vite side by side, in two terminals:
 

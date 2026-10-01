@@ -1,10 +1,10 @@
 /**
  * Small persisted UI preferences (row density, sidebar rail, sidebar width). Values are kept in localStorage under
- * `node-cms.ui.<name>`; a missing, broken or unavailable storage (private mode) simply falls back to the default.
+ * `embed-cms.ui.<name>`; a missing, broken or unavailable storage (private mode) simply falls back to the default.
  * The storage is injectable so the logic can be tested without a browser.
  */
 
-const PREFIX = 'node-cms.ui.'
+const PREFIX = 'embed-cms.ui.'
 
 function defaultStorage () {
   try {

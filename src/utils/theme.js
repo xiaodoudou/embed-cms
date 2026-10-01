@@ -26,4 +26,21 @@ export function pickTheme (config, preferred) {
   return !darkModeOff && preferred === 'dark' ? 'dark' : 'light'
 }
 
-export default { applyThemeToDocument, pickTheme }
+/**
+ * The theme to apply right after a user record is saved: the one just saved, when it is the record of the person who is logged in
+ * and differs from what they see. Anything else (another resource, another user, the same theme) is null.
+ * @param {string} resource - name of the resource the record belongs to
+ * @param {object} record - the saved record
+ * @param {object} user - the logged in user (username, theme)
+ * @param {object} [config] - the admin configuration (dark mode may be turned off)
+ * @returns {string|null} 'light' or 'dark'
+ */
+export function savedUserTheme (resource, record, user, config) {
+  if (resource !== '_users' || !record || !user || !user.username || record.username !== user.username) {
+    return null
+  }
+  const theme = pickTheme(config, record.theme === 'dark' ? 'dark' : 'light')
+  return theme === pickTheme(config, user.theme) ? null : theme
+}
+
+export default { applyThemeToDocument, pickTheme, savedUserTheme }

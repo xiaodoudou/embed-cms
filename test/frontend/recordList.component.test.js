@@ -91,6 +91,18 @@ describe('RecordList', () => {
     expect(wrapper.find('.list-empty').text()).toContain('No results')
   })
 
+  describe('choosing several records', () => {
+    it('adds and removes a record with a click on its row, without starting over', async () => {
+      const wrapper = list({ multiselect: true })
+      await items(wrapper)[1].trigger('click')
+      await items(wrapper)[2].trigger('click')
+      expect(wrapper.emitted('changeMultiselectItems').pop()[0].map((item) => item._id)).toEqual(['mu0bbbbb', 'mu0ccccc'])
+      await items(wrapper)[1].trigger('click')
+      expect(wrapper.emitted('changeMultiselectItems').pop()[0].map((item) => item._id)).toEqual(['mu0ccccc'])
+      expect(wrapper.emitted('selectItem')).toBeUndefined()
+    })
+  })
+
   describe('query search ("sift:" followed by a query)', () => {
     it('keeps the records the query matches', async () => {
       const wrapper = list()

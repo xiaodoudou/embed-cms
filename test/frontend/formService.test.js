@@ -60,7 +60,8 @@ describe('FormService (how each input type is built and checked)', () => {
 
     it('uses the right keyboard and number input for each kind of number', () => {
       for (const type of ['number', 'double', 'integer']) expect(mapper[type].inputFieldType).toBe('number')
-      expect(mapper.email.inputFieldType).toBe('email')
+      expect(mapper.email.inputFieldType).toBeUndefined()
+      expect(mapper.email.inputmode).toBeUndefined()
       expect(mapper.password.inputFieldType).toBe('password')
     })
 

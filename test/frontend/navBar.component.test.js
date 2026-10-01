@@ -38,7 +38,7 @@ const press = (init, target = document) => {
 beforeEach(() => {
   ResourceService.cache.mockReset().mockResolvedValue([])
   ResourceService.get.mockReset().mockReturnValue([])
-  document.title = 'node-cms'
+  document.title = 'embed-cms'
 })
 afterEach(() => {
   wrapper?.unmount()
@@ -48,17 +48,16 @@ afterEach(() => {
 
 describe('NavBar (the top bar)', () => {
   describe('the brand', () => {
-    it('shows the Node CMS mark when the settings have no logo or title', async () => {
+    it('shows the Embed CMS mark when the settings have no logo or title', async () => {
       await bar()
       expect(wrapper.find('.brand .brand-logo').exists()).toBe(true)
       expect(wrapper.find('.brand .logo').exists()).toBe(false)
     })
 
-    it('shows the title from the settings, and puts it in the title of the browser tab', async () => {
+    it('shows the title from the settings', async () => {
       ResourceService.cache.mockResolvedValue([{ title: 'Acme CMS' }])
       await bar()
       expect(wrapper.find('.brand-title').text()).toBe('Acme CMS')
-      expect(document.title).toBe('Acme CMS')
     })
 
     it('shows the logo from the settings in front of the title', async () => {

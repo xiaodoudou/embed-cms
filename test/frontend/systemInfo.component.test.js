@@ -294,7 +294,7 @@ describe('SystemInfo (the system menu of the top bar)', () => {
       await info({ settingsData: settings })
       await openLinks()
       expect(links().map((link) => link.textContent.trim())).toEqual(['Docs', 'Status', 'Here'])
-      expect(document.body.querySelector('.links-wrapper .node-cms-title').textContent).toBe('Tools')
+      expect(document.body.querySelector('.links-wrapper .embed-cms-title').textContent).toBe('Tools')
     })
 
     it('opens links in a new tab without handing over the opener', async () => {

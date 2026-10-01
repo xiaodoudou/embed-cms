@@ -63,6 +63,7 @@
 <script>
   import _ from 'lodash'
   import TranslateService from '@s/TranslateService'
+  import { getResourceLabel } from '@u/recordLabel'
   import NotificationsService from '@s/NotificationsService'
   import ResourceService from '@s/ResourceService'
   import {
@@ -148,7 +149,7 @@
       },
       tintOfName: groupTint,
       resourceTitle (resource) {
-        return resource.displayname ? TranslateService.get(resource.displayname) : resource.title
+        return getResourceLabel(resource)
       },
       holdsItem (group) {
         return groupHoldsItem(group, this.selectedItem)

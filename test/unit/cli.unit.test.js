@@ -7,11 +7,11 @@ const { cliOptions, DEV_OPTIONS } = require('../../lib/cliOptions')
 
 const ROOT = path.resolve(__dirname, '..', '..')
 
-// The cms command (server.js) is the development harness of node-cms when it runs from a clone of node-cms itself, and a
+// The cms command (server.js) is the development harness of embed-cms when it runs from a clone of embed-cms itself, and a
 // plain CMS everywhere else: it used to write its development options (a sync of resources the project does not have,
 // replication off) into the cms.json of every new project.
 describe('cms command options (unit)', () => {
-  it('uses the development options in the node-cms folder itself', () => {
+  it('uses the development options in the embed-cms folder itself', () => {
     expect(cliOptions(ROOT, ROOT)).to.deep.equal(DEV_OPTIONS)
     expect(DEV_OPTIONS).to.have.property('sync')
   })
@@ -22,7 +22,7 @@ describe('cms command options (unit)', () => {
 
   it('writes a cms.json without the development options in a new project', async function () {
     this.timeout(20000)
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'node-cms-cli-'))
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'embed-cms-cli-'))
     const port = String(20000 + Math.floor(Math.random() * 20000))
     const child = spawn(process.execPath, [path.join(ROOT, 'server.js')], { cwd: dir, env: { ...process.env, PORT: port, LOG_LEVEL: 'info' } })
     try {

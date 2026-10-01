@@ -171,7 +171,7 @@ let typeMapper = {
   email: {
     type: 'input',
     overrideType: 'CustomInput',
-    inputFieldType: 'email',
+    // a plain text box, neither type="email" nor inputmode="email": both make Brave offer an email alias
     validator: validators.email
   },
   url: {

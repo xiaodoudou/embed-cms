@@ -7,19 +7,14 @@
           ref="input"
           v-model="_value"
           class="date-picker" :dark="theme === 'dark'"
-          :enable-time-picker="enableTimePicker"
+          :time-config="timeConfig"
           :time-picker="!enableDatePicker && enableTimePicker"
-          :enable-date-picker="enableDatePicker"
-          :time-picker-inline="enableDatePicker && enableTimePicker"
-          :enable-minutes="isInFormat('mm')"
-          :enable-seconds="isInFormat('ss')"
-          mode-height="100px"
-          :day-class="getDayClass"
-          :format="formatDateSelection"
+          :ui="{ dayClass: getDayClass }"
+          :formats="{ input: formatDateSelection }"
           :text-input="textInput"
           :placeholder="placeholder"
           :locale="locale"
-          :clearable="!isLocked"
+          :input-attrs="{ clearable: !isLocked }"
           :readonly="isReadonly"
           :disabled="isDisabled"
           :aria-labels="{input: schema.label}"
@@ -42,6 +37,8 @@
   import AbstractField from '@m/AbstractField'
   import Dayjs from 'dayjs'
   import { toDateFnsFormat } from '@u/dateFormat'
+  import { datePickerLocale } from '@u/locale'
+  import TranslateService from '@s/TranslateService'
 
   export default {
     mixins: [AbstractField],
@@ -94,8 +91,18 @@
       textInput () {
         return { format: toDateFnsFormat(this.schema.format), enterSubmit: true, tabSubmit: true, selectOnFocus: true, openMenu: 'toggle' }
       },
+      // the time part: whether there is one, whether it is next to the calendar, and what it counts (minutes, seconds)
+      timeConfig () {
+        return {
+          enableTimePicker: this.enableTimePicker,
+          timePickerInline: this.enableDatePicker && this.enableTimePicker,
+          enableMinutes: this.isInFormat('mm'),
+          enableSeconds: this.isInFormat('ss')
+        }
+      },
+      // the language of the person, not the language of the field they edit: a calendar in Chinese is for someone who reads Chinese
       locale() {
-        return this.schema.locale === 'enUS' ? 'en' : 'zh'
+        return datePickerLocale(TranslateService.locale)
       }
     },
     created () {
@@ -148,7 +155,7 @@
   }
 
   // the field states are the same as every other control (see base.css)
-  .dp__input {
+  .dp--input {
     height: var(--cms-field-h);
     padding-top: 0;
     padding-bottom: 0;
@@ -170,18 +177,18 @@
     }
 
     &:focus,
-    &.dp__input_focus {
+    &.dp--input-focus {
       border-color: var(--cms-primary);
       box-shadow: 0 0 0 3px var(--cms-field-ring);
       outline: none;
     }
   }
 
-  .dp__input_icon {
+  .dp--input-icon {
     color: var(--cms-text-muted);
   }
 
-  &.is-readonly .dp__input {
+  &.is-readonly .dp--input {
     border-color: transparent;
     background-color: var(--cms-field-readonly-bg);
     cursor: default;
@@ -191,7 +198,7 @@
     }
   }
 
-  &.is-disabled .dp__input {
+  &.is-disabled .dp--input {
     border: 1px dashed var(--cms-border-strong);
     background-color: var(--cms-field-disabled-bg);
     color: var(--cms-text-muted);
@@ -202,8 +209,8 @@
 
 // The popup is attached to the page, outside the field, so the colours are defined for both: the field and the popup
 .date-picker,
-.dp__theme_light,
-.dp__theme_dark {
+.dp--theme-light,
+.dp--theme-dark {
   border-radius: var(--cms-radius-md);
   --dp-border-radius: var(--cms-radius-md);
   --dp-input-padding: 0 30px 0 12px;
@@ -239,19 +246,19 @@
 }
 
 // the popup follows the dropdown style: same surface, radius and elevation
-.dp__menu {
+.dp--menu {
   border-radius: var(--cms-radius-md);
   box-shadow: var(--cms-shadow-2);
   font-family: var(--cms-font-sans);
 }
 
-.dp__action_button {
+.dp--action-button {
   border-radius: var(--cms-radius-md);
   font-weight: var(--cms-fw-medium);
 }
 
 // Select is the primary button, Cancel the secondary (outlined) one, as everywhere else
-.dp__action_select {
+.dp--action-select {
   background: var(--cms-primary);
   color: var(--cms-on-primary);
   border: 1px solid var(--cms-primary);
@@ -261,7 +268,7 @@
   }
 }
 
-.dp__action_cancel {
+.dp--action-cancel {
   background: transparent;
   color: var(--cms-primary);
   border: 1px solid var(--cms-border-strong);

@@ -15,7 +15,7 @@ servers, is in [CONFIG.md](CONFIG.md#storage-engines).
 |---|---|
 | want a normal site with no database server, and the server's memory should not grow with the content | `leveldb` (the default) |
 | want the same without a native module, and one file that every SQLite tool can open | `sqlite` |
-| are trying node-cms, or want the content as a readable file you can copy, diff and edit | `jsondown` |
+| are trying embed-cms, or want the content as a readable file you can copy, diff and edit | `jsondown` |
 | already run MongoDB, or the content is shared with other applications | `mongodb` |
 | already run PostgreSQL, or want its backups, replicas and tooling | `postgres` |
 
@@ -155,7 +155,7 @@ lost data. Five to eight kills per engine, 2,000 older records already in the st
   in memory for a while. `sqlite` and `leveldb` are written to sync the log before they answer when the CMS asks for it
   (and it does, for every record it creates or updates), so they are built to survive one; `jsondown` is not.
 - MongoDB and PostgreSQL lose nothing when the *CMS* dies. When their own server dies, what is lost depends on how you
-  run them, not on node-cms.
+  run them, not on embed-cms.
 
 ## Changing the engine
 
@@ -185,13 +185,13 @@ file on purpose.
 5. When you are satisfied, delete the old files (`db.json`) from each `data/<resource>/json/` folder. The tool never
    deletes them.
 
-`leveldb` needs the `classic-level` package: `npm install classic-level` if it did not install with node-cms.
+`leveldb` needs the `classic-level` package: `npm install classic-level` if it did not install with embed-cms.
 
 ### From or to `mongodb` or `postgres`
 
-There is no direct copy: use one of the ways node-cms already has to move content between two servers.
+There is no direct copy: use one of the ways embed-cms already has to move content between two servers.
 
-- Start a second CMS with the new engine, and copy from the first with [import from remote](IMPORT.md#copying-from-another-node-cms-import-from-remote)
+- Start a second CMS with the new engine, and copy from the first with [import from remote](IMPORT.md#copying-from-another-embed-cms-import-from-remote)
   (it copies the records and files of the resources you choose), or with a [sync](SYNC.md).
 - Or [replicate](REPLICATION.md) the two servers for a while, and retire the old one.
 

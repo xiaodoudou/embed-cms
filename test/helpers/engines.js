@@ -34,7 +34,7 @@ function engines () {
         } catch {
           return null
         }
-        const database = `nodecms_contract_${crypto.randomBytes(4).toString('hex')}`
+        const database = `embedcms_contract_${crypto.randomBytes(4).toString('hex')}`
         await admin.query(`CREATE DATABASE "${database}"`)
         // the driver reads these when it is created
         const keys = ['POSTGRES_HOST', 'POSTGRES_PORT', 'POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD']
@@ -62,7 +62,7 @@ function engines () {
           await client.close().catch(() => {})
           return null
         }
-        const database = `nodecms_contract_${crypto.randomBytes(4).toString('hex')}`
+        const database = `embedcms_contract_${crypto.randomBytes(4).toString('hex')}`
         const host = url.replace(/^mongodb(\+srv)?:\/\//, '')
         return {
           options: { dbEngine: { type: 'mongodb', url: `${host}/${database}` } },

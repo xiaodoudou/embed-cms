@@ -22,7 +22,7 @@ Catalogue: `resources/dates.js` (group **Date and time**, resource **Dates and t
 | `options.format` | string | `'YYYY-MM-DD'` | Display and typing format (dayjs tokens). Read by the component; not used by the catalogue and not exercised in the UI. |
 | `options.customDatetimePickerOptions.placeholder` | string | `'YYYY-MM-DD'` | Placeholder text. Read by the component; not used by the catalogue. |
 
-The calendar language follows the current locale (`enUS` gives English, any other locale Chinese). Tomorrow is highlighted with a marker.
+The calendar speaks the language of the person (the **Language** of their user, see [CONFIG.md](../CONFIG.md)), not the language of the field being edited: an English reader gets an English calendar on the `zhCN` tab too. Tomorrow is highlighted with a marker.
 
 ## Variations
 

@@ -158,7 +158,7 @@ describe('security utilities (unit)', () => {
     })
 
     it('persists hashes of the tokens (never the tokens) and reloads them', async () => {
-      const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'node-cms-revoked-'))
+      const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'embed-cms-revoked-'))
       try {
         const file = path.join(dir, 'revoked.json')
         const first = new TokenRevocation({ file })
@@ -175,7 +175,7 @@ describe('security utilities (unit)', () => {
     })
 
     it('starts empty when the file is damaged', async () => {
-      const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'node-cms-revoked-'))
+      const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'embed-cms-revoked-'))
       try {
         const file = path.join(dir, 'revoked.json')
         await fs.writeFile(file, '{ not json')
@@ -205,21 +205,21 @@ describe('security utilities (unit)', () => {
     })
 
     it('rejects a foreign Origin, a null Origin and a foreign Referer', () => {
-      const base = { host: 'cms.local:9990', cookie: 'nodeCmsJwt=abc' }
+      const base = { host: 'cms.local:9990', cookie: 'embedCmsJwt=abc' }
       expect(run({ headers: { ...base, origin: 'https://evil.example' } }).status).to.equal(403)
       expect(run({ headers: { ...base, origin: 'null' } }).status).to.equal(403)
       expect(run({ headers: { ...base, referer: 'https://evil.example/page' } }).status).to.equal(403)
     })
 
     it('accepts the own host, a listed origin and requests without origin information', () => {
-      const base = { host: 'cms.local:9990', cookie: 'nodeCmsJwt=abc' }
+      const base = { host: 'cms.local:9990', cookie: 'embedCmsJwt=abc' }
       expect(run({ headers: { ...base, origin: 'http://cms.local:9990' } }).passed).to.equal(true)
       expect(run({ headers: { ...base, origin: 'https://admin.example' } }).passed).to.equal(true)
       expect(run({ headers: { ...base } }).passed).to.equal(true)
     })
 
     it('uses Fetch Metadata when the browser sent neither Origin nor Referer', () => {
-      const base = { host: 'cms.local:9990', cookie: 'nodeCmsJwt=abc' }
+      const base = { host: 'cms.local:9990', cookie: 'embedCmsJwt=abc' }
       expect(run({ headers: { ...base, 'sec-fetch-site': 'cross-site' } }).status).to.equal(403)
       expect(run({ headers: { ...base, 'sec-fetch-site': 'same-site' } }).status).to.equal(403)
       expect(run({ headers: { ...base, 'sec-fetch-site': 'same-origin' } }).passed).to.equal(true)

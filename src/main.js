@@ -1,3 +1,4 @@
+import { log } from '@u/log'
 import _ from 'lodash'
 import { createApp, h } from 'vue'
 import * as Vue from 'vue'
@@ -12,6 +13,8 @@ import '@vuepic/vue-datepicker/dist/main.css'
 import { VueDraggableNext } from 'vue-draggable-next'
 import vuetify from './vuetify.js'
 import '@p/js/main.js'
+import './styles/tokens.css'
+import './styles/base.css'
 import '@a/scss/main.scss'
 import '@p/scss/main.scss'
 
@@ -25,8 +28,8 @@ import PluginPage from '@c/pages/PluginPage.vue'
 import Syslog from '@c/pages/Syslog.vue'
 import CmsConfig from '@c/pages/CmsConfig.vue'
 import CmsImport from '@c/pages/CmsImport.vue'
-import ImportFromRemote from '@c/pages/ImportFromRemote.vue'
 import SyncResource from '@c/pages/SyncResource.vue'
+import CmsReplicator from '@c/pages/CmsReplicator.vue'
 
 // Field components
 import FieldLabel from '@c/fields/FieldLabel.vue'
@@ -54,6 +57,7 @@ import TruncateFilter from '@f/Truncate'
 import TranslateService from '@s/TranslateService'
 import RequestService from '@s/RequestService.js'
 import DialogService from '@s/DialogService.js'
+import { pluginPages, replicationEnabled } from '@u/pluginPages'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -100,8 +104,8 @@ app.use(router)
   .component('Syslog', Syslog)
   .component('CmsConfig', CmsConfig)
   .component('CmsImport', CmsImport)
-  .component('ImportFromRemote', ImportFromRemote)
   .component('SyncResource', SyncResource)
+  .component('CmsReplicator', CmsReplicator)
   .component('Draggable', VueDraggableNext)
   .component('date-picker', VueDatePicker)
   .use(JsonViewer)
@@ -110,9 +114,9 @@ app.use(router)
   .use(VueVirtualScroller)
   .use(VueShortkey, {prevent: ['input', 'textarea']})
 
-function addPlugin (title, displayName, group = 'System', allowed = ['admins', 'imagination']) {
+function addPlugin (title, displayName, group = 'System', allowed = ['admins']) {
   window.plugins = window.plugins || []
-  console.info('adding plugin', displayName)
+  log.debug('adding plugin', displayName)
   window.plugins.push({
     title,
     displayname: displayName,
@@ -130,19 +134,13 @@ window.addEventListener('load', async function () {
     item.type = 'plugin'
   })
   window.TranslateService = TranslateService
-  const config = await RequestService.get(`${window.location.pathname}config`)
-  // console.warn('config = ', config)
-  addPlugin('Syslog', 'Syslog')
-  addPlugin('CmsConfig', 'Cms Config')
-  if (config.import) {
-    addPlugin('CmsImport', 'Cms Import')
-  }
-  if (config.importFromRemote) {
-    addPlugin('ImportFromRemote', 'Import from remote')
-  }
-  if (config.sync && !config.sync.disablePlugin) {
-    addPlugin('SyncResource', 'Sync Resource')
-  }
+  const isLoginPage = document.querySelector('#app')?.getAttribute('type') === 'login'
+  const [config, replication] = await Promise.all([
+    RequestService.get(`${window.location.pathname}config`),
+    // the replicator's routes need a login: not asked from the login page
+    isLoginPage ? false : replicationEnabled((url) => RequestService.get(url), `${window.location.pathname}../replicator/resources`)
+  ])
+  _.each(pluginPages(config, { replication }), (page) => addPlugin(page.title, page.displayname))
   window.disableJwtLogin = _.get(config, 'disableJwtLogin', false)
   window.noLogin = window.disableJwtLogin && _.get(config, 'disableAuthentication', false)
   app.mount('#app')

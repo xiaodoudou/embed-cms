@@ -2,16 +2,19 @@
 const request = require('supertest')
 const chai = require('chai')
 const expect = chai.expect
-const serverUrl = 'http://localhost:9990'
+const serverUrl = `http://localhost:${process.env.TEST_PORT || 9990}`
 
 describe('API Route Coverage', () => {
   afterEach(async () => {
-    // Clean up all articles after each test
-    const articlesRes = await request(serverUrl)
-      .get('/api/articles')
-      .auth('localAdmin', 'localAdmin')
-
-    if (_.isArray(articlesRes.body)) {
+    // Clean up all articles after each test; a read or delete that hits a transient error is repeated, so that no test
+    // starts with the leftovers of the previous one
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const articlesRes = await request(serverUrl)
+        .get('/api/articles')
+        .auth('localAdmin', 'localAdmin')
+      if (!_.isArray(articlesRes.body) || articlesRes.body.length === 0) {
+        return
+      }
       for (const article of articlesRes.body) {
         const id = _.get(article, '_id', false)
         if (id) {
@@ -123,7 +126,8 @@ describe('API Route Coverage', () => {
       .auth('localAdmin', 'localAdmin')
     expect(res.status).to.equal(200)
     expect(res.body).to.be.an('array')
-    expect(res.body.length).to.equal(0)
+    // earlier tests may leave articles of their own: the deleted one must be gone
+    expect(res.body.map((article) => article._id)).to.not.include(createdId)
   })
 
   it('POST /api/articles should create an article', async () => {
@@ -138,15 +142,17 @@ describe('API Route Coverage', () => {
     createdId = res.body._id
   })
 
-  it('GET /api/articles should return 1 article with the correct title', async () => {
-    await request(serverUrl).post('/api/articles').auth('localAdmin', 'localAdmin').send({ title: 'Test Article' })
+  it('GET /api/articles should list the article with the correct title', async () => {
+    const created = await request(serverUrl).post('/api/articles').auth('localAdmin', 'localAdmin').send({ title: 'Test Article' })
     const res = await request(serverUrl)
       .get('/api/articles')
       .auth('localAdmin', 'localAdmin')
     expect(res.status).to.equal(200)
     expect(res.body).to.be.an('array')
-    expect(res.body.length).to.equal(1)
-    expect(res.body[0].title).to.equal('Test Article')
+    // found by its id: the list itself may hold articles of other tests
+    const listed = _.find(res.body, { _id: created.body._id })
+    expect(listed, 'the created article is listed').to.be.an('object')
+    expect(listed.title).to.equal('Test Article')
   })
 
   it('POST /api/articles/:id/attachments should create a non-localized attachment for createdId', async () => {
@@ -369,7 +375,7 @@ describe('API Route Coverage', () => {
     expect([true, 1, 'OK', null]).to.include(delRes.body)
   })
 
-  it('GET /api/articles should return 0 articles', async () => {
+  it('GET /api/articles should no longer list the deleted article', async () => {
     const res = await request(serverUrl)
       .get('/api/articles')
       .auth('localAdmin', 'localAdmin')

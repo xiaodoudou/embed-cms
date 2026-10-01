@@ -1,7 +1,7 @@
 const _ = require('lodash')
 const request = require('supertest')
 const expect = require('chai').expect
-const serverUrl = 'http://localhost:9990'
+const serverUrl = `http://localhost:${process.env.TEST_PORT || 9990}`
 
 describe('Replicator Plugin API', () => {
   it('DEBUG: print /replicator/resources for all nodes', async function () {

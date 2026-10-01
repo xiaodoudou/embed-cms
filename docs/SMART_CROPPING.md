@@ -1,311 +1,62 @@
-# Smart Cropping Feature
+# Smart cropping
 
-## Overview
+A resize to another aspect ratio has to cut something off. A plain resize cuts around the centre, which loses whatever
+isn't there: the face in a portrait taken off-centre, the product at the edge of a shot. Smart cropping keeps the most
+interesting part of the picture instead.
 
-The smart cropping feature provides AI-powered intelligent image cropping with automatic face detection and object detection. It uses TensorFlow.js with BlazeFace and COCO-SSD models to create optimal crops that preserve important visual elements, especially faces and objects.
+It uses the *attention* strategy of [sharp](https://sharp.pixelplumbing.com/api-resize), the image library node-cms
+already uses for every resize. It looks for skin tones, saturated colours and fine detail, and frames the crop around
+them. There is nothing to install or configure, no model to load, and nothing leaves the server.
 
-## Installation
+## Asking for a smart crop
 
-The following npm packages are required for smart cropping:
-
-```bash
-npm install @tensorflow-models/blazeface @tensorflow-models/coco-ssd @tensorflow/tfjs-node canvas
-```
-
-## Configuration
-
-Smart cropping must be enabled in the CMS configuration:
-
-```javascript
-const cms = new CMS({
-  data: './data',
-  locales: ['enUS'],
-  smartCrop: true  // Enable smart cropping functionality
-})
-```
-
-## Usage
-
-### Basic Smart Cropping
-
-To use smart cropping with the CMS attachment API, add the `smart: true` option:
-
-```javascript
-// Get an attachment with smart cropping
-const attachment = await api('articles').findAttachment('article-id', 'attachment-id', {
-  resize: '400x300',
-  smart: true
-})
-```
-
-### Advanced Options
-
-```javascript
-// Face-only cropping with default padding (10px)
-const faceOnlyAttachment = await api('articles').findAttachment('article-id', 'attachment-id', {
-  resize: '100x100',
-  smart: true,
-  faceOnly: true
-})
-
-// Face-only cropping with custom padding
-const tightFaceAttachment = await api('articles').findAttachment('article-id', 'attachment-id', {
-  resize: '100x100',
-  smart: true,
-  faceOnly: true,
-  facePadding: 5  // 5px padding for tighter crop
-})
-
-const looseFaceAttachment = await api('articles').findAttachment('article-id', 'attachment-id', {
-  resize: '100x100',
-  smart: true,
-  faceOnly: true,
-  facePadding: 20  // 20px padding for looser crop
-})
-
-// Extreme tight crop with no padding
-const noFacePadding = await api('articles').findAttachment('article-id', 'attachment-id', {
-  resize: '100x100',
-  smart: true,
-  faceOnly: true,
-  facePadding: 0  // 0px padding - crops exactly around the face
-})
-
-// Object detection focused cropping
-const objectFocusedAttachment = await api('articles').findAttachment('article-id', 'attachment-id', {
-  resize: '100x100',
-  smart: true,
-  objectDetection: true
-})
-```
-## Programmatic Usage (Node.js API)
-
-You can use smart cropping directly in your Node.js code via the Resource API. This allows you to crop images programmatically, access crop metadata, and customize cropping behavior.
-
-### Example: Programmatic Smart Cropping
-
-```javascript
-const CMS = require('./index.js')
-const fs = require('fs-extra')
-
-// Initialize CMS and bootstrap
-const cms = new CMS({ data: './data', smartCrop: true })
-await cms.bootstrap()
-
-// Get the Resource API for a resource (e.g., 'articles')
-const api = cms.api('articles')
-
-// Load an image buffer
-const imageBuffer = await fs.readFile('./input.jpg')
-
-// Apply smart cropping (face detection, object detection, etc.)
-const result = await api.applyCrop(imageBuffer, '300x300', { faceOnly: true, facePadding: 10 })
-
-// Save the cropped image
-await fs.writeFile('./output.jpg', result.buffer)
-
-// Access crop metadata
-console.log('Crop result:', result.cropResult)
-```
-
-#### Options
-- `faceOnly`: Crop tightly around detected faces (default: false)
-- `facePadding`: Padding in pixels around faces (default: 10)
-- `objectDetection`: Use object detection for cropping (default: false)
-- `detectFaces`: Enable face detection (default: true)
-- `minScale`: Minimum scale factor for crop (default: 1.0)
-
-#### Return Value
-The result object contains:
-- `buffer`: Cropped image buffer (JPEG)
-- `mimeType`: MIME type of the output image
-- `contentLength`: Size of the output buffer
-- `cropResult`: Crop coordinates and metadata
-- `originalSize`: Original image dimensions
-- `targetSize`: Target crop dimensions
-
-### API Parameters
-
-- **`resize`**: Target dimensions in format `"WIDTHxHEIGHT"` (required)
-- **`smart`**: Boolean flag to enable smart cropping (default: false)
-- **`faceOnly`**: Boolean flag to crop tightly around faces only (default: false)
-- **`facePadding`**: Padding around faces in pixels when using faceOnly mode (default: 10)
-- **`objectDetection`**: Boolean flag to prioritize object detection over default logic (default: false)
-
-## How It Works
-
-The smart cropping system uses a hierarchical detection approach:
-
-1. **AI Model Initialization**: BlazeFace for face detection and COCO-SSD for object detection
-2. **Hierarchical Detection Logic**:
-   - **Multiple People**: Crops around all detected people
-   - **Single Person**: Crops around the person (or face if `faceOnly: true`)
-   - **Objects Only**: Crops around detected objects
-   - **No Detection**: Falls back to center crop
-3. **Smart Crop Generation**: Creates optimal crop preserving important elements
-4. **Caching**: Results are cached for performance with smart-specific cache keys
-
-### Face Detection Details
-
-- **Model**: BlazeFace (TensorFlow.js standalone model)
-- **Features**: Detects face bounding boxes with confidence scores
-- **Face-Only Mode**: Creates square crops with customizable padding around faces (default: 10px)
-- **Custom Padding**: Use `facePadding` parameter to adjust space around faces (e.g., 5px for tight crops, 20px for loose crops)
-- **Aspect Ratio**: Automatically maintains face proportions to prevent squashing
-
-### Object Detection Details
-
-- **Model**: COCO-SSD (Common Objects in Context)
-- **Objects**: Detects 80+ object classes including person, laptop, car, etc.
-- **Priority**: Higher confidence objects take precedence
-- **Person Detection**: People are prioritized over other objects
-
-### Performance
-
-- **Initialization**: Models load during CMS bootstrap (not first use)
-- **Caching**: Smart cropped images cached with prefix `{attachment-id}-smart-{mode}-{size}`
-- **Fallback**: Graceful degradation to center crop if AI models fail
-- **Memory**: ~100MB for TensorFlow.js models
-- **Speed**:
-  - Cold start: ~2-3 seconds (model loading)
-  - Warm execution: ~150-200ms per image
-  - Cache hit: ~50ms
-
-## Example Results
-
-### Face-Only Cropping (`faceOnly: true`)
-- Creates tight 100x100 square crops around detected faces
-- Adds exactly 10px padding around face bounding box
-- Prevents face squashing by using square crop areas
-- Perfect for avatars and profile pictures
-
-### Smart Object Detection (`objectDetection: true`)
-- Prioritizes detected objects (people, laptops, etc.)
-- Uses confidence scores to select primary object
-- Creates crops focused on the most important detected element
-
-### Default Smart Mode (`smart: true`)
-- Uses hierarchical logic: people → objects → center crop
-- Balances multiple elements when present
-- Adapts to image content automatically
-
-## Cache Management
-
-Smart cropped images use specific cache keys:
-- `{attachment-id}-smart-default-{dimensions}` - Default smart crop
-- `{attachment-id}-smart-faceonly-{dimensions}` - Face-only crop
-- `{attachment-id}-smart-objects-{dimensions}` - Object detection crop
-
-Cache is automatically cleaned up when:
-- The original attachment is deleted
-- The attachment is updated
-- The parent record is removed
-
-## Error Handling & Fallbacks
-
-The system includes comprehensive error handling:
-
-1. **Face Detection Failure**: Falls back to object detection
-2. **Object Detection Failure**: Falls back to center crop
-3. **Model Load Failure**: Disables AI features, continues with basic cropping
-4. **Runtime Errors**: Logged with detailed error information
-5. **Graceful Degradation**: Always produces a valid crop result
-
-## Debugging
-
-Smart cropping includes detailed logging:
+Over REST, add `smart=true` to an image download that has a `resize`:
 
 ```
-Smart cropping enabled - loading TensorFlow.js Node backend...
-BlazeFace model loaded successfully
-Face detection model initialized successfully
-Object detection model initialized successfully
-Detected 1 face(s)
-Square crop with face centered: 138x138 at (393, 45)
-Smart crop completed: 612x408 -> 100x100
+/api/articles/<id>/attachments/<aid>?resize=400x300&smart=true
 ```
 
-## Configuration Options
+`smart=false`, `smart=0` or an empty value give a plain resize. Without `resize`, `smart` does nothing.
 
-The smart cropping behavior can be customized in CMS configuration:
+From code, the same option on `findAttachment`:
 
-```javascript
-const cms = new CMS({
-  data: './data',
-  locales: ['enUS'],
-  smartCrop: true,  // Enable/disable smart cropping
-  // Other CMS options...
-})
+```js
+const articles = cms.api()('articles')
+
+const thumb = await articles.findAttachment(articleId, attachmentId, { resize: '400x300', smart: true })
+thumb.stream.pipe(res)
 ```
 
-## Frontend Integration
+To crop an image you have in memory, without storing it, use `applyCrop`:
 
-### Direct URL Usage
-```javascript
-// Smart cropped thumbnail
-const imageUrl = `/api/articles/${articleId}/attachments/${attachmentId}?resize=400x300&smart=true`
+```js
+const fs = require('fs/promises')
 
-// Face-only avatar
-const avatarUrl = `/api/users/${userId}/attachments/${attachmentId}?resize=100x100&smart=true&faceOnly=true`
+const result = await cms.api()('articles').applyCrop(await fs.readFile('./portrait.jpg'), '300x300')
+await fs.writeFile('./thumb.jpg', result.buffer)
+// result.cropResult is the part of the original that was kept: { x, y, width, height }, in pixels of the original
+// result also has mimeType, contentLength, originalSize and targetSize
 ```
 
-### JavaScript/React Example
-```javascript
-const response = await fetch(`/api/articles/${articleId}/attachments/${attachmentId}`, {
-  method: 'GET',
-  headers: {
-    'Accept': 'image/*'
-  },
-  query: new URLSearchParams({
-    resize: '400x300',
-    smart: 'true',
-    faceOnly: 'true'
-  })
-})
-```
+The size is `WIDTHxHEIGHT`, `WIDTHxauto` or `autoxHEIGHT` (`auto` keeps the aspect ratio, so nothing needs cropping). The
+output keeps the format of the original. JPEG, PNG and GIF can be smart cropped.
 
-## Testing
+A file uploaded with `smart: true` and a `resize` (the `createAttachment` options) is stored already cropped.
 
-A comprehensive test suite is available:
+## Caching
 
-```bash
-# Run smart cropping tests
-node test-smart-cropping.js
-```
+Smart crops are cached next to the original file, under `<aid>-smart-<size>`, and plain resizes under `<aid>-<size>`,
+so the two never get each other's image. The cached copies are removed when the attachment or its record changes or goes.
 
-Test files are organized in the `test/` folder:
-- `test/man.jpg` - Source test image
-- `test/man-*.jpg` - Generated test results (ignored by git)
+## What to expect
 
-## Technical Architecture
+The attention strategy is a heuristic, not face recognition. It does well on portraits, products and most photos with a
+clear subject. On a busy picture with several subjects, or a low-contrast one, it may pick a different region than a
+person would. For a picture where the framing matters, set the crop by hand in the admin's crop tool, served as
+`/attachments/:aid/cropped` (see [API.md](API.md#attachments)).
 
-### Files
-1. **`lib/util/smartcrop.js`** - Core smart cropping utility with AI models
-2. **`lib/util/imagemin.js`** - Integration with image processing pipeline
-3. **`lib/util/driver/index.js`** - Attachment API integration
-4. **`index.js`** - CMS bootstrap integration for model initialization
+## Tests
 
-### Dependencies
-- **`@tensorflow-models/blazeface`** - Face detection model
-- **`@tensorflow-models/coco-ssd`** - Object detection model
-- **`@tensorflow/tfjs-node`** - TensorFlow.js Node.js backend
-- **`canvas`** - HTML5 Canvas API for Node.js image processing
-
-### Performance Characteristics
-- **Model Loading**: During CMS startup (not lazy loaded)
-- **Processing Speed**: ~150-200ms per image (after models loaded)
-- **Memory Usage**: ~100MB for AI models (constant)
-- **Cache Hit Rate**: Very high due to deterministic cache keys
-- **Fallback Performance**: <50ms (center crop fallback)
-
-## Benefits
-
-✅ **AI-Powered**: Uses state-of-the-art face and object detection
-✅ **Automatic**: No manual intervention required
-✅ **Fast**: Optimized TensorFlow.js backend with caching
-✅ **Reliable**: Comprehensive error handling and fallbacks
-✅ **Flexible**: Multiple cropping modes for different use cases
-✅ **Compatible**: Works with existing CMS attachment API
-✅ **Cached**: High performance through intelligent caching
-
-The smart cropping feature dramatically improves the quality of automatically generated thumbnails and crops by ensuring that faces and important content are preserved in the final result.
+`test/unit/smartcrop.unit.test.js` checks that the crop moves to a colourful subject near the edge of a picture, rather
+than staying in the centre, and checks the sizes. `test/smart-cropping.test.js` (part of `npm test`) checks that an image
+cropped on upload and on download comes out the same size.

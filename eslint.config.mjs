@@ -1,5 +1,6 @@
 import js from '@eslint/js'
 import pluginVue from 'eslint-plugin-vue'
+import globals from 'globals'
 
 export default [
   // Base JavaScript configuration
@@ -12,6 +13,7 @@ export default [
       ecmaVersion: 2022,
       sourceType: 'commonjs',
       globals: {
+        ...globals.node,
         module: 'readonly',
         exports: 'readonly',
         require: 'readonly',
@@ -25,11 +27,12 @@ export default [
     }
   },
   {
-    files: ['lib/**/*.js', 'lib-import/**/*.js', 'lib-importFromRemote/**/*.js', 'old_tests/**/*.js', 'test/**/*.js', '*.js'],
+    files: ['lib/**/*.js', 'lib-import/**/*.js', 'lib-importFromRemote/**/*.js', 'old_tests/**/*.js', 'test/**/*.js', 'scripts/**/*.js', '*.js', '*.cjs'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'commonjs',
       globals: {
+        ...globals.node,
         console: 'readonly',
         process: 'readonly',
         Buffer: 'readonly',
@@ -89,6 +92,8 @@ export default [
       ecmaVersion: 2022,
       sourceType: 'module',
       globals: {
+        ...globals.browser,
+        ...globals.node,
         console: 'readonly',
         process: 'readonly',
         Buffer: 'readonly',
@@ -143,6 +148,8 @@ export default [
       ecmaVersion: 2022,
       sourceType: 'module',
       globals: {
+        ...globals.browser,
+        ...globals.node,
         window: 'readonly',
         document: 'readonly',
         navigator: 'readonly',
@@ -183,6 +190,17 @@ export default [
         'switchCase': 1,
         'ignores': []
       }]
+    }
+  },
+  {
+    files: ['test/frontend/**/*.js', 'vitest.config.mjs', 'vite.config.js', 'knip.config.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: { ...globals.browser, ...globals.node, __dirname: 'readonly' }
+    },
+    rules: {
+      'no-unused-vars': ['error', { 'argsIgnorePattern': '^_', 'varsIgnorePattern': '^_' }]
     }
   },
   {

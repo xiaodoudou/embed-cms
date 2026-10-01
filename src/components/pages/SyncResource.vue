@@ -5,8 +5,8 @@
       <v-select
         v-model="selectedResource" :items="config.sync.resources" item-text="name" item-value="name" :ripple="false"
         menu-icon="$chevronDown"
-        flat rounded
-        density="compact" hide-details variant="solo-filled"
+        flat rounded density="compact"
+        hide-details variant="solo-filled" @update:model-value="onChangeResource"
       />
       <div v-if="!isEmpty(recordData)" class="num-records">
         <span>number of records</span>
@@ -57,7 +57,11 @@
 </template>
 
 <script>
+  import { log } from '@u/log'
   import RequestService from '@s/RequestService'
+  import NotificationsService from '@s/NotificationsService'
+  import TranslateService from '@s/TranslateService'
+  import { importCounts } from '@u/recordLabel'
   import ResourceService from '@s/ResourceService'
   import _ from 'lodash'
   import pAll from 'p-all'
@@ -103,7 +107,9 @@
             await pAll(_.map(['local', 'remote'], env => {
               return async () => {
                 try {
-                  this.syncStatus[env] = await RequestService.get(`../sync/${env}/${this.selectedResource}/status`)
+                  // read the status first: the other environment may replace this.syncStatus while we wait
+                  const status = await RequestService.get(`../sync/${env}/${this.selectedResource}/status`)
+                  this.syncStatus[env] = status
                   this.syncStatus = _.clone(this.syncStatus)
                 } catch (error) {
                   console.error(error)
@@ -116,6 +122,12 @@
 
           const result = _.find(this.syncStatus, {status: 'syncing'})
           if (!result && this.syncingEnvironment) {
+            const failed = _.find(this.syncStatus, { status: 'error' })
+            if (failed) {
+              NotificationsService.send(TranslateService.get('TL_IMPORT_FAILED', { name: `Sync ${this.selectedResource}`, error: _.toString(failed.error) }), 'error')
+            } else {
+              NotificationsService.send(TranslateService.get('TL_IMPORT_DONE', { name: `Sync ${this.selectedResource}`, counts: importCounts(this.reportData) }), 'success')
+            }
             this.$loading.stop('deploy-resource')
             if (result && result.status === 'error') {
               this.error = result.error
@@ -164,7 +176,7 @@
           })
           if (!_.isEmpty(updateKeys)) {
             _.each(updateKeys, key => {
-              console.log(key, 'local', _.find(fromData, {[uniqueKey]: key}), 'remote', _.find(toData, {[uniqueKey]: key}))
+              log.debug(key, 'local', _.find(fromData, {[uniqueKey]: key}), 'remote', _.find(toData, {[uniqueKey]: key}))
             })
           }
           this.reportData = {
@@ -186,8 +198,13 @@
           await RequestService.post(`../sync/${this.selectedResource}/from/${from}/to/${to}`)
           _.set(this.syncStatus, `${to}.status`, 'syncing')
           this.syncStatus = _.clone(this.syncStatus)
+          NotificationsService.send(TranslateService.get('TL_IMPORT_STARTED', { name: `Sync ${this.selectedResource}` }), 'info')
         } catch (error) {
           console.error(error)
+          NotificationsService.send(TranslateService.get('TL_IMPORT_FAILED', { name: `Sync ${this.selectedResource}`, error: _.get(error, 'message', 'error') }), 'error', {
+            actionLabel: TranslateService.get('TL_RETRY'),
+            action: () => this.onClickDeploy(from, to)
+          })
           this.syncingEnvironment = false
           this.$loading.stop('deploy-resource')
         }
@@ -201,80 +218,97 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding: 10px 0;
-  margin: 0 20px;
+  padding: var(--cms-space-4) 0 var(--cms-space-8);
+  margin: 0 var(--cms-space-6);
+  max-width: var(--cms-content-max);
   box-sizing: border-box;
   flex: 1 1 0;
   overflow-y: auto;
-  font-size: 14px;
-  font-family: arial;
+  font-size: var(--cms-fs-base);
 }
 
 h1 {
-  margin-top: 0;
+  margin: 0 0 var(--cms-space-4);
+  font-size: var(--cms-fs-2xl);
+  line-height: var(--cms-lh-tight);
+  font-weight: var(--cms-fw-bold);
 }
 
-.error {
-    color: red;
-  }
+.bg-error {
+  margin-top: var(--cms-space-4);
+  padding: var(--cms-space-3) var(--cms-space-4);
+  border-radius: var(--cms-radius-md);
+}
 
 .num-records {
-  width: calc(100% - 20px);
-  margin: 20px 0px;
-  border: 1px grey solid;
-  >span {
-    background-color: grey;
+  width: 100%;
+  margin: var(--cms-space-5) 0 0;
+  border: 1px solid var(--cms-border);
+  border-radius: var(--cms-radius-md);
+  background: var(--cms-surface);
+  overflow: hidden;
+  > span {
     display: block;
-    padding: 5px;
-    text-align: center;
-    color: white;
+    padding: var(--cms-space-2) var(--cms-space-4);
+    background-color: var(--cms-surface-2);
+    border-bottom: 1px solid var(--cms-border);
+    font-weight: var(--cms-fw-semibold);
+    color: var(--cms-text);
+    text-transform: capitalize;
   }
   .num-records-wrapper {
     display: flex;
-    padding: 0px;
-    margin: 0px;
+    flex-wrap: wrap;
+    padding: 0;
+    margin: 0;
     .num-record {
-      width: 20%;
+      flex: 1 1 160px;
       text-align: center;
-      // border: 1px grey solid;
-
-      &[num="1"] {
-        width: 100%;
-      }
-      &[num="2"] {
-        width: 50%;
-      }
-      &[num="3"] {
-        width: 33.3%;
-      }
-      &[num="4"] {
-        width: 25%;
-      }
+      min-width: 0;
 
       span {
-        padding: 5px;
+        padding: var(--cms-space-2);
         display: block;
-        height: 20px;
-        border-right: 1px grey solid;
+        border-right: 1px solid var(--cms-border);
         &:first-child {
-          background-color: #ddd;
-          border-bottom: 1px grey solid;
+          background-color: var(--cms-surface-2);
+          border-bottom: 1px solid var(--cms-border);
+          font-weight: var(--cms-fw-medium);
         }
       }
       .na-field {
         line-height: 100px;
         height: 100px;
         display: block;
+        color: var(--cms-text-muted);
       }
       &:last-child {
         span {
-          border-right: 0px grey solid;
+          border-right: 0;
         }
       }
       button {
-        width: 100%;
+        width: calc(100% - var(--cms-space-4));
+        margin: var(--cms-space-1) 0;
+        min-height: 36px;
+        border: 0;
+        border-radius: var(--cms-radius-sm);
+        background: var(--cms-primary);
+        color: var(--cms-on-primary);
+        font: inherit;
+        font-weight: var(--cms-fw-semibold);
+        cursor: pointer;
+        &:hover {
+          background: var(--cms-primary-hover);
+        }
       }
     }
+  }
+}
+
+@media (max-width: 599.98px) {
+  .main {
+    margin: 0 var(--cms-space-3);
   }
 }
 </style>

@@ -1,7 +1,5 @@
 export default {
   entry: [
-    // Main application entry points
-    'src/main.js',
     // Resource files are dynamically loaded
     'resources/**/*.js',
     'docs/resourceExamples/**/*.js',
@@ -30,25 +28,16 @@ export default {
     '*.js'
   ],
   ignore: [
-    'cached/**',
-    'data/**',
-    'logs/**',
-    'public/**',
-    'ssl/**',
-    'docs/**',
-    'i18n/**',
-    'node_modules/**',
-    'dist/**',
     // Files we know are unused but want to keep
     'src/.plugins/js/main.js',
-    // Files with dynamic exports that Knip can't properly analyze
-    'lib/helpers.js',
-    'lib/plugins/rest/routes.js',
-    // Logger dependencies
+    // Type definitions kept as documentation (referenced from index.js)
+    'lib/jsdoc-types.js',
+    // Consumed as `FileType.fromBuffer(...)`, which knip cannot follow
+    'lib/util/fileType.js',
+    // exports the Logger class next to the shared instance; only the tests use the class
     'lib/logger.js',
-    // Plugin alias imports that Knip can't resolve
-    '@p/js/main.js',
-    '@p/scss/main.scss'
+    // statusFor is exported for its unit tests
+    'lib/plugins/rest/sendError.js'
   ],
   // Path mapping to resolve Vite aliases
   paths: {
@@ -67,16 +56,15 @@ export default {
   ignoreDependencies: [
     // Vue component aliases not properly resolved by Knip (temporary workaround)
     '@c/SystemInfo',
-    '@c/ResourceList',
+    '@c/BrandLogo',
     '@c/PreviewAttachment',
     '@c/Omnibar',
     '@c/ThemeSwitch',
     '@c/PreviewMultiple',
-    '@c/FileInputErrors',
-    // Logger dependencies used in lib/logger.js (which is ignored)
-    'colors',
-    'debug'
+    '@c/FileInputErrors'
   ],
   // Ignore binaries that are referenced in package.json but not installed
+  // exports only used inside their own file (and by tests) are fine
+  ignoreExportsUsedInFile: true,
   ignoreBinaries: ['ulimit', 'mongod']
 }

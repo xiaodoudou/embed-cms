@@ -1,12 +1,25 @@
 <template>
-  <div ref="input" class="json-editor" :disabled="disabled" />
+  <div class="json-editor-field">
+    <field-label :schema="schema" />
+    <div ref="input" class="json-editor" :disabled="disabled" />
+    <div v-if="showHint()" class="help-block">
+      <v-icon size="small" icon="$information" />
+      <span>{{ schema.options.hint }}</span>
+    </div>
+  </div>
 </template>
 
 <script>
   import _ from 'lodash'
   import AbstractField from '@m/AbstractField'
 
+  import CodeMirror from 'codemirror'
+  import 'codemirror/mode/javascript/javascript.js'
+  import 'codemirror/lib/codemirror.css'
+  import 'codemirror/theme/dracula.css'
   import { JSONEditor } from '@json-editor/json-editor'
+
+  const OPEN_MODAL = '.json-editor-modal:not([style*="display: none"])'
   export default {
     mixins: [AbstractField],
     data () {
@@ -22,8 +35,28 @@
         _.set(this.model, this.schema.model, value)
       }
     },
+    beforeUnmount () {
+      document.removeEventListener('mousedown', this.onOutsideMouseDown, true)
+      if (this.modalObserver) {
+        this.modalObserver.disconnect()
+      }
+      // the library keeps listeners and the form it built until it is told to go: switching records builds and drops many editors
+      if (this.editor) {
+        this.editor.destroy()
+        this.editor = null
+      }
+      if (this.modalHost) {
+        this.modalHost.remove()
+      }
+    },
     mounted () {
       const element = _.get(this.$refs, 'input', false)
+      if (element) {
+        element.addEventListener('click', this.onEditorClick, true)
+        element.addEventListener('keydown', this.onEditorKeydown)
+        document.addEventListener('mousedown', this.onOutsideMouseDown, true)
+        this.watchModals(element)
+      }
       this.schema.jsonEditorOptions.title = ' '
       const options = {
         schema: this.schema.jsonEditorOptions,
@@ -48,9 +81,8 @@
           return el
         }
         getFormInputLabel (text) {
+          // styled by assets/scss/components/JsonEditor.scss, like the label of every other field
           const el = super.getFormInputLabel(text)
-          el.style.display = 'inline-block'
-          el.style.fontWeight = 'bold'
           el.className = 'json-editor-input-label'
           return el
         }
@@ -87,14 +119,11 @@
           return el
         }
         getModal () {
+          // the pop-ups (Edit JSON, Object properties) are styled as a modal by assets/scss/components/JsonEditor.scss;
+          // the library only toggles display
           const el = document.createElement('div')
-          el.style.backgroundColor = 'white'
-          el.style.border = '1px solid black'
-          el.style.boxShadow = '3px 3px black'
-          el.style.position = 'absolute'
-          el.style.zIndex = '10'
+          el.className = 'json-editor-modal'
           el.style.display = 'none'
-          el.style.width = 'auto'
           return el
         }
         getInfoButton (text) {
@@ -106,9 +135,9 @@
           const tooltip = document.createElement('span')
           tooltip.style['font-family'] = 'sans-serif'
           tooltip.style.visibility = 'hidden'
-          tooltip.style['background-color'] = 'rgba(50, 50, 50, .75)'
+          tooltip.style['background-color'] = 'var(--cms-terminal-bg)'
           tooltip.style.margin = '0 .25rem'
-          tooltip.style.color = '#FAFAFA'
+          tooltip.style.color = 'var(--cms-terminal-fg)'
           tooltip.style.padding = '.5rem 1rem'
           tooltip.style['border-radius'] = '.25rem'
           tooltip.style.width = '25rem'
@@ -305,10 +334,12 @@
         }
       }
       this.editor = new JSONEditor(element, options)
-      if (this.disabled) {
-        this.editor.disable()
-      }
       this.editor.on('ready', () => {
+        // the library builds its form after the constructor returns: disabling it any sooner throws (and, in this hook, kept a
+        // locked field from ever showing its values)
+        if (this.disabled) {
+          this.editor.disable()
+        }
         this.originalValue = this.editor.getValue()
         const value = _.extend(this.originalValue, _.get(this.model, this.schema.model))
         this.editor.setValue(value)
@@ -320,6 +351,127 @@
       })
     },
     methods: {
+      // A form has ancestors that trap position: fixed, so an open modal is moved to the body (into a holder with the
+      // same class, so that it keeps its styles) and put back in its place when the library hides it again.
+      watchModals (root) {
+        this.modalHost = document.createElement('div')
+        this.modalHost.className = 'json-editor'
+        document.body.appendChild(this.modalHost)
+        this.modalHost.addEventListener('click', this.onEditorClick, true)
+        this.modalHost.addEventListener('keydown', this.onEditorKeydown)
+        const place = (modal) => {
+          const visible = !/display:\s*none/.test(modal.getAttribute('style') || '')
+          if (visible && modal.parentElement !== this.modalHost) {
+            modal._home = { parent: modal.parentElement, next: modal.nextSibling }
+            this.modalHost.appendChild(modal)
+          }
+          if (visible && !modal.dataset.title) {
+            // the library hides the label of its pop-up (screen readers only): show it as the title of the modal
+            // (for the properties checklist the first label is a property name: the title is the button that opened it)
+            const label = modal.querySelector('label')
+            const opener = modal._home && modal._home.parent.closest('.je-object__container')
+            const toggle = modal.querySelector('.property-selector') && opener && opener.querySelector('.json-editor-btntype-properties')
+            modal.dataset.title = (toggle ? toggle.textContent : label && label.textContent) || ''
+          }
+          if (visible && modal.querySelector('.property-selector') && !modal.querySelector('.je-modal-close')) {
+            // the properties checklist has no button of its own to leave: a Close button (and a line saying what the boxes do)
+            const hint = document.createElement('p')
+            hint.className = 'je-modal-hint'
+            hint.textContent = this.$filters.translate('TL_OBJECT_PROPERTIES_HINT')
+            const close = document.createElement('button')
+            close.type = 'button'
+            close.className = 'btn je-modal-close'
+            close.textContent = this.$filters.translate('TL_CLOSE')
+            modal.insertBefore(hint, modal.querySelector('.property-selector'))
+            modal.appendChild(close)
+          }
+          if (visible && (modal.style.left || modal.style.top)) {
+            // the library places the pop-up next to its button; the stylesheet centres it on the screen
+            modal.style.left = ''
+            modal.style.top = ''
+          } else if (!visible && modal.parentElement === this.modalHost && modal._home) {
+            modal._home.parent.insertBefore(modal, modal._home.next)
+          }
+        }
+        this.modalObserver = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            if (mutation.target.classList && mutation.target.classList.contains('json-editor-modal')) {
+              place(mutation.target)
+            }
+          })
+        })
+        this.modalObserver.observe(root, { attributes: true, attributeFilter: ['style'], subtree: true })
+        this.modalObserver.observe(this.modalHost, { attributes: true, attributeFilter: ['style'], subtree: true })
+      },
+      openModal () {
+        return this.modalHost && this.modalHost.querySelector(OPEN_MODAL)
+      },
+      // Edit JSON is a real code editor: JSON highlighting, line numbers, brackets
+      attachCodeEditor () {
+        // the open pop-up (already moved to the body, see watchModals)
+        const modal = this.openModal()
+        const textarea = modal && modal.querySelector('.je-edit-json--textarea')
+        if (!textarea) {
+          return
+        }
+        if (textarea._cm) {
+          textarea._cm.setValue(textarea.value)
+        } else {
+          textarea._cm = CodeMirror.fromTextArea(textarea, {
+            mode: { name: 'javascript', json: true },
+            theme: 'dracula',
+            lineNumbers: true,
+            tabSize: 2,
+            indentWithTabs: false,
+            viewportMargin: Infinity
+          })
+        }
+        textarea._cm.refresh()
+        textarea._cm.focus()
+      },
+      // the library reads the textarea when Save or Copy is pressed: hand it what is in the code editor
+      syncCodeEditor (button) {
+        const modal = button.closest('.json-editor-modal')
+        const textarea = modal && modal.querySelector('.je-edit-json--textarea')
+        if (textarea && textarea._cm) {
+          textarea._cm.save()
+        }
+      },
+      onEditorClick (event) {
+        const button = event.target.closest && event.target.closest('button')
+        if (!button) {
+          return
+        }
+        if (button.classList.contains('je-modal-close')) {
+          this.closeModal(button.closest('.json-editor-modal'))
+        } else if (button.classList.contains('json-editor-btntype-editjson')) {
+          // after the library has put the JSON in the textarea
+          setTimeout(() => this.attachCodeEditor(), 0)
+        } else if (button.classList.contains('json-editor-btntype-save') || button.classList.contains('json-editor-btntype-copy')) {
+          this.syncCodeEditor(button)
+        }
+      },
+      // closes the open modal the way the library does: Cancel for Edit JSON, the toggle button for the properties
+      closeModal (modal) {
+        const container = modal._home && modal._home.parent.closest('.je-object__container')
+        const target = modal.querySelector('.json-editor-btntype-cancel') || (container && container.querySelector('.json-editor-btntype-properties'))
+        if (target) {
+          target.click()
+        }
+      },
+      onEditorKeydown (event) {
+        const modal = event.key === 'Escape' && this.openModal()
+        if (modal) {
+          event.stopPropagation()
+          this.closeModal(modal)
+        }
+      },
+      onOutsideMouseDown (event) {
+        const modal = this.openModal()
+        if (modal && !modal.contains(event.target) && !event.target.closest('.json-editor-btntype-editjson, .json-editor-btntype-properties')) {
+          this.closeModal(modal)
+        }
+      },
     }
   }
 </script>

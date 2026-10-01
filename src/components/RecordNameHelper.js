@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import ResourceService from '@s/ResourceService'
-import * as Mustache from 'mustache'
+import Mustache from 'mustache'
 
 export default {
   methods: {

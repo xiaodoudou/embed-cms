@@ -6,10 +6,21 @@ const RequestService = require('./RequestService')
 exports = module.exports = (config = {}, overwrite = false) => {
   config.protocol = _.get(config, 'protocol', 'http://')
   const auth = _.pick(config, ['username', 'password'])
-  const request = new RequestService(auth)
+  let origin
+  try {
+    origin = new URL(`${config.protocol}${config.host}`).origin
+  } catch {
+    // no usable host (a local config that is empty): nothing to restrict credentials to
+  }
+  const request = new RequestService(auth, {
+    origin,
+    restrictUrls: config.restrictUrls,
+    allowedHosts: config.allowedHosts
+  })
   const schemaMap = {}
   const paragraphMap = {}
-  const buildUrl = (url)=> `${config.protocol}${config.host}${config.prefix}/${url}`
+  // prefix is optional: the CMS may be mounted at the root
+  const buildUrl = (url)=> `${config.protocol}${config.host}${config.prefix || ''}/${url}`
   return (resource) => {
     return {
       async create (item) {
@@ -58,7 +69,7 @@ exports = module.exports = (config = {}, overwrite = false) => {
       },
       async login () {
         const url = buildUrl('admin/login')
-        console.warn('will login with ', url, auth)
+        console.warn('will login with', url, `as ${auth.username}`)
         const result = await request.post(url, {username: auth.username, password: auth.password})
         request.setAuth(_.get(result, 'token', false))
         return result

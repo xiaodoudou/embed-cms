@@ -1,20 +1,31 @@
 <template>
   <div class="nav-bar-wrapper">
-    <v-toolbar class="nav-bar" height="58" :class="localeClass">
-      <v-toolbar-title>
+    <header class="nav-bar">
+      <v-btn
+        id="cms-nav-toggle" class="nav-toggle" icon variant="text" :aria-label="$filters.translate('TL_TOGGLE_NAVIGATION')"
+        aria-controls="cms-nav" :aria-expanded="navOpen ? 'true' : 'false'" @click="$emit('toggle-nav')"
+      >
+        <v-icon icon="$menu" />
+      </v-btn>
+      <div class="brand" :class="{rail}">
         <template v-if="settingsData && hasLogoOrTitle()">
-          <img v-if="getLogo()" :src="getLogo()" class="logo">
-          <template v-else-if="settingsData.title && settingsData.title.length > 0">
-            {{ settingsData.title }}
-          </template>
+          <img v-if="getLogo()" :src="getLogo()" class="logo" :alt="settingsTitle">
+          <span v-else-if="settingsData.title && settingsData.title.length > 0" class="brand-title">{{ settingsData.title }}</span>
         </template>
-        <img v-else :src="getDefaultLogo()" class="logo">
-      </v-toolbar-title>
-      <v-spacer />
-      <resource-list :select-resource-callback="selectResourceCallback" :grouped-list="groupedList" :selected-item="selectedItem" />
-      <v-spacer />
+        <brand-logo v-else on-dark />
+      </div>
+      <div class="nav-bar-spacer" />
+      <v-btn class="search-trigger" variant="outlined" :aria-label="$filters.translate('TL_SEARCH_RESOURCES')" @click="openOmnibar">
+        <v-icon icon="$magnify" size="small" />
+        <span class="search-label">{{ $filters.translate('TL_SEARCH_RESOURCES') }}</span>
+        <kbd class="cms-kbd search-hint" aria-hidden="true">{{ shortcutLabel }}</kbd>
+      </v-btn>
+      <div class="nav-bar-actions">
+        <slot />
+      </div>
       <system-info v-if="config" :config="config" :settings-data="settingsData" />
-    </v-toolbar>
+    </header>
+    <omnibar ref="omnibar" :select-resource-callback="selectResourceCallback" :grouped-list="groupedList" :selected-item="selectedItem" />
   </div>
 </template>
 
@@ -22,31 +33,63 @@
   import _ from 'lodash'
   import TranslateService from '@s/TranslateService'
   import SystemInfo from '@c/SystemInfo'
+  import BrandLogo from '@c/BrandLogo'
+  import Omnibar from '@c/Omnibar'
   import ResourceService from '@s/ResourceService'
-  import ResourceList from '@c/ResourceList'
-  import defaultLogo from '@a/logo.svg'
+  import NotificationsService from '@s/NotificationsService'
 
   export default {
-    components: { SystemInfo, ResourceList },
+    components: { SystemInfo, BrandLogo, Omnibar },
     props: {
       toolbarTitle: { type: [String, Boolean], default: false },
       groupedList: { type: Array, default: () => [] },
       config: { type: [Object, Boolean], default: false },
-      localeClass: { type: Object, default: () => {} },
       selectResourceCallback: { type: Function, default: () => {} },
-      selectedItem: { type: Object, default: () => {} }
+      selectedItem: { type: Object, default: () => {} },
+      navOpen: { type: Boolean, default: false },
+      rail: { type: Boolean, default: false }
     },
+    emits: ['toggle-nav'],
     data () {
       return {
         settingsData: false
       }
     },
+    computed: {
+      shortcutLabel () {
+        return /Mac|iPhone|iPad/.test(window.navigator.platform || '') ? '⌘ K' : 'Ctrl K'
+      },
+      settingsTitle () {
+        return _.get(this.settingsData, 'title', 'Node CMS')
+      }
+    },
     mounted () {
       this.getSettingsData()
+      ResourceService.events.on('cached', this.onResourceCached)
+      document.addEventListener('keydown', this.onGlobalKeydown)
+      NotificationsService.events.on('omnibar-open', this.openOmnibar)
+    },
+    beforeUnmount () {
+      ResourceService.events.off('cached', this.onResourceCached)
+      document.removeEventListener('keydown', this.onGlobalKeydown)
+      NotificationsService.events.off('omnibar-open', this.openOmnibar)
     },
     methods: {
-      getDefaultLogo () {
-        return defaultLogo
+      // Ctrl/Cmd+K works everywhere, including inside form fields
+      onGlobalKeydown (event) {
+        if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && _.toLower(event.key) === 'k') {
+          event.preventDefault()
+          const omnibar = _.get(this.$refs, 'omnibar', false)
+          if (omnibar) {
+            omnibar.showHideOmnibar(!omnibar.showOmnibar)
+          }
+        }
+      },
+      openOmnibar () {
+        const omnibar = _.get(this.$refs, 'omnibar', false)
+        if (omnibar) {
+          omnibar.showHideOmnibar(true)
+        }
       },
       getLogo () {
         return _.get(this.settingsData, 'logo[0].url', false)
@@ -57,6 +100,12 @@
           window.document.title = title
         }
         return this.getLogo() || title
+      },
+      // the top bar shows the settings (logo, title, links): follow them when they are saved
+      onResourceCached (resource) {
+        if (resource === '_settings') {
+          this.settingsData = _.first(ResourceService.get('_settings'))
+        }
       },
       async getSettingsData () {
         try {
@@ -76,26 +125,152 @@
 @use '@a/scss/variables.scss' as *;
 
 .nav-bar-wrapper {
-  z-index: 2001;
+  position: relative;
+  z-index: var(--cms-z-appbar);
+  flex: 0 0 auto;
+
   .nav-bar {
-    background-color: $navbar-background;
-    color: $navbar-color;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    position: relative;
-    .v-toolbar__title {
-      padding-left: vw(16px);
-      max-height: 100%;
-      max-width: 200px;
-      width: 200px;
+    gap: var(--cms-space-2);
+    height: var(--cms-appbar-height);
+    padding: 0 var(--cms-space-3) 0 var(--cms-space-4);
+    background-color: var(--cms-chrome-bg);
+    color: var(--cms-chrome-text);
+    border-bottom: 1px solid var(--cms-chrome-border);
+  }
+
+  // Ghost icon buttons on the dark chrome
+  .nav-bar .v-btn--variant-text:not(.v-btn--disabled) {
+    color: var(--cms-chrome-text);
+    &:hover {
+      background: var(--cms-chrome-hover);
     }
-    .v-toolbar__content {
-      width: 100%;
-    }
+  }
+
+  .nav-bar .v-icon {
+    color: inherit;
+  }
+
+  .nav-toggle {
+    display: none;
+    margin-left: calc(var(--cms-space-2) * -1);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    height: 100%;
     .logo {
-      max-width: 200px;
-      max-height: $navbar-height;
+      max-height: 32px;
+      max-width: 180px;
+      object-fit: contain;
+    }
+    .brand-title {
+      font-size: var(--cms-fs-lg);
+      font-weight: var(--cms-fw-bold);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .brand.rail .brand-word {
+    display: none;
+  }
+
+  .nav-bar-spacer {
+    flex: 1 1 auto;
+  }
+
+  .nav-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--cms-space-2);
+  }
+
+  // Search trigger: icon, label, then the shortcut pushed to the right edge
+  .search-trigger.v-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--cms-space-3);
+    width: 280px;
+    min-width: 280px;
+    height: 36px;
+    padding: 0 var(--cms-space-3);
+    color: var(--cms-chrome-muted);
+    border: 1px solid var(--cms-chrome-border);
+    background: var(--cms-chrome-hover);
+    font-weight: var(--cms-fw-regular);
+    &:hover {
+      border-color: var(--cms-chrome-accent);
+      color: var(--cms-chrome-text);
+      background: var(--cms-chrome-hover);
+    }
+    .v-btn__content {
+      flex: 1 1 auto;
+      width: 100%;
+      justify-content: flex-start;
+      gap: var(--cms-space-3);
+    }
+    .search-label {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: left;
+    }
+    .search-hint {
+      flex: 0 0 auto;
+      margin-left: auto;
+      border-color: var(--cms-chrome-border);
+      background: var(--cms-chrome-bg);
+      color: var(--cms-chrome-muted);
+    }
+  }
+}
+
+@media (max-width: 767.98px) {
+  .nav-bar-wrapper .nav-toggle {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 899.98px) {
+  .nav-bar-wrapper .search-trigger.v-btn {
+    width: auto;
+    min-width: 200px;
+  }
+}
+
+// No keyboard on phones: icon-only trigger without the shortcut badge
+@media (max-width: 599.98px), (pointer: coarse) {
+  .nav-bar-wrapper {
+    .nav-bar {
+      padding: 0 var(--cms-space-2);
+      gap: var(--cms-space-1);
+    }
+    .search-trigger.v-btn {
+      width: 40px;
+      min-width: 40px;
+      padding: 0;
+      justify-content: center;
+      border-radius: var(--cms-radius-pill) !important;
+      border-color: transparent;
+      background: transparent;
+      .v-btn__content {
+        justify-content: center;
+      }
+      .search-label,
+      .search-hint {
+        display: none;
+      }
+    }
+    .brand .brand-word {
+      display: none;
     }
   }
 }

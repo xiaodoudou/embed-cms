@@ -40,9 +40,56 @@
 </script>
 <style lang="scss">
 .json-viewer-wrapper {
+  .jv-container.jv-light {
+    border: 1px solid var(--cms-border-strong);
+    border-radius: var(--cms-radius-md);
+    background: var(--cms-field-bg);
+    color: var(--cms-text);
+    .jv-key,
+    .jv-item.jv-undefined,
+    .jv-item.jv-null {
+      color: var(--cms-text-muted);
+    }
+    .jv-item.jv-string {
+      color: var(--cms-success);
+    }
+    .jv-item.jv-number {
+      color: var(--cms-info);
+    }
+    .jv-item.jv-boolean {
+      color: var(--cms-warning);
+    }
+    .jv-ellipsis {
+      background: var(--cms-surface-3);
+      color: var(--cms-text-muted);
+    }
+    .jv-toggle::before {
+      border-color: var(--cms-text-muted) transparent;
+    }
+  }
+
   .jv-container {
+    .jv-tooltip {
+      top: var(--cms-space-1);
+      right: var(--cms-space-1);
+    }
     .jv-button {
       padding: 0;
+      .v-btn {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        background: transparent;
+        color: var(--cms-text-muted);
+        box-shadow: none;
+        &:hover {
+          background: var(--cms-primary-soft);
+          color: var(--cms-on-primary-soft);
+        }
+        .v-icon {
+          font-size: 16px;
+        }
+      }
     }
     .jv-code {
       padding: 8px 0px;

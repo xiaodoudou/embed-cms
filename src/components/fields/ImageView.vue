@@ -11,7 +11,7 @@
         <v-file-input
           ref="input"
           :theme="theme"
-          variant="solo-filled" :rules="getRules()" hide-details="auto" prepend-icon="" flat single-line
+          variant="solo-filled" :rules="getRules()" hide-details="auto" prepend-icon="" prepend-inner-icon="$upload" flat single-line
           :placeholder="getPlaceholder()" :clearable="false" :label="getPlaceholder()"
           density="compact" rounded persistent-placeholder :multiple="isForMultipleImages()" :accept="schema.accept"
           @change="onUploadChanged" @update:focused="onFieldFocus"
@@ -21,10 +21,10 @@
       </v-card>
     </form>
     <preview-multiple
-      :attachments="getAttachments()" :schema="schema" :theme="theme" :is-image="isImage" :disabled="disabled" :on-end-drag="onEndDrag" :image-size="imageSize" :get-image-src="getImageSrc"
+      :attachments="getAttachments()" :schema="schema" :theme="theme" :is-image="isImage" :disabled="isLocked()" :on-end-drag="onEndDrag" :image-size="imageSize" :get-image-src="getImageSrc"
       :remove-image="removeImage" :on-cropper-change="onCropperChange"
     />
-    <file-input-errors v-if="!disabled" field-type="image" :schema="schema" :is-for-multiple-images="isForMultipleImages" :get-max-count="getMaxCount" />
+    <file-input-errors file-type="image" :schema="schema" :is-for-multiple-images="isForMultipleImages" :get-max-count="getMaxCount" />
   </div>
 </template>
 
@@ -39,6 +39,10 @@
     components: {PreviewMultiple, FileInputErrors},
     mixins: [AbstractField, FileInputField],
     methods: {
+      // a file of an image field that says nothing about its type (no extension, no stored type) is shown as an image
+      unknownIsImage () {
+        return true
+      },
       onCropperChange (index, data) {
         const attachments = this.getAttachments()
         _.set(attachments, `[${index}].cropOptions`, {data: {coordinates: data.coordinates}, updated: true})

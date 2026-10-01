@@ -1,0 +1,1162 @@
+/*
+ * Node CMS base styles: element defaults, accessibility helpers and the
+ * Vuetify overrides shared by every screen. Colours, radii, spacing and type
+ * sizes all come from tokens.css.
+ */
+
+/* ---- Document ----------------------------------------------------------- */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  background: var(--cms-bg);
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--cms-font-sans);
+  font-size: var(--cms-fs-base);
+  line-height: var(--cms-lh-base);
+  color: var(--cms-text);
+  background: var(--cms-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+ul,
+li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  color: var(--cms-primary);
+}
+
+.v-application,
+.v-application [class*='text-'],
+.v-btn,
+.v-application .v-field,
+.v-application .v-label,
+.v-application .v-list-item,
+.v-application .v-list-item-title,
+.v-application .v-card-title {
+  font-family: var(--cms-font-sans);
+}
+
+.v-application {
+  background: var(--cms-bg);
+  color: var(--cms-text);
+}
+
+.unclickable {
+  touch-action: none;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ---- Scrollbars: thin, palette coloured, no arrow buttons -----------------------
+ * One rule for every scroll container (sidebar, list column, table, dialogs, menus, editors).
+ * Chromium and Safari draw arrow buttons on Windows even for `scrollbar-width: thin`, so they get the WebKit
+ * pseudo-elements (8px rounded thumb, no buttons); `scrollbar-width` would disable those, so it is scoped to
+ * Firefox, whose thin scrollbar has no arrows. */
+*::-webkit-scrollbar {
+  width: var(--cms-scrollbar-size);
+  height: var(--cms-scrollbar-size);
+}
+
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: var(--cms-radius-pill);
+  background: var(--cms-scrollbar-thumb);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--cms-scrollbar-thumb-hover);
+}
+
+@supports (-moz-appearance: none) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--cms-scrollbar-thumb) transparent;
+  }
+}
+
+/* ---- Accessibility ------------------------------------------------------ */
+.cms-visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cms-skip-link {
+  position: fixed;
+  top: var(--cms-space-2);
+  left: var(--cms-space-2);
+  z-index: 3000;
+  padding: var(--cms-space-2) var(--cms-space-4);
+  border-radius: var(--cms-radius-sm);
+  background: var(--cms-primary);
+  color: var(--cms-on-primary);
+  font-weight: var(--cms-fw-semibold);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.cms-skip-link:focus {
+  transform: none;
+}
+
+/* Visible focus for every keyboard user; never removed without a replacement. */
+:focus-visible {
+  outline: 2px solid var(--cms-focus-ring);
+  outline-offset: 2px;
+}
+
+.v-btn:focus-visible,
+.v-list-item:focus-visible,
+.v-chip:focus-visible,
+.v-tab:focus-visible {
+  outline: 2px solid var(--cms-focus-ring);
+  outline-offset: 2px;
+}
+
+/* The Vuetify field draws its own outline for the focus state; avoid a double ring on native inputs inside it. */
+.v-field input:focus-visible,
+.v-field textarea:focus-visible,
+.v-field select:focus-visible {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid Highlight;
+  }
+}
+
+/* ---- Buttons: one system --------------------------------------------------
+ * Variants (map onto Vuetify props so components only pick a prop, never a style):
+ *   primary      <v-btn>                      filled indigo, one main action per view
+ *   secondary    <v-btn variant="outlined">   outlined indigo: cancel, discard, supporting actions
+ *   tertiary     <v-btn variant="text">       ghost text or icon-only toolbar actions
+ *   destructive  <v-btn color="error">        filled (final confirmation), or
+ *                <v-btn variant="outlined" color="error"> for entry points such as Delete
+ * Sizes: default 36px, compact (size="small") 32px; 44px on coarse pointers.
+ * Native buttons that act as toggles (.toggle-mode-btn, .locale-btn, .filter-chip, ...)
+ * share the same radius, weight and selected state (see .cms-chip below).
+ * Labels are sentence case, medium weight, no letter spacing. */
+.v-btn {
+  --cms-btn-h: 36px;
+  height: var(--cms-btn-h);
+  min-height: var(--cms-btn-h);
+  padding: 0 var(--cms-space-4);
+  gap: var(--cms-space-2);
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-family: var(--cms-font-sans);
+  font-weight: var(--cms-fw-medium);
+  font-size: var(--cms-fs-base);
+  line-height: 1;
+  border-radius: var(--cms-radius-md);
+  box-shadow: none;
+  transition: background-color var(--cms-motion-fast) var(--cms-ease), border-color var(--cms-motion-fast) var(--cms-ease), color var(--cms-motion-fast) var(--cms-ease);
+}
+
+.v-btn.rounded,
+.v-btn--rounded {
+  border-radius: var(--cms-radius-md) !important;
+}
+
+.v-btn--size-small,
+.v-btn--size-x-small {
+  --cms-btn-h: 32px;
+  padding: 0 var(--cms-space-3);
+  font-size: var(--cms-fs-sm);
+}
+
+.v-btn .v-btn__content {
+  gap: var(--cms-space-2);
+}
+
+.v-btn .v-icon {
+  min-width: auto;
+  margin: 0;
+}
+
+.v-btn .v-btn__prepend,
+.v-btn .v-btn__append {
+  margin: 0;
+}
+
+/* icon-only buttons are square/round and do not take label padding */
+/* Vuetify sizes an icon button as its height + 12px whatever the size: the size variable decides here */
+.v-application .v-btn.v-btn--icon {
+  width: var(--cms-btn-h);
+  min-width: var(--cms-btn-h);
+  height: var(--cms-btn-h);
+  padding: 0;
+  border-radius: var(--cms-radius-pill) !important;
+}
+
+/* the same height as a text button, so an icon button next to Save or Create lines up with it */
+.v-btn--icon.v-btn--size-default {
+  --cms-btn-h: 36px;
+}
+
+/* primary (default look of an un-styled v-btn and of variant="flat") */
+.v-btn--variant-flat:not([class*='bg-']):not(.v-btn--disabled),
+.v-btn--variant-elevated:not([class*='bg-']):not(.v-btn--disabled),
+.v-btn.bg-primary {
+  background-color: var(--cms-primary);
+  color: var(--cms-on-primary);
+}
+
+.v-btn--variant-flat:not([class*='bg-']):not(.v-btn--disabled):hover,
+.v-btn--variant-elevated:not([class*='bg-']):not(.v-btn--disabled):hover,
+.v-btn.bg-primary:hover {
+  background-color: var(--cms-primary-hover);
+}
+
+.v-btn--variant-flat:not([class*='bg-']):not(.v-btn--disabled):active,
+.v-btn--variant-elevated:not([class*='bg-']):not(.v-btn--disabled):active {
+  filter: brightness(0.92);
+}
+
+/* secondary */
+.v-btn--variant-outlined:not(.v-btn--disabled) {
+  border: 1px solid var(--cms-primary);
+  color: var(--cms-primary);
+  background: transparent;
+}
+
+.v-btn--variant-outlined:not(.v-btn--disabled):hover {
+  background: var(--cms-primary-soft);
+}
+
+.v-btn--variant-outlined:not(.v-btn--disabled):active {
+  background: var(--cms-primary-soft);
+  filter: brightness(0.95);
+}
+
+/* tertiary / ghost */
+.v-btn--variant-text:not(.v-btn--disabled) {
+  color: var(--cms-text);
+  background: transparent;
+}
+
+.v-btn--variant-text:not(.v-btn--disabled):hover {
+  background: var(--cms-surface-3);
+}
+
+.v-btn--variant-text:not(.v-btn--disabled):active {
+  background: var(--cms-surface-3);
+  filter: brightness(0.94);
+}
+
+.v-btn--variant-text:not(.v-btn--icon):not(.v-btn--disabled).text-primary,
+.v-btn--variant-text.text-primary {
+  color: var(--cms-primary);
+}
+
+/* destructive: filled (final confirmation) and outlined (entry point) */
+.v-btn.bg-error:not(.v-btn--disabled) {
+  background-color: var(--cms-error);
+  color: var(--cms-on-error);
+}
+
+.v-btn.bg-error:not(.v-btn--disabled):hover {
+  filter: brightness(0.92);
+}
+
+.v-btn--variant-outlined.text-error:not(.v-btn--disabled) {
+  border-color: var(--cms-error);
+  color: var(--cms-error);
+}
+
+.v-btn--variant-outlined.text-error:not(.v-btn--disabled):hover {
+  background: var(--cms-error-soft);
+}
+
+.v-btn--variant-text.text-error:not(.v-btn--disabled) {
+  color: var(--cms-error);
+}
+
+/* disabled: clearly disabled but readable (muted text on a neutral fill, at least 4.5:1) */
+.v-btn--disabled {
+  opacity: 1 !important;
+  cursor: not-allowed;
+}
+
+.v-btn--disabled:not(.v-btn--variant-text) {
+  background-color: var(--cms-surface-3) !important;
+  border-color: var(--cms-border) !important;
+  color: var(--cms-text-muted) !important;
+}
+
+.v-btn--disabled.v-btn--variant-text {
+  color: var(--cms-text-muted) !important;
+  background: transparent !important;
+}
+
+/* loading: keep the label visible so the width does not jump */
+.v-btn--loading .v-btn__content {
+  opacity: 0.85 !important;
+}
+
+.v-btn--loading .v-btn__loader {
+  position: static;
+  inset: auto;
+  order: -1;
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  margin-right: var(--cms-space-2);
+}
+
+.v-btn--loading .v-btn__loader > .v-progress-circular {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.v-btn--loading.v-btn--icon .v-btn__loader {
+  position: absolute;
+  margin: 0;
+}
+
+@media (pointer: coarse) {
+  .v-btn {
+    --cms-btn-h: var(--cms-touch-target);
+  }
+}
+
+/* Chips / toggles: the same shape for filters, view toggles, locale switchers and tags */
+.cms-chip,
+.v-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cms-space-1);
+  min-height: 28px;
+  padding: var(--cms-space-1) var(--cms-space-3);
+  border-radius: var(--cms-radius-pill);
+  font-family: var(--cms-font-sans);
+  font-size: var(--cms-fs-sm);
+  line-height: 1.4;
+  font-weight: var(--cms-fw-medium);
+  letter-spacing: 0;
+  text-transform: none;
+  overflow: visible;
+}
+
+.v-chip {
+  height: auto;
+  color: var(--cms-on-primary-soft);
+  background: var(--cms-primary-soft);
+  border: 1px solid transparent;
+}
+
+.v-chip--variant-outlined {
+  background: transparent;
+  border-color: var(--cms-border-strong);
+  color: var(--cms-text);
+}
+
+.v-chip .v-chip__content {
+  line-height: 1.4;
+  overflow: visible;
+}
+
+.v-chip .v-chip__close {
+  width: 18px;
+  height: 18px;
+  margin-inline: var(--cms-space-1) calc(var(--cms-space-1) * -1);
+  border-radius: var(--cms-radius-pill);
+  color: inherit;
+  opacity: 0.85;
+}
+
+.v-chip .v-chip__close:hover {
+  opacity: 1;
+  background: rgba(var(--v-theme-on-surface), 0.12);
+}
+
+.v-chip .v-chip__close:focus-visible {
+  outline: 2px solid var(--cms-focus-ring);
+  outline-offset: 1px;
+}
+
+@media (pointer: coarse) {
+  .v-chip .v-chip__close::after {
+    content: '';
+    position: absolute;
+    inset: -13px;
+  }
+  .v-chip .v-chip__close {
+    position: relative;
+  }
+}
+
+/* Keyboard shortcut badge */
+.cms-kbd {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px var(--cms-space-2);
+  border: 1px solid var(--cms-border);
+  border-radius: var(--cms-radius-xs);
+  font-family: var(--cms-font-mono);
+  font-size: var(--cms-fs-xs);
+  line-height: 1.5;
+  background: var(--cms-surface);
+  color: var(--cms-text-muted);
+}
+
+/* ---- Form fields -------------------------------------------------------- */
+.v-application .v-input {
+  --v-input-control-height: var(--cms-field-h);
+}
+
+.v-application .v-field {
+  --v-field-padding-start: var(--cms-space-3);
+  --v-field-padding-end: var(--cms-space-3);
+  font-size: var(--cms-fs-base);
+  border-radius: var(--cms-radius-md);
+  background-color: var(--cms-field-bg);
+  color: var(--cms-text);
+  border: 1px solid var(--cms-border-strong);
+  transition: border-color var(--cms-motion-fast) var(--cms-ease), box-shadow var(--cms-motion-fast) var(--cms-ease);
+}
+
+/* Vuetify fades the first 20px of a field input (room for a floating label); labels sit above the fields here, so no fade */
+.v-application .v-field__input {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.v-application .v-field--rounded {
+  border-radius: var(--cms-radius-md);
+}
+
+.v-application .v-field:hover:not(.v-field--disabled) {
+  border-color: var(--cms-text-muted);
+}
+
+.v-application .v-field--focused {
+  border-color: var(--cms-primary);
+}
+
+.v-application .v-field--error:not(.v-field--disabled) {
+  border-color: var(--cms-error);
+}
+
+/* Field states (one system for every control, see docs/UI_REDESIGN.md):
+ * editable  = field surface, 1px strong border, hover darker border, focus accent border + ring
+ * read-only = tinted surface, no visible border, normal copyable text, lock icon, default cursor
+ * disabled  = page colour, dashed border, muted text, not-allowed cursor, not focusable
+ * error     = red border, icon and inline message */
+.v-application .v-field--disabled {
+  background-color: var(--cms-field-disabled-bg);
+  border: 1px dashed var(--cms-border-strong);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.v-application .v-field--disabled input,
+.v-application .v-field--disabled textarea,
+.v-application .v-field--disabled .v-field__input {
+  color: var(--cms-text-muted);
+  -webkit-text-fill-color: var(--cms-text-muted);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.v-application .v-input--readonly:not(.v-input--disabled) .v-field {
+  background-color: var(--cms-field-readonly-bg);
+  border-color: transparent;
+  cursor: default;
+}
+
+.v-application .v-input--readonly:not(.v-input--disabled) .v-field:hover {
+  border-color: transparent;
+}
+
+.v-application .v-input--readonly:not(.v-input--disabled) .v-field--focused {
+  border-color: var(--cms-primary);
+}
+
+.v-application .v-input--readonly input,
+.v-application .v-input--readonly textarea {
+  cursor: default;
+}
+
+/* lock icon at the right of a read-only control */
+.cms-field-lock {
+  display: inline-flex;
+  align-items: center;
+  color: var(--cms-text-muted);
+  pointer-events: none;
+}
+
+.v-application .v-field__input {
+  min-height: var(--cms-field-h);
+  padding-top: 0;
+  padding-bottom: 0;
+  align-items: center;
+}
+
+.v-application .v-field__input input::placeholder,
+.v-application .v-field__input textarea::placeholder,
+.v-application input::placeholder,
+.v-application textarea::placeholder {
+  color: var(--cms-text-muted);
+  opacity: 1;
+}
+
+.v-application .v-field--variant-solo-filled:not(.v-field--disabled),
+.v-application .v-field--variant-filled:not(.v-field--disabled) {
+  background-color: var(--cms-field-bg);
+}
+
+.v-application .v-field__overlay {
+  border-radius: inherit;
+}
+
+/* Vuetify tints filled fields with an overlay; the border already signals hover/focus. */
+.v-application .v-field--variant-solo-filled .v-field__overlay,
+.v-application .v-field--variant-filled .v-field__overlay {
+  display: none;
+}
+
+.v-application .v-messages__message,
+.v-application .v-field--error .v-messages__message {
+  color: var(--cms-error);
+  font-size: var(--cms-fs-sm);
+  font-style: normal;
+  font-weight: var(--cms-fw-medium);
+}
+
+.v-application .v-input__details {
+  padding-inline: 0;
+}
+
+/* error: red border (above), icon and inline message */
+.v-application .v-messages__message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--cms-space-1);
+}
+
+.v-application .v-input--error .v-messages__message::before {
+  content: '!';
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  border-radius: var(--cms-radius-pill);
+  background: var(--cms-error);
+  color: var(--cms-on-error);
+  font-size: 10px;
+  font-weight: var(--cms-fw-bold);
+  line-height: 1;
+}
+
+.v-application .v-label {
+  color: var(--cms-text-muted);
+  opacity: 1;
+}
+
+.v-application .v-selection-control .v-label {
+  color: var(--cms-text);
+}
+
+
+@media (max-width: 599.98px) {
+  /* 16px inputs stop iOS Safari from zooming on focus. */
+  .v-application .v-field__input,
+  .v-application .v-field input,
+  .v-application .v-field textarea {
+    font-size: var(--cms-fs-md);
+  }
+  .v-application .v-field__input {
+    min-height: var(--cms-touch-target);
+  }
+}
+
+/* ---- Overlays ----------------------------------------------------------- */
+.v-overlay__scrim {
+  background: var(--cms-scrim) !important;
+  opacity: 1 !important;
+}
+
+.v-overlay__content > .v-list,
+.v-overlay__content > .v-card {
+  background: var(--cms-surface);
+  color: var(--cms-text);
+  border: 1px solid var(--cms-border);
+  border-radius: var(--cms-radius-md);
+  box-shadow: var(--cms-shadow-2);
+}
+
+.v-application .v-list-item {
+  border-radius: var(--cms-radius-sm);
+  min-height: 40px;
+}
+
+.v-application .v-list-item-title {
+  font-size: var(--cms-fs-base);
+  font-weight: var(--cms-fw-regular);
+}
+
+.v-application .v-list-item--active {
+  background: var(--cms-primary-soft);
+  color: var(--cms-on-primary-soft);
+}
+
+.v-application .v-list-item--active .v-list-item-title {
+  font-weight: var(--cms-fw-semibold);
+}
+
+.v-tooltip > .v-overlay__content {
+  background: var(--cms-text);
+  color: var(--cms-bg);
+  border-radius: var(--cms-radius-sm);
+  font-size: var(--cms-fs-sm);
+  padding: var(--cms-space-1) var(--cms-space-2);
+  box-shadow: var(--cms-shadow-2);
+}
+
+.v-dialog > .v-overlay__content > .v-card {
+  border-radius: var(--cms-radius-lg);
+  box-shadow: var(--cms-shadow-3);
+}
+
+.v-dialog .v-card-title {
+  font-size: var(--cms-fs-lg);
+  font-weight: var(--cms-fw-semibold);
+  white-space: normal;
+}
+
+.v-dialog .v-card-actions {
+  padding: var(--cms-space-3) var(--cms-space-4) var(--cms-space-4);
+  gap: var(--cms-space-2);
+  justify-content: flex-end;
+}
+
+.v-divider {
+  border-color: var(--cms-border);
+  opacity: 1;
+}
+
+/* ---- Progress ----------------------------------------------------------- */
+.v-progress-linear {
+  border-radius: var(--cms-radius-pill);
+}
+
+/* ---- Shared page primitives (used by plugin pages and empty states) ------ */
+.cms-page {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--cms-space-6);
+  background: var(--cms-bg);
+}
+
+.cms-page-inner {
+  max-width: var(--cms-content-max);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cms-space-4);
+}
+
+.cms-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cms-space-3);
+}
+
+.cms-page-title {
+  margin: 0;
+  font-size: var(--cms-fs-xl);
+  line-height: var(--cms-lh-tight);
+  font-weight: var(--cms-fw-semibold);
+  color: var(--cms-text);
+}
+
+.cms-page-subtitle {
+  margin: var(--cms-space-1) 0 0;
+  color: var(--cms-text-muted);
+  font-size: var(--cms-fs-base);
+}
+
+.cms-card {
+  background: var(--cms-surface);
+  border: 1px solid var(--cms-border);
+  border-radius: var(--cms-radius-lg);
+  padding: var(--cms-space-5);
+}
+
+.cms-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--cms-space-2);
+  padding: var(--cms-space-10) var(--cms-space-6);
+  color: var(--cms-text-muted);
+}
+
+.cms-empty .cms-empty-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--cms-radius-pill);
+  background: var(--cms-surface-2);
+  color: var(--cms-text-muted);
+}
+
+.cms-empty .cms-empty-title {
+  margin: 0;
+  font-size: var(--cms-fs-lg);
+  font-weight: var(--cms-fw-semibold);
+  color: var(--cms-text);
+}
+
+.cms-empty .cms-empty-text {
+  margin: 0;
+  max-width: 44ch;
+}
+
+@media (max-width: 599.98px) {
+  .cms-page {
+    padding: var(--cms-space-4);
+  }
+}
+
+/* ---- Dialogs (single shared style, see components/AppDialog.vue) ------------ */
+.cms-dialog .v-overlay__content {
+  width: min(460px, calc(100vw - 32px));
+  max-width: none;
+  margin: 0;
+}
+
+.cms-dialog-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--cms-surface);
+  color: var(--cms-text);
+  border: 1px solid var(--cms-border);
+  border-radius: var(--cms-radius-lg);
+  box-shadow: var(--cms-shadow-3);
+  font-family: var(--cms-font-sans);
+  overflow: hidden;
+}
+
+.cms-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--cms-space-3);
+  padding: var(--cms-space-5) var(--cms-space-6) var(--cms-space-2);
+}
+
+.cms-dialog-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--cms-radius-pill);
+  background: var(--cms-info-soft);
+  color: var(--cms-info);
+}
+
+.cms-dialog-icon.is-warning {
+  background: var(--cms-warning-soft);
+  color: var(--cms-warning);
+}
+
+.cms-dialog-icon.is-destructive {
+  background: var(--cms-error-soft);
+  color: var(--cms-error);
+}
+
+.cms-dialog-title {
+  margin: 0;
+  padding-top: var(--cms-space-1);
+  font-size: var(--cms-fs-lg);
+  line-height: var(--cms-lh-tight);
+  font-weight: var(--cms-fw-semibold);
+  color: var(--cms-text);
+  overflow-wrap: anywhere;
+}
+
+.cms-dialog-body {
+  padding: var(--cms-space-2) var(--cms-space-6) var(--cms-space-5) calc(var(--cms-space-6) + 36px + var(--cms-space-3));
+  font-size: var(--cms-fs-base);
+  line-height: var(--cms-lh-base);
+  color: var(--cms-text);
+}
+
+.cms-dialog-body.no-icon-indent {
+  padding-left: var(--cms-space-6);
+}
+
+.cms-dialog-body p {
+  margin: 0;
+}
+
+.cms-dialog-body .cms-dialog-muted {
+  margin-top: var(--cms-space-2);
+  color: var(--cms-text-muted);
+}
+
+.cms-dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--cms-space-3);
+  padding: var(--cms-space-4) var(--cms-space-6);
+  border-top: 1px solid var(--cms-border);
+  background: var(--cms-surface-2);
+}
+
+/* the buttons share the row in equal halves: balanced, and nothing hangs to one side */
+.cms-dialog-foot .v-btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* ---- Other floating surfaces share radius, elevation and font ---------------- */
+.v-overlay__content > .v-list,
+.v-overlay__content > .v-card,
+.v-menu > .v-overlay__content > .v-list {
+  font-family: var(--cms-font-sans);
+  border-radius: var(--cms-radius-md);
+  box-shadow: var(--cms-shadow-2);
+}
+
+@media (max-width: 599.98px) {
+  .cms-dialog-head,
+  .cms-dialog-foot {
+    padding-left: var(--cms-space-4);
+    padding-right: var(--cms-space-4);
+  }
+  .cms-dialog-body {
+    padding-left: var(--cms-space-4);
+    padding-right: var(--cms-space-4);
+  }
+  .cms-dialog-foot .v-btn {
+    flex: 1 1 auto;
+  }
+}
+
+/* ---- Dropdowns: one style for v-select, v-autocomplete, v-combobox and v-menu lists ---- */
+.v-application .v-field__append-inner .v-icon,
+.v-application .v-select__menu-icon {
+  color: var(--cms-text-muted);
+  opacity: 1;
+}
+
+.v-application .v-select--active-menu .v-select__menu-icon {
+  transform: rotate(180deg);
+}
+
+.v-application .v-field--focused,
+.v-application .v-select--active-menu .v-field {
+  border-color: var(--cms-primary);
+  box-shadow: 0 0 0 3px var(--cms-field-ring);
+}
+
+.v-application .v-select__selection-text {
+  color: var(--cms-text);
+}
+
+/* The popup box and the list inside it share one radius and one shadow (Vuetify gives the box its own 4px corners and shadow,
+   which cut the list's rounded border and doubled its shadow) */
+.v-overlay-container .v-menu > .v-overlay__content,
+.v-overlay-container .v-select__content,
+.v-overlay-container .v-autocomplete__content {
+  border-radius: var(--cms-radius-md);
+  box-shadow: var(--cms-shadow-2);
+}
+
+.v-menu > .v-overlay__content > .v-list,
+.v-select__content .v-list,
+.v-autocomplete__content .v-list {
+  /* items run edge to edge: no padding, the list itself clips them to its rounded corners */
+  padding: 0;
+  overflow-y: auto;
+  border-radius: inherit;
+  max-height: 320px;
+  background: var(--cms-surface);
+  border: 1px solid var(--cms-border);
+  box-shadow: none;
+}
+
+.v-menu .v-list-item,
+.v-select__content .v-list-item,
+.v-autocomplete__content .v-list-item {
+  min-height: 40px;
+  /* room above and below: a one-line item stays 40px, a two-line one (name over id) breathes */
+  padding: var(--cms-space-2) var(--cms-space-3);
+  border-radius: 0;
+  color: var(--cms-text);
+  font-size: var(--cms-fs-base);
+  background: transparent;
+}
+
+.v-menu .v-list-item:hover,
+.v-select__content .v-list-item:hover,
+.v-autocomplete__content .v-list-item:hover {
+  background: var(--cms-surface-2);
+}
+
+.v-menu .v-list-item--highlighted,
+.v-menu .v-list-item:focus-visible,
+.v-select__content .v-list-item--highlighted,
+.v-autocomplete__content .v-list-item--highlighted {
+  background: var(--cms-primary-soft);
+  box-shadow: inset 3px 0 0 var(--cms-primary);
+}
+
+.v-menu .v-list-item--active,
+.v-select__content .v-list-item--active,
+.v-autocomplete__content .v-list-item--active {
+  background: var(--cms-primary-soft);
+  color: var(--cms-on-primary-soft);
+  font-weight: var(--cms-fw-semibold);
+}
+
+.v-select__content .v-list-item--active::after,
+.v-autocomplete__content .v-list-item--active::after {
+  content: '\2713';
+  margin-left: auto;
+  font-weight: var(--cms-fw-bold);
+}
+
+.v-menu .v-list-item--disabled,
+.v-select__content .v-list-item--disabled {
+  color: var(--cms-text-muted);
+  opacity: 1;
+}
+
+/* title and subtitle: the base size over a smaller muted line, */
+.v-menu .v-list-item-title,
+.v-select__content .v-list-item-title,
+.v-autocomplete__content .v-list-item-title {
+  font-size: var(--cms-fs-base);
+  line-height: var(--cms-lh-base);
+}
+
+.v-menu .v-list-item .v-list-item-subtitle,
+.v-select__content .v-list-item-subtitle,
+.v-autocomplete__content .v-list-item-subtitle {
+  margin-top: 2px;
+  color: var(--cms-text-muted);
+  opacity: 1;
+  font-size: var(--cms-fs-xs);
+  line-height: var(--cms-lh-base);
+}
+
+.v-autocomplete__content .v-list-item-title mark,
+.v-select__content .v-list-item-title mark {
+  background: transparent;
+  color: inherit;
+  font-weight: var(--cms-fw-bold);
+  text-decoration: underline;
+}
+
+@media (pointer: coarse) {
+  .v-menu .v-list-item,
+  .v-select__content .v-list-item,
+  .v-autocomplete__content .v-list-item {
+    min-height: var(--cms-touch-target);
+  }
+}
+
+/* ---- Shared toolbar rows (list and table views look the same) ------------------ */
+.cms-toolbar {
+  flex: 0 0 auto;
+  background: var(--cms-surface);
+  border-bottom: 1px solid var(--cms-border);
+}
+
+.cms-toolbar .search {
+  padding: var(--cms-space-3) var(--cms-space-4);
+  gap: var(--cms-space-2);
+}
+
+.cms-toolbar-controls {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--cms-space-2);
+  padding: var(--cms-space-2) var(--cms-space-3);
+  background: var(--cms-surface);
+  border-bottom: 1px solid var(--cms-border);
+}
+
+.cms-list-footer {
+  flex: 0 0 auto;
+  padding: var(--cms-space-2) var(--cms-space-4);
+  border-top: 1px solid var(--cms-border);
+  background: var(--cms-surface-2);
+  color: var(--cms-text-muted);
+  font-size: var(--cms-fs-sm);
+}
+
+/* ---- Ghost icon button (row actions, copy id, column menu): 28px, 44px on touch ------ */
+.cms-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--cms-radius-sm);
+  background: transparent;
+  color: var(--cms-text-muted);
+  cursor: pointer;
+  transition: background-color var(--cms-motion-fast) var(--cms-ease), color var(--cms-motion-fast) var(--cms-ease);
+}
+
+.cms-icon-btn:hover:not(:disabled) {
+  background: var(--cms-overlay-hover);
+  color: var(--cms-text);
+}
+
+.cms-icon-btn.danger:hover:not(:disabled) {
+  background: var(--cms-error-soft);
+  color: var(--cms-error);
+}
+
+.cms-icon-btn:disabled {
+  color: var(--cms-text-muted);
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.cms-icon-btn:focus-visible {
+  outline: 2px solid var(--cms-focus-ring);
+  outline-offset: -2px;
+}
+
+@media (pointer: coarse) {
+  .cms-icon-btn {
+    width: var(--cms-touch-target);
+    height: var(--cms-touch-target);
+  }
+}
+
+/* ---- Native checkbox used in tables and menus ------------------------------------ */
+.cms-check {
+  appearance: none;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1px solid var(--cms-border-strong);
+  border-radius: var(--cms-radius-xs);
+  background: var(--cms-surface) center / 12px no-repeat;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: background-color var(--cms-motion-fast) var(--cms-ease), border-color var(--cms-motion-fast) var(--cms-ease);
+}
+
+.cms-check:hover {
+  border-color: var(--cms-primary);
+}
+
+.cms-check:checked,
+.cms-check:indeterminate {
+  border-color: var(--cms-primary);
+  background-color: var(--cms-primary);
+}
+
+.cms-check:checked {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.5l2.5 2.5 4.5-5.5' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* some rows selected: a dash */
+.cms-check:indeterminate {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6h6' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+.cms-check:focus-visible {
+  outline: 2px solid var(--cms-focus-ring);
+  outline-offset: 1px;
+}
+
+.cms-check:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ---- Empty required field after a failed save ----------------------------------- */
+/* The editor marks the fields that have no rule of their own (dates, times...) with .is-missing and the message. */
+.field-wrapper.is-missing .dp__input,
+.field-wrapper.is-missing .v-field,
+.field-wrapper.is-missing .file-input-card,
+.field-wrapper.is-missing .wysiwyg-wrapper .border-wrapper {
+  border-color: var(--cms-error);
+}
+
+/* a field with a rule of its own already shows its message */
+.field-wrapper.is-missing:has(.v-input--error)::after {
+  display: none;
+}
+
+.field-wrapper.is-missing::after {
+  content: attr(data-missing-text);
+  display: block;
+  margin-top: var(--cms-space-1);
+  color: var(--cms-error);
+  font-size: var(--cms-fs-sm);
+  font-weight: var(--cms-fw-medium);
+}

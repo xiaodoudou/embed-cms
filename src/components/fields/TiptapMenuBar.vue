@@ -1,5 +1,5 @@
 <template>
-  <div v-if="menuBarButtons && menuBarButtons.length > 0" class="toolbar" tabindex="-1">
+  <div v-if="menuBarButtons && menuBarButtons.length > 0" class="toolbar" role="toolbar" aria-label="Formatting" tabindex="-1">
     <tiptap-menu-item v-for="(button, index) in menuBarButtons" :key="index" v-bind="button" />
   </div>
 </template>

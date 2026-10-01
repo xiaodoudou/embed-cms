@@ -1,27 +1,113 @@
-# Select Field
+# select
 
-The `select` field type allows selection from a list of options or another resource.
+Drop-down to pick **one** value from a list. The list is a static array, a static array with readable labels, or the records of another resource. Component: `CustomMultiSelect` (`src/components/fields/CustomMultiSelect.vue`, a Vuetify autocomplete, so the list can be filtered by typing).
+
+Catalogue: `resources/choice_select.js` (group **Choice**, resource **Selects**). The resource-backed examples need records in `resources/reference_items.js` (**Reference items**, group **Reference data**).
 
 ## Declaration
+
 ```js
+{ field: 'status', input: 'select', label: 'Status', localised: false, source: ['draft', 'published', 'archived'] }
+{ field: 'item', input: 'select', label: 'Linked item', localised: false, source: 'reference_items', options: { customLabel: '{{name}}' } }
+```
+
+## Options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `field`, `input`, `label`, `localised`, `unique` | | | As for [string](string.md). |
+| `source` | `string[]` \| `number[]` \| resource name | none (empty list) | The values. An array is used as is; a string is the name of another resource whose records are the choices. `source` is a field key, not an option: it sits next to `input`, not inside `options`. |
+| `required` | boolean | `false` | Empty selection shows `This field is required!`. In a localised field every locale must be filled. |
+| `options.labels` | `{ value: string \| { enUS, zhCN } }` | none | Readable label per static value. A plain string is used for every locale; an object gives one label per locale (falls back to its first entry). Only applied to static values. |
+| `options.customLabel` | Mustache template | first field of the target resource | Label of a record of a resource `source`, e.g. `'{{name}}'`. For a localised target field the current locale is used (`{{name}}` becomes `name.enUS`). Without it the first field of the target resource is displayed. |
+| `options.extraSources` | `{ key: resourceName }` | none | Replaces the id stored in `key` of each target record by the related record before labels are rendered. |
+| `options.subtitle` | Mustache template | the record id, for a resource `source` | Second line under each choice in the open list, rendered over the option, e.g. `'{{code}}'`. |
+| `options.groupBy` | field name | none | Groups the choices of a resource `source` under headings taken from that field of each record. |
+| `options.hint` | string | none | Help text under the field. |
+| `options.readonly` | boolean | `false` | The list does not open; lock icon. |
+| `options.disabled` | boolean | `false` | Greyed out with a dashed border. |
+
+The placeholder is the field label. A field that is not `required` (and not read-only or disabled) has a clear button that empties it; a required one has none, so pick another value to change it.
+
+## Variations
+
+### Static list
+
+`resources/choice_select.js`, fields `status` and `requiredStatus`.
+
+```js
+{ field: 'status', input: 'select', label: 'Status', localised: false, source: ['draft', 'published', 'archived'] }
+```
+
+![Static select](img/select-default.png)
+![Open list](img/select-open.png)
+
+### Required
+
+`resources/choice_select.js`, field `requiredStatus`.
+
+![Required error](img/select-required-error.png)
+
+### Static values with readable labels
+
+`resources/choice_select.js`, field `priority`. The stored value stays `low`, `medium` or `high`; the list and the chip show the label of the current locale (`High` in enUS, `高` in zhCN).
+
+```js
+options: { labels: { low: { enUS: 'Low', zhCN: '低' }, medium: { enUS: 'Medium', zhCN: '中' }, high: { enUS: 'High', zhCN: '高' } } }
+```
+
+![Labels](img/select-labels-open.png)
+![Selected label](img/select-filled-labels.png)
+
+### Values from another resource
+
+`resources/choice_select.js`, fields `item` and `itemWithLabel` (`customLabel: '{{name}}'`). The list shows the label and, under it, the id of each record. The value stored is the record `_id`.
+
+```js
+{ field: 'item', input: 'select', label: 'Linked item', localised: false, source: 'reference_items' }
+```
+
+![Resource select](img/select-resource-open.png)
+![Custom label list](img/select-custom-label-open.png)
+![Custom label selected](img/select-filled-custom-label.png)
+
+### Localised
+
+`resources/choice_select.js`, field `localisedChoice`: one choice per locale.
+
+![Localised select](img/select-localised.png)
+
+### Read-only
+
+`resources/choice_select.js`, field `readOnlySelect`.
+
+![Read-only select](img/select-readonly.png)
+
+### Disabled
+
+`resources/choice_select.js`, field `disabledSelect`.
+
+![Disabled select](img/select-disabled.png)
+
+### Dark theme
+
+![Open list, dark](img/select-open-dark.png)
+
+## Stored value
+
+The chosen value: the string from `source`, or the `_id` of the chosen record. Localised: one value per locale.
+
+```json
 {
-  field: 'author',
-  input: 'select',
-  source: 'authors', // resource or array
-  options: {
-    customLabel: '{{name}}' // optional
-  },
-  localised: false // optional
+  "status": "published",
+  "priority": "high",
+  "item": "mumfqmi6dev00001yv1s8zhf",
+  "localisedChoice": { "enUS": "two", "zhCN": "three" }
 }
 ```
 
-## Usage
-- Used for referencing another resource or a static list.
+## Validation and behaviour
 
-## Options
-| Option      | Type    | Description                                 |
-|-------------|---------|---------------------------------------------|
-| source      | String/Array | Resource name or array of options       |
-| options     | Object  | Additional options (customLabel, etc.)      |
-| localised   | Boolean | Supports multiple locales                   |
-| label       | String/Object | Field label (can be localized)         |
+- UI: `required` only. Nothing checks that a value belongs to `source`.
+- Server: only `unique`. REST accepts any value, including an id that does not exist.
+- Import files (`lib/resource.js`) can refer to the target record by its first `unique` field instead of its `_id`.

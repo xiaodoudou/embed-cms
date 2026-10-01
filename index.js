@@ -8,6 +8,7 @@
  */
 
 const path = require('path')
+const os = require('os')
 const fs = require('fs')
 const pAll = require('p-all')
 const compression = require('compression')
@@ -15,7 +16,7 @@ const cookieParser = require('cookie-parser')
 const express = require('express')
 const helmet = require('helmet')
 const _ = require('lodash')
-const mkdirp = require('mkdirp')
+const fsExtra = require('fs-extra')
 const session = require('express-session')
 const UUID = require('./lib/util/uuid')
 const SyslogManager = require('./lib/SyslogManager')
@@ -25,7 +26,13 @@ const escapeRegExp = require('./lib/util/escapeRegExp')
 const Resource = require('./lib/resource')
 const ResourceAPIWrapper = require('./lib/ResourceAPIWrapper')
 const OSSHelper = require('./lib/util/OSSHelper')
-const logger = new (require('img-sh-logger'))()
+const ImageOptimization = require('./lib/util/imageOptimization')
+const logger = require('./lib/logger')
+const { resolveSecurity } = require('./lib/util/securityOptions')
+const { ensureStrongSecrets } = require('./lib/util/secrets')
+const csrfGuard = require('./lib/util/csrf')
+const securityHeaders = require('./lib/util/securityHeaders')
+const sendError = require('./lib/plugins/rest/sendError')
 
 /**
  * Recursively loads all .js files in a directory as modules (synchronously).
@@ -127,9 +134,19 @@ class CMS {
     }
     // aggregate options
     this.options = (options = (this._options = _.extend({}, defaultConfig(), require(configPath), options)))
+    // effective security settings (the profile follows NODE_ENV, see lib/util/securityOptions.js)
+    this.security = resolveSecurity(options)
+    // reachable from the stores, which only see the options
+    options.securitySettings = this.security
+    // image operations at once: a burst of requests is worked off in turn, not all together: one per core, and at most
+    // 100 may wait as well. imageConcurrency overrides the default (0 for no limit).
+    ImageOptimization.configure({
+      concurrency: options.imageConcurrency !== undefined ? options.imageConcurrency : os.cpus().length,
+      maxQueue: 100
+    })
     // ensure required folders are in place
-    mkdirp.sync(path.resolve(options.resources))
-    mkdirp.sync(path.resolve(options.data))
+    fsExtra.mkdirpSync(path.resolve(options.resources))
+    fsExtra.mkdirpSync(path.resolve(options.data))
     // keep track of available resources
     this._tempResources = {}
     this._resources = {}
@@ -137,6 +154,9 @@ class CMS {
     this._attachmentFields = {}
     this._relations = {}
     this._resourceNames = []
+    // the menu groups found in the resources (the Settings menu icons offer them); a live list, filled as resources are added
+    // (the plugin pages of the admin live in the System group, which no resource declares)
+    this._menuGroupNames = ['System']
     // keep track of available plugins
     this._plugins = {}
     // Use prefixed UUID
@@ -157,58 +177,102 @@ class CMS {
         logger.warn('No folder found for ', paragraphsDir)
       }
       _.set(this._paragraphs, '_settingsLink', {
-        displayname: 'Settings link',
+        displayname: { enUS: 'Link', zhCN: '链接' },
         maxCount: 1,
         schema: [
           {
             field: 'name',
+            label: { enUS: 'Name', zhCN: '名称' },
             localised: false,
             input: 'string',
-            required: true
+            required: true,
+            options: { hint: { enUS: 'The text of the link', zhCN: '链接文字' } }
           },
           {
             field: 'url',
+            label: { enUS: 'URL', zhCN: '网址' },
             localised: false,
             input: 'url',
-            required: true
+            required: true,
+            options: { hint: { enUS: 'Where the link goes, for example https://example.com', zhCN: '链接地址，例如 https://example.com' } }
           }
         ]
       })
       this.formatSchema(this._paragraphs, '_settingsLink', true)
       _.set(this._paragraphs, '_settingsLinkGroup', {
-        displayname: 'Link group',
+        displayname: { enUS: 'Link group', zhCN: '链接组' },
         maxCount: 1,
         schema: [
           {
-            label: 'Group title',
+            label: { enUS: 'Group title', zhCN: '组标题' },
             field: 'title',
             localised: false,
             input: 'string',
-            required: true
+            required: true,
+            options: { hint: { enUS: 'The heading of this group in the links menu', zhCN: '此组在链接菜单中的标题' } }
           },
           {
             field: 'links',
+            label: { enUS: 'Links', zhCN: '链接' },
             input: 'paragraph',
             localised: false,
             options: {
-              types: ['_settingsLink']
+              types: ['_settingsLink'],
+              hint: { enUS: 'The links of this group', zhCN: '此组的链接' }
             }
           }
         ]
       })
       this.formatSchema(this._paragraphs, '_settingsLinkGroup', true)
+      _.set(this._paragraphs, '_settingsMenuGroup', {
+        displayname: { enUS: 'Menu icon', zhCN: '菜单图标' },
+        maxCount: 1,
+        schema: [
+          {
+            field: 'group',
+            label: { enUS: 'Menu group', zhCN: '菜单组' },
+            localised: false,
+            input: 'select',
+            required: true,
+            // the groups found in the resources, kept up to date as resources are added
+            source: this._menuGroupNames,
+            options: { hint: { enUS: 'The group of the menu that gets this icon', zhCN: '使用此图标的菜单组' } }
+          },
+          {
+            field: 'icon',
+            label: { enUS: 'Icon', zhCN: '图标' },
+            localised: false,
+            input: 'image',
+            required: true,
+            options: {
+              maxCount: 1,
+              accept: '.png,.svg,.jpg,.jpeg,.webp',
+              hint: { enUS: 'Shown in place of the initials in the collapsed menu, and next to the group name', zhCN: '在折叠菜单中代替首字母显示，并显示在组名旁' }
+            }
+          }
+        ]
+      })
+      this.formatSchema(this._paragraphs, '_settingsMenuGroup', true)
     }
     // create main application
     this._app = express()
-    this._app.use(helmet.dnsPrefetchControl())
-    this._app.use(helmet.expectCt())
-    this._app.use(helmet.frameguard())
-    this._app.use(helmet.hidePoweredBy())
-    this._app.use(helmet.hsts())
-    this._app.use(helmet.ieNoOpen())
-    this._app.use(helmet.noSniff())
-    this._app.use(helmet.permittedCrossDomainPolicies())
-    this._app.use(helmet.referrerPolicy())
+    if (options.trustProxy !== undefined) {
+      // req.ip, req.secure and the login lockout follow the proxy chain instead of the raw socket
+      this._app.set('trust proxy', options.trustProxy)
+    }
+    if (this.security.headers) {
+      this._app.use(securityHeaders({ contentSecurityPolicy: this.security.contentSecurityPolicy }))
+    } else {
+      this._app.use(helmet.dnsPrefetchControl())
+      this._app.use(helmet.expectCt())
+      this._app.use(helmet.frameguard())
+      this._app.use(helmet.hidePoweredBy())
+      this._app.use(helmet.hsts())
+      this._app.use(helmet.ieNoOpen())
+      this._app.use(helmet.noSniff())
+      this._app.use(helmet.permittedCrossDomainPolicies())
+      this._app.use(helmet.referrerPolicy())
+    }
     // Enable compression
     this._app.use(compression({
       filter (req, res) {
@@ -216,13 +280,24 @@ class CMS {
       }
     }))
     if (!options.disableAuthentication || !options.disableJwtLogin) {
+      ensureStrongSecrets(options, this.security, this.requiredKeyLength)
       const secret = _.get(this.options, 'auth.secret')
       if (_.isEmpty(secret)) {
         throw new Error('config.auth.secret is missing')
       } else if (_.get(secret, 'length', 0) <= this.requiredKeyLength) {
         throw new Error(`config.auth.secret isn't long enough, adjust the value to have minimum ${this.requiredKeyLength} characters`)
       }
-      let sessionOptions = _.extend({ cookie: {} }, this.options.session)
+      // resave and saveUninitialized default to what express-session does without them (true), said out loud: left out,
+      // it prints a deprecation warning at every start
+      let sessionOptions = _.extend({ cookie: {}, resave: true, saveUninitialized: true }, this.options.session)
+      // sameSite and secure follow the security settings, a cookie option written in the configuration still wins
+      sessionOptions.cookie = _.pickBy({ sameSite: this.security.cookies.sameSite, secure: this.security.cookies.secure, httpOnly: this.security.cookies.httpOnly }, value => value !== false)
+      _.extend(sessionOptions.cookie, _.get(this.options, 'session.cookie'))
+      if (this.security.strictSessions) {
+        // a session is only stored once something was written to it (a login)
+        sessionOptions.resave = false
+        sessionOptions.saveUninitialized = false
+      }
       if (process.env.NODE_ENV === 'production') {
         const FileStore = require('session-file-store')(session)
         sessionOptions.store = new FileStore({
@@ -231,19 +306,29 @@ class CMS {
           logFn: function(){}
         })
       }
-      this._app.use(session(sessionOptions))
+      // the record update socket authenticates its clients with the same session
+      this._sessionMiddleware = session(sessionOptions)
+      this._app.use(this._sessionMiddleware)
+    }
+    const csrf = csrfGuard(this.security)
+    if (csrf) {
+      this._app.use(csrf)
+    }
+    if (!options.disableJwtLogin) {
+      // the JWT login keeps its token in the nodeCmsJwt cookie, which the REST API reads, also when Basic is on
+      this._app.use(cookieParser())
     }
     if (!options.disableAuthentication) {
       // Enables session with basic auth
       this._app.use((req, res, next) => {
-        if (req.session.user && !req.headers.authorization) {
+        // legacy: nothing in this package writes session.user any more, and a plaintext password must not be replayed
+        if (!this.security.hideCredentials && req.session.user && !req.headers.authorization) {
           req.headers.authorization = 'Basic ' + Buffer.from(req.session.user.username + ':' + req.session.user.password).toString('base64')
         }
         next()
       })
     } else if (!options.disableJwtLogin) {
       // Enables session with jwt token auth
-      this._app.use(cookieParser())
       this._app.use((req, res, next) => {
         if (!req.headers.authorization) {
           const token = _.get(req, 'session.nodeCmsUser.token', false)
@@ -265,19 +350,6 @@ class CMS {
       UpdatesManager.init(this, options)
       callback()
     })
-    // Initialize SmartCrop if enabled
-    this.bootstrapFunctions.push(async (callback) => {
-      if (_.get(options, 'smartCrop', false)) {
-        try {
-          const smartCrop = require('./lib/smartcrop')
-          await smartCrop.initialize(options)
-          logger.info('SmartCrop initialization completed during CMS bootstrap')
-        } catch (error) {
-          logger.warn('SmartCrop initialization failed during CMS bootstrap:', error.message)
-        }
-      }
-      callback()
-    })
     this._app.use(SyslogManager.express())
     this._app.use(SystemManager.express())
     const pluginConditions = [
@@ -295,6 +367,10 @@ class CMS {
     _.each(this.usedPlugins, (plugin) => {
       this.use(require(`./lib/plugins/${plugin}`), options, configPath)
     })
+    if (this.security.uniformErrors) {
+      // last in the chain: what no plugin answered ends here as json, without stack trace
+      this._app.use(sendError.middleware)
+    }
     // handle bootstrap
     this.bootstrap = async (server, callback) => {
       if (_.isFunction(server) && _.isUndefined(callback)) {
@@ -320,7 +396,21 @@ class CMS {
     this.oss = new OSSHelper()
   }
 
+  /**
+   * Drops the record update sockets: they are upgraded connections, which closing the http server does not end.
+   */
+  _closeSockets() {
+    if (this.wss) {
+      this.wss.clients.forEach(client => client.terminate())
+      this.wss.close()
+    }
+  }
+
   async _closeDatabase() {
+    this._closeSockets()
+    if (this.$replicator) {
+      await this.$replicator.close()
+    }
     const resourcesToClose = []
     _.each(this._resources, (resource, resourceName) => {
       if (resource.json && _.isFunction(resource.json.close)) {
@@ -342,7 +432,7 @@ class CMS {
     return (err) => {
       logger.warn(`${ signal }...`)
       if (err) {
-        console.error(err.stack || err)
+        logger.error(err.stack || err)
       }
       if (this.isExiting) {
         return
@@ -382,7 +472,7 @@ class CMS {
           field.path = paragraphRootPath
           _.set(this._resources, `["${resourceKey}"].options._attachmentFields["${escapeRegExp(paragraphRootPath, field.localised)}"]`, field)
           _.set(this._attachmentFields,  `${resourceKey}["${escapeRegExp(paragraphRootPath)}"]`, field)
-        } else if (fieldItem.input === 'paragraph') {
+        } else if (paragraphFieldItem.input === 'paragraph') {
           this._processAttachmentFieldsParagraph(paragraphFieldItem, resourceKey, paragraphRootPath)
         }
       })
@@ -418,8 +508,8 @@ class CMS {
           field.path = paragraphRootPath
           _.set(this._resources, `["${resourceKey}"].options._relations["${escapeRegExp(paragraphRootPath)}"]`, field)
           _.set(this._relations,  `${resourceKey}["${escapeRegExp(paragraphRootPath)}"]`, field)
-        } else if (fieldItem.input === 'paragraph') {
-          this._processAttachmentFieldsParagraph(paragraphFieldItem, resourceKey, paragraphRootPath)
+        } else if (paragraphFieldItem.input === 'paragraph') {
+          this._processSourceFieldsParagraph(paragraphFieldItem, resourceKey, paragraphRootPath)
         }
       })
     })
@@ -447,7 +537,18 @@ class CMS {
 
   broadcast = (msg) => {
     if (_.get(this.options, 'wsRecordUpdates', false)) {
-      UpdatesManager.broadcast(msg)
+      UpdatesManager.broadcast(msg, this)
+    }
+  }
+
+  /**
+   * Remembers the name of a menu group (a string, or a per-language object: the English name, else the first one).
+   * @param {string|object} group the `group` of a resource
+   */
+  addMenuGroupName = (group) => {
+    const name = _.isString(group) ? group : _.get(group, 'enUS', _.first(_.values(group)))
+    if (_.isString(name) && !_.isEmpty(name) && !_.includes(this._menuGroupNames, name)) {
+      this._menuGroupNames.push(name)
     }
   }
 
@@ -472,6 +573,7 @@ class CMS {
       if (!_.includes(this._resourceNames, name)) {
         this._resourceNames.push(name)
       }
+      this.addMenuGroupName(opts.group)
     }
     return this._tempResources[key]
   }

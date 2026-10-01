@@ -8,7 +8,7 @@
   },
   "remote": {
     "protocol": "https://",
-    "host": "bkk109.imagination-dev.cn",
+    "host": "cms.example.com",
     "prefix": "/cms",
     "username": "localAdmin",
     "password": "localAdmin1!"

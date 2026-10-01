@@ -4,7 +4,7 @@
 
 > A headless CMS for Node.js: describe your content in JavaScript files, get an admin app, a REST API and a JavaScript API
 
-[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE) [![Node](https://img.shields.io/badge/Node-%3E%3D22.12-339933?style=flat-square)](#try-it-in-five-minutes) [![Storage](https://img.shields.io/badge/Storage-JSON%20%7C%20MongoDB%20%7C%20PostgreSQL-orange?style=flat-square)](docs/CONFIG.md) [![Express](https://img.shields.io/badge/Express-mountable-lightgrey?style=flat-square)](docs/GETTING_STARTED.md) [![Locales](https://img.shields.io/badge/Content-translatable-blueviolet?style=flat-square)](docs/CONCEPTS.md) [![Tests](https://img.shields.io/badge/Tests-unit%20%7C%20security%20%7C%20frontend-brightgreen?style=flat-square)](docs/TESTING.md)
+[![License](https://img.shields.io/badge/License-GPL--3.0--only-blue?style=flat-square)](LICENSE) [![Node](https://img.shields.io/badge/Node-%3E%3D22.12-339933?style=flat-square)](#try-it-in-five-minutes) [![Storage](https://img.shields.io/badge/Storage-JSON%20%7C%20MongoDB%20%7C%20PostgreSQL-orange?style=flat-square)](docs/CONFIG.md) [![Express](https://img.shields.io/badge/Express-mountable-lightgrey?style=flat-square)](docs/GETTING_STARTED.md) [![Locales](https://img.shields.io/badge/Content-translatable-blueviolet?style=flat-square)](docs/CONCEPTS.md) [![Tests](https://img.shields.io/badge/Tests-unit%20%7C%20security%20%7C%20frontend-brightgreen?style=flat-square)](docs/TESTING.md)
 
 You describe your content in plain JavaScript files, one per resource, and node-cms gives you three things from them: an admin app where editors write and translate that content, a REST API that serves it to your sites and apps, and a JavaScript API for your own server code.
 
@@ -101,4 +101,4 @@ those defaults.
 Setting up a development copy, running the tests and writing commits: [CONTRIBUTING.md](CONTRIBUTING.md). Reporting a
 vulnerability: [SECURITY.md](SECURITY.md#reporting-a-vulnerability).
 
-Authors: Edouard Durand, Hugo Barbier. Released under the [MIT license](LICENSE).
+Authors: Edouard Durand, Hugo Barbier. Released under the [GNU GPL, version 3 only](LICENSE); versions up to 2.6.1 were MIT, and their notice is kept in the license file.

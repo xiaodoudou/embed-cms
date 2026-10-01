@@ -1,6 +1,6 @@
 {
   "name": "node-cms",
-  "version": "2.6.1",
+  "version": "3.0.0",
   "description": "Content management system, written in node.js, uses leveldb as an asset and content store.",
   "main": "index.js",
   "types": "index.d.ts",
@@ -71,7 +71,7 @@
     "cms-import-remote": "./importFromRemote.js"
   },
   "author": "Edouard Durand",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "dependencies": {
     "@e965/xlsx": "^0.20.3",
     "@json-editor/json-editor": "^2.10.1",

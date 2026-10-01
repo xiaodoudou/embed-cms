@@ -64,9 +64,9 @@ backup, and then exits the process, so run the CMS under a supervisor (systemd, 
 | `importFromRemote` | `true` | The plugin that copies records from another node-cms. See [IMPORT.md](IMPORT.md). |
 | `xlsx` | not set | Turn on the Excel export and import routes (`true`). See [IMPORT.md](IMPORT.md). |
 | `anonymousRead` | not set | A list of resource names anyone may read without logging in. At each start the CMS adds them to the read rights of the `anonymous` group. |
-| `smartCrop` | `false` | Face- and object-aware cropping of images. Needs extra packages, see [SMART_CROPPING.md](SMART_CROPPING.md). |
 | `wsRecordUpdates` | `true` | Broadcast record changes over a websocket, so an open admin sees edits made elsewhere. |
-| `disableDarkMode` | `true` | With `false`, the admin offers a light/dark theme switch. |
+| `disableDarkMode` | `true` | With `true`, the login page and the admin are always light. With `false`, the login page follows the system's light or dark preference, and the admin follows each user's **Theme**, with a switch in the top bar. |
+| `admin.language` | English only | The admin's languages: `{ "defaultLocale": "enUS", "locales": ["enUS", "zhCN"] }`. The older form `admin.config.language` is read too. |
 | `toolbarTitle` | not set | Text shown in the admin's top bar. A string, or one text per admin language: `{ "enUS": "Newsroom", "zhCN": "新闻室" }`. |
 
 ## Authentication
@@ -78,6 +78,7 @@ combinations spelled out:
 |---|---|---|
 | `false` | `true` | **The default.** HTTP Basic authentication. The browser shows its own login prompt for the admin, and REST clients send an `Authorization: Basic` header. |
 | `true` | `false` | Login page. The admin shows a login form; a successful login stores a JWT (valid 24 hours) in the `nodeCmsJwt` cookie. API clients get the token from `POST /admin/login` and send it back as an `x-access-token` header, a `token` query parameter or the cookie. |
+| `false` | `false` | Both. The admin shows the login page and uses the JWT cookie; REST clients can still send Basic credentials. |
 | `true` | `true` | No authentication at all. Everyone is the `anonymous` user and gets the rights of the `anonymous` group. |
 
 Who may do what is decided by groups, not by these switches: see [Users, groups and rights](CONCEPTS.md#users-groups-and-rights).
@@ -116,8 +117,9 @@ from. The behaviour depends on the operating system, so read this table carefull
 `syslog.max` (default `2000`) is the number of lines kept in memory and sent to a page that opens. On Linux,
 `journalctl` and `syslog` need an `identifier`: without one nothing is captured.
 
-The code also has a `command` method (`"command": "tail -f /var/log/app.log"`), but it is never started in the current
-release: see [BUGS.md](BUGS.md).
+`{ "method": "command", "command": "tail -F /var/log/app.log" }` follows the output of any command, on every operating
+system and without an `identifier`. It runs through the shell, so pipes work, and it is started again 2 seconds after it
+exits, which makes it a poor fit for one-shot commands.
 
 How much the CMS itself prints is set by the `LOG_LEVEL` environment variable: `error`, `warn`, `info` (the default),
 `verbose`, `debug` or `silent`. Requests a client got wrong (a duplicate key, a refused query) are logged at `debug`, so
@@ -177,3 +179,4 @@ Earlier versions of these docs listed some options the code doesn't read. Settin
 - `defaultPaging`: a list without `limit` returns every record;
 - `test`;
 - `disableSync` (leave out the `sync` block instead).
+- `smartCrop` (smart cropping needs no setup: ask for it with `smart=true`, see [SMART_CROPPING.md](SMART_CROPPING.md)).

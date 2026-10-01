@@ -2,9 +2,9 @@
   <div class="wrapper-color">
     <field-label :schema="schema" />
     <v-color-picker
-      v-if="options.model" ref="input" :key="schema.model + 'custom'" :model-value="color" variant="outlined" @update:model-value="onPick"
-      elevation="0" :dot-size="options.dotSize" :hide-canvas="options.hideCanvas" :hide-sliders="options.hideSliders"
-      :hide-inputs="options.hideInputs" :model="options.outputModel" :disabled="isLocked()" :class="{disabled: isLocked()}"
+      v-if="options.model" ref="input" :key="schema.model + 'custom'" :model-value="color" variant="outlined" elevation="0"
+      :dot-size="options.dotSize" :hide-canvas="options.hideCanvas" :hide-sliders="options.hideSliders" :hide-inputs="options.hideInputs"
+      :model="options.outputModel" :disabled="isLocked()" :class="{disabled: isLocked()}" @update:model-value="onPick"
     />
     <div v-if="showHint()" class="help-block">
       <v-icon size="small" icon="$information" />

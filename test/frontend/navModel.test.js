@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import {
   resolveNavMode, toggledPref, clampNavWidth, resizeByKey, groupInitials, groupTint, moveInList, flyoutPosition,
-  groupKey, groupHoldsItem, railSections, orderResources, isOthersGroup, NAV_DEFAULT_WIDTH, NAV_MIN_WIDTH, NAV_MAX_WIDTH, NAV_TINT_COUNT
+  groupKey, groupHoldsItem, railSections, orderResources, orderGroups, isOthersGroup, NAV_DEFAULT_WIDTH, NAV_MIN_WIDTH, NAV_MAX_WIDTH, NAV_TINT_COUNT
 } from '../../src/utils/navModel.js'
 
 describe('sidebar mode', () => {
@@ -137,5 +137,36 @@ describe('menu icons from Settings', () => {
     expect(menuIconMap({})).toEqual({})
     expect(groupSettingsName({ name: { enUS: 'CMS', zhCN: '内容' } })).toBe('CMS')
     expect(groupSettingsName({ name: 'Plain' })).toBe('Plain')
+  })
+})
+
+describe('menu group order', () => {
+  const groups = [
+    { name: 'TL_OTHERS' }, { name: 'TL_PLUGINS' }, { name: 'System' }, { name: { enUS: 'Shop', zhCN: '商店' } },
+    { name: { enUS: 'CMS', zhCN: '内容管理系统' } }, { name: 'blog' }, { name: { enUS: 'Analytics', zhCN: '分析' } }
+  ]
+  const words = { enUS: { TL_OTHERS: 'Others', TL_PLUGINS: 'Plugins' }, zhCN: { TL_OTHERS: '其他', TL_PLUGINS: '插件' } }
+  // what TranslateService.get shows: a TL_ key translated, plain text as it is, a per-language name in the language
+  const labelIn = (locale) => (name) => (typeof name === 'string' ? (words[locale][name] || name) : name[locale])
+
+  it('puts CMS first and Others last, the rest alphabetically by the displayed name', () => {
+    expect(orderGroups(groups, labelIn('enUS'), 'enUS').map((group) => labelIn('enUS')(group.name)))
+      .toEqual(['CMS', 'Analytics', 'blog', 'Plugins', 'Shop', 'System', 'Others'])
+  })
+  it('recognises CMS by its English name, given per language or as plain text', () => {
+    expect(orderGroups([{ name: 'Alpha' }, { name: 'CMS' }], labelIn('enUS'))[0].name).toBe('CMS')
+    expect(orderGroups(groups, labelIn('zhCN'), 'zhCN')[0].name.enUS).toBe('CMS')
+  })
+  it('sorts in the admin language', () => {
+    const order = orderGroups(groups, labelIn('zhCN'), 'zhCN').map((group) => labelIn('zhCN')(group.name))
+    expect(order[0]).toBe('内容管理系统')
+    expect(order[order.length - 1]).toBe('其他')
+    const middle = order.slice(1, -1)
+    expect(middle).toEqual([...middle].sort(new Intl.Collator('zh-CN').compare))
+  })
+  it('leaves the given list alone and survives a language tag the browser does not know', () => {
+    const copy = [...groups]
+    expect(orderGroups(groups, labelIn('enUS'), 'not a tag!')).toHaveLength(groups.length)
+    expect(groups).toEqual(copy)
   })
 })

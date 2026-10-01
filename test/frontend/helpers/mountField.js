@@ -5,8 +5,10 @@ import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
+import { mdiChevronDown } from '@mdi/js'
 import TranslateService from '@s/TranslateService'
 import TranslateFilter from '@f/Translate'
+import TruncateFilter from '@f/Truncate'
 import FieldLabel from '@c/fields/FieldLabel.vue'
 
 // The real English dictionary, so that tests read the words a person sees (and a renamed key fails them)
@@ -18,7 +20,7 @@ TranslateService.locale = 'enUS'
  * `model` and `schema` are the props every field receives; other mounting options are passed through.
  */
 export function mountComponent (component, options = {}) {
-  const vuetify = createVuetify({ components, directives, icons: { defaultSet: 'mdi', aliases, sets: { mdi } } })
+  const vuetify = createVuetify({ components, directives, icons: { defaultSet: 'mdi', aliases: { ...aliases, chevronDown: mdiChevronDown }, sets: { mdi } } })
   const extra = options.global || {}
   return mount(component, {
     ...options,
@@ -27,7 +29,7 @@ export function mountComponent (component, options = {}) {
       // what a test adds (components, plugins, mocks like $loading) comes on top of the app's own environment
       plugins: [vuetify, ...(extra.plugins || [])],
       components: { FieldLabel, ...(extra.components || {}) },
-      config: { globalProperties: { $filters: { translate: TranslateFilter }, ...(extra.config?.globalProperties || {}) } }
+      config: { ...(extra.config || {}), globalProperties: { $filters: { translate: TranslateFilter, truncate: TruncateFilter }, ...(extra.config?.globalProperties || {}) } }
     }
   })
 }

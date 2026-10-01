@@ -177,11 +177,29 @@ describe('HTTP hardening (security)', () => {
       }
     })
 
-    it('still answers the historic html error page with the legacy profile', async () => {
+    it('answers a rejected or malformed query with a 400 json body with the legacy profile too (#20)', async () => {
       const app = await startApp()
       try {
-        const res = await request(app.url).get('/api/articles').auth(...ADMIN).query({ query: JSON.stringify({ $where: '1' }) })
-        expect(res.status).to.equal(500)
+        for (const query of [JSON.stringify({ $where: '1' }), '{not json']) {
+          const res = await request(app.url).get('/api/articles').auth(...ADMIN).query({ query })
+          expect(res.status, query).to.equal(400)
+          expect(res.type, query).to.equal('application/json')
+          expect(res.body.code, query).to.equal(400)
+          expect(res.text, query).to.not.match(/\bat .*\.js:\d+|node_modules|\/home\//)
+        }
+      } finally {
+        await app.close()
+      }
+    })
+
+    it('answers a malformed query with a 400 json body (hardened profile)', async () => {
+      const app = await startApp(hardened())
+      try {
+        const admin = await createUser(app)
+        const res = await request(app.url).get('/api/articles').auth(admin.username, admin.password).query({ query: '{not json' })
+        expect(res.status).to.equal(400)
+        expect(res.type).to.equal('application/json')
+        expect(res.body.code).to.equal(400)
       } finally {
         await app.close()
       }

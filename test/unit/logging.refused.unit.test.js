@@ -1,12 +1,10 @@
 const request = require('supertest')
 const { expect } = require('chai')
 const logger = require('../../lib/logger')
-const { startApp, hardened, createUser } = require('../helpers/app')
+const { startApp, hardened, createUser, ADMIN } = require('../helpers/app')
 
 // A request the CMS refuses because of what the client sent (a query it does not accept, wrong credentials, a missing
 // token) is an answer, not a server fault: it must not fill the log with error lines and stack traces.
-// (The default profile leaves a rejected ?query= to Express's own error handler on purpose, see SECURITY.md: only the
-// hardened profile is checked for that one.)
 
 describe('logging of refused requests (unit)', () => {
   let lines
@@ -46,6 +44,13 @@ describe('logging of refused requests (unit)', () => {
       lines.length = 0
       const res = await request(app.url).get('/api/articles')
       expect(res.status).to.equal(401)
+      expect(errors(), JSON.stringify(errors())).to.have.length(0)
+    })
+
+    it('answers a query it does not accept with a 400 and logs no error', async () => {
+      lines.length = 0
+      const res = await request(app.url).get('/api/articles').auth(...ADMIN).query({ query: JSON.stringify({ $where: 'true' }) })
+      expect(res.status).to.equal(400)
       expect(errors(), JSON.stringify(errors())).to.have.length(0)
     })
   })

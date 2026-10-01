@@ -95,6 +95,13 @@ describe('ToastHost', () => {
     expect(wrapper.vm.toasts.map((t) => t.message)).toEqual(['Saved'])
   })
 
+  it('names the copyable detail: a record id by default, or what the sender says it is', async () => {
+    NotificationsService.send('Record saved', 'success', { detail: 'abc123' })
+    NotificationsService.send('Sync failed', 'error', { detail: 'peer: ECONNREFUSED', detailLabel: 'TL_COPY_ERRORS' })
+    await wrapper.vm.$nextTick()
+    expect(toasts().map((toast) => toast.find('.toast-actions .toast-link').text())).toEqual(['Copy id', 'Copy the errors'])
+  })
+
   it('treats an unknown type as info', async () => {
     NotificationsService.send('Odd', 'whatever')
     await wrapper.vm.$nextTick()

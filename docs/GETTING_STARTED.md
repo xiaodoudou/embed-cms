@@ -9,19 +9,16 @@ If a word is unfamiliar (resource, locale, paragraph), [CONCEPTS.md](CONCEPTS.md
 
 ## 1. Add node-cms to your project
 
-node-cms is an Express application you mount in yours. In a project folder with a `package.json` (run `npm init -y` if
-you don't have one; node-cms needs it):
+node-cms is an Express application you mount in yours. In your project folder:
 
 ```sh
 npm install git+https://github.com/xiaodoudou/node-cms-private.git express
 ```
 
-The admin app ships as source code, so build it once after installing, and again after each upgrade of node-cms. The
-build looks for your own admin pages in `node-cms/plugins/` at the root of your project; if you have none yet, start from
-the empty sample, or the build fails ([BUGS.md](BUGS.md#start-up-and-configuration)):
+The install builds the admin app as it goes (it takes a minute or two, for the build tools). If you add admin pages of
+your own in `node-cms/plugins/` at the root of your project, rebuild it so they are included:
 
 ```sh
-mkdir -p node-cms && cp -r node_modules/node-cms/src/.plugins node-cms/plugins   # first time only
 cd node_modules/node-cms
 npm install --include=dev
 npm run build
@@ -49,7 +46,9 @@ process.on('SIGINT', cms.shutdown('SIGINT'))   // closes the stores cleanly
 process.on('SIGTERM', cms.shutdown('SIGTERM'))
 ```
 
-`node server.js` creates `cms.json`, `resources/` and `data/` in the current folder. Pass `bootstrap` the HTTP server, as
+`node server.js` creates `cms.json`, `resources/` and `data/` in the current folder. (To try a project's resources without writing
+any code, the `cms` command that comes with node-cms does the same: run `npx cms` in the project folder, and set `PORT`
+to change its port from 9990.) Pass `bootstrap` the HTTP server, as
 above: the admin uses it for live updates over a websocket.
 
 `mid` names this server: it must be **exactly 8 characters** and different on every server that shares content. You
@@ -162,8 +161,8 @@ Users and rights are content too, in the **CMS** group of the menu.
 3. Create your own administrator in the `admins` group, sign in with it, and delete `localAdmin`.
 
 The `admins` group gets every right on every resource at each start, so a new resource is never locked away from it.
-The built-in pages of the System menu (Syslog, Cms Config) are for the `admins` group only, and each shows up once its
-name is in the group's **plugins** list: Syslog is added at every start, Cms Config you add yourself.
+The built-in pages of the System menu (Syslog, Cms Config, and Replicator when replication runs) are for the `admins`
+group only, which gets them in its **plugins** list at every start.
 
 ## 6. Go to production
 
@@ -183,11 +182,10 @@ the admin exits the process on purpose.
 
 | You see | Why, and what to do |
 |---|---|
-| `Cannot find module '…/package.json'` at start | node-cms needs a `package.json` in the folder you start it from. Run `npm init -y`. |
 | `Machine id should be an 8 digit string` when saving | `mid` isn't 8 characters. Fix it before you have records. |
-| A blank admin page, `ENOENT … dist/index.html` in the log | The admin app isn't built. Run the build of step 1. |
+| `The admin app is not built` (503) on `/admin` | node-cms was installed without its build (with `--omit=dev`, or `NODE_CMS_SKIP_BUILD` set). Run the rebuild of step 1. |
 | `401` from the API | No credentials, and the `anonymous` group can't read that resource. Use `anonymousRead` or send a login. |
-| `200` with `null` for a record | The id doesn't exist. The API doesn't answer `404` yet ([BUGS.md](BUGS.md#rest-api)). |
+| `404` for a record | No record has that id, or it was removed. |
 | A new field doesn't show up | Restart: resource files are read at start-up. |
 | `EADDRINUSE` | Another process holds the port. |
 | The server refuses to start in production | The secrets are missing, short or still the published defaults. See [SECURITY.md](../SECURITY.md). |

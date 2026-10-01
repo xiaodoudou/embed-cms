@@ -41,7 +41,7 @@
 
   import Loading from '@c/Loading.vue'
   import BrandLogo from '@c/BrandLogo.vue'
-  import { applyThemeToDocument } from '@u/theme'
+  import { applyThemeToDocument, pickTheme } from '@u/theme'
   import LoadingService from '@s/LoadingService'
   import ConfigService from '@s/ConfigService'
   import TranslateService from '@s/TranslateService'
@@ -73,10 +73,8 @@
     },
     async mounted () {
       LoadingService.events.on('has-loading', this.onLoading)
-      this.loginTheme = applyThemeToDocument(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-      if (_.isFunction(_.get(this.$vuetify, 'theme.change'))) {
-        this.$vuetify.theme.change(this.loginTheme)
-      }
+      // light until the configuration says whether dark mode is allowed, so the page does not flash dark then light
+      this.applyLoginTheme()
       this.$loading.start('init')
       try {
         const noLogin = _.get(window, 'noLogin', false)
@@ -84,6 +82,7 @@
           LoginService.init()
         }
         await ConfigService.init()
+        this.applyLoginTheme()
         await TranslateService.init()
         this.loaded = true
       } catch (error) {
@@ -98,6 +97,14 @@
       this.$loading.stop('init')
     },
     methods: {
+      // the system preference, unless dark mode is turned off (as the admin itself does)
+      applyLoginTheme () {
+        const prefersDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        this.loginTheme = applyThemeToDocument(pickTheme(ConfigService.config, prefersDark ? 'dark' : 'light'))
+        if (_.isFunction(_.get(this.$vuetify, 'theme.change'))) {
+          this.$vuetify.theme.change(this.loginTheme)
+        }
+      },
       async onLoading(isLoading) {
         await this.$nextTick()
         this.isLoading = isLoading

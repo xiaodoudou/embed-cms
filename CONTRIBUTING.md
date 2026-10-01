@@ -14,20 +14,21 @@ cd node-cms
 npm ci
 ```
 
-`npm ci` installs `sharp` and `canvas`, which are native modules. Both normally download prebuilt binaries. If one has to
-compile instead, it needs a C++ toolchain and Python, and `canvas` needs Cairo and Pango: on Debian or Ubuntu,
-`sudo apt-get install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev`; on Windows, see
-the [node-canvas installation guide](https://github.com/Automattic/node-canvas/wiki/Installation:-Windows). On an Apple
-Silicon Mac, a failing C++ build is often fixed by `CXXFLAGS="--std=c++17" npm ci`.
+`npm ci` installs `sharp`, the image library, which downloads a prebuilt binary for your platform; there is nothing
+else to compile.
+
+The first `npm ci` also builds the admin app into `dist/` (`scripts/prepare.js`, the `prepare` script, which builds only
+when `dist/` is missing); set `NODE_CMS_SKIP_BUILD=1` to skip it. `npm pack` always rebuilds it first (`prepack`), and the
+`files` list of `package.json` decides what the package contains: add a new top-level file there if the CMS needs it at
+run time.
 
 ## Running it
 
 There are two ways, depending on what you work on.
 
-**Backend, or a quick look.** Build the admin once and start the server:
+**Backend, or a quick look.** Start the server (run `npm run build` after changing `src/`):
 
 ```sh
-npm run build
 node server.js            # http://localhost:9990/admin, localAdmin / localAdmin
 ```
 
@@ -41,7 +42,9 @@ npm run dev               # Vite on 19990, proxying /admin, /api and the plugin 
 Open <http://localhost:19990/admin/>. Opening port 9990 in this mode gives a blank page, because nothing there compiles
 `src/`. The VS Code workspace has a launch configuration that attaches to the backend.
 
-`server.js` is a development harness: it turns on the sync plugin and turns off replication. The resources in
+`server.js` (the `cms` command) is a development harness when it runs in this folder: it turns on the sync plugin and
+turns off replication (`lib/cliOptions.js`). Run anywhere else, it starts a plain CMS from that folder's `cms.json`.
+`PORT` changes its port. The resources in
 `resources/` are the field catalogue, one resource per family of field types, which is also what the field documentation's
 screenshots show.
 

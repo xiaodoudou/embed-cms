@@ -2,6 +2,7 @@ const fs = require('fs')
 const path = require('path')
 const { expect } = require('chai')
 const { startApp } = require('../helpers/app')
+const { Driver } = require('../../lib/util/driver')
 
 const image = path.join(__dirname, '..', 'man.jpg')
 
@@ -60,6 +61,14 @@ describe('driver / resource CRUD (unit)', () => {
       const created = await notes.create({ message: 'bye' })
       await notes.remove(created._id)
       expect(await notes.find(created._id)).to.equal(null)
+    })
+    it('find with a query leaves the options it is given alone (#26)', async () => {
+      await notes.create({ message: 'options-a' })
+      await notes.create({ message: 'options-b' })
+      const options = {}
+      await notes.find({ message: 'options-a' }, options)
+      expect(options).to.deep.equal({})
+      expect((await notes.list({}, options)).length).to.be.greaterThan(1)
     })
     it('list returns every created record', async () => {
       const before = (await notes.list()).length
@@ -176,6 +185,30 @@ describe('driver / resource CRUD (unit)', () => {
       } catch (error) {
         expect(error).to.have.property('code')
       }
+    })
+    it('cleanAttachmentCache has removed the cached copies when it resolves (#27)', async () => {
+      const articles = api('articles')
+      const resource = app.cms.resource('articles')
+      const record = await articles.create({ title: 'cached copies' })
+      const attachment = await upload(record._id)
+      const copies = [`${attachment._id}-10x10`, `${attachment._id}-20x20`]
+      for (const copy of copies) {
+        fs.writeFileSync(path.join(resource.file._dir, copy), 'x')
+      }
+      const remove = resource.file.remove
+      resource.file.remove = async (id) => {
+        await new Promise(resolve => setTimeout(resolve, 20))
+        return remove.call(resource.file, id)
+      }
+      try {
+        await Driver.cleanAttachmentCache(resource, attachment._id)
+      } finally {
+        resource.file.remove = remove
+      }
+      for (const copy of copies) {
+        expect(fs.existsSync(path.join(resource.file._dir, copy)), copy).to.equal(false)
+      }
+      expect(fs.existsSync(path.join(resource.file._dir, attachment._id))).to.equal(true)
     })
     it('persists attachment files on disk under the data directory', async () => {
       const articles = api('articles')

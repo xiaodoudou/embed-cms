@@ -1,3 +1,5 @@
+const fs = require('fs')
+const path = require('path')
 const request = require('supertest')
 const { expect } = require('chai')
 const { startApp, ADMIN } = require('../helpers/app')
@@ -42,6 +44,31 @@ describe('refused changes to records (unit)', () => {
       expect(res.status).to.equal(403)
       expect(res.body.message).to.match(/foreign/i)
       expect(JSON.parse(JSON.stringify(await articles.json._db.get(id))).rate).to.equal(undefined)
+    })
+  })
+
+  describe('the files of a record of another machine', () => {
+    // a foreign record with one attachment, whose file is on disk
+    const putForeignWithFile = async () => {
+      const aid = `muov4cv2abcdefgh${Math.random().toString(36).slice(2, 10)}`
+      fs.writeFileSync(path.join(articles.file._dir, aid), 'replicated file')
+      const id = await putForeign({ _attachments: [{ _id: aid, _name: 'image', _contentType: 'image/png', _fields: {} }] })
+      return { id, aid }
+    }
+
+    it('are kept when the delete of the record is refused', async () => {
+      const { id, aid } = await putForeignWithFile()
+      const res = await request(app.url).delete(url(id)).auth(...ADMIN)
+      expect(res.status).to.equal(403)
+      expect(articles.file.exists(aid), 'the attachment file').to.equal(true)
+    })
+
+    it('are kept when the delete of one attachment is refused', async () => {
+      const { id, aid } = await putForeignWithFile()
+      const res = await request(app.url).delete(`${url(id)}/attachments/${aid}`).auth(...ADMIN)
+      expect(res.status).to.equal(403)
+      expect(res.body.message).to.match(/foreign/i)
+      expect(articles.file.exists(aid), 'the attachment file').to.equal(true)
     })
   })
 

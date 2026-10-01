@@ -23,7 +23,7 @@ rather than repeat it, so if two pages ever disagree, the owner is right (and th
 
 - [**API**](API.md): the REST routes, querying and paging, attachments and image resizing, the JavaScript API and hooks.
 - [**RestHelper**](REST_HELPER.md): the REST middlewares in your own Express routes.
-- [**Smart cropping**](SMART_CROPPING.md): face-aware image crops (detection is switched off in this release).
+- [**Smart cropping**](SMART_CROPPING.md): resizes that keep the interesting part of a picture, not its centre.
 
 ## Running it
 
@@ -63,7 +63,7 @@ rather than repeat it, so if two pages ever disagree, the owner is right (and th
 | How the code fits together | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Test commands and CI | [CONTRIBUTING.md](../CONTRIBUTING.md) (commands), [TESTING.md](TESTING.md) (how the tests work) |
 | Design tokens and UI rules | [UI_REDESIGN.md](UI_REDESIGN.md) |
-| A plugin's own options | its page: [REPLICATION.md](REPLICATION.md), [SYNC.md](SYNC.md), [IMPORT.md](IMPORT.md), [SMART_CROPPING.md](SMART_CROPPING.md) |
+| A plugin's own options | its page: [REPLICATION.md](REPLICATION.md), [SYNC.md](SYNC.md), [IMPORT.md](IMPORT.md) |
 
 `resourceExamples/` holds older sample resources. They are not maintained and some use options that no longer exist (a
 `select` with `options.resource` instead of `source`, table `options` nothing reads): prefer the catalogue in

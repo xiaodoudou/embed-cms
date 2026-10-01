@@ -58,7 +58,7 @@ to download them. A resize cache and a crop are made on request (see below).
 | Method and path | What it does |
 |---|---|
 | `GET /api/:resource` | List records. Accepts `query`, `limit` and `page`. |
-| `GET /api/:resource/:id` | One record. An unknown id answers `200` with `null`, not `404`. |
+| `GET /api/:resource/:id` | One record, or `404` when there is no record with that id. |
 | `POST /api/:resource` | Create a record from the JSON body; answers the record. |
 | `PUT /api/:resource/:id` | Update: the body is merged into the record, so send only what changes. |
 | `DELETE /api/:resource/:id` | Remove the record and its attachments; answers `true`. |
@@ -77,8 +77,9 @@ A record made by another node of a replicated setup (its id carries that node's 
 be changed or deleted here: `PUT` and `DELETE` answer `403` with `Can't modify foreign records`, and the record stays.
 Edit it on the node that created it. A delete the store fails to carry out answers `500`; it is never reported as done.
 
-A JSON body is limited to 100 KB by default (`security.limits.json` in [SECURITY.md](../SECURITY.md#settings)). A larger
-body answers `413`.
+A JSON body is limited to 100 KB by default, on every route. The one setting is `security.limits.json` (see
+[SECURITY.md](../SECURITY.md#settings)); a larger body answers `413` with a JSON message that names it, for example
+`Request body larger than security.limits.json (100kb)`.
 
 ### Querying and paging
 
@@ -109,18 +110,18 @@ Things to know:
 - The filter runs in the CMS, over every record of the resource, whatever the storage engine. That is fast for
   thousands of records and slower for hundreds of thousands (see the benchmark in
   [BACKEND_AUDIT.md](BACKEND_AUDIT.md#appendix-b-performance-results-phase-5)).
-- A refused query answers `400` with the `hardened` profile. With the default `legacy` profile it currently answers
-  `500` with an HTML page ([BUGS.md](BUGS.md)).
+- A refused query answers `400` with the reason as JSON, in every profile; so does a `query` that isn't valid JSON.
 
 ### Attachments
 
-Upload a file with a multipart `POST`. **The name of the file part is the field it belongs to**, and a `_filename`
-text part keeps the original file name:
+Upload a file with a multipart `POST`. **The name of the file part is the field it belongs to**:
 
 ```sh
-curl -u localAdmin:localAdmin localhost:9990/api/articles/<id>/attachments \
-  -F cover=@harbour.jpg -F _filename=harbour.jpg
+curl -u localAdmin:localAdmin localhost:9990/api/articles/<id>/attachments -F cover=@harbour.jpg
 ```
+
+The attachment keeps the name of the uploaded file (`harbour.jpg`), and its type is taken from that name. A `_filename`
+text part, which the admin sends, overrides it.
 
 Send one file per request: only the first file of a request is kept. Other text parts are stored in `_fields`, except
 `order` (a number, for sorting the files of a field) and `cropOptions` (JSON, used by `/cropped` below).
@@ -143,9 +144,23 @@ download instead of opening in the browser (see `strictUploads` and `safeAttachm
 
 ### Localised records over REST
 
-Send localised values field first, the way the admin stores them: `{ "title": { "enUS": "Hello" } }`. The `?locale=`
-parameter on a create stores the record locale first (`{ "enUS": { "title": "Hello" } }`) instead, a shape the admin
-doesn't read, and drops `_updatedBy` on the way. Avoid it.
+Send localised values field first, the way the admin stores them: `{ "title": { "enUS": "Hello", "zhCN": "你好" } }`.
+
+When a client works in one language at a time, `?locale=` saves it from building that shape: the plain values of the
+body are taken as that locale's values.
+
+```sh
+# create, with the Chinese values
+curl -u localAdmin:localAdmin -X POST 'localhost:9990/api/articles?locale=zhCN' \
+  -H 'Content-Type: application/json' -d '{ "title": "你好", "slug": "hello" }'
+# stored as { "title": { "zhCN": "你好" }, "slug": "hello" } (slug is not localised)
+
+# later, add the English title without touching the Chinese one
+curl -u localAdmin:localAdmin -X PUT 'localhost:9990/api/articles/<id>?locale=enUS' \
+  -H 'Content-Type: application/json' -d '{ "title": "Hello" }'
+```
+
+Only localised fields are wrapped; other keys are stored as sent. A locale the resource doesn't declare answers `400`.
 
 ### Authentication and errors
 

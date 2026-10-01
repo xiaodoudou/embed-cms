@@ -102,14 +102,16 @@
       },
       async onChangeXlsxFile (event, files = false) {
         this.uploadedXlsx = null
-        const file = _.first(files || _.get(event, 'target.files', event)) || event
+        // the change event holds the files, a drop hands them over, and some Vuetify versions hand over the file itself
+        const file = _.first(files || _.get(event, 'target.files', event)) || (event instanceof Blob ? event : null)
         if (!file) {
           return
         }
         this.uploadedXlsx = file
       },
       openFile () {
-        window.open(`https://docs.google.com/spreadsheets/d/${this.config.gsheetId}/edit`, '_blank').focus()
+        // a blocked pop-up gives no window
+        window.open(`https://docs.google.com/spreadsheets/d/${this.config.gsheetId}/edit`, '_blank')?.focus()
       },
       async checkStatus () {
         this.loading = true

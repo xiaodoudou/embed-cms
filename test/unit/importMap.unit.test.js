@@ -36,7 +36,7 @@ describe('import map (unit)', () => {
   let app, products, resource
 
   before(async () => {
-    app = await startApp({ resources: './test/bench/resources', smartCrop: false })
+    app = await startApp({ resources: './test/bench/resources' })
     products = app.cms.api()('products')
     resource = app.cms.resource('products')
     for (let i = 0; i < 30; i++) {

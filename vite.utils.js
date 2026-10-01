@@ -59,7 +59,8 @@ class ViteUtils {
     if (fs.existsSync(this.plugins.fallback) === false) {
       throw new Error(`No .plugins folder found @ ${this.plugins.fallback}`)
     }
-    if (fs.existsSync(path.join(this.plugins.toBuild, 'js/main.js'))) {
+    // an earlier symlink is replaced, also when its target has gone (existsSync follows the link and says false then)
+    if (_.attempt(() => fs.lstatSync(this.plugins.toBuild).isSymbolicLink()) === true) {
       console.log(`Found plugins folder symlink @ ${this.plugins.toBuild}`)
       fs.unlinkSync(this.plugins.toBuild)
     }
@@ -99,7 +100,7 @@ class ViteUtils {
       rewrite: (path) => path.replace(regex, ''),
       configure: (proxy) => this.handleProxyCall(`^${this.nodeCmsMountPath}(admin)`, proxy)
     })
-    _.set(this.proxy, `^${this.nodeCmsMountPath}(api|import|importFromRemote|sync)`, {
+    _.set(this.proxy, `^${this.nodeCmsMountPath}(api|import|importFromRemote|sync|replicator)`, {
       target: `${this.baseUrl}:${this.serverPort}`
     })
     _.set(this.proxy, '^/(socket)', {

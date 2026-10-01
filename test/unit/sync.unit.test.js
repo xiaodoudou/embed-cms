@@ -46,10 +46,10 @@ describe('sync plugin (unit)', () => {
       const res = await request(app.url).get('/sync/cities').query({ token: `${TOKEN}x` })
       expect(res.status).to.equal(401)
     })
-    it('requires the token for the from/to trigger as well', async () => {
+    it('requires the token (or, for POST, a logged-in user) for the from/to trigger as well', async () => {
       const post = await request(app.url).post('/sync/cities/from/remote/to/local')
       const get = await request(app.url).get('/sync/cities/from/remote/to/local')
-      expect(post.status).to.equal(401)
+      expect(post.status).to.be.oneOf([401, 403])
       expect(get.status).to.equal(401)
     })
     it('refuses resources that are not listed in the sync config', async () => {

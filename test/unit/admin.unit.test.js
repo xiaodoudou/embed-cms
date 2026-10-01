@@ -1,6 +1,6 @@
 const request = require('supertest')
 const { expect } = require('chai')
-const { startApp } = require('../helpers/app')
+const { startApp, hardened, createUser } = require('../helpers/app')
 const { options: baseOptions } = require('../cmsInstance')
 
 describe('admin plugin (unit)', () => {
@@ -184,5 +184,137 @@ describe('admin plugin in basic authentication mode (unit)', () => {
   it('asks anonymous callers to authenticate', async () => {
     const res = await get('/admin/resources')
     expect(res.status).to.be.oneOf([401, 403])
+  })
+})
+
+describe('admin wrong Basic credentials (unit)', () => {
+  // the browser shows its login prompt again only for a 401 that carries WWW-Authenticate
+  const expectPrompt = (res) => {
+    expect(res.status).to.equal(401)
+    expect(res.headers['www-authenticate']).to.match(/^Basic realm=/)
+  }
+  const profiles = {
+    legacy: { disableJwtLogin: true },
+    hardened: hardened({ disableJwtLogin: true, security: { localAdmin: true } })
+  }
+
+  Object.entries(profiles).forEach(([profile, options]) => {
+    describe(`${profile} profile`, () => {
+      let app
+      before(async () => { app = await startApp(options) })
+      after(async () => { await app.close() })
+
+      const get = (route, auth) => {
+        const req = request(app.url).get(route).timeout({ response: 3000 })
+        return auth ? req.auth(...auth) : req
+      }
+
+      it('asks again for the credentials of /admin/ after a wrong password', async () => {
+        expectPrompt(await get('/admin/', ['localAdmin', 'wrong']))
+      })
+      it('asks for the credentials of /admin/ without any', async () => {
+        expectPrompt(await get('/admin/'))
+      })
+      it('asks again for the credentials of /admin/login after a wrong password', async () => {
+        expectPrompt(await get('/admin/login', ['localAdmin', 'wrong']))
+      })
+      it('still answers the user of /admin/login for valid credentials', async () => {
+        const res = await get('/admin/login', ['localAdmin', 'localAdmin'])
+        expect(res.status).to.equal(200)
+        expect(res.body).to.include({ username: 'localAdmin', group: 'admins' })
+      })
+    })
+  })
+
+  describe('admin resources outside of routesToAuth', () => {
+    let app
+    // /admin/resources and /admin/paragraphs then rely on the Basic check of the admin plugin alone
+    before(async () => { app = await startApp({ disableJwtLogin: true, routesToAuth: ['/api/_syslog'] }) })
+    after(async () => { await app.close() })
+
+    const get = (route, auth) => {
+      const req = request(app.url).get(route).timeout({ response: 3000 })
+      return auth ? req.auth(...auth) : req
+    }
+
+    it('lists the resources for valid credentials instead of hanging', async () => {
+      const res = await get('/admin/resources', ['localAdmin', 'localAdmin'])
+      expect(res.status).to.equal(200)
+      expect(res.body.map(r => r.title)).to.include('articles')
+    })
+    it('asks again for the credentials after a wrong password', async () => {
+      expectPrompt(await get('/admin/paragraphs', ['localAdmin', 'wrong']))
+    })
+  })
+})
+
+describe('admin resources of a group that reads nothing (unit)', () => {
+  const routesToAuth = ['/api/_syslog', '/api/system', '/admin/resources', '/admin/paragraphs', '/import', '/importFromRemote', '/replicator', '/resources']
+  const modes = {
+    'JWT login': { disableAuthentication: true },
+    'Basic authentication': { disableJwtLogin: true }
+  }
+
+  Object.entries(modes).forEach(([mode, options]) => {
+    describe(mode, () => {
+      let app, reader
+      // 'resources' was compared with the routesToAuth entries, where it can only appear by mistake (express never
+      // matches a path without a leading slash): it must not change who sees what
+      before(async () => {
+        app = await startApp({ ...options, routesToAuth: [...routesToAuth, 'resources'] })
+        const nothing = await app.cms.$authentication.groups.create({ name: 'nothing', read: [], create: [], update: [], remove: [], attachments: [] })
+        reader = await createUser(app, { group: nothing._id })
+      })
+      after(async () => { await app.close() })
+
+      const asUser = async (user) => {
+        if (mode === 'JWT login') {
+          const agent = request.agent(app.url)
+          expect((await agent.post('/admin/login').send({ username: user.username, password: user.password })).status).to.equal(200)
+          return agent.get('/admin/resources')
+        }
+        return request(app.url).get('/admin/resources').auth(user.username, user.password)
+      }
+
+      it('answers an empty list to a logged in user', async () => {
+        const res = await asUser(reader)
+        expect(res.status).to.equal(200)
+        expect(res.body).to.deep.equal([])
+      })
+      it('still lists every resource for an admin', async () => {
+        const res = await asUser({ username: 'localAdmin', password: 'localAdmin' })
+        expect(res.status).to.equal(200)
+        expect(res.body.map(r => r.title)).to.include('articles')
+      })
+      it('still refuses anonymous callers', async () => {
+        const res = await request(app.url).get('/admin/resources')
+        expect(res.status).to.be.oneOf([401, 403])
+      })
+    })
+  })
+})
+
+describe('admin languages (unit)', () => {
+  const chinese = { defaultLocale: 'enUS', locales: ['enUS', 'zhCN'] }
+  const languageOf = async (admin) => {
+    const app = await startApp(admin ? { admin } : {})
+    try {
+      const res = await request(app.url).get('/admin/i18n/config.json')
+      expect(res.status).to.equal(200)
+      // the admin (src/services/TranslateService.js) reads config.language
+      return res.body.config && res.body.config.language
+    } finally {
+      await app.close()
+    }
+  }
+
+  it('answers English by default, in the shape the admin reads', async () => {
+    expect(await languageOf()).to.deep.equal({ defaultLocale: 'enUS', locales: ['enUS'] })
+  })
+  it('answers the languages of admin.language in cms.json', async () => {
+    expect(await languageOf({ language: chinese })).to.deep.equal(chinese)
+  })
+  it('still answers the languages of the older admin.config.language', async () => {
+    expect(await languageOf({ config: { language: chinese } })).to.deep.equal(chinese)
   })
 })

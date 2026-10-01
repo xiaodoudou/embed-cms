@@ -59,13 +59,21 @@
         }
         return placeholder
       },
+      // date, time or datetime. The schema a field is given names its input; a field is also looked up in the schema of its
+      // resource, which does not hold the fields inside a block of a blocks field (there the lookup used to find nothing, and
+      // the field failed to render)
       fieldType() {
+        const own = _.get(this.schema, 'input', false)
+        if (_.isString(own) && own) {
+          return own
+        }
         const resourceSchema = _.get(this.schema, 'resource.schema', [])
         const foundField = _.find(resourceSchema, {field: this.schema.originalModel})
-        if (!foundField) {
-          return console.error(`Couldn't find field ${this.schema.originalModel} in resource schema`, resourceSchema)
+        if (foundField) {
+          return _.get(foundField, 'input', 'date')
         }
-        return _.get(foundField, 'input', false)
+        console.error(`Couldn't find field ${this.schema.originalModel} in resource schema, will show a date`, resourceSchema)
+        return 'date'
       },
       enableTimePicker() {
         return this.fieldType.indexOf('time') !== -1

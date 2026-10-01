@@ -1,5 +1,5 @@
 // Legacy HTTP integration suite: runs against the server started by test/server.js.
-// Only require test files, do not initialize CMS or SmartCrop here.
+// Only require test files, do not initialize the CMS here.
 // New tests belong in test/unit (see docs/TESTING.md); the xlsx, sync, import and importFromRemote
 // suites live there now.
 require('./authentication.test.js')

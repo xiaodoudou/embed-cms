@@ -51,9 +51,8 @@ An editor who adds three cards with widths 3, 6 and 3 sees them on one line at 2
 
 ## Things to know
 
-- Each block shows a small badge at its top, such as `2/3`. That is its **position** among the blocks, not its width
-  ([UI_BUGS.md](UI_BUGS.md#layout-and-display)).
-- Between 769 and 1024px a rule meant to widen narrow blocks only matches 3-slot blocks
-  ([BUGS.md](BUGS.md#authentication-and-admin)).
+- Each block shows a small badge with its width, such as `3/12` (its slots over the row's), with a tooltip that says it
+  in words.
+- Between 769 and 1024px wide, blocks of a quarter of the row or less widen to a third, so they stay readable.
 - Keep each block's slots at or below the row's, or the block takes a whole line.
 - The layout lives in `src/components/fields/ParagraphView.vue` (`isDynamicLayoutContainer`, `getItemStyles`).

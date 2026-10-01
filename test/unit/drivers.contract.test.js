@@ -78,7 +78,7 @@ for (const engine of engines()) {
         // no server answered: the suite is skipped, not failed
         return this.skip()
       }
-      app = await startApp({ resources: './test/helpers/contract-resources', smartCrop: false, ...prepared.options }, { keepData: true })
+      app = await startApp({ resources: './test/helpers/contract-resources', ...prepared.options }, { keepData: true })
       api = app.cms.api()
       items = api('items')
       for (const record of FIXTURE) {
@@ -136,7 +136,7 @@ for (const engine of engines()) {
         } catch (e) {
           error = e
         }
-        // the store has always answered a missing id with nothing, not with an error (the REST layer turns it into a 404)
+        // the store has always answered a missing id with nothing, not with an error (GET /api/:resource/:id answers it with a 404)
         expect(error, 'find after remove').to.equal(undefined)
         expect(await items.find(created._id)).to.not.be.ok
         expect(await items.exists(created._id)).to.equal(false)
@@ -346,7 +346,7 @@ for (const engine of engines()) {
       it('finds the records again when the CMS is started on the same database', async function () {
         const before = keysOf(await items.list()).sort()
         await app.close()
-        app = await startApp({ resources: './test/helpers/contract-resources', smartCrop: false, ...prepared.options }, { dataDir: app.dataDir, keepData: true })
+        app = await startApp({ resources: './test/helpers/contract-resources', ...prepared.options }, { dataDir: app.dataDir, keepData: true })
         api = app.cms.api()
         items = api('items')
         expect(keysOf(await items.list()).sort()).to.deep.equal(before)

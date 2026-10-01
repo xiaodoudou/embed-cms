@@ -1,28 +1,28 @@
 <template>
   <div class="transliterate-field">
-  <v-text-field
-    ref="input"
-    :theme="theme"
-    :class="[schema.labelClasses]"
-    :model-value="_value"
-    :readonly="isReadonly"
-    autocomplete="off"
-    :variant="getVariant()"
-    :flat="get('flat')"
-    :rounded="get('rounded')"
-    :density="get('density')"
-    :disabled="disabled"
-    persistent-placeholder
-    hide-details
-    @update:model-value="onChangeData"
-  >
-    <template #prepend><field-label :schema="schema" /></template>
-    <template #label />
-  </v-text-field>
-  <div v-if="showHint()" class="help-block">
-    <v-icon size="small" icon="$information" />
-    <span>{{ schema.options.hint }}</span>
-  </div>
+    <v-text-field
+      ref="input"
+      :theme="theme"
+      :class="[schema.labelClasses]"
+      :model-value="_value"
+      :readonly="isReadonly"
+      autocomplete="off"
+      :variant="getVariant()"
+      :flat="get('flat')"
+      :rounded="get('rounded')"
+      :density="get('density')"
+      :disabled="disabled"
+      persistent-placeholder
+      hide-details
+      @update:model-value="onChangeData"
+    >
+      <template #prepend><field-label :schema="schema" /></template>
+      <template #label />
+    </v-text-field>
+    <div v-if="showHint()" class="help-block">
+      <v-icon size="small" icon="$information" />
+      <span>{{ schema.options.hint }}</span>
+    </div>
   </div>
 </template>
 

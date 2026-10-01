@@ -30,7 +30,7 @@ program
   .usage('<config json> <username:password>')
   .option('-y, --yes', 'Assume Yes to all queries and do not prompt')
   .option('-s, --skip', 'skip downloading gsheet files')
-  .option('-c, --createFolders', 'skip downloading gsheet files')
+  .option('-c, --createFolders', 'only create the local folders for the attachments (resource/key/field), import nothing')
   .option('-o, --createOnly', 'create only')
   .parse(process.argv)
 
@@ -107,6 +107,8 @@ class ImportManager {
     logger.info('')
     logger.info('### Check Server Connection ###')
     let endProcess = h.startProcess(`Check server connection ${this.config.protocol}${this.config.host} ... ... `)
+    // opens a session for the routes behind the admin login; Basic authentication covers the rest
+    await this.api().login()
     let resources = await this.api().resources()
     _.each(resources, item => {
       let schema = item.schema
@@ -173,11 +175,8 @@ class ImportManager {
           }
           logger.warn(`${sheet.id} on google drive is updated`)
         }
-        const doc = new GoogleSpreadsheet(this.config.gsheetId)
-        await doc.useServiceAccountAuth({
-          client_email: config.oauth.email,
-          private_key: fs.readFileSync(config.oauth.keyFile, 'utf-8')
-        })
+        // google-spreadsheet 4 and later take the auth client in the constructor (useServiceAccountAuth is gone)
+        const doc = new GoogleSpreadsheet(this.config.gsheetId, jwtClient)
         await doc.loadInfo()
         const gsheet = doc.sheetsByTitle[sheet.id]
         await gsheet.loadCells()
@@ -741,7 +740,8 @@ if (config && config.oauth && config.oauth.keyFile) {
   config.oauth.keyFile = path.resolve(config.oauth.keyFile)
 }
 
-let [username, password] = program.args[1].split(':')
-let auth = {username, password}
+// the password may contain colons: only the first one separates it from the username
+const separator = program.args[1].indexOf(':')
+const auth = { username: program.args[1].slice(0, separator), password: program.args[1].slice(separator + 1) }
 
 exports = new ImportManager(config, auth)

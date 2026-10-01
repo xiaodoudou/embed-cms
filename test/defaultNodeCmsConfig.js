@@ -25,7 +25,6 @@ exports = {
     method: 'file',
     path: './syslog.log'
   },
-  smartCrop: false,
   defaultPaging: 12,
   test: true,
   replication: {

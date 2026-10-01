@@ -315,6 +315,10 @@ class CMS {
     if (csrf) {
       this._app.use(csrf)
     }
+    if (!options.disableJwtLogin) {
+      // the JWT login keeps its token in the nodeCmsJwt cookie, which the REST API reads, also when Basic is on
+      this._app.use(cookieParser())
+    }
     if (!options.disableAuthentication) {
       // Enables session with basic auth
       this._app.use((req, res, next) => {
@@ -326,7 +330,6 @@ class CMS {
       })
     } else if (!options.disableJwtLogin) {
       // Enables session with jwt token auth
-      this._app.use(cookieParser())
       this._app.use((req, res, next) => {
         if (!req.headers.authorization) {
           const token = _.get(req, 'session.nodeCmsUser.token', false)
@@ -346,19 +349,6 @@ class CMS {
       SyslogManager.init(this, options)
       SystemManager.init(this, options)
       UpdatesManager.init(this, options)
-      callback()
-    })
-    // Initialize SmartCrop if enabled
-    this.bootstrapFunctions.push(async (callback) => {
-      if (_.get(options, 'smartCrop', false)) {
-        try {
-          const smartCrop = require('./lib/smartcrop')
-          await smartCrop.initialize(options)
-          logger.info('SmartCrop initialization completed during CMS bootstrap')
-        } catch (error) {
-          logger.warn('SmartCrop initialization failed during CMS bootstrap:', error.message)
-        }
-      }
       callback()
     })
     this._app.use(SyslogManager.express())

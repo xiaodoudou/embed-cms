@@ -10,7 +10,7 @@
           <p class="toast-message">{{ toast.message }}</p>
           <div v-if="toast.detail || toast.actionLabel" class="toast-actions">
             <button v-if="toast.actionLabel" type="button" class="toast-link" @click="runAction(toast)">{{ toast.actionLabel }}</button>
-            <button v-if="toast.detail" type="button" class="toast-link" :title="toast.detail" @click="copyDetail(toast)">{{ $filters.translate('TL_COPY_ID') }}</button>
+            <button v-if="toast.detail" type="button" class="toast-link" :title="toast.detail" @click="copyDetail(toast)">{{ $filters.translate(toast.detailLabel || 'TL_COPY_ID') }}</button>
           </div>
         </div>
         <v-btn class="toast-close" icon size="small" variant="text" :aria-label="$filters.translate('TL_DISMISS')" @click="dismiss(toast.id)">
@@ -64,7 +64,7 @@
         if (same) {
           this.dismiss(same.id)
         }
-        const toast = { id: ++this.sequence, message: data.message, type, detail: data.detail || '', actionLabel: data.actionLabel || '', action: data.action || null, timeout, paused: false }
+        const toast = { id: ++this.sequence, message: data.message, type, detail: data.detail || '', detailLabel: data.detailLabel || '', actionLabel: data.actionLabel || '', action: data.action || null, timeout, paused: false }
         this.toasts = _.takeRight([...this.toasts, toast], MAX_VISIBLE)
         if (timeout) {
           this.schedule(toast, timeout)

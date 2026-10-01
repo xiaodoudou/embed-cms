@@ -36,7 +36,11 @@
       }
     },
     beforeUnmount () {
+      this.closeMenu()
       document.removeEventListener('mousedown', this.onOutsideMouseDown, true)
+      if (this.titleObserver) {
+        this.titleObserver.disconnect()
+      }
       if (this.modalObserver) {
         this.modalObserver.disconnect()
       }
@@ -365,6 +369,12 @@
             modal._home = { parent: modal.parentElement, next: modal.nextSibling }
             this.modalHost.appendChild(modal)
           }
+          if (visible) {
+            const name = modal.querySelector('.property-selector-input')
+            if (name) {
+              name.value = ''
+            }
+          }
           if (visible && !modal.dataset.title) {
             // the library hides the label of its pop-up (screen readers only): show it as the title of the modal
             // (for the properties checklist the first label is a property name: the title is the button that opened it)
@@ -402,6 +412,159 @@
         })
         this.modalObserver.observe(root, { attributes: true, attributeFilter: ['style'], subtree: true })
         this.modalObserver.observe(this.modalHost, { attributes: true, attributeFilter: ['style'], subtree: true })
+        // the row buttons and the fold toggle are icons (see the stylesheet): their text becomes the tooltip, and the toggle
+        // knows whether it is folded (its text is the first one it had while the box was open, until the library swaps it)
+        const titleButtons = () => {
+          root.querySelectorAll('.btn').forEach((button) => {
+            const text = button.textContent.trim()
+            button.title = text
+            if (button.classList.contains('json-editor-btntype-toggle')) {
+              button._openText = button._openText || text
+              button.toggleAttribute('data-collapsed', text !== button._openText)
+            }
+          })
+        }
+        // Delete All belongs on the header line of its list, with the other actions (see the stylesheet); the library builds
+        // it under the rows, next to Add item, and only ever toggles its display, so it can live in the header holder
+        const liftDeleteAll = () => {
+          root.querySelectorAll('[data-schematype=array] > div > .btn-group > .json-editor-btntype-deleteall').forEach((button) => {
+            const holder = button.closest('[data-schematype=array]').querySelector(':scope > .je-header > .btn-groups')
+            if (holder) {
+              holder.prepend(button)
+            }
+          })
+        }
+        const refresh = () => {
+          titleButtons()
+          liftDeleteAll()
+          this.enhanceSelects(root)
+        }
+        this.titleObserver = new MutationObserver(refresh)
+        this.titleObserver.observe(root, { childList: true, subtree: true })
+        refresh()
+      },
+      // The browser draws the list of a <select> itself, out of the design system. Each select of the editor is replaced by a button
+      // and a list like the ones of the other dropdowns (v-select); the select stays, hidden, and is what the library reads: choosing
+      // an item sets it and fires its change event.
+      enhanceSelects (root) {
+        root.querySelectorAll('select:not([data-je-select])').forEach((select) => {
+          select.dataset.jeSelect = 'true'
+          select.classList.add('je-select-native')
+          const trigger = document.createElement('button')
+          trigger.type = 'button'
+          trigger.className = 'je-select'
+          trigger.setAttribute('aria-haspopup', 'listbox')
+          trigger.setAttribute('aria-label', select.getAttribute('aria-label') || select.id || '')
+          if (select.classList.contains('je-switcher')) {
+            trigger.classList.add('je-select--small')
+          }
+          const text = document.createElement('span')
+          text.className = 'je-select__text'
+          trigger.appendChild(text)
+          select.insertAdjacentElement('afterend', trigger)
+          const sync = () => {
+            const option = select.options[select.selectedIndex]
+            // only when it changed: rewriting the text would wake the observer that calls this, again and again
+            const label = option ? option.textContent.trim() : ''
+            if (text.textContent !== label) {
+              text.textContent = label
+            }
+            trigger.disabled = select.disabled
+          }
+          select._jeSync = sync
+          sync()
+          select.addEventListener('change', sync)
+          trigger.addEventListener('click', () => this.toggleMenu(select, trigger))
+          trigger.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+              event.preventDefault()
+              this.openMenu(select, trigger)
+            }
+          })
+        })
+        // the library sets values and the disabled state without any event
+        root.querySelectorAll('select[data-je-select]').forEach((select) => select._jeSync && select._jeSync())
+      },
+      toggleMenu (select, trigger) {
+        if (this.menu && this.menu._trigger === trigger) {
+          this.closeMenu()
+        } else {
+          this.openMenu(select, trigger)
+        }
+      },
+      openMenu (select, trigger) {
+        this.closeMenu()
+        const menu = document.createElement('div')
+        menu.className = 'je-menu'
+        menu.setAttribute('role', 'listbox')
+        menu._trigger = trigger
+        Array.from(select.options).forEach((option, index) => {
+          const item = document.createElement('div')
+          item.className = 'je-menu__item'
+          item.setAttribute('role', 'option')
+          item.textContent = option.textContent.trim()
+          item.dataset.index = index
+          if (index === select.selectedIndex) {
+            item.classList.add('je-menu__item--active')
+          }
+          item.addEventListener('mousedown', (event) => {
+            event.preventDefault()
+            select.selectedIndex = index
+            select.dispatchEvent(new Event('change', { bubbles: true }))
+            this.closeMenu()
+            trigger.focus()
+          })
+          menu.appendChild(item)
+        })
+        this.modalHost.appendChild(menu)
+        const rect = trigger.getBoundingClientRect()
+        const room = window.innerHeight - rect.bottom
+        menu.style.minWidth = `${rect.width}px`
+        menu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - menu.offsetWidth - 8))}px`
+        if (room < menu.offsetHeight + 8 && rect.top > room) {
+          menu.style.bottom = `${window.innerHeight - rect.top + 4}px`
+        } else {
+          menu.style.top = `${rect.bottom + 4}px`
+        }
+        trigger.setAttribute('aria-expanded', 'true')
+        this.menu = menu
+        this.menuClose = (event) => {
+          if (event.type === 'keydown') {
+            this.onMenuKey(event, select)
+          } else if (event.type === 'scroll' || !menu.contains(event.target) && !trigger.contains(event.target)) {
+            this.closeMenu()
+          }
+        }
+        document.addEventListener('mousedown', this.menuClose, true)
+        document.addEventListener('keydown', this.menuClose, true)
+        window.addEventListener('scroll', this.menuClose, true)
+      },
+      onMenuKey (event, select) {
+        const items = Array.from(this.menu.querySelectorAll('.je-menu__item'))
+        const current = items.findIndex((item) => item.classList.contains('je-menu__item--highlighted'))
+        if (event.key === 'Escape') {
+          event.stopPropagation()
+          this.closeMenu()
+        } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          event.preventDefault()
+          const from = current < 0 ? select.selectedIndex : current
+          const next = (from + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length
+          items.forEach((item, i) => item.classList.toggle('je-menu__item--highlighted', i === next))
+        } else if (event.key === 'Enter' && current >= 0) {
+          event.preventDefault()
+          items[current].dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
+        }
+      },
+      closeMenu () {
+        if (!this.menu) {
+          return
+        }
+        this.menu._trigger.removeAttribute('aria-expanded')
+        this.menu.remove()
+        this.menu = null
+        document.removeEventListener('mousedown', this.menuClose, true)
+        document.removeEventListener('keydown', this.menuClose, true)
+        window.removeEventListener('scroll', this.menuClose, true)
       },
       openModal () {
         return this.modalHost && this.modalHost.querySelector(OPEN_MODAL)
@@ -449,6 +612,10 @@
           setTimeout(() => this.attachCodeEditor(), 0)
         } else if (button.classList.contains('json-editor-btntype-save') || button.classList.contains('json-editor-btntype-copy')) {
           this.syncCodeEditor(button)
+        } else if (button.classList.contains('json-editor-btntype-add') && button.closest('.json-editor-modal')) {
+          // the property has been added (the library reads the field on this click): the field is ready for the next name
+          const input = button.closest('.json-editor-modal').querySelector('.property-selector-input')
+          setTimeout(() => input && (input.value = ''), 0)
         }
       },
       // closes the open modal the way the library does: Cancel for Edit JSON, the toggle button for the properties

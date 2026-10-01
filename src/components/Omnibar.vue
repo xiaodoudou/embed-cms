@@ -248,7 +248,6 @@
 
   .scroll-wrapper {
     overflow: auto;
-    @include custom-scrollbar;
   }
 }
 </style>

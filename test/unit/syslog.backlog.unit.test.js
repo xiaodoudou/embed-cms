@@ -48,6 +48,35 @@ describe('SyslogManager backlog and capture (unit)', () => {
     })
   })
 
+  describe('lines colored by the CMS logger', () => {
+    const { Logger } = require('../../lib/logger')
+    const colored = (level, message) => {
+      const original = { log: console.log, warn: console.warn, error: console.error }
+      let line
+      console.log = console.warn = console.error = (text) => { line = text }
+      try {
+        new Logger({ colors: true, level: 'debug' })[level](message)
+      } finally {
+        Object.assign(console, original)
+      }
+      return line
+    }
+
+    it('keeps their level', () => {
+      expect(sys.detectLevel(colored('error', 'e'))).to.equal(sys.levels.error)
+      expect(sys.detectLevel(colored('warn', 'w'))).to.equal(sys.levels.warn)
+      expect(sys.detectLevel(colored('debug', 'd'))).to.equal(sys.levels.debug)
+      expect(sys.detectLevel(colored('verbose', 'v'))).to.equal(sys.levels.verbose)
+    })
+
+    it('render with their colors and nothing left open', () => {
+      const html = sys.convertToHTML(sys.escapeHTML(colored('error', 'bad')))
+      expect(html).to.contain('<span style="color:#ff5555;">ERROR</span>')
+      expect(html).to.not.contain('background')
+      expect(html.split('<span').length).to.equal(html.split('</span>').length)
+    })
+  })
+
   describe('console capture', () => {
     it('writes each line once, whether it comes from console.log or from stdout', async () => {
       sys.options = { syslog: { path: file } }

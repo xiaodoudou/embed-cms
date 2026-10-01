@@ -1,5 +1,5 @@
 const { expect } = require('chai')
-const { collectSystem, memoryShape, driveShape, networkShape, cpuShape } = require('../../lib/util/systemStats')
+const { collectSystem, withNetworkRate, memoryShape, driveShape, networkShape, cpuShape } = require('../../lib/util/systemStats')
 
 // node-os-utils 3 returns { success, data } with byte counts; the System page of the admin reads the shape of version 1.
 
@@ -68,6 +68,31 @@ describe('system stats (unit)', () => {
     it('is "not supported" without an overview', () => {
       expect(networkShape(undefined)).to.equal('not supported')
       expect(networkShape({})).to.equal('not supported')
+    })
+  })
+
+  describe('withNetworkRate', () => {
+    const report = (rx, tx) => ({ network: networkShape({ totalRxBytes: bytes(rx), totalTxBytes: bytes(tx) }) })
+
+    it('has no rate on the first report, then the bytes per second since the previous one', () => {
+      const state = {}
+      expect(withNetworkRate(report(1000, 500), state, 10000).network.rate).to.equal(null)
+      const second = withNetworkRate(report(1000 + 5 * MB, 500 + 10 * 1024), state, 15000)
+      expect(second.network.rate).to.deep.equal({ inputBytesPerSec: MB, outputBytesPerSec: 2048 })
+    })
+
+    it('shows no traffic when nothing moved, not the total since boot', () => {
+      const state = {}
+      withNetworkRate(report(5 * MB, 5 * MB), state, 0)
+      expect(withNetworkRate(report(5 * MB, 5 * MB), state, 5000).network.rate).to.deep.equal({ inputBytesPerSec: 0, outputBytesPerSec: 0 })
+    })
+
+    it('starts again when a counter goes back (a reboot or a reset card), and leaves a report without a network alone', () => {
+      const state = {}
+      withNetworkRate(report(9 * MB, 9 * MB), state, 0)
+      expect(withNetworkRate(report(1 * MB, 1 * MB), state, 5000).network.rate).to.equal(null)
+      expect(withNetworkRate(report(2 * MB, 2 * MB), state, 10000).network.rate.inputBytesPerSec).to.equal(Math.round(MB / 5))
+      expect(withNetworkRate({ network: 'not supported' }, state, 15000)).to.deep.equal({ network: 'not supported' })
     })
   })
 

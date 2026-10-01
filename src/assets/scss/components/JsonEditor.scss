@@ -52,6 +52,128 @@
     }
   }
 
+  // selects (the values, and the type picker of an added property) are a button and a list like the other dropdowns of the
+  // admin (see JsonEditor.vue); the real <select> stays, hidden, for the library
+  select.je-select-native {
+    display: none;
+  }
+
+  .je-select {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--cms-space-2);
+    width: 100%;
+    box-sizing: border-box;
+    min-height: var(--cms-field-h);
+    padding: 0 var(--cms-space-3);
+    font: inherit;
+    text-align: left;
+    color: var(--cms-text);
+    background: var(--cms-surface);
+    border: 1px solid var(--cms-border-strong);
+    border-radius: var(--cms-radius-md);
+    cursor: pointer;
+    transition: border-color var(--cms-motion-fast) var(--cms-ease);
+    &:hover {
+      border-color: var(--cms-text-muted);
+    }
+    &:focus-visible,
+    &[aria-expanded='true'] {
+      outline: none;
+      border-color: var(--cms-primary);
+      box-shadow: 0 0 0 3px var(--cms-field-ring);
+    }
+    &:disabled {
+      cursor: not-allowed;
+      color: var(--cms-text-muted);
+    }
+    // the chevron of v-select, turned over while the list is open
+    &::after {
+      content: '';
+      flex: 0 0 auto;
+      width: 20px;
+      height: 20px;
+      background-color: var(--cms-text-muted);
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z'/%3E%3C/svg%3E") center / contain no-repeat;
+      transition: transform var(--cms-motion-fast) var(--cms-ease);
+    }
+    &[aria-expanded='true']::after {
+      transform: rotate(180deg);
+    }
+  }
+
+  .je-select--small {
+    width: auto;
+    min-height: 28px;
+    padding: 0 var(--cms-space-2);
+    font-size: var(--cms-fs-sm);
+    color: var(--cms-text-muted);
+  }
+
+  // the list: the box, border, radius and items of the v-select lists (base.css)
+  .je-menu {
+    position: fixed;
+    z-index: calc(var(--cms-z-omnibar) + 1);
+    max-height: 320px;
+    overflow-y: auto;
+    box-sizing: border-box;
+    background: var(--cms-surface);
+    color: var(--cms-text);
+    border: 1px solid var(--cms-border);
+    border-radius: var(--cms-radius-md);
+    box-shadow: var(--cms-shadow-2);
+    font-size: var(--cms-fs-base);
+  }
+
+  .je-menu__item {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    padding: var(--cms-space-2) var(--cms-space-3);
+    line-height: var(--cms-lh-base);
+    cursor: pointer;
+    &:hover {
+      background: var(--cms-surface-2);
+    }
+    &--highlighted {
+      background: var(--cms-primary-soft);
+      box-shadow: inset 3px 0 0 var(--cms-primary);
+    }
+    &--active {
+      background: var(--cms-primary-soft);
+      color: var(--cms-on-primary-soft);
+      font-weight: var(--cms-fw-semibold);
+      &::after {
+        content: '\2713';
+        margin-left: auto;
+        padding-left: var(--cms-space-3);
+        font-weight: var(--cms-fw-bold);
+      }
+    }
+  }
+
+  @media (pointer: coarse) {
+    .je-menu__item {
+      min-height: var(--cms-touch-target);
+    }
+  }
+
+  // (the plain select rule is kept for any select the script has not replaced yet)
+  select {
+    appearance: none;
+    padding-right: var(--cms-space-8, 32px);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5L6 8l3.5-3.5' fill='none' stroke='%238a8f98' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--cms-space-3) center;
+    background-size: 12px;
+    cursor: pointer;
+    option {
+      background: var(--cms-surface);
+      color: var(--cms-text);
+    }
+  }
+
   textarea {
     min-height: 88px;
     padding: var(--cms-space-2) var(--cms-space-3);
@@ -166,6 +288,77 @@
     flex-wrap: wrap;
     gap: var(--cms-space-2);
     margin: 0;
+  }
+
+  // ---- icons (Material Design Icons, like the rest of the admin) ----
+  // The toolbar buttons keep their text and get an icon before it; the buttons of a row are the icon alone (the text stays
+  // for screen readers, and becomes the tooltip, see JsonEditor.vue).
+  .btn::before {
+    content: '';
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    margin-right: var(--cms-space-1);
+    background-color: currentColor;
+    mask: var(--je-icon) center / contain no-repeat;
+  }
+  .btn:not([class*='json-editor-btntype-']):not(.je-modal-close)::before,
+  .json-editor-btntype-save::before,
+  .json-editor-btntype-cancel::before,
+  .json-editor-btntype-copy::before {
+    display: none;
+  }
+  // fold / unfold: a chevron that turns, no text
+  .json-editor-btntype-toggle {
+    --je-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z'/%3E%3C/svg%3E");
+    position: relative;
+    width: 32px;
+    padding: 0;
+    > span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+    }
+    &::before {
+      margin-right: 0;
+      transition: transform var(--cms-motion-fast) var(--cms-ease);
+    }
+    &[data-collapsed]::before {
+      transform: rotate(-90deg);
+    }
+  }
+  .je-modal-close { --je-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z'/%3E%3C/svg%3E"); }
+  .json-editor-btntype-add { --je-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z'/%3E%3C/svg%3E"); }
+  .json-editor-btntype-delete { --je-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z'/%3E%3C/svg%3E"); }
+  .json-editor-btntype-deletelast { --je-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19,13H5V11H19V13Z'/%3E%3C/svg%3E"); }
+  .json-editor-btntype-deleteall { --je-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M15,16H19V18H15V16M15,8H22V10H15V8M15,12H21V14H15V12M3,18A2,2 0 0,0 5,20H11A2,2 0 0,0 13,18V8H3V18M14,5H11L10,4H6L5,5H2V7H14V5Z'/%3E%3C/svg%3E"); }
+  .json-editor-btntype-editjson { --je-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5,3H7V5H5V10A2,2 0 0,1 3,12A2,2 0 0,1 5,14V19H7V21H5C3.93,20.73 3,20.1 3,19V15A2,2 0 0,0 1,13H0V11H1A2,2 0 0,0 3,9V5A2,2 0 0,1 5,3M19,3A2,2 0 0,1 21,5V9A2,2 0 0,0 23,11H24V13H23A2,2 0 0,0 21,15V19A2,2 0 0,1 19,21H17V19H19V14A2,2 0 0,1 21,12A2,2 0 0,1 19,10V5H17V3H19Z'/%3E%3C/svg%3E"); }
+  .json-editor-btntype-properties { --je-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3,5H9V11H3V5M5,7V9H7V7H5M11,7H21V9H11V7M11,15H21V17H11V15M5,20L1.5,16.5L2.91,15.09L5,17.17L9.59,12.59L11,14L5,20Z'/%3E%3C/svg%3E"); }
+  .json-editor-btntype-move { --je-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z'/%3E%3C/svg%3E"); }
+  .json-editor-btn-movedown { --je-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z'/%3E%3C/svg%3E"); }
+
+  // the buttons of a row: the icon alone, square
+  td .btn {
+    position: relative;
+    width: 32px;
+    padding: 0;
+    > span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+    }
+    &::before {
+      margin-right: 0;
+    }
+  }
+  td .btn-group {
+    flex-wrap: nowrap;
   }
 
   // ---- one toolbar row: Collapse on the left, the other buttons on the right ----
@@ -336,8 +529,8 @@
     width: 100%;
     box-sizing: border-box;
     padding: var(--cms-space-3);
-    background-color: var(--cms-surface);
-    border: 1px solid var(--cms-border-strong);
+    background-color: var(--cms-surface-2);
+    border: 1px solid var(--cms-border);
     border-radius: var(--cms-radius-md);
   }
 
@@ -351,6 +544,57 @@
     margin-bottom: var(--cms-space-3);
     &:last-child {
       margin-bottom: 0;
+    }
+  }
+
+  // a boolean shown as a checkbox: the box, then its name (the `checkbox` class is also the tick box of the record list, in
+  // main.scss: none of that applies here)
+  .json-editor-grid-row label.checkbox {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: var(--cms-space-2);
+    box-sizing: border-box;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: var(--cms-fs-base);
+    font-weight: var(--cms-fw-regular);
+    cursor: pointer;
+  }
+  .json-editor-grid-row .controls:has(> label.checkbox) {
+    height: auto !important;
+    min-height: var(--cms-field-h);
+    display: flex;
+    align-items: center;
+  }
+
+  // ---- a property that is not in the schema (added from Object properties): its name, a type picker, then the value ----
+  .json-editor-grid-row > [data-schemapath]:has(> .je-switcher) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--cms-space-1) var(--cms-space-2);
+    > b {
+      flex: 1 1 auto;
+      font-size: var(--cms-fs-sm);
+      font-weight: var(--cms-fw-semibold);
+      line-height: var(--cms-lh-base);
+    }
+    > .je-switcher {
+      flex: 0 0 auto;
+      width: auto;
+      min-height: 28px;
+      padding: 0 var(--cms-space-2);
+      font-size: var(--cms-fs-sm);
+      color: var(--cms-text-muted);
+    }
+    > div {
+      flex: 1 0 100%;
+      min-width: 0;
     }
   }
 
@@ -405,7 +649,9 @@
       text-align: left;
     }
     // the column of the row buttons has no title, but its header cell still carries the background
+    // (the library hides it inline with `visibility: hidden`, which would leave a gap in the header bar)
     th[aria-hidden='true'] {
+      visibility: visible !important;
       font-size: 0;
     }
     td {

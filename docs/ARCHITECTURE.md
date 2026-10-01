@@ -155,7 +155,7 @@ other nodes: records over its TCP protocol, files over HTTP. See [REPLICATION.md
 | Path | Where |
 |---|---|
 | The log page: `/api/_syslog`, server-sent events | `lib/SyslogManager.js` |
-| CPU, memory and disk for the admin's top bar: `/api/system` | `lib/SystemManager.js` |
+| CPU, memory, disk and live network traffic (bytes per second, worked out from two reports) for the admin's system card: `/api/system` | `lib/SystemManager.js`, `lib/util/systemStats.js` |
 | Image resizing and smart cropping | `lib/util/imageOptimization.js`, `lib/util/smartcrop.js` |
 | Security settings and their defaults | `lib/util/securityOptions.js`, [SECURITY.md](../SECURITY.md) |
 | Sync, import, Excel, import from remote | `lib/plugins/sync`, `import`, `xlsx`, `importFromRemote`, `lib-import*/` |

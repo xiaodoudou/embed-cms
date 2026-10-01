@@ -115,7 +115,7 @@ With one rule per locale, each locale tab applies its own rule:
 
 ### Dark theme
 
-The same fields in the dark theme (available when `disableDarkMode` is not set in the CMS config).
+The same fields in the dark theme (available when `disableDarkMode` is `false` in the CMS config; it is `true` by default).
 
 ![Default, dark](img/string-default-dark.png)
 ![Required error, dark](img/string-required-error-dark.png)

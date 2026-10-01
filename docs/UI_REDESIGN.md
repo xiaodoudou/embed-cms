@@ -23,7 +23,9 @@ describe the app are kept below.
 To re-theme the admin, change the values in `tokens.css` and the two colour maps at the top of `src/vuetify.js`. To
 build a component, follow the [rules at the end](#design-system-rules-enforced-by-testfrontenddesignsystemtestjs).
 
-The screenshots in `docs/ui/` were taken during the redesign. Only the ones this page shows are kept up to date.
+The screenshots in `docs/ui/` show the admin with the field catalogue of `resources/`, in both themes (the `before-*` ones
+are the admin before the redesign, kept for comparison). Only the ones this page shows are checked at every change; the
+others date from the design review and are retaken when the chrome they show changes.
 
 ## Problems the redesign set out to fix
 
@@ -98,7 +100,7 @@ Defined once: Vuetify props map to variants (`src/vuetify.js` defaults plus `src
 
 Sizes: default 36px, compact (`size="small"`) 32px, 44px on coarse pointers. Sentence case, medium weight, no letter spacing or uppercase anywhere. States: hover, pressed, focus ring, disabled (neutral fill, muted text, still readable), loading (spinner before the label, label kept). Toggles and chips (`.toggle-mode-btn`, `.filter-chip`, locale switchers, Vuetify chips) share the pill shape and the soft-indigo selected state.
 
-Dialogs: one component, `components/AppDialog.vue` (discard, delete, config restart, replicator), with `DialogService.ask()` for promise based confirmations. Icon (info, warning, destructive), semibold title, body, footer with cancel left and primary right, `alertdialog` role with `aria-labelledby/describedby`, the safe button focused first on destructive dialogs, Escape cancels, focus returns to the trigger. Toasts (`components/ToastHost.vue`): bottom centre, max 3, named messages (no raw ids), pause on hover or focus, errors persist and can hold an action.
+Dialogs: one component, `components/AppDialog.vue` (discard, delete, config restart, replicator), with `DialogService.ask()` for promise based confirmations. Icon (info, warning, destructive), semibold title, body, footer with cancel left and primary right, `alertdialog` role with `aria-labelledby/describedby`, the safe button focused first on destructive dialogs, Escape cancels, focus returns to the trigger. Toasts (`components/ToastHost.vue`): bottom right (400px wide, the full width on a phone, above the uploads panel while files are uploading), max 3, named messages (no raw ids), pause on hover or focus, errors persist and can hold an action.
 
 ## Dirty tracking and locale markers
 
@@ -110,9 +112,9 @@ The pure logic behind the UI (dirty tracker, table model, sidebar model, prefere
 
 ## Editorial workflow features
 
-- List: dense rows with title, updated-by, updated-at and a read-only badge; the id appears on hover, focus and selection. Search stays focused while typing; `/` jumps to search from anywhere outside a field; Up/Down/Home/End move between rows and Enter opens one; sort and an "Updated by me" filter are always visible; the table view keeps the same toolbar.
+- List: dense rows with title, updated-by, updated-at and a read-only badge; the id appears on hover, focus and selection. Search stays focused while typing; `/` jumps to search from anywhere outside a field; Up/Down/Home/End move between rows and Enter opens one; sort and an "Updated by me" filter are always visible; the table view keeps the same toolbar. In the multi-select mode a click on a row adds or removes that record (like its box), and the chips of the selected records are never faded: the fade that hints at more records below only shows when the list really overflows. Rows have no colour transition, because the list recycles its rows and a fade would show a record as selected for a split second after a filter or a sort.
 - Editor: the action bar stays fixed above the scrolling form and shows "Unsaved changes" / "All changes saved", Discard and Save. Leaving the record, the resource, logging out or closing the tab with unsaved changes asks first (dialog buttons "Keep editing" / "Leave without saving", native prompt for the tab). Required and invalid fields show an inline message and a red boundary once the field is left or a save is attempted; dirty fields carry a dot. The locale switcher marks locales that still miss a required field. Forms with more than six fields get a "Jump to field" outline menu.
-- Navigation: the sidebar has a resource filter, collapsible groups whose state is remembered in `localStorage`, and a breadcrumb (group / resource / record) above the content. Ctrl/Cmd+K opens the quick switcher from anywhere, including inside form fields.
+- Navigation: the sidebar has a resource filter, collapsible groups whose state is remembered in `localStorage`, and a breadcrumb (group / resource / record) above the content. Ctrl/Cmd+K opens the quick switcher from anywhere, including inside form fields; it is a modal dialog, so Tab walks its results (Shift+Tab walks back) instead of leaving for the page behind.
 - Feedback: save, delete and error results are toasts (2.5s, errors persist until closed). Deleting one or many records opens a dialog that names the record(s) and says it cannot be undone. Loads show list skeletons and a thin progress bar under the app bar instead of dimming the page.
 - Attachments: dashed drop area with drag highlight, thumbnails with filename and size, a labelled remove button per file and a grab cursor on the drag handle for reordering.
 

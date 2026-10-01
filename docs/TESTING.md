@@ -71,6 +71,7 @@ what is logged patches `logger.warn` and friends itself (see `test/unit/logging.
 | `test/security/` | One regression test per finding of the backend security audit: `auth` (passwords, sessions, login limits, revocation), `http` (headers, CSRF, CORS, errors), `uploads`, `query`, `rest`, `importFromRemote` (SSRF), `replication` (handshake, peer validation), `websocket` |
 | `test/unit/authentication*` | Passwords, login, retry blocking, group permissions, JWT handling |
 | `test/unit/driver*`, `resource*`, `locking*` | CRUD, hooks, unique keys, concurrency, attachments, import maps |
+| `test/unit/localEngines*` | The three local engines behind one interface (ranges, paging, scan, count, hooks, reopen), the choice in `cms.json`, and the migration between them |
 | `test/unit/stores*`, `jsondown*`, `queryNeedles*`, `paging*`, `importMap*` | `JsonStore`, `FileStore` (including path traversal), the JSON file engine (ordering, ranges, atomic and sliced flush, corrupt files), the text prefilter of queries, paging, the indexed import map |
 | `test/unit/drivers.contract.test.js` | The [driver contract suite](#driver-contract-suite) |
 | `test/unit/authentication.cache*`, `hardening*`, `security.utils*` | The verified-password cache, ids, and the small security utilities (passwords, redaction, safe regular expressions, file types) |
@@ -110,6 +111,8 @@ paging, import maps, attachments, a restart on the same data) against each stora
 | Engine | Needs |
 |---|---|
 | json file store | nothing, always runs |
+| SQLite | nothing, always runs |
+| LevelDB | the `classic-level` package (an optional dependency; skipped when it did not install) |
 | PostgreSQL | a server; `TEST_POSTGRES_URL` (default `postgres://postgres:postgres@localhost:5432/postgres`) |
 | MongoDB | a server; `TEST_MONGODB_URL` (default `mongodb://localhost:27017`) |
 
@@ -127,6 +130,9 @@ TEST_POSTGRES_URL=postgres://postgres:<password>@localhost:5432/postgres \
 To add an engine, add an entry to `test/helpers/engines.js` that resolves with the CMS options selecting it and a teardown.
 
 ## Benchmarks
+
+`test/bench/stores.js` compares the storage engines themselves, without the CMS around them: speed, memory, disk space, and what a
+crash loses. See [STORAGE.md](STORAGE.md#measured) for the results and how to run it.
 
 `test/bench/bench.js` seeds a CMS with seeded pseudo-random records (10 000 and 100 000) and measures list, paging, lookups,
 filters, create/update/remove latency, event-loop stalls during a burst of writes, flush time, reboot time, memory, the

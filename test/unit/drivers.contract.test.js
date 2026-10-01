@@ -88,7 +88,7 @@ for (const engine of engines()) {
     after(async () => {
       if (app) {
         await app.close()
-        fs.rmSync(app.dataDir, { recursive: true, force: true })
+        fs.rmSync(app.dataDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })
       }
       if (prepared) {
         await prepared.teardown()

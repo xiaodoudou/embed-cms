@@ -27,14 +27,14 @@ flowchart TB
     resource -. broadcast .-> updates
   end
   subgraph storage["Storage"]
-    jsondown[("data/&lt;resource&gt;/json/db.json<br/>(jsondown, default)")]
+    leveldb[("data/&lt;resource&gt;/json/leveldb<br/>(leveldb, default; or jsondown, sqlite)")]
     mongo[("MongoDB<br/>(mongodown)")]
     pg[("PostgreSQL<br/>(pgdown)")]
     blob[("data/&lt;resource&gt;/blob/&lt;id&gt;")]
   end
   admin -- "HTTP /admin, /api" --> express
   updates -- "record changes" --> admin
-  json --> jsondown
+  json --> leveldb
   json -.-> mongo
   json -.-> pg
   files --> blob
@@ -124,10 +124,13 @@ before-hook and hides them in an after-hook.
 
 `lib/util/driver` implements the operations on top of two stores per resource, created in `lib/resource.js`:
 
-- **`JsonStore`** (`lib/db/json_store.js`) keeps the records. It is a level-style key-value store with one of three
-  engines behind it: `jsondown` (default) holds the records in memory and writes them to
-  `data/<resource>/json/db.json`, through a temporary file renamed over the old one, a few milliseconds after a change;
-  `mongodown` and `pgdown` keep them in a MongoDB collection or a PostgreSQL table per resource, chosen by `dbEngine`.
+- **`JsonStore`** (`lib/db/json_store.js`) keeps the records. It is a level-style key-value store (the abstract-level
+  interface) with one of five engines behind it, chosen by `dbEngine.type` ([STORAGE.md](STORAGE.md) compares them):
+  `leveldb` (default, `leveldbdown.js`, classic-level) and `sqlite` (`sqlitedown.js`) keep them on disk and read them
+  from there; `jsondown` holds the records in memory and writes them to `data/<resource>/json/db.json`, through a
+  temporary file renamed over the old one, a few milliseconds after a change; `mongodown` and `pgdown` keep them in
+  a MongoDB collection or a PostgreSQL table per resource. The three local engines are created by
+  `lib/db/leveldown/localEngines.js`, and share the replication code in `sync.js`; the two servers have their own.
   Queries are filtered in the process with sift, whatever the engine.
 - **`FileStore`** (`lib/db/file_store.js`) keeps the attachments as plain files in `data/<resource>/blob/`, named by
   attachment id, with resized copies next to them. Fields configured for Alibaba Cloud OSS go there instead.

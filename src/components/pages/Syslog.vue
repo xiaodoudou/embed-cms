@@ -181,7 +181,8 @@
             this.reconnectAttempts = 0
             try {
               const json = JSON.parse(event.data)
-              if (_.get(json, 'id', false) && _.get(json, 'line', false)) {
+              // the first line of the server has the id 0
+              if (_.isFinite(_.get(json, 'id')) && _.get(json, 'line', false)) {
                 json.size = _.get(`${this.calculateLineNumberSpacing(json.id)} ${json.line}`, 'length', 0)
                 if (json.size > 0) {
                   // frozen: a log line never changes, so Vue does not have to make it reactive (thousands of them)
@@ -208,7 +209,7 @@
               this.reconnectAttempts++
               const reconnectDelay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000)
               console.warn(`Attempting to reconnect in ${reconnectDelay}ms (attempt ${this.reconnectAttempts})`)
-              setTimeout(() => this.connectToLogStream(), reconnectDelay)
+              this.timer = setTimeout(() => this.connectToLogStream(), reconnectDelay)
             } else {
               this.error = 'Failed to connect to syslog stream after multiple attempts.'
               console.error(this.error)
@@ -342,7 +343,9 @@
             const query = JSON5.parse(this.searchKey.substr(5))
             return lines.filter(sift(query))
           } catch (error) {
+            // a query that is still being typed does not parse: keep showing everything
             console.error('Error parsing sift query:', error)
+            return lines
           }
         } else if (!_.isEmpty(this.searchKey)) {
           return _.filter(lines, lineItem => {

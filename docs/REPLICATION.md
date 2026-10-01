@@ -109,15 +109,15 @@ explains why).
 
 ## Starting a sync by hand
 
-There is no replicator page in the admin today (a component exists but isn't wired into the menu, see
-[UI_BUGS.md](UI_BUGS.md#plugin-pages)). Use the HTTP routes, open to any logged-in user (they are in `routesToAuth`), or
-code:
+When replication runs, the admin has a **Replicator** page in the System menu (for the `admins` group, which gets it by
+default). It lists the resources with their type and peers, syncs a resource or one record, and says which peers failed.
+The same is available over HTTP to any logged-in user (the routes are in `routesToAuth`), and from code:
 
 | Route | What it does |
 |---|---|
 | `GET /replicator/resources` | Resources with their type and peers. |
 | `POST /replicator/sync/:resource` | Sync a resource with its peers. |
-| `POST /replicator/sync/:resource/:id` | Meant to sync one record; it currently syncs the whole resource ([BUGS.md](BUGS.md#plugins)). |
+| `POST /replicator/sync/:resource/:id` | Bring one record to the peers: `404` if this node doesn't have it. The record travels with any other change of the resource the peer hasn't seen yet (the protocol exchanges changes, so nothing is sent twice); only that record's attachments are synced. |
 
 ```js
 await cms.$replicator.syncResource('articles')
@@ -132,7 +132,7 @@ await cms.$replicator.syncResource('articles')
 - **"Can't modify foreign records".** The record was created on another node. Edit it there.
 - **Two nodes clash.** They share a `mid`. Give each node its own, before it creates records.
 - **`POST /replicator/sync/…` answers 200 but nothing changed.** Errors of each peer are collected into the answer
-  instead of failing the request. Read the body, and the server log.
+  instead of failing the request. Read the body (the Replicator page shows them), and the server log.
 
 ## Security
 

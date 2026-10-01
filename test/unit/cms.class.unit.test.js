@@ -17,7 +17,6 @@ describe('CMS class (unit)', () => {
     disableReplication: true,
     importFromRemote: false,
     syslog: undefined,
-    smartCrop: false,
     auth: { secret: SECRET }
   })
   const build = (extra = {}, files = {}) => {

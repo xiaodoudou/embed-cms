@@ -43,8 +43,8 @@
           <small class="text">{{ convertBytes(system.memory.usedMemMb) }} / {{ convertBytes(system.memory.totalMemMb) }}</small>
         </div>
         <div v-if="system.drive != 'not supported'" class="stats drive">
-          <div class="stat-head"><span>{{ $filters.translate('TL_DISK') }}</span><span>{{ Math.round(100 - system.drive.usedPercentage) }}%</span></div>
-          <v-progress-linear rounded height="8" aria-label="Disk usage" :model-value="100 - system.drive.usedPercentage" />
+          <div class="stat-head"><span>{{ $filters.translate('TL_DISK') }}</span><span>{{ Math.round(system.drive.usedPercentage) }}%</span></div>
+          <v-progress-linear rounded height="8" aria-label="Disk usage" :model-value="system.drive.usedPercentage" />
           <small class="text">{{ convertBytes(system.drive.usedGb * 1024) }} / {{ convertBytes(system.drive.totalGb * 1024) }}</small>
         </div>
         <div class="stats two-by-two">
@@ -56,6 +56,11 @@
             <div class="stat-head"><span>{{ $filters.translate('TL_UPTIME') }}</span></div>
             <small class="text">{{ timeAgo(system.uptime) }}</small>
           </div>
+        </div>
+        <!-- Basic login: the browser keeps the credentials until it closes, so there is no logout button to offer -->
+        <div v-if="!showLogoutButton" class="sign-out-hint">
+          <v-icon icon="$logout" size="small" aria-hidden="true" />
+          <span>{{ $filters.translate('TL_SIGN_OUT_HINT') }}</span>
         </div>
       </div>
     </v-menu>
@@ -149,11 +154,16 @@
       eventSource.value.addEventListener('end', () => {
         eventSource.value.close()
         console.warn('System info stream ended')
-        connectToLogStream()
+        if (!destroyed.value) {
+          connectToLogStream()
+        }
       })
       eventSource.value.onerror = (error) => {
         console.error('Error in SSE connection:', error)
         eventSource.value.close()
+        if (destroyed.value) {
+          return
+        }
         if (reconnectAttempts.value < maxReconnectAttempts) {
           reconnectAttempts.value++
           const reconnectDelay = Math.min(1000 * Math.pow(2, reconnectAttempts.value), 30000)
@@ -208,7 +218,8 @@
       getCurrentInstance().proxy.$loading.stop('_syslog')
     }
     destroyed.value = true
-    clearTimeout(timer.value)
+    // the stream stays open (and reconnects when it fails) until it is closed
+    disconnectFromLogStream()
   })
 </script>
 <style lang="scss" scoped>
@@ -296,6 +307,18 @@
     .stats {
       flex: 1 1 0;
       min-width: 0;
+    }
+  }
+  .sign-out-hint {
+    display: flex;
+    align-items: center;
+    gap: var(--cms-space-2);
+    padding-top: var(--cms-space-3);
+    border-top: 1px solid var(--cms-border);
+    font-size: var(--cms-fs-sm);
+    color: var(--cms-text-muted);
+    .v-icon {
+      color: var(--cms-text-muted);
     }
   }
 }

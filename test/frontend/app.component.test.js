@@ -271,6 +271,25 @@ describe('App', () => {
     })
   })
 
+  describe('the menu groups', () => {
+    it('lists CMS first, Others last and the rest alphabetically by their displayed name', async () => {
+      const schema = resources[0].schema
+      ResourceService.getAll.mockResolvedValue([
+        { title: 'orders', displayname: { enUS: 'Orders' }, group: { enUS: 'Shop', zhCN: '商店' }, locales: ['enUS'], schema },
+        { title: 'loose', displayname: { enUS: 'Loose' }, locales: ['enUS'], schema },
+        { title: '_users', displayname: { enUS: 'Users' }, group: { enUS: 'CMS', zhCN: '内容管理系统' }, locales: ['enUS'], schema },
+        { title: 'posts', displayname: { enUS: 'Posts' }, group: 'blog', locales: ['enUS'], schema },
+        { title: 'visits', displayname: { enUS: 'Visits' }, group: { enUS: 'Analytics', zhCN: '分析' }, locales: ['enUS'], schema }
+      ])
+      window.plugins = [{ title: 'Syslog', displayname: 'Syslog', group: 'System', allowed: ['admins'] }]
+      LoginService.getPlugins.mockResolvedValueOnce(['Syslog'])
+      ResourceService.get.mockReturnValue([])
+      ResourceService.cache.mockResolvedValue([])
+      await mountApp('/')
+      expect(wrapper.vm.groupedList.map((group) => TranslateService.get(group.name))).toEqual(['CMS', 'Analytics', 'blog', 'Shop', 'System', 'Others'])
+    })
+  })
+
   describe('the breadcrumb', () => {
     it('shows the group, the resource and, when one is open, the record', async () => {
       await mountApp('/?id=products&record=mu0aaaaa')

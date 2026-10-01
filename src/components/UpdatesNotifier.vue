@@ -16,7 +16,7 @@
         :title="$filters.translate(getTitle(receivedUpdate))" density="compact"
         :close-label="$filters.translate('TL_WS_UPDATES_CLOSE')" closable
       >
-        <div class="description" v-html="sanitizeHtml($filters.translate(getDescription(receivedUpdate)))" />
+        <div class="description" v-html="sanitizeHtml(describe())" />
         <v-btn rounded compact variant="flat" size="small" @click="reloadResource()">{{ $filters.translate('TL_WS_UPDATES_RELOAD') }}</v-btn>
       </v-alert>
     </div>
@@ -28,6 +28,7 @@
   import _ from 'lodash'
   import { sanitizeHtml } from '@u/sanitizeHtml'
   import LoginService from '@s/LoginService'
+  import TranslateService from '@s/TranslateService'
 
   export default {
     props: {
@@ -45,11 +46,22 @@
         reconnectAfter: 500,
         pingIntervalDuration: 30000,
         pingDelay: 5000,
-        receivedUpdate: false
+        receivedUpdate: false,
+        destroyed: false
       }
     },
     mounted() {
       this.connectToWebsocketServer()
+    },
+    beforeUnmount() {
+      // no more heartbeat, no more reconnecting
+      this.destroyed = true
+      clearTimeout(this.heatbeat)
+      clearTimeout(this.connecting)
+      if (this.client) {
+        this.client.onopen = this.client.onclose = this.client.onmessage = null
+        this.client.close()
+      }
     },
     methods: {
       sanitizeHtml,
@@ -66,6 +78,9 @@
       },
       getDescription() {
         return `TL_WS_UPDATES_${this.recordOrResource()}_DESCRIPTION`
+      },
+      describe() {
+        return TranslateService.get(this.getDescription(), { resourceName: _.get(this.receivedUpdate, 'data.resource', '') })
       },
       isSameRecord() {
         return _.get(this.receivedUpdate, 'data._id', '?') === _.get(this.selectedRecord, '_id', '??')

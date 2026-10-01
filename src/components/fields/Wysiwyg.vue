@@ -76,6 +76,12 @@
       this.loaded = true
       this.updateObj()
     },
+    beforeUnmount () {
+      // the editor keeps listeners on the document and its own state: let it go
+      if (this.editor) {
+        this.editor.destroy()
+      }
+    },
     methods: {
       // the editable node is only as tall as its text: a click on the empty area still focuses the end of the content
       focusEditor (event) {

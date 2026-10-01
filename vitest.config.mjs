@@ -28,8 +28,8 @@ export default defineConfig({
     include: ['test/frontend/**/*.test.js'],
     setupFiles: ['test/frontend/helpers/setup.js'],
     restoreMocks: true,
-    // Vuetify ships ESM with css imports: let vite process it
-    server: { deps: { inline: ['vuetify'] } },
+    // Vuetify and the code editor ship ESM with css imports: let vite process them
+    server: { deps: { inline: ['vuetify', 'codemirror-editor-vue3'] } },
     css: false
   }
 })

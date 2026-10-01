@@ -130,6 +130,26 @@ export function groupHoldsItem (group, item) {
   return name === OTHERS && !itemGroup ? true : name === itemGroup
 }
 
+/**
+ * Menu groups in menu order: CMS (users, groups, settings) first, the catch-all Others last, and every other group
+ * alphabetically by the name it is shown with in the admin language. CMS is recognised by its English name, which
+ * holds whether the group was given as plain text or per language.
+ * @param {Array} groups groups as { name, list }
+ * @param {Function} labelOf the displayed name of a group name (TranslateService.get)
+ * @param {string} locale the admin language, as enUS or zhCN
+ */
+export function orderGroups (groups, labelOf, locale = 'enUS') {
+  const rank = (group) => (groupSettingsName(group) === 'CMS' ? 0 : isOthersGroup(group) ? 2 : 1)
+  let collator
+  try {
+    collator = new Intl.Collator(_.replace(locale, /^([a-z]{2})([A-Z]{2})$/, '$1-$2'), { sensitivity: 'base', numeric: true })
+  } catch {
+    // not a language tag the browser knows: its default order
+    collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true })
+  }
+  return [...groups].sort((a, b) => rank(a) - rank(b) || collator.compare(_.toString(labelOf(a.name)), _.toString(labelOf(b.name))))
+}
+
 /** Resources of a group in natural, case-insensitive order (same as the expanded tree) */
 export function orderResources (list, titleOf) {
   const collator = new Intl.Collator('en', { sensitivity: 'base', caseFirst: 'upper', usage: 'sort', ignorePunctuation: true, numeric: true })

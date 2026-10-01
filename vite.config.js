@@ -62,7 +62,8 @@ export default defineConfig(({ mode }) => {
         stream: 'rollup-plugin-node-polyfills/polyfills/stream',
         os: 'rollup-plugin-node-polyfills/polyfills/os',
         '@s': 'services',
-        '@p': viteUtils.isInNodeModules ? path.resolve('../../node-cms/plugins') : 'plugins',
+        // the folder createPluginsSymlink settled on: the project's node-cms/plugins, else the bundled src/.plugins
+        '@p': viteUtils.plugins.source,
         '@static': 'static',
         '@a': 'assets',
         '@c': 'components',

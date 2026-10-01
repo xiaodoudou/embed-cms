@@ -39,6 +39,8 @@
 </template>
 
 <script>
+  import _ from 'lodash'
+
   export default {
     name: 'CmsConfig',
     data() {
@@ -65,10 +67,14 @@
       await this.loadConfig()
     },
     methods: {
+      // next to this admin, wherever it is mounted (the path may or may not end with a slash)
+      configUrl() {
+        return `${_.trimEnd(window.location.pathname, '/')}/cms-config`
+      },
       async loadConfig() {
         this.loading = true
         try {
-          const response = await fetch(`${window.location.pathname}/cms-config`)
+          const response = await fetch(this.configUrl())
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`)
           }
@@ -114,7 +120,7 @@
         this.loading = true
         try {
           const parsedConfig = JSON.parse(this.configContent)
-          const response = await fetch('/admin/cms-config', {
+          const response = await fetch(this.configUrl(), {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'

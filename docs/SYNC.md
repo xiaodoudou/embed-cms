@@ -61,34 +61,43 @@ For each resource, the source exports its records with the internal fields remov
 
 The work runs in the background; the request answers at once.
 
+A sync also starts on its own: 5 seconds after the last change to a synced resource, this server asks the other one
+to pull it (`GET <other address>/sync/:resource/from/remote/to/local`). Changes that arrive through a sync don't trigger
+a push back.
+
+A sync sends a whole resource in one JSON body, so the target's `security.limits.json` (100 KB by default) must be
+larger than the export of the biggest synced resource; otherwise the target answers `413` with a message naming the
+setting. Raise it on the target, to a size you are comfortable accepting from the other server.
+
 Because records are matched by their `unique` fields, every synced resource needs at least one, and so does every
 resource a synced `select` or `multiselect` points to.
 
 ## Routes
 
-Every route under `/sync` checks the token in `?token=` (or a `token` field of the body) against **This CMS: token**:
+The routes the other server calls check the token in `?token=` (or a `token` field of the body) against **This CMS:
+token**:
 
 | Route | What it does |
 |---|---|
 | `GET /sync/:resource` | Export the records (needs `read`). |
 | `PUT /sync/:resource` | Make this server's records match the array in the body (needs `write`). |
 | `GET /sync/:resource/status` | Progress of the last sync. |
-| `GET` or `POST /sync/:resource/from/local/to/remote` | Read here, write there; `from/remote/to/local` does the reverse. |
+| `GET` or `POST /sync/:resource/from/local/to/remote` | Read here, write there; `from/remote/to/local` does the reverse. `POST` also accepts a logged-in user of the admin instead of the token: that is what the **Deploy** button of the Sync page uses. |
 | `GET /sync/:resource/:id/attachments/:aid` | A file, for the other server to download. |
 
-`GET /sync/local/:resource` and `GET /sync/remote/:resource` read through the stored settings and currently need no token
-([BUGS.md](BUGS.md#plugins)).
+`GET /sync/local/:resource` and `GET /sync/remote/:resource` (and their `/status`) read through the stored settings, for
+the admin's Sync page. They need a logged-in user of the admin, not a token.
+
+A refused read or write answers `403`. A failed sync is logged, and `GET /sync/:resource/status` reports it as `error`
+with the reason.
 
 ## What can go wrong
 
 - **`401 token is not match`.** The tokens are crossed: "Other CMS: token" on one side must equal "This CMS: token" on
   the other.
-- **The Deploy button of the Sync page fails.** It sends no token, so it is refused today
-  ([UI_BUGS.md](UI_BUGS.md#plugin-pages)). Call the `from/…/to/…` route with `?token=` instead.
 - **Records vanished on the target.** That is what a sync does with records the source doesn't have. Sync the other way
   first, or keep target-only records in a resource that isn't synced.
 - **Duplicates instead of updates.** The resource has no `unique` field, or its values differ between the two servers.
-- **Changes don't sync on their own.** The automatic push after a change is broken
-  ([BUGS.md](BUGS.md#plugins)); sync by hand.
-- **The server stopped during a sync.** A failed sync can end the process with the stock `server.js`
-  ([BUGS.md](BUGS.md#plugins)). Run the CMS under a supervisor.
+- **Changes don't sync on their own.** The automatic push asks the other server to pull a resource 5 seconds after the
+  last change to it. It only happens when the resource is ticked in **Resources to sync** and **Other CMS: address** is
+  set, and only works when the other server's own settings point back at this one.

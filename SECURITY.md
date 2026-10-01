@@ -78,7 +78,7 @@ key. Nothing is decided silently: with the `legacy` profile the code path of ear
 | `safeAttachments` | `false` | `true` | HTML, SVG, XML, script and unknown attachments are sent as downloads with a sandbox policy; PUT can only change `_name`, `cropOptions`, `order`, `_payload`, `_fields`, `_filename` |
 | `inlineTypes` | `[]` | `[]` | Extra content types that may be shown inline with `safeAttachments` |
 | `strictUploads` | `false` | `true` | File names are sanitised, the type of an upload is taken from its content, default upload limits apply |
-| `limits.json` | `"100kb"` | `"100kb"` | Size of a JSON request body. This is what every route accepted before the option existed (the larger limits declared by some plugins never took effect) |
+| `limits.json` | `"100kb"` | `"100kb"` | Size of a JSON request body, on every route (REST, sync, import, the admin): it is the only JSON limit. A larger body answers `413` with a JSON message naming this setting. 100kb is what every route accepted before the option existed |
 | `limits.upload` | none | `{ fileSize: "256mb", files: 20, fields: 200, fieldSize: "1mb", parts: 260 }` | Limits of multipart uploads; a value given here also applies to the `legacy` profile |
 | `restrictRemoteUrls` | `false` | `true` | `importFromRemote` only fetches attachments from the remote it imports from (and `allowedHosts` of its `remote` block) |
 | `strictReplication` | `false` | `true` | The replication port needs `replication.secret`, peers may only ask for resources this node has, changes from a peer are validated |

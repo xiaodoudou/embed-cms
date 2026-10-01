@@ -132,7 +132,7 @@ const request = (url, headers) => new Promise((resolve, reject) => {
 
 async function runSize (size, results) {
   const started = performance.now()
-  const app = await startApp({ resources: './test/bench/resources', smartCrop: false, xlsx: true }, { keepData: true })
+  const app = await startApp({ resources: './test/bench/resources', xlsx: true }, { keepData: true })
   const out = {}
   results[size] = out
   try {
@@ -234,7 +234,7 @@ async function runSize (size, results) {
   // reopening: parse the file and build the store
   if (wanted('open')) {
     const started3 = performance.now()
-    const again = await startApp({ resources: './test/bench/resources', smartCrop: false }, { dataDir: app.dataDir })
+    const again = await startApp({ resources: './test/bench/resources' }, { dataDir: app.dataDir })
     out.boot_ms = Math.round(performance.now() - started3)
     await again.close()
   } else {
@@ -249,7 +249,7 @@ async function runScrypt (results) {
   results.basicAuth = out
   const secret = () => ({ auth: { secret: randomSecret() }, session: { secret: randomSecret() } })
   for (const scheme of ['legacy', 'scrypt']) {
-    const app = await startApp({ resources: './test/bench/resources', smartCrop: false, ...secret(), security: { passwordHash: scheme } })
+    const app = await startApp({ resources: './test/bench/resources', ...secret(), security: { passwordHash: scheme } })
     try {
       const authentication = app.cms.$authentication
       await authentication.users.create({ username: 'bench', password: 'bench-password', group: authentication.adminsGroup._id })
@@ -274,7 +274,7 @@ async function runAttachments (results) {
   const logger = require('../../lib/logger')
   const out = {}
   results.attachments = out
-  const app = await startApp({ resources: './test/bench/resources', smartCrop: false })
+  const app = await startApp({ resources: './test/bench/resources' })
   const auth = { Authorization: `Basic ${Buffer.from('localAdmin:localAdmin').toString('base64')}` }
   try {
     const record = await app.cms.api()('products').create({ sku: 'IMG-1', name: { enUS: 'with image' } })

@@ -137,6 +137,15 @@ describe('ImportWrapper (unit)', () => {
 describe('importFromRemote plugin (unit)', () => {
   let app, plugin, agent
 
+  const waitFor = async (check, timeout = 3000) => {
+    const start = Date.now()
+    while (Date.now() - start < timeout) {
+      if (await check()) return true
+      await new Promise(resolve => setTimeout(resolve, 20))
+    }
+    return false
+  }
+
   before(async () => {
     app = await startApp({ importFromRemote: { local: {}, remote: {}, resources: [] } })
     plugin = app.cms.$importFromRemote
@@ -168,6 +177,7 @@ describe('importFromRemote plugin (unit)', () => {
     expect(res.status).to.equal(200)
     expect(received.options).to.deep.equal({ yes: true })
     expect(received.ask).to.equal(null)
+    expect(await waitFor(async () => (await agent.get('/importFromRemote/status')).body.status === 'done')).to.equal(true)
     const status = await agent.get('/importFromRemote/status')
     expect(status.body).to.include({ status: 'done', progress: 100 })
   })
@@ -175,8 +185,34 @@ describe('importFromRemote plugin (unit)', () => {
   it('reports the real reason when the import failed', async () => {
     plugin.importWrapper.startImport = async function () { this.lastError = new Error('remote login refused'); return false }
     await agent.get('/importFromRemote/execute')
+    expect(await waitFor(async () => (await agent.get('/importFromRemote/status')).body.status === 'error')).to.equal(true)
     const status = await agent.get('/importFromRemote/status')
     expect(status.body).to.include({ status: 'error', message: 'remote login refused' })
+  })
+
+  it('answers at once and runs the import in the background', async () => {
+    let finish
+    plugin.importWrapper.startImport = () => new Promise(resolve => { finish = resolve })
+    const res = await agent.get('/importFromRemote/execute').timeout({ response: 2000 })
+    expect(res.status).to.equal(200)
+    expect(res.body).to.include({ status: 'started' })
+    const running = await agent.get('/importFromRemote/status')
+    expect(running.body).to.include({ status: 'starting' })
+    const second = await agent.get('/importFromRemote/execute')
+    expect(second.status, 'a second import while the first runs').to.equal(409)
+    finish(true)
+    const done = await waitFor(async () => (await agent.get('/importFromRemote/status')).body.status === 'done')
+    expect(done).to.equal(true)
+  })
+
+  it('reports an import that throws as an error status', async () => {
+    plugin.importWrapper.startImport = async () => { throw new Error('exploded') }
+    const res = await agent.get('/importFromRemote/execute')
+    expect(res.status).to.equal(200)
+    const failed = await waitFor(async () => (await agent.get('/importFromRemote/status')).body.status === 'error')
+    expect(failed).to.equal(true)
+    const status = await agent.get('/importFromRemote/status')
+    expect(status.body).to.include({ message: 'exploded' })
   })
 
   it('answers 409 while an import is in progress', async () => {

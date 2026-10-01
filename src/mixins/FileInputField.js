@@ -265,6 +265,17 @@ export default {
       }
       this.attachments.push(newAttachment)
     },
+    // The files are uploaded one beside the other, so their order is sent with them: each file gets its position, and only a file
+    // that is new or has moved is marked (the others need no request). It used to count the list the field had before the files
+    // were added, so new files had no position and could be stored in the order they happened to arrive.
+    numberAttachments () {
+      _.each(this.attachments, (attachment, i) => {
+        if (attachment.order !== i + 1) {
+          attachment.order = i + 1
+          attachment.orderUpdated = true
+        }
+      })
+    },
     async readAllFiles (files) {
       let nbFilesToRead = _.get(files, 'length', 1)
       return new Promise((resolve) => {
@@ -276,10 +287,7 @@ export default {
             nbFilesToRead--
             if (nbFilesToRead === 0) {
               if (this.isForMultipleImages()) {
-                _.each(this._value, (a, i) => {
-                  a.order = i + 1
-                  a.orderUpdated = true
-                })
+                this.numberAttachments()
               }
               resolve(this.attachments)
             }
@@ -291,10 +299,7 @@ export default {
               nbFilesToRead--
               if (nbFilesToRead === 0) {
                 if (this.isForMultipleImages()) {
-                  _.each(vm._value, (a, i) => {
-                    a.order = i + 1
-                    a.orderUpdated = true
-                  })
+                  vm.numberAttachments()
                 }
                 resolve(vm.attachments)
               }

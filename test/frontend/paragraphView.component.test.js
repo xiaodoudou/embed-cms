@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import ParagraphView from '@c/fields/ParagraphView.vue'
@@ -231,9 +233,37 @@ describe('ParagraphView (blocks)', () => {
       expect(cards()[0].classes()).toContain('slots-2')
     })
 
+    it('marks blocks of a quarter of the row or less, which tablets widen to a third', async () => {
+      await paragraph({ options: { dynamicLayout: true } }, { blocks: [{ _type: 'block_text', slots: 1 }, { _type: 'block_text', slots: 3 }, { _type: 'block_text', slots: 4 }] })
+      expect(cards().map((card) => card.classes().includes('slots-narrow'))).toEqual([true, true, false])
+    })
+
+    it('measures narrow blocks against the row, not against 12', async () => {
+      await paragraph({ options: { dynamicLayout: true } }, { slots: 6, blocks: [{ _type: 'block_text', slots: 1 }, { _type: 'block_text', slots: 2 }] })
+      expect(wrapper.vm.parentSlots).toBe(6)
+      expect(cards().map((card) => card.classes().includes('slots-narrow'))).toEqual([true, false])
+    })
+
+    it('widens narrow blocks on tablets by class: the inline width is never matched as text', () => {
+      const source = fs.readFileSync(path.resolve(__dirname, '../../src/components/fields/ParagraphView.vue'), 'utf8')
+      const tablet = source.slice(source.indexOf('@media (max-width: 1024px) and (min-width: 769px)'))
+      expect(tablet).toContain('&.slots-narrow')
+      expect(source).not.toMatch(/\[style\*=/)
+    })
+
+    it('badges each block with its slots over the row\'s, explained to a screen reader', async () => {
+      await paragraph({ options: { dynamicLayout: true } }, { blocks: [{ _type: 'block_text', slots: 3 }, { _type: 'block_text' }, { _type: 'block_media', slots: 3 }] })
+      const badges = cards().map((card) => card.find('.slots-badge'))
+      expect(badges.map((badge) => badge.text())).toEqual(['3/12', '2/12', '3/12'])
+      expect(badges[0].attributes('title')).toBe('Width: 3 of 12 slots')
+      expect(badges[0].attributes('aria-label')).toBe('Width: 3 of 12 slots')
+      expect(cards()[0].attributes('data-index')).toBeUndefined()
+    })
+
     it('is a plain list otherwise', async () => {
       await paragraph({}, { blocks: [{ _type: 'block_text' }] })
       expect(wrapper.vm.isDynamicLayoutContainer).toBe(false)
+      expect(cards()[0].find('.slots-badge').exists()).toBe(false)
       expect(wrapper.vm.getItemStyles({ slots: 6 })).toEqual({})
     })
   })

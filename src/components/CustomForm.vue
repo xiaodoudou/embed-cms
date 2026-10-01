@@ -42,7 +42,8 @@
       paragraphLevel: { type: Number, default: 0 }
     },
     created () {
-      _.each(this.schema.fields, (field) => {
+      // the template shows nothing for a null schema: so must this
+      _.each(_.get(this.schema, 'fields'), (field) => {
         const fieldType = this.getFieldType(field)
         if (!(fieldType in getCurrentInstance().appContext.components)) {
           if (fieldType === false) {
@@ -78,7 +79,7 @@
         return [`slots-${_.get(line, 'slots', '1')}`, `nb-fields-${_.get(line, 'fields.length', 1)}`]
       },
       onFieldSelected (field) {
-        _.each(this.schema.fields, (f) => {
+        _.each(_.get(this.schema, 'fields'), (f) => {
           f.focused = f.model === `${field.field}${f.localised ? `.${TranslateService.locale}` : ''}`
           if (f.focused) {
             setTimeout(() => {

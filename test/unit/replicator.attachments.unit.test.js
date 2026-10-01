@@ -43,7 +43,7 @@ describe('replicated attachments (unit)', () => {
 
   describe('isSafeFileId', () => {
     it('accepts generated ids and the ids of resized copies', () => {
-      for (const id of ['lkjhgfdscccccccc12345678', 'lkjhgfdscccccccc12345678-autox100', 'lkjhgfdscccccccc12345678-smart-default-500xauto']) {
+      for (const id of ['lkjhgfdscccccccc12345678', 'lkjhgfdscccccccc12345678-autox100', 'lkjhgfdscccccccc12345678-smart-500xauto']) {
         expect(isSafeFileId(id), id).to.equal(true)
       }
     })

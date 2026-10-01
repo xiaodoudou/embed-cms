@@ -13,4 +13,17 @@ export function applyThemeToDocument (name) {
   return theme
 }
 
-export default { applyThemeToDocument }
+/**
+ * The theme to show, the same way on the login page and in the admin: light when dark mode is turned off
+ * (disableDarkMode, the server default, also when the configuration could not be read), otherwise the preference given
+ * ('dark' or 'light': the system's on the login page, the user's in the admin).
+ * @param {object} [config] the admin configuration (/admin/config)
+ * @param {string} [preferred]
+ * @returns {'light'|'dark'}
+ */
+export function pickTheme (config, preferred) {
+  const darkModeOff = !config || config.disableDarkMode !== false
+  return !darkModeOff && preferred === 'dark' ? 'dark' : 'light'
+}
+
+export default { applyThemeToDocument, pickTheme }

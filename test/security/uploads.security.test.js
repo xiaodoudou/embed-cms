@@ -105,6 +105,13 @@ describe('uploads and attachments (security)', () => {
       expect(res.body._filename).to.match(/evil.*\.jpg$/)
     })
 
+    it('apply to the name of the uploaded file when there is no _filename field (#21)', async () => {
+      const res = await upload(fs.readFileSync(IMAGE), `${'b'.repeat(400)}.jpg`)
+      expect(res.status).to.equal(200)
+      expect(res.body._filename.length).to.be.at.most(255)
+      expect(res.body._filename).to.match(/^b+\.jpg$/)
+    })
+
     it('are capped in length', async () => {
       const res = await upload(fs.readFileSync(IMAGE), 'man.jpg', { _filename: `${'a'.repeat(400)}.jpg` })
       expect(res.body._filename.length).to.be.at.most(255)

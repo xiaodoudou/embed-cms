@@ -59,8 +59,7 @@ describe('Database Operations via API', () => {
       const getRes = await request(serverUrl)
         .get(`/api/articles/${id}`)
         .auth('localAdmin', 'localAdmin')
-      expect(getRes.status).to.equal(200)
-      expect(getRes.body).to.be.null
+      expect(getRes.status).to.equal(404)
     })
 
     it('should query records with filters', async () => {

@@ -19,7 +19,8 @@ exports = module.exports = (config = {}, overwrite = false) => {
   })
   const schemaMap = {}
   const paragraphMap = {}
-  const buildUrl = (url)=> `${config.protocol}${config.host}${config.prefix}/${url}`
+  // prefix is optional: the CMS may be mounted at the root
+  const buildUrl = (url)=> `${config.protocol}${config.host}${config.prefix || ''}/${url}`
   return (resource) => {
     return {
       async create (item) {

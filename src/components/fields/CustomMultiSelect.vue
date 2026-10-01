@@ -7,7 +7,7 @@
       :theme="theme"
       :chips="getSelectOpt('chips')"
       :menu-props="menuProps"
-       :model-value="objectValue || _value" :items="listItems" :closable-chips="getSelectOpt('deletableChips') || getSelectOpt('multiple')" :hide-selected="getSelectOpt('hideSelected')"
+      :model-value="objectValue || _value" :items="listItems" :closable-chips="getSelectOpt('deletableChips') || getSelectOpt('multiple')" :hide-selected="getSelectOpt('hideSelected')"
       :disabled="disabled || schema.disabled" :readonly="!!schema.readonly" :aria-readonly="schema.readonly ? 'true' : undefined" :placeholder="schema.placeholder" :multiple="getSelectOpt('multiple')" :ripple="false" :flat="get('flat')" :rules="[validateField]"
       :item-title="customLabel" :item-value="getValue"
       menu-icon="$chevronDown" :clearable="isClearable" clear-icon="$close" :variant="getVariant()" :density="get('density')" rounded hide-details="auto" validate-on="blur" :aria-label="schema.label"

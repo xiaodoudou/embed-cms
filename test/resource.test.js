@@ -114,14 +114,15 @@ describe('Resource API - CRUD Operations', () => {
     const getRes = await request(serverUrl)
       .get(`/api/articles/${id}`)
       .auth('localAdmin', 'localAdmin')
-    expect(getRes.body).to.equal(null)
+    expect(getRes.status).to.equal(404)
   })
 
-  it('should return null for non-existent record', async () => {
+  it('should answer 404 for a non-existent record', async () => {
     const res = await request(serverUrl)
       .get('/api/articles/nonexistentid123')
       .auth('localAdmin', 'localAdmin')
-    expect(res.body).to.equal(null)
+    expect(res.status).to.equal(404)
+    expect(res.body.code).to.equal(404)
   })
 })
 

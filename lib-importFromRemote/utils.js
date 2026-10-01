@@ -119,7 +119,7 @@ function convertKeyToId(field, v, remoteToLocalIdMap, originalRemoteRecords) {
 }
 
 function buildUrl(config, withPrefix = true) {
-  return `${config.protocol}${config.host}${withPrefix ? config.prefix : ''}`
+  return `${config.protocol}${config.host}${withPrefix ? (config.prefix || '') : ''}`
 }
 
 function filterAttachments(list, attachmentsToIgnore) {

@@ -25,24 +25,24 @@
     </div>
     <p v-if="filter" class="nav-empty" role="status">{{ matchMessage }}</p>
     <div v-for="resourceGroup in visibleGroups" :key="groupKey(resourceGroup)" class="resource-group" :class="{'is-open': isGroupOpen(resourceGroup)}">
-        <h2 class="group-heading">
-          <button
-            type="button" class="group-toggle" :class="{locating: isLocatingGroup(resourceGroup)}" :aria-expanded="isGroupOpen(resourceGroup) ? 'true' : 'false'"
-            :aria-controls="`resource-group-list-${groupKey(resourceGroup)}`" @click="toggleGroup(resourceGroup)"
-          >
-            <v-icon class="group-chevron" size="small" icon="$chevronRight" />
-            <img v-if="iconUrl(resourceGroup)" :src="iconUrl(resourceGroup)" class="group-image" alt="">
-            <span class="group-title">{{ $filters.translate(resourceGroup.name) }}</span>
-            <span v-if="!isGroupOpen(resourceGroup) && groupSelected(resourceGroup)" class="group-current-dot" :title="$filters.translate('TL_YOU_ARE_HERE')" />
+      <h2 class="group-heading">
+        <button
+          type="button" class="group-toggle" :class="{locating: isLocatingGroup(resourceGroup)}" :aria-expanded="isGroupOpen(resourceGroup) ? 'true' : 'false'"
+          :aria-controls="`resource-group-list-${groupKey(resourceGroup)}`" @click="toggleGroup(resourceGroup)"
+        >
+          <v-icon class="group-chevron" size="small" icon="$chevronRight" />
+          <img v-if="iconUrl(resourceGroup)" :src="iconUrl(resourceGroup)" class="group-image" alt="">
+          <span class="group-title">{{ $filters.translate(resourceGroup.name) }}</span>
+          <span v-if="!isGroupOpen(resourceGroup) && groupSelected(resourceGroup)" class="group-current-dot" :title="$filters.translate('TL_YOU_ARE_HERE')" />
+        </button>
+      </h2>
+      <ul v-show="isGroupOpen(resourceGroup)" :id="`resource-group-list-${groupKey(resourceGroup)}`" class="group-list">
+        <li v-for="resource in resourceGroup.list" :key="resource.name || resource.title">
+          <button type="button" class="resource-link" :class="{selected: isSelected(resource), locating: (crumbHint === 'resource' || pulse) && isSelected(resource)}" :aria-current="isSelected(resource) ? 'page' : undefined" @click="selectResourceCallback(resource)">
+            <span class="resource-link-title"><template v-for="(part, i) in segments(getResourceTitle(resource))"><mark v-if="part.match" :key="i">{{ part.text }}</mark><template v-else>{{ part.text }}</template></template></span>
           </button>
-        </h2>
-        <ul v-show="isGroupOpen(resourceGroup)" :id="`resource-group-list-${groupKey(resourceGroup)}`" class="group-list">
-          <li v-for="resource in resourceGroup.list" :key="resource.name || resource.title">
-            <button type="button" class="resource-link" :class="{selected: isSelected(resource), locating: (crumbHint === 'resource' || pulse) && isSelected(resource)}" :aria-current="isSelected(resource) ? 'page' : undefined" @click="selectResourceCallback(resource)">
-              <span class="resource-link-title"><template v-for="(part, i) in segments(getResourceTitle(resource))"><mark v-if="part.match" :key="i">{{ part.text }}</mark><template v-else>{{ part.text }}</template></template></span>
-            </button>
-          </li>
-        </ul>
+        </li>
+      </ul>
     </div>
   </nav>
 </template>

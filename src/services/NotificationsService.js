@@ -9,7 +9,7 @@ class NotificationsService {
   /**
    * @param {string} message text shown in the toast
    * @param {string} type 'success' | 'error' | 'warn' | 'info'
-   * @param {{detail?: string, actionLabel?: string, action?: Function}} extra optional copyable detail (e.g. a record id) and a toast action such as Retry
+   * @param {{detail?: string, detailLabel?: string, actionLabel?: string, action?: Function}} extra optional copyable detail (a record id by default; detailLabel, a TL_ key, names it otherwise) and a toast action such as Retry
    */
   send (message, type = 'success', extra = {}) {
     this.events.emit('notification', {message, type, ...extra})

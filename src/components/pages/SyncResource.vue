@@ -5,8 +5,8 @@
       <v-select
         v-model="selectedResource" :items="config.sync.resources" item-text="name" item-value="name" :ripple="false"
         menu-icon="$chevronDown"
-        flat rounded
-        density="compact" hide-details variant="solo-filled"
+        flat rounded density="compact"
+        hide-details variant="solo-filled" @update:model-value="onChangeResource"
       />
       <div v-if="!isEmpty(recordData)" class="num-records">
         <span>number of records</span>
@@ -107,7 +107,9 @@
             await pAll(_.map(['local', 'remote'], env => {
               return async () => {
                 try {
-                  this.syncStatus[env] = await RequestService.get(`../sync/${env}/${this.selectedResource}/status`)
+                  // read the status first: the other environment may replace this.syncStatus while we wait
+                  const status = await RequestService.get(`../sync/${env}/${this.selectedResource}/status`)
+                  this.syncStatus[env] = status
                   this.syncStatus = _.clone(this.syncStatus)
                 } catch (error) {
                   console.error(error)

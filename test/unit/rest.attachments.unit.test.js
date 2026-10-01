@@ -65,6 +65,37 @@ describe('REST attachments (unit)', () => {
     })
   })
 
+  describe('the original file name (#21)', () => {
+    it('is kept when the client sends no _filename field', async () => {
+      const res = await request(app.url)
+        .post(`/api/articles/${articleId}/attachments`)
+        .auth(...ADMIN)
+        .attach('image', image, { filename: 'portrait.jpg', contentType: 'image/jpeg' })
+      expect(res.status).to.equal(200)
+      expect(res.body._filename).to.equal('portrait.jpg')
+    })
+
+    it('gives the content type when the client declares none', async () => {
+      const res = await request(app.url)
+        .post(`/api/articles/${articleId}/attachments`)
+        .auth(...ADMIN)
+        .attach('file', Buffer.from('just some text'), { filename: 'notes.txt', contentType: 'application/octet-stream' })
+      expect(res.status).to.equal(200)
+      expect(res.body._filename).to.equal('notes.txt')
+      expect(res.body._contentType).to.equal('text/plain')
+    })
+
+    it('gives way to a _filename field', async () => {
+      const res = await request(app.url)
+        .post(`/api/articles/${articleId}/attachments`)
+        .auth(...ADMIN)
+        .field('_filename', 'chosen.jpg')
+        .attach('image', image, { filename: 'portrait.jpg', contentType: 'image/jpeg' })
+      expect(res.status).to.equal(200)
+      expect(res.body._filename).to.equal('chosen.jpg')
+    })
+  })
+
   it('resizes to the requested dimensions', async () => {
     const res = await get({ resize: '60x40' })
     expect(res.status).to.equal(200)
@@ -86,6 +117,51 @@ describe('REST attachments (unit)', () => {
     const second = await get({ resize: '33x33' })
     expect(second.status).to.equal(200)
     expect(Buffer.compare(first.body, second.body)).to.equal(0)
+  })
+
+  describe('resized and smart-cropped copies (#25)', () => {
+    let aid
+    const folder = () => app.cms.resource('articles').file._dir
+    const cached = () => fs.readdirSync(folder()).filter(file => file.startsWith(`${aid}-`) && !file.endsWith('-autox100')).sort()
+    const fetch = (query) => request(app.url)
+      .get(`/api/articles/${articleId}/attachments/${aid}`)
+      .auth(...ADMIN)
+      .query(query)
+      .buffer(true)
+      .parse(binary)
+    beforeEach(async () => {
+      const res = await request(app.url)
+        .post(`/api/articles/${articleId}/attachments`)
+        .auth(...ADMIN)
+        .attach('image', image, { filename: 'man.jpg', contentType: 'image/jpeg' })
+      aid = res.body._id
+    })
+
+    it('a smart crop is not cached under the key of the plain resize', async () => {
+      const res = await fetch({ resize: '60x40', smart: 'true' })
+      expect(res.status).to.equal(200)
+      const meta = await sharp(res.body).metadata()
+      expect([meta.width, meta.height]).to.deep.equal([60, 40])
+      expect(cached()).to.deep.equal([`${aid}-smart-60x40`])
+    })
+
+    it('a smart request does not get the plain resize cached earlier', async () => {
+      const plain = await fetch({ resize: '60x40' })
+      const smart = await fetch({ resize: '60x40', smart: 'true' })
+      expect(smart.status).to.equal(200)
+      const smartCopy = fs.readFileSync(path.join(folder(), `${aid}-smart-60x40`))
+      expect(smart.body.equals(smartCopy)).to.equal(true)
+      expect(smart.body.equals(plain.body)).to.equal(false)
+    })
+
+    it('smart=false and smart=0 ask for a plain resize', async () => {
+      for (const smart of ['false', '0']) {
+        const res = await fetch({ resize: '60x40', smart })
+        expect(res.status).to.equal(200)
+        expect(res.headers['content-length']).to.equal(String(res.body.length))
+      }
+      expect(cached()).to.deep.equal([`${aid}-60x40`])
+    })
   })
 
   it('ignores invalid resize options and sends the original', async () => {

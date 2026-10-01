@@ -126,11 +126,11 @@
   import ToastHost from '@c/ToastHost.vue'
   import DesignSystem from '@c/pages/DesignSystem.vue'
   import UploadService from '@s/UploadService'
-  import { applyThemeToDocument } from '@u/theme'
+  import { applyThemeToDocument, pickTheme } from '@u/theme'
   import { getRecordLabel, getResourceLabel } from '@u/recordLabel'
   import NavRail from '@c/NavRail.vue'
   import { readPreference, writePreference, readNumber } from '@u/preferences'
-  import { resolveNavMode, toggledPref, clampNavWidth, resizeByKey, NAV_DEFAULT_WIDTH, NAV_MIN_WIDTH, NAV_MAX_WIDTH } from '@u/navModel'
+  import { resolveNavMode, toggledPref, clampNavWidth, resizeByKey, orderGroups, NAV_DEFAULT_WIDTH, NAV_MIN_WIDTH, NAV_MAX_WIDTH } from '@u/navModel'
 
   // Wide screens open the sidebar, narrower ones start as a rail, phones use the off-canvas drawer
   const WIDE_QUERY = '(min-width: 1280px)'
@@ -292,14 +292,7 @@
           }
         })
         list = _.cloneDeep(list)
-        groups = _.orderBy(groups, (item) => {
-          if (item.name === 'CMS') {
-            return String.fromCharCode(0x00)
-          } else if (item === others) {
-            return String.fromCharCode(0xff)
-          }
-          return `${TranslateService.get(item.name, 'enUS')}`.toLowerCase()
-        }, 'asc')
+        groups = orderGroups(groups, (name) => TranslateService.get(name), TranslateService.locale)
         return _.filter(groups, (group) => group.list && group.list.length !== 0)
       },
       pluginList () {
@@ -528,13 +521,12 @@
           this.user = await LoginService.getStatus()
           this.allowedPlugins = await LoginService.getPlugins()
           log.debug('Plugins available:', this.allowedPlugins)
-          if (_.get(ConfigService, 'config.disableDarkMode', false)) {
+          const theme = pickTheme(ConfigService.config, _.get(this.user, 'theme', 'light'))
+          if (theme === 'light') {
             this.user.theme = 'light'
-            this.$vuetify.theme.dark = false
-          } else {
-            this.$vuetify.theme.dark = _.get(this.user, 'theme', 'light') === 'dark'
           }
-          const themeName = applyThemeToDocument(this.$vuetify.theme.dark ? 'dark' : 'light')
+          this.$vuetify.theme.dark = theme === 'dark'
+          const themeName = applyThemeToDocument(theme)
           if (_.isFunction(_.get(this.$vuetify, 'theme.change'))) {
             this.$vuetify.theme.change(themeName)
           }
@@ -545,10 +537,7 @@
         }
       },
       getTheme () {
-        if (ConfigService.config.disableDarkMode) {
-          return 'light'
-        }
-        return _.get(this.$vuetify, 'theme.global.name', 'light') === 'dark' ? 'dark' : 'light'
+        return pickTheme(ConfigService.config, _.get(this.$vuetify, 'theme.global.name', 'light'))
       },
       resetNotification () {
         this.showSnackBar = false

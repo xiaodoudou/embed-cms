@@ -27,7 +27,7 @@ export default [
     }
   },
   {
-    files: ['lib/**/*.js', 'lib-import/**/*.js', 'lib-importFromRemote/**/*.js', 'old_tests/**/*.js', 'test/**/*.js', '*.js', '*.cjs'],
+    files: ['lib/**/*.js', 'lib-import/**/*.js', 'lib-importFromRemote/**/*.js', 'old_tests/**/*.js', 'test/**/*.js', 'scripts/**/*.js', '*.js', '*.cjs'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'commonjs',

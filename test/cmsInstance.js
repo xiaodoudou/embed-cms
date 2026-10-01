@@ -26,7 +26,6 @@ const options = {
     method: 'file',
     path: './syslog.log'
   },
-  smartCrop: true,
   defaultPaging: 12,
   test: true,
   replication: {

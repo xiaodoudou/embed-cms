@@ -53,8 +53,34 @@ sheet has changed.
 
 ### From the command line
 
-`cms-import` does the same from a terminal, against a running CMS. **It is broken in the current release**: it uses an
-API that the Google Sheets library no longer has ([BUGS.md](BUGS.md#plugins)). Use the Cms Import page meanwhile.
+`cms-import` does the same from a terminal, against a running CMS, with a configuration file that adds where that CMS
+is:
+
+```json
+{
+  "host": "localhost:9990",
+  "prefix": "",
+  "gsheetId": "the-id-in-the-sheet-url",
+  "oauth": { "email": "importer@your-project.iam.gserviceaccount.com", "keyFile": "./importer.pem" },
+  "resources": ["authors", "articles"]
+}
+```
+
+```sh
+cms-import ./import.json localAdmin:password      # shows what would change, then asks
+cms-import ./import.json localAdmin:password -y   # no question
+```
+
+| Option | What it does |
+|---|---|
+| `-y`, `--yes` | Don't ask for confirmation. |
+| `-s`, `--skip` | Use the sheets downloaded by the previous run instead of downloading them again. |
+| `-c`, `--createFolders` | Only create the local folders for the attachments (resource/key/field); import nothing. |
+| `-o`, `--createOnly` | Only create records; leave existing ones alone. |
+
+The command logs in with the user and password you give it (Basic authentication, and the login page when the CMS uses
+JWT), so that user's group needs the rights to create and update the imported resources. `prefix` is the path the CMS is
+mounted under; leave it out when it is mounted at the root.
 
 ## Excel round trip: the xlsx plugin
 
@@ -102,10 +128,11 @@ cms-import-remote ./import-remote.json -y --overwrite
 | `--use-cache` | Reuse the data downloaded by the previous run. |
 | `--convert-to-preload` | Also write the downloaded data in preload format. |
 
-Always set `prefix`, even to `""`: without it the URLs become `/undefined/api` ([BUGS.md](BUGS.md#plugins)).
+`prefix` is the path each CMS is mounted under; leave it out for the root.
 `lib-importFromRemote/importFromRemote-example.json` is a complete example.
 
 The same configuration can go under `importFromRemote` in `cms.json`, which adds `GET /importFromRemote/status` and
-`GET /importFromRemote/execute`. The admin page of the same name is a placeholder for now
-([UI_BUGS.md](UI_BUGS.md#plugin-pages)). With the `hardened` profile, files are only downloaded from the remote's own host
+`GET /importFromRemote/execute`. `execute` answers `{ "status": "started" }` at once and imports in the background (a
+second call while one runs answers `409`); `status` follows it, from `starting` to `done`, or `error` with the reason.
+There is no admin page for it. With the `hardened` profile, files are only downloaded from the remote's own host
 (and `remote.allowedHosts`), so a tampered remote can't make your server fetch other addresses.

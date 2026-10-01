@@ -17,8 +17,7 @@ You need [Node.js](https://nodejs.org/) 22.12 or later and git.
 ```sh
 git clone https://github.com/xiaodoudou/node-cms-private.git node-cms
 cd node-cms
-npm install
-npm run build        # builds the admin app into dist/
+npm install          # also builds the admin app into dist/, the first time
 node server.js
 ```
 

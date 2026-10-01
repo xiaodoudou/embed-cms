@@ -7,8 +7,8 @@
           <v-text-field
             ref="search"
             :model-value="search" clearable clear-icon="$close" class="search-bar"
-            flat variant="solo-filled" hide-details prepend-inner-icon="$magnify" density="comfortable" :placeholder="$filters.translate('TL_INSERT_KEYWORDS')" :aria-label="$filters.translate('TL_INSERT_KEYWORDS')" type="text" @update:model-value="search = $event || ''" autocomplete="off"
-            name="search" role="combobox" aria-expanded="true" aria-controls="omnibar-results" :aria-activedescendant="results.length > 0 ? 'result-' + highlightedItem : undefined" @keydown="onSearchKeydown"
+            flat variant="solo-filled" hide-details prepend-inner-icon="$magnify" density="comfortable" :placeholder="$filters.translate('TL_INSERT_KEYWORDS')" :aria-label="$filters.translate('TL_INSERT_KEYWORDS')" type="text" autocomplete="off" name="search"
+            role="combobox" aria-expanded="true" aria-controls="omnibar-results" :aria-activedescendant="results.length > 0 ? 'result-' + highlightedItem : undefined" @update:model-value="search = $event || ''" @keydown="onSearchKeydown"
           />
         </v-card-title>
         <template v-if="results && results.length > 0">

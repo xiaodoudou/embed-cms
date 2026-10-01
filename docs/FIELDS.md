@@ -68,7 +68,7 @@ Every key of `options` is also copied onto the component schema, which is how ty
 - The form has a tab per locale. `required` must be satisfied in **every** locale; the tab that has an error shows a badge and the save is blocked.
 - An untouched localised field is saved as `{}`.
 - `unique` on a localised field is checked per locale (`name.enUS`).
-- Creating a record over REST with `?locale=enUS` stores it locale-first (`{ "enUS": { "name": "x" } }`), which is not the shape the admin reads. Send the field-first shape.
+- Over REST, `?locale=enUS` lets a client send plain values for one locale; they are stored field first like the admin's (see [API.md](API.md#localised-records-over-rest)).
 
 ## Required fields
 

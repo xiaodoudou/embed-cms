@@ -204,7 +204,6 @@
 .scroll-wrapper {
   overflow: auto;
   height: 100%;
-  @include custom-scrollbar;
 
   &.scrolled-to-bottom {
     .record-editor-form,

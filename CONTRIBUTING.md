@@ -32,6 +32,9 @@ There are two ways, depending on what you work on.
 node server.js            # http://localhost:9990/admin, localAdmin / localAdmin
 ```
 
+To see what the admin bundle is made of, build with `ANALYZE=1 npm run build`: it also writes `stats.html`, a map of the chunks
+(git-ignored).
+
 **The admin app, with hot reload.** Run the backend and Vite side by side, in two terminals:
 
 ```sh

@@ -343,7 +343,7 @@
         }
       },
       async checkFormValid () {
-        let formValid = false
+        let formValid
         try {
           this.$refs.vfg.resetValidation()
           formValid = _.get(await this.$refs.vfg.validate(), 'valid', false)
@@ -468,7 +468,7 @@
                   const pathToCleanIndex = match.length - 1
                   const pathToClean = _.get(match, pathToCleanIndex, '')
                   let _name = filePath.slice(0, -1 * pathToClean.length)
-                  let _index = 0
+                  let _index
                   let subPath = _.split(pathToClean, '.')
                   if (subPath.length === 3) {
                     _index = _.get(subPath, 2, 0)

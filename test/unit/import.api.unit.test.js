@@ -4,6 +4,7 @@ const fs = require('fs-extra')
 const express = require('express')
 const { expect } = require('chai')
 const { startApp, ADMIN } = require('../helpers/app')
+const { muteConsole } = require('../helpers/console')
 const ImportApi = require('../../lib-import/api')
 const RemoteApi = require('../../lib-importFromRemote/api')
 
@@ -104,7 +105,13 @@ describe('cms-import api client against a CMS (unit)', () => {
 
       it('uploads an attachment', async () => {
         const created = await api('articles').create({ string: { enUS: 'with a file' } })
-        await api('articles').createAttachment(created._id, 'file', file)
+        // the command prints the file it uploads
+        const restoreConsole = muteConsole()
+        try {
+          await api('articles').createAttachment(created._id, 'file', file)
+        } finally {
+          restoreConsole()
+        }
         const record = await app.cms.api()('articles').find(created._id)
         expect(record._attachments).to.have.length(1)
         expect(record._attachments[0]).to.have.property('_name', 'file')

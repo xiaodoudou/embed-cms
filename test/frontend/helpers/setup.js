@@ -10,6 +10,13 @@ if (!window.matchMedia) {
   window.matchMedia = (query) => ({ matches: false, media: query, addEventListener () {}, removeEventListener () {}, addListener () {}, removeListener () {}, onchange: null, dispatchEvent: () => false })
 }
 window.scrollTo = window.scrollTo || (() => {})
+// jsdom implements neither and prints 'Not implemented' when they are called: CodeMirror focuses the window, the JSON
+// editor asks before removing a row (a test that cares about the answer stubs confirm itself)
+window.focus = () => {}
+window.confirm = () => true
+// without the canvas package (a native build the tests don't need) jsdom has no 2D context: answer null, as it does,
+// without the 'Not implemented' line (the colour picker and the cropper ask for one)
+HTMLCanvasElement.prototype.getContext = () => null
 Element.prototype.scrollIntoView = Element.prototype.scrollIntoView || (() => {})
 // Vuetify's overlays (dialogs, menus) position themselves against the visual viewport
 if (!window.visualViewport) {

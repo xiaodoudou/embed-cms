@@ -30,6 +30,10 @@ export default defineConfig({
     restoreMocks: true,
     // Vuetify and the code editor ship ESM with css imports: let vite process them
     server: { deps: { inline: ['vuetify', 'codemirror-editor-vue3'] } },
-    css: false
+    css: false,
+    // every test file runs in its own worker with its own jsdom, on purpose: a test can't leak globals, mocks or
+    // component state into the next file. Said explicitly, and without the hint that suggests sharing the jsdom
+    isolate: true,
+    experimental: { diagnostics: { environment: false } }
   }
 })

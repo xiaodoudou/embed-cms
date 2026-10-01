@@ -54,6 +54,14 @@ class ImportWrapper {
     //  NOTE: For paragraphs to work, '/admin/paragraphs' should be in config.cms.routesToAuth for both local & remote CMS
   }
 
+  // the bars only start on a terminal (cli-progress draws nothing elsewhere), but stop() would still print every bar
+  // created, empty, into a log file or a pipe
+  stopProgress () {
+    if (this.multibar.isActive) {
+      this.multibar.stop()
+    }
+  }
+
   async deleteAllLocalRecords () {
     const bar = this.multibar.create(this.config.resources.length, 0, { name: 'Deleting local records' })
     await pAll(_.map(this.config.resources, (resource) => {
@@ -117,11 +125,11 @@ class ImportWrapper {
         await deleteUnusedRecords(this)
         await updateRecords(this, createdRecordsMap)
       }
-      this.multibar.stop()
+      this.stopProgress()
       logger.info(`Import took ${Date.now() - importStartedAt}ms`)
       return true
     } catch (error) {
-      this.multibar.stop()
+      this.stopProgress()
       this.lastError = error
       logger.error(_.get(error, 'response.body', _.get(error, 'message', error)))
       return false

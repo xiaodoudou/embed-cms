@@ -95,7 +95,7 @@ class UploadService {
         }
       }
       xhr.onload = () => {
-        let json = null
+        let json
         try {
           json = JSON.parse(xhr.responseText)
         } catch {

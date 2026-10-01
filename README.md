@@ -1,156 +1,97 @@
 # node-cms
 
-node-cms is Content management system (CMS), written in node.js, uses leveldb as an asset and content store.
+node-cms is a headless content management system for Node.js. You describe your content in plain JavaScript files, one
+per resource, and node-cms gives you three things from them: an admin app where editors write and translate that content,
+a REST API that serves it to your sites and apps, and a JavaScript API for your own server code.
 
-It installs a CMS called node-cms in your path, that developer can run a CMS or install as a node module for developing application that requires CMS or editable data.
+It stores everything in JSON files by default, so there is no database to set up; MongoDB and PostgreSQL are there when
+you need them. It runs on its own or inside an existing Express app, handles translations, images and files, users and
+rights, and can keep several servers in step.
 
+![The admin app: a list of records and the editor](docs/ui/form-light-1280x720.png)
+
+## Try it in five minutes
+
+You need [Node.js](https://nodejs.org/) 22.12 or later and git.
+
+```sh
+git clone https://github.com/xiaodoudou/node-cms-private.git node-cms
+cd node-cms
+npm install
+npm run build        # builds the admin app into dist/
+node server.js
+```
+
+Open <http://localhost:9990/admin> and sign in with **localAdmin** / **localAdmin** when the browser asks. The menu
+already holds a catalogue of example resources, one per family of field types (see [`resources/`](resources/README.md)).
+Click around: everything you see there is generated from the files in `resources/`.
+
+The first start writes a `cms.json` with the default settings and a `data/` folder with your content. Stop the server
+with Ctrl+C.
+
+## Your first resource
+
+Say you want to publish articles, in English and Chinese. Create `resources/articles.js`:
+
+```js
+module.exports = {
+  displayname: 'Articles',
+  group: 'Content',
+  locales: ['enUS', 'zhCN'],
+  schema: [
+    { field: 'title', input: 'string', label: 'Title', required: true },
+    { field: 'slug', input: 'transliterate', label: 'Slug', localised: false, unique: true, options: { valueFrom: 'title' } },
+    { field: 'body', input: 'wysiwyg', label: 'Body' },
+    { field: 'cover', input: 'image', label: 'Cover', localised: false, options: { maxCount: 1 } }
+  ]
+}
+```
+
+Restart `node server.js`. **Articles** now appears in the menu under **Content**, with a tab per language, a rich-text
+editor and an image drop zone. Write an article and save it.
+
+The same content is already on the REST API:
+
+```sh
+curl -u localAdmin:localAdmin http://localhost:9990/api/articles
+```
+
+```json
+[{ "title": { "enUS": "Hello", "zhCN": "你好" }, "slug": "hello", "body": { "enUS": "<p>…</p>" },
+   "_id": "muosrfetmuosr8shy000gql4", "_createdAt": 1790814577349, "_updatedAt": 1790814577349 }]
+```
+
+And you can write to it the same way:
+
+```sh
+curl -u localAdmin:localAdmin -X POST http://localhost:9990/api/articles \
+  -H 'Content-Type: application/json' \
+  -d '{ "title": { "enUS": "Second post" }, "slug": "second-post" }'
+```
+
+That's the whole loop: describe a resource, edit it in the admin, read it over the API. The
+[getting started guide](docs/GETTING_STARTED.md) takes it further: putting node-cms inside your own Express app, letting
+everyone read the articles without a password, relations between resources, and going to production.
+
+## Before you go to production
+
+Two things in this quick start are only fit for your laptop. The `localAdmin` account has a published password (the
+server logs an error at every start until you change it), and `cms.json` holds secrets whose default values are published
+too. Run with `NODE_ENV=production` and follow [SECURITY.md](SECURITY.md): the hardened profile refuses to start with
+those defaults.
 
 ## Documentation
 
-### Smart Cropping (Face/Object Detection)
+[docs/README.md](docs/README.md) is the map of the documentation. The pages you'll want first:
 
-If you enable the `smartCrop` feature in your CMS configuration, you must add the following to your project's `package.json`:
+- [Getting started](docs/GETTING_STARTED.md): from the quick start to a real project.
+- [Concepts](docs/CONCEPTS.md): resources, fields, locales, attachments, users and groups, in plain words.
+- [Field types](docs/FIELDS.md): every input type, with screenshots.
+- [Configuration](docs/CONFIG.md) and [API](docs/API.md): the references.
 
-```
-  "node-cms-tf": "file:node_modules/node-cms/tf"
-```
+## Contributing, security, license
 
-Then run:
+Setting up a development copy, running the tests and writing commits: [CONTRIBUTING.md](CONTRIBUTING.md). Reporting a
+vulnerability: [SECURITY.md](SECURITY.md#reporting-a-vulnerability). Known bugs: [docs/BUGS.md](docs/BUGS.md).
 
-```
-npm install
-npm install node-cms-tf
-```
-
-This will install the TensorFlow dependencies required for smart cropping. These dependencies are only needed if you use smart cropping. If they are not installed, the system will log an error and fallback to center cropping automatically.
-
-`node-cms` is a content management system, in which `resources` [`documents` and `attachments`] are described using plain javascript. It uses a well-defined schema files to dynamically build admin ui and HTTP REST API.
-
--   [Getting Started](docs/GETTING_STARTED.md): Start here
--   [API](docs/API.md)
--   [Configuring node-cms](docs/CONFIG.md)
--   [Field Types](docs/FIELDS.md): Existing field types used by node-cms
-
--   [Import](docs/IMPORT.md): Import data from xlsx
--   [Smart Cropping](docs/SMART_CROPPING.md): AI-powered image cropping with face detection
--   [RestHelper](docs/REST_HELPER.md): Reusable middlewares for external projects
-
-## RestHelper - Middleware Reuse
-
-The `RestHelper` class allows you to reuse node-cms REST API middlewares in external Express applications, providing consistent behavior and reducing code duplication.
-
-```javascript
-const CMS = require('node-cms')
-const express = require('express')
-
-// Initialize CMS and RestHelper
-const cms = new CMS({ data: './data' })
-await cms.bootstrap()
-
-const { RestHelper } = CMS
-const restHelper = new RestHelper()
-const cmsContext = { cms }
-
-// Use middlewares in your Express app
-const app = express()
-
-app.get('/api/:resource',
-  restHelper.mw.parse_query,           // Parse query parameters
-  restHelper.mw.find_resource(cmsContext),  // Find CMS resource
-  async (req, res) => {
-    const data = await req.resource.find(req.options)
-    res.json(data)
-  }
-)
-
-app.get('/api/resources', restHelper.mw.list_resources(cmsContext))
-```
-
-**Available Middlewares:**
-- `parse_query`: Parses and extends request query parameters
-- `find_resource`: Validates and loads CMS resources
-- `list_resources`: Lists all available CMS resources
-- `authorize`: JWT/basic authentication and authorization
-
-**Benefits:**
-- ✅ Consistent middleware behavior across projects
-- ✅ Automatic query parsing and validation
-- ✅ Built-in resource discovery and error handling
-- ✅ Optional authentication/authorization support
-
-See [RestHelper Documentation](docs/REST_HELPER.md) for detailed usage patterns and examples.
-
-## User Guide
-
-### Prerequsites
-
-1. goto [git-scm.com](http://git-scm.com/), download and install **GIT**
-2. download and install `nodejs` from [nodejs.org](http://nodejs.org/)
-
-### Installation
-
-#### Dependencies
-
-Some features require additional system dependencies:
-
-- **Python v3.x** (required for native modules)
-- **[tensorflow](https://www.npmjs.com/package/@tensorflow/tfjs-node)**
-
-**Linux (Debian/Ubuntu):**
-
-```sh
-sudo apt-get install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
-```
-
-**Windows:**
-
-- Follow the official [node-canvas Windows installation guide](https://github.com/Automattic/node-canvas/wiki/Installation:-Windows)
-
-Make sure Python and all build tools are available in your PATH.
-
-#### Development
-
-    $ git clone https://github.com/xiaodoudou/node-cms-private.git
-    $ cd node-cms
-    $ npm install
-    $ npm test
-
-#### As a dependency in existing `nodejs` project
-
-```
-npm install git+https://github.com/xiaodoudou/node-cms-private.git --save
-```
-In your server.js, running `expressjs`
-``` Javascript
-const express = require('express')
-const CMS = require('node-cms')
-const options = { // Your options, see docs/CONFIG.md
-  ...
-}
-const app = express()
-const cms = new CMS(options)
-app.use(cms.express())
-app.listen()
-```
-#### As a standalone CMS application, in an empty folder
-
-```
-npm install -g git+https://github.com/xiaodoudou/node-cms-private.git
-cms
-```
-
-#### npm install error in M1
-
-if your npm install failed in node-sass with some error with c++ and node-gyp, try
-
-```
-CXXFLAGS="--std=c++17" npm install
-```
-
-#### Authors
-
-Edouard Durand, Kong Yim, Louis Wang, Hugo Barbier
-
-#### License
-[MIT](LICENSE)
-
+Authors: Edouard Durand, Kong Yim, Louis Wang, Hugo Barbier. Released under the [MIT license](LICENSE).

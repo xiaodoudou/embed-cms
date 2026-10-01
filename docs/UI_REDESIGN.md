@@ -1,8 +1,33 @@
-# Admin UI redesign
+# Admin UI design
 
-Branch `claude/ui-redesign`. Presentation only: services, data flow, routes, field types and the backend are untouched.
+This is the design reference of the admin app: the palette and why it looks the way it does, the components every page
+shares, and the rules a test enforces so the look stays consistent. It started as the write-up of the redesign (a
+presentation-only rework; services, routes, field types and the backend were left alone), and the parts that still
+describe the app are kept below.
 
-## Problems found in the previous UI
+## In short
+
+- **One palette, from the logo.** Everything is a tint or shade of the logo's indigo plus four muted status colours,
+  with text contrast at WCAG AA or better in both themes. Colours, sizes and spacing are CSS tokens in
+  `src/styles/tokens.css`; components never hard-code a colour, and `test/frontend/designSystem.test.js` fails if one
+  does.
+- **Layout.** A top bar, then a sidebar of collapsible resource groups that becomes a 60px rail on tablets and a drawer
+  on phones. The record list and the editor sit side by side from 768px wide, one after the other below that.
+- **Editing.** A fixed action bar with Save and Discard, a dot on every changed field, per-locale markers for unsaved
+  and missing values, a confirmation before you leave unsaved work, and a toast naming the required fields that are
+  still empty.
+- **Shared pieces.** One button system, one dialog component, one toast host, one state system for form fields
+  (editable, read-only, disabled, error). The living reference is in the admin itself: open `#/?id=design-system`.
+- **Dark mode** is opt-in: set `disableDarkMode: false` and the top bar gets a theme switch.
+
+To re-theme the admin, change the values in `tokens.css` and the two colour maps at the top of `src/vuetify.js`. To
+build a component, follow the [rules at the end](#design-system-rules-enforced-by-testfrontenddesignsystemtestjs).
+Known UI problems are tracked in [UI_BUGS.md](UI_BUGS.md).
+
+The screenshots in `docs/ui/` were taken during the redesign. Only the ones this page shows are kept up to date.
+
+## Problems the redesign set out to fix
+
 
 - Branded look: a third-party wordmark, a black/teal/purple palette and brand-named SCSS tokens spread over ~40 files.
 - Navigation: eleven or more resource groups as pills in a top bar, overflowing on anything narrower than ~1080px (`min-width: 1080px` on the layout).
@@ -82,7 +107,7 @@ Dialogs: one component, `components/AppDialog.vue` (discard, delete, config rest
 
 ## Frontend tests
 
-`npx vitest run` (config in `vitest.config.mjs`, tests in `test/frontend`, jsdom): dirty tracker (change, revert, save reset, rich text, nested mutation, locales, required per locale), table model (locale columns, preferences, sorting, selection, windowing, keyboard moves, widths, cell formats), sidebar model (rail state, width, initials and tint, flyout moves, badge colour contrast), persisted preferences, date format translation, highlight and the design-system rules. No package.json change was made; vitest and jsdom come from the installed dev tooling.
+The pure logic behind the UI (dirty tracker, table model, sidebar model, preferences, date formats, highlight) and the design-system rules have tests in `test/frontend`, next to component tests that mount real components. How to run them and what they cover: [TESTING.md](TESTING.md).
 
 ## Editorial workflow features
 
@@ -182,7 +207,7 @@ Done: palette and surfaces, dark chrome with logo variant, button system and ref
 
 Partly done: the dropdown type-ahead is the field's own input (no separate search box inside the menu); read-only and disabled surfaces are applied to the input, select, date, switch and JSON controls, while the wysiwyg, code and colour editors only follow the shared border, radius and focus tokens; table search and the syslog filter: the table uses `SearchField`, the syslog filter keeps its terminal styling with its own clear button and now handles Escape (not verified in a browser because the plugin page needs a group with plugin access).
 
-Known issues: the per-resource `ImportFromRemote` page is a placeholder without actions (no toast possible). `Ctrl/Cmd+B` does not toggle the sidebar inside text fields.
+Known issues are tracked in [UI_BUGS.md](UI_BUGS.md). `Ctrl/Cmd+B` not toggling the sidebar inside a text field is deliberate: there it means bold.
 
 Fixed since the previous hand-off: `CmsImport.executeXlsx` now posts to `import/executeXlsx`; "1 resources match" is pluralised in both languages; the table no longer builds a regular expression from what is typed in the search field.
 

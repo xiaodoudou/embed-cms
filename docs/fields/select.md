@@ -21,11 +21,13 @@ Catalogue: `resources/choice_select.js` (group **Choice**, resource **Selects**)
 | `options.labels` | `{ value: string \| { enUS, zhCN } }` | none | Readable label per static value. A plain string is used for every locale; an object gives one label per locale (falls back to its first entry). Only applied to static values. |
 | `options.customLabel` | Mustache template | first field of the target resource | Label of a record of a resource `source`, e.g. `'{{name}}'`. For a localised target field the current locale is used (`{{name}}` becomes `name.enUS`). Without it the first field of the target resource is displayed. |
 | `options.extraSources` | `{ key: resourceName }` | none | Replaces the id stored in `key` of each target record by the related record before labels are rendered. |
+| `options.subtitle` | Mustache template | the record id, for a resource `source` | Second line under each choice in the open list, rendered over the option, e.g. `'{{code}}'`. |
+| `options.groupBy` | field name | none | Groups the choices of a resource `source` under headings taken from that field of each record. |
 | `options.hint` | string | none | Help text under the field. |
 | `options.readonly` | boolean | `false` | The list does not open; lock icon. |
 | `options.disabled` | boolean | `false` | Greyed out with a dashed border. |
 
-The placeholder is the field label. There is no clear button; pick another value to change it.
+The placeholder is the field label. A field that is not `required` (and not read-only or disabled) has a clear button that empties it; a required one has none, so pick another value to change it.
 
 ## Variations
 

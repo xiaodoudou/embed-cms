@@ -1,89 +1,179 @@
 # Configuration
 
+Every option of node-cms lives in one object. You can write it in `cms.json`, pass it to the constructor, or both. This page
+is the reference for that object. The security settings have their own page, [SECURITY.md](../SECURITY.md), because they
+come with a profile and a checklist.
 
-## Resource Configuration
+## Where the configuration comes from
 
-`node-cms` resources are created on-demand, so `curl localhost/api/my-custom-resource` will create a new resource namespace and 2 corresponding database, from there on REST API with work out of the box, however in order for most extra features to work `resource` `definition` should be created:
-``` Javascript
-/* resources/articles.js */
-module.exports = {
-  schema: [{...}, {...}, {...}], // Resource schema definition
-  locales: [],                   // List of resource locales. when defined, enables localisation support
-  type: 'normal'                 // replication type, when defined, enables replication support
-}
+When the CMS starts, it builds its options in three layers. Each layer overrides the one before it:
+
+1. the built-in defaults (`defaultConfig` in `index.js`);
+2. `cms.json` in the current folder (or the file named by the `config` option);
+3. the object you pass to `new CMS(options)`.
+
+```mermaid
+flowchart LR
+  defaults["Built-in defaults<br/>(index.js)"] --> file["cms.json"] --> ctor["new CMS(options)"] --> effective["Effective options"]
+  ctor -. "first boot only: written into" .-> file
 ```
 
-## CMS Configuration
+If `cms.json` doesn't exist yet, the first boot writes it: the defaults merged with your constructor options. From then
+on the file is yours to edit. That has two consequences worth knowing:
 
-During first boot, `node-cms` (unless already present) will create a cms.json in project folder
-``` Javascript
-/* default cms.json */
+- **Secrets you pass to the constructor end up in `cms.json`** on that first boot. Keep the file out of version control
+  (the repository's `.gitignore` already does).
+- **A value in the constructor always wins** over the same value in `cms.json`. If an edit to the file seems to have no
+  effect, check what your code passes in.
+
+```js
+const CMS = require('node-cms')
+
+const cms = new CMS({
+  config: './config/cms.json', // optional: where to read (and first write) the file
+  data: '/var/lib/my-site/cms'  // overrides "data" from the file
+})
+```
+
+The CMS reads its configuration once, at start-up. Restart the process after you edit `cms.json`. Members of the
+`admins` group can also edit it from the admin, on the **Cms Config** page of the System menu. Saving there rewrites the file, keeping a
+backup, and then exits the process, so run the CMS under a supervisor (systemd, pm2, Docker) that starts it again.
+
+## Core
+
+| Option | Default | What it does |
+|---|---|---|
+| `resources` | `"./resources"` | Folder of resource declarations. Every `.js` file in it becomes a resource named after the file. |
+| `paragraphs` | same as `resources` | The parent folder of `paragraphs/`, where paragraph types are declared. |
+| `data` | `"./data"` | Where records and attachments are stored, one sub-folder per resource. Created if missing. |
+| `autoload` | `true` | Load every file of `resources` and `paragraphs/` at start-up. With `false`, declare resources in code with `cms.resource(name, definition)`. |
+| `mode` | `"normal"` | In `normal` mode, code that asks for an undeclared resource (`cms.resource('logs')`, `cms.api()('logs')`) gets one created on the fly, without a schema. With any other value (the code base uses `"strict"`) only declared resources exist. The REST API never creates resources: an unknown name answers 404 in both modes. |
+| `mid` | a time-based id, written to `cms.json` on first boot | Machine id: **exactly 8 characters**, or every create fails with `Machine id should be an 8 digit string`. It is part of every record id and tells replication peers apart, so each node of a cluster needs its own. Don't change it once records exist: records whose id carries another `mid` count as foreign and can't be edited. |
+| `ns` | `[]` | Extra path segments between `data` and the resource folders, to keep several sites in one data folder. |
+| `dbEngine` | none: JSON files on disk | Store records in MongoDB or PostgreSQL instead. See [Storage engines](#storage-engines). |
+
+## Features you can switch
+
+| Option | Default | What it does |
+|---|---|---|
+| `disableREST` | `false` | Turn off the REST API under `/api`. |
+| `disableAdmin` | `false` | Turn off the admin app under `/admin`. |
+| `disableReplication` | `false` | Turn off the replication plugin. It is on by default: its routes are mounted and records sync to any peers you list. `netPort` additionally opens a TCP port for peers to connect to. See [REPLICATION.md](REPLICATION.md). |
+| `sync` | not set | Turn on the sync plugin by giving it a block. See [SYNC.md](SYNC.md). An empty block (`{}`) turns it on too. |
+| `import` | not set | Turn on the Google Sheets import by giving it a block. See [IMPORT.md](IMPORT.md). |
+| `importFromRemote` | `true` | The plugin that copies records from another node-cms. See [IMPORT.md](IMPORT.md). |
+| `xlsx` | not set | Turn on the Excel export and import routes (`true`). See [IMPORT.md](IMPORT.md). |
+| `anonymousRead` | not set | A list of resource names anyone may read without logging in. At each start the CMS adds them to the read rights of the `anonymous` group. |
+| `smartCrop` | `false` | Face- and object-aware cropping of images. Needs extra packages, see [SMART_CROPPING.md](SMART_CROPPING.md). |
+| `wsRecordUpdates` | `true` | Broadcast record changes over a websocket, so an open admin sees edits made elsewhere. |
+| `disableDarkMode` | `true` | With `false`, the admin offers a light/dark theme switch. |
+| `toolbarTitle` | not set | Text shown in the admin's top bar. A string, or one text per admin language: `{ "enUS": "Newsroom", "zhCN": "新闻室" }`. |
+
+## Authentication
+
+Two switches decide how people log in. Their names are negatives, which makes them easy to misread, so here are the
+combinations spelled out:
+
+| `disableAuthentication` | `disableJwtLogin` | What happens |
+|---|---|---|
+| `false` | `true` | **The default.** HTTP Basic authentication. The browser shows its own login prompt for the admin, and REST clients send an `Authorization: Basic` header. |
+| `true` | `false` | Login page. The admin shows a login form; a successful login stores a JWT (valid 24 hours) in the `nodeCmsJwt` cookie. API clients get the token from `POST /admin/login` and send it back as an `x-access-token` header, a `token` query parameter or the cookie. |
+| `true` | `true` | No authentication at all. Everyone is the `anonymous` user and gets the rights of the `anonymous` group. |
+
+Who may do what is decided by groups, not by these switches: see [Users, groups and rights](CONCEPTS.md#users-groups-and-rights).
+
+| Option | Default | What it does |
+|---|---|---|
+| `auth.secret` | a value published in the source | Signs JWTs. Must be longer than 16 characters. **Replace it**: the `hardened` security profile refuses to start with the published value. |
+| `session.secret` | a value published in the source | Signs the session cookie. Replace it too. |
+| `session.resave`, `session.saveUninitialized` | `true`, `true` | Passed to `express-session`. The `hardened` profile forces both to `false`. |
+| `routesToAuth` | `/api/_syslog`, `/api/system`, `/admin/resources`, `/admin/paragraphs`, `/import`, `/importFromRemote`, `/replicator`, `/resources` | Routes that require a login before anything else runs. The REST API checks rights on every request anyway, so this list is about the admin and plugin routes. If you set it, you replace the whole list. |
+| `disableAnonymous` | `false` | Refuse every request authenticated as the `anonymous` user, whatever rights that group has. |
+| `blockRetry` | off (`legacy` profile), `{ "retry": 10, "duration": 5 }` (`hardened`) | Lock an account after `retry` failed logins from one address, for `duration` minutes. `false` turns it off. |
+
+On a fresh data folder the CMS creates the `admins` and `anonymous` groups and a `localAdmin` user with the password
+`localAdmin`, and logs an error at every start while that password is unchanged. Change it, or delete the account once you
+have your own administrator. The `hardened` profile doesn't create it at all.
+
+## Security
+
+`security.*`, `trustProxy`, `imageConcurrency`, `attachmentCleanupGrace` and the `replication.secret` family are
+documented in [SECURITY.md](../SECURITY.md), with a recommended production configuration. In short: run with
+`NODE_ENV=production` and you get the `hardened` profile, which turns on every protection.
+
+## Logs
+
+The admin has a log page (**Syslog**, in the System menu) fed by `/api/_syslog`. The `syslog` block decides where those lines come
+from. The behaviour depends on the operating system, so read this table carefully:
+
+| `syslog` | On Linux | On macOS and Windows |
+|---|---|---|
+| not set | Nothing is captured; the log page stays empty. | Sample log lines are generated, so the page has something to show. |
+| `{ "method": "file", "path": "./cms.log" }` | The CMS captures its own console output, appends it to `path`, and shows that file (including what was in it at start-up). | Same. |
+| `{ "method": "journalctl", "identifier": "my-cms" }` | Follows `journalctl -u my-cms.service`. | Treated like `file` if `path` is set, otherwise sample lines. |
+| `{ "method": "syslog", "identifier": "my-cms" }` | Follows `/var/log/syslog` and strips the `my-cms[pid]:` prefix from lines. | Treated like `file` if `path` is set, otherwise sample lines. |
+
+`syslog.max` (default `2000`) is the number of lines kept in memory and sent to a page that opens. On Linux,
+`journalctl` and `syslog` need an `identifier`: without one nothing is captured.
+
+The code also has a `command` method (`"command": "tail -f /var/log/app.log"`), but it is never started in the current
+release: see [BUGS.md](BUGS.md).
+
+How much the CMS itself prints is set by the `LOG_LEVEL` environment variable: `error`, `warn`, `info` (the default),
+`verbose`, `debug` or `silent`. Requests a client got wrong (a duplicate key, a refused query) are logged at `debug`, so
+they don't fill the log with errors.
+
+The log page shows what the process prints, to every user whose group has the `plugins` right for it. Keep secrets out of
+log lines.
+
+## Storage engines
+
+By default every resource keeps its records in a JSON file (`<data>/<resource>/json/`) and its attachments as files next
+to it (`<data>/<resource>/blob/`). That needs no database server and is what the tests and the benchmark use. To keep
+records in a database server instead, add `dbEngine`:
+
+```json
+{ "dbEngine": { "type": "postgres", "url": "db.internal:5432/cms" } }
+```
+
+```json
+{ "dbEngine": { "type": "mongodb", "url": "db.internal:27017/cms" } }
+```
+
+| Engine | `url` | Credentials and extras |
+|---|---|---|
+| `postgres` | `host:port/database`; one table per resource | Environment variables `POSTGRES_USER` and `POSTGRES_PASSWORD`; `POSTGRES_HOST`, `POSTGRES_PORT` and `POSTGRES_DB` override the url; `POSTGRES_SSL` turns on TLS. |
+| `mongodb` | `host:port/database` (the CMS adds `mongodb://`); one collection per resource | Put credentials in the url (`user:password@host:27017/cms`); `MONGODB_PROTOCOL=mongodb+srv` for an SRV address. |
+
+Without a `url`, each start creates a database with a new, time-based name. Always set one. The same test suite runs
+against all three engines (see [TESTING.md](TESTING.md#driver-contract-suite)).
+
+## A complete example
+
+A development `cms.json` with the plugins most projects use. For production, start from the block in
+[SECURITY.md](../SECURITY.md#recommended-production-configuration) and add these options to it.
+
+```json
 {
-  "resources": "./resources", // resource declarations location
-  "data": "./data",           // database location
-  "autoload": true,           // automatically load all resource declarations, otherwise need to call library
-  "mode": "normal",           // normal or strict - defined if cms is allowed to create non-existing resources
-  "netPort": 5000,            // port to use for replication, cms will use port and port + 1 for both json and binary data replication
-  "mid": "hpf3vze9"           // a unique 8 char machine id
-}
-```
-When running `standalone`, it's possible to override config location, using `-c` flag
-```
-./node_modules/.bin/cms -c /etc/cms.conf server
-```
-When using `node-cms` as a library, it's possbile to provide configuration in constructor
-``` Javascript
-    const cms = new CMS([options]);
-```
-
-## Authentication Configuration
-
-In your cms.json, you can also customize the type of authentication you want `node-cms` to use:
-``` Javascript
-/* default cms.json */
-{
-  "disableJwtLogin": true, // JWT token auth
-  "disableAuthentication": false, // basic HTTP auth
-  "routesToAuth": [
-    "/api/_syslog",
-    "/api/system",
-    "/admin/resources",
-    "/resources"
-  ],
+  "resources": "./resources",
+  "data": "./data",
+  "mid": "webnode1",
+  "mode": "strict",
+  "auth": { "secret": "a-random-string-of-at-least-32-characters" },
+  "session": { "secret": "another-random-string-of-32-characters" },
+  "disableReplication": true,
+  "anonymousRead": ["articles", "pages"],
+  "xlsx": true,
+  "disableDarkMode": false,
+  "toolbarTitle": { "enUS": "Newsroom", "zhCN": "新闻室" },
+  "syslog": { "method": "file", "path": "./cms.log" }
 }
 ```
 
-### disableJwtLogin
-By default, basic HTTP auth is activated, if you wish to use JWT token authentication, you need to change the configuration to the following:
-``` Javascript
-/* cms.json */
-{
-  "disableJwtLogin": false, // JWT token auth
-  "disableAuthentication": true, // basic HTTP auth
-}
-```
-If enabled, the `node-cms` user will be redirected to a login page on first load.
-Once logged, a `nodeCmsJwt` HTTP only cookie will be created for authentication.
+## Options that don't exist
 
-### disableAuthentication
-Basic HTTP authentication
+Earlier versions of these docs listed some options the code doesn't read. Setting them does nothing:
 
-### routesToAuth
-Node cms routes trough which the authentication system should apply.
-
-### Important notes
-If both options are disabled:
-- `node-cms` will assume you are connected as the `anonymous` user
-- when editing records which the `anonymous` user isn't allowed to, `node-cms` will prompt user to identify via basic HTTP authentication
-
-## Admin interface
-
-check `localhost:port/admin` for default content authoring inteface.
-
-default admin login
-
-		username: localAdmin
-		password: localAdmin
-
-
-
+- `defaultPaging`: a list without `limit` returns every record;
+- `test`;
+- `disableSync` (leave out the `sync` block instead).

@@ -1,5 +1,40 @@
 # Backend security and performance audit
 
+> **A historical record.** This audit was written before the backend hardening work and drove it. Every finding below
+> has since been fixed, or deliberately left as is, and each fix has a regression test. For the protections as they
+> stand today, and how to configure them, read [SECURITY.md](../SECURITY.md). Come here when you want to know *why* a
+> protection exists, or what a given test proves.
+
+## In short
+
+The audit read the whole backend (`index.js`, `lib/`, `lib-importFromRemote/`) and the default configuration, and
+reproduced most findings against a running CMS before writing them down. It found 32 problems; fixing them turned up
+six more (SEC-33 to SEC-38).
+
+The four critical ones show the shape of the rest. The replication port accepted anyone, and let a peer create folders
+outside the data directory. A single regular expression in a query could freeze the server for 46 seconds. The
+`localAdmin/localAdmin` account was created at every boot. And the published default secrets were accepted in
+production. The high findings were mostly about authentication (weak password hashes, hashes leaking through the JWT,
+cookies without `HttpOnly` or `SameSite`, no CSRF defence), uploads (stored XSS through attachments, no size limits) and
+data integrity (a torn write of the JSON store could silently empty the database).
+
+What happened next:
+
+- **Fixed, with a test written first.** SEC-01 to SEC-31 and SEC-33 to SEC-38. The fixes that would change what an
+  existing deployment sees are behind the `hardened` security profile (`NODE_ENV=production`). Plain defects are fixed
+  in every profile. [Appendix A](#appendix-a-results-of-the-fixes) maps each finding to the file that fixes it and the
+  test that proves it.
+- **Not fixed by the hardening work.** SEC-32, the dependency ages: `npm audit` reported nothing and no dependency was
+  changed then. A later dependency update moved most of them forward; helmet, express and a few others are still held
+  back on purpose.
+- **Faster as a side effect.** Phase 5 measured the store before and after: listing a page of 100 000 records went from
+  51 ms to under 1 ms, and REST reads of a page from 0.8 to 155 requests per second.
+  [Appendix B](#appendix-b-performance-results-phase-5) has the numbers, including what got slower and why it stayed.
+
+Line numbers in the findings point to the code as it was at the time. They no longer match the current files.
+
+---
+
 Scope: `index.js`, `lib/`, `lib-importFromRemote/`, and the default configuration. Frontend code is out of scope.
 Baseline: branch `claude/security-tests-refactor` (head `f2531c4`), Node 22.22, `npm audit`: 0 vulnerabilities.
 
@@ -12,7 +47,7 @@ Already fixed in earlier passes and not repeated here: query operator allow-list
 guards in `FileStore` and `importFromRemote`, constant-time compares, auth on `/import`, `/importFromRemote`, `/replicator`,
 idempotent create locking, resize size limits.
 
-## Summary
+## Findings at a glance
 
 | Id | Sev | Area | Title | Phase |
 |---|---|---|---|---|

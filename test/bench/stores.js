@@ -19,7 +19,7 @@ const os = require('os')
 const path = require('path')
 const { spawn, spawnSync } = require('child_process')
 const { performance, monitorEventLoopDelay } = require('perf_hooks')
-const { createLocalEngine } = require('../../lib/db/leveldown/localEngines')
+const { createLocalEngine } = require('../../lib/db/local/localEngines')
 
 const args = process.argv.slice(2)
 const option = (name, fallback) => {
@@ -70,24 +70,28 @@ const makePlace = (engine) => REMOTE.includes(engine)
 const openEngine = (engine, place) => {
   const options = { keyEncoding: 'utf8', valueEncoding: 'utf8' }
   if (engine === 'mongodb') {
-    const MongoDOWN = require('../../lib/db/mongo/mongodown')
+    const MongoDOWN = require('../../lib/db/mongo/MongoDown')
     return new MongoDOWN(`${process.env.BENCH_MONGODB_URL}/${place}/bench/{}`, options)
   }
   if (engine === 'postgres') {
-    const PgDOWN = require('../../lib/db/postgres/pgdown')
+    const PgDOWN = require('../../lib/db/postgres/PgDown')
     return new PgDOWN(`${process.env.BENCH_POSTGRES_URL}/${place}/bench/{}`, options)
   }
   return createLocalEngine(engine, place, options)
 }
 
 /**
- * The size of what an engine holds, and the removal of it.
+ * The size of what an engine holds, and the removal of it. A folder for the local engines. For MongoDB, the files of the
+ * collections and indexes of the database (storageSize + indexSize of dbStats) after an fsync, which is a checkpoint: before
+ * it the figure is the size of the files before the last writes reached them. For PostgreSQL, the tables with their TOAST
+ * and indexes (pg_total_relation_size); pg_database_size would add the catalogs every database carries (about 7 MB).
  */
 const placeSize = async (engine, place) => {
   if (engine === 'mongodb') {
     const { MongoClient } = require('mongodb')
     const client = new MongoClient(`mongodb://${process.env.BENCH_MONGODB_URL}`)
     try {
+      await client.db('admin').command({ fsync: 1 })
       const stats = await client.db(place).command({ dbStats: 1 })
       return mb(stats.storageSize + stats.indexSize)
     } finally {
@@ -95,9 +99,9 @@ const placeSize = async (engine, place) => {
     }
   }
   if (engine === 'postgres') {
-    const pool = postgresAdmin()
+    const pool = postgresAdmin(place)
     try {
-      const { rows } = await pool.query(`SELECT pg_database_size('${place}') AS size`)
+      const { rows } = await pool.query('SELECT COALESCE(SUM(pg_total_relation_size(oid)), 0) AS size FROM pg_class WHERE relkind IN (\'r\', \'m\') AND relnamespace = \'public\'::regnamespace')
       return mb(Number(rows[0].size))
     } finally {
       await pool.end()
@@ -119,10 +123,10 @@ const removePlace = async (engine, place) => {
     fs.rmSync(place, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })
   }
 }
-const postgresAdmin = () => {
+const postgresAdmin = (database = 'postgres') => {
   const { Client } = require('pg')
   const [host, port] = process.env.BENCH_POSTGRES_URL.split(':')
-  const client = new Client({ host, port: Number(port) || 5432, user: process.env.POSTGRES_USER, password: process.env.POSTGRES_PASSWORD, database: 'postgres' })
+  const client = new Client({ host, port: Number(port) || 5432, user: process.env.POSTGRES_USER, password: process.env.POSTGRES_PASSWORD, database })
   const connected = client.connect()
   return {
     query: async (text) => { await connected; return client.query(text) },

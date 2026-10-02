@@ -1,37 +1,28 @@
+← [Documentation](docs/README.md)
+
 # Security
 
-embed-cms holds content, user accounts and files, and often sits on the public internet, so its protections matter. The
-short version:
+embed-cms holds content, user accounts and files, and often sits on the public internet, so its protections matter. The short version:
 
-- **Every protection is on by default**, in development and in production: CSRF checks, secure cookies, security
-  headers, scrypt password hashes, upload limits, safe attachment downloads, authenticated replication and more. There
-  is no weaker profile to fall back to; the `security.profile` setting of earlier releases is refused at boot.
-- **Run production with `NODE_ENV=production`.** Two things follow it: strong secrets are required (boot is refused with
-  a missing, short or published `auth.secret` or `session.secret`) and the built-in `localAdmin` account is not
-  created. Development keeps both, so a fresh checkout can log in with `localAdmin` / `localAdmin`.
+- **Every protection is on by default**, in development and in production: CSRF checks, secure cookies, security headers, scrypt password hashes, upload limits, safe attachment downloads, authenticated replication and more. There is no weaker profile to fall back to; the `security.profile` setting of earlier releases is refused at boot.
+- **Run production with `NODE_ENV=production`.** Two things follow it: strong secrets are required (boot is refused with a missing, short or published `auth.secret` or `session.secret`) and the built-in `localAdmin` account is not created. Development keeps both, so a fresh checkout can log in with `localAdmin` / `localAdmin`.
 - **Any single protection can be set on its own** in the `security` block of `cms.json`.
 
-This page lists every setting with its default, gives the recommended production configuration and a
-hardening checklist, and says how to report a vulnerability. The other options of
-`cms.json` are in [docs/CONFIG.md](docs/CONFIG.md).
+This page lists every setting with its default, gives the recommended production configuration and a hardening checklist, and says how to report a vulnerability. The other options of `cms.json` are in [docs/reference/CONFIG.md](docs/reference/CONFIG.md).
 
 ## Reporting a vulnerability
 
 Please do not open a public issue for a security problem.
 
-- Send the details privately to the maintainers: open a *private security advisory* on the GitHub repository (Security
-  tab, "Report a vulnerability").
-- Say which version or commit you tested, what you did, what you saw, and what you expected. A failing request or a short
-  script is the best report.
-- You will get an answer within a few working days. Fixes are released with an entry in the changelog below, and the
-  reporter is credited if they wish.
+- Send the details privately to the maintainers: open a *private security advisory* on the GitHub repository (Security tab, "Report a vulnerability").
+- Say which version or commit you tested, what you did, what you saw, and what you expected. A failing request or a short script is the best report.
+- You will get an answer within a few working days. Fixes are released with an entry in the changelog below, and the reporter is credited if they wish.
 
 Supported versions: the latest release and the branch it was made from. Fixes are not backported.
 
 ## The security settings
 
-Each protection is one setting in the `security` block of `cms.json`. All of them are on by default; the table shows
-the default and what turning one off means. Only `strongSecrets` and `localAdmin` depend on `NODE_ENV` (see above).
+Each protection is one setting in the `security` block of `cms.json`. All of them are on by default; the table shows the default and what turning one off means. Only `strongSecrets` and `localAdmin` depend on `NODE_ENV` (see above).
 
 ```json
 {
@@ -59,7 +50,7 @@ the default and what turning one off means. Only `strongSecrets` and `localAdmin
 | `allowedOrigins` | `[]` | Origins (`https://host`) that count as the same site for `csrf` and for the update websocket |
 | `cookies` | `httpOnly: true, sameSite: "lax", secure: "auto"` | Attributes of the JWT and session cookies. `secure: "auto"` needs `trustProxy` behind a TLS proxy |
 | `strictSessions` | `true` | No session is created for anonymous and Basic authenticated requests (`resave` and `saveUninitialized` are forced to `false`) |
-| `redactConfig` | `true` | `/admin/config` no longer carries the credentials of `import`, `importFromRemote`, `sync`, `syslog` |
+| `redactConfig` | `true` | `/admin/config` doesn't carry the credentials of `import`, `importFromRemote`, `sync`, `syslog` |
 | `strictAdmin` | `true` | `/admin/_groups` needs a login, theme names are validated |
 | `headers` | `true` | Response headers from `lib/util/securityHeaders.js` (CSP, nosniff, frame options, Referrer-Policy, Permissions-Policy, COOP, HSTS over https, no `X-Powered-By`) instead of the historic helmet set |
 | `contentSecurityPolicy` | (default policy) | A policy string, or `false` for none |
@@ -90,50 +81,34 @@ the default and what turning one off means. Only `strongSecrets` and `localAdmin
 | `replication.maxRecordBytes` | `4194304` | Largest record accepted from a peer with `strictReplication` |
 | `importFromRemote.remote.restrictUrls` / `.allowedHosts` | `false` / `[]` | Per remote, in addition to `restrictRemoteUrls` |
 
-`replication.strictTypes` is worth a word. The replication manager used to look for the type on the resource object, where
-it does not exist, so every resource was treated as `normal` and the `direction` of a peer never mattered. With the option
-on, a `downstream` resource (`_users`, `_groups`, `_settings` and the resources you declared so) is only synced with peers
-whose `direction` is `upstream` or `normal`, and an `upstream` resource with peers of direction `downstream` or `normal`.
-A peer without `direction` then stops syncing typed resources. Give every peer a direction before turning it on.
+`replication.strictTypes` is worth a word. The replication manager reads the type of a resource from its options. Off, every resource counts as `normal` and the `direction` of a peer never matters. With the option on, a `downstream` resource (`_users`, `_groups`, `_settings` and the resources you declared so) is only synced with peers whose `direction` is `upstream` or `normal`, and an `upstream` resource with peers of direction `downstream` or `normal`. A peer without `direction` then stops syncing typed resources. Give every peer a direction before turning it on.
 
 ### Always on
 
-These are defects, not policy; they are fixed whatever the settings:
+These behaviours are not policy. They hold whatever the settings:
 
-- a `page` without a `query` returned the first page; `page` is honoured, and the REST `numRecords` header is computed
-  without reading every record twice;
-- filtered reads of `_users` returned `password` and `salt` (a filtered read skipped the hooks after it);
-- `GET /admin/changeTheme/...` stored a hash of the stored hash and locked the user out;
-- a user name that is not a string can no longer be used as a query to log in, and the login lockout counts it;
+- `page` without a `query` returns that page, and the REST `numRecords` header is computed without reading every record twice;
+- filtered reads of `_users` never return `password` or `salt`;
+- `GET /admin/changeTheme/...` stores the theme and leaves the password hash alone;
+- a user name that is not a string can't be used as a query to log in, and the login lockout counts it;
 - login for an unknown account takes as long as for a known one (timing);
-- the session id is replaced at login, logout destroys the session and revokes the token (the list of revoked tokens
-  survives a restart, `<data>/.revoked-tokens.json`), a changed password ends the sessions and tokens of that user;
-- uploaded temporary files are removed after the request and kept in a private folder; xlsx exports use a private file
-  that is deleted after sending;
-- a replication peer can no longer make the node create folders outside its data directory, an error event on a socket
-  or a websocket no longer ends the process, a malformed frame no longer crashes the sync;
-- the json file store keeps a file it cannot parse aside (`db.json.corrupt-<time>`) instead of overwriting it, and writes
-  through a temporary file that is renamed;
-- outbound replication and the sync of the json store work again (they did not run with the current store library);
+- the session id is replaced at login, logout destroys the session and revokes the token (the list of revoked tokens survives a restart, `<data>/.revoked-tokens.json`), a changed password ends the sessions and tokens of that user;
+- uploaded temporary files are removed after the request and kept in a private folder; xlsx exports use a private file that is deleted after sending;
+- a replication peer can't make the node create folders outside its data directory, an error event on a socket or a websocket doesn't end the process, a malformed frame doesn't crash the sync;
+- the json file store keeps a file it cannot parse aside (`db.json.corrupt-<time>`) instead of overwriting it, and writes through a temporary file that is renamed;
+- outbound replication and the sync of the json store run with the current store library;
 - `cleanAttachment` answers, and removes only orphans older than `attachmentCleanupGrace`;
 - record ids of one process sort in the order they were made, and use a cryptographic random source;
-- `importFromRemote` downloads a file once, no longer logs the password, and sends the credentials only to the remote;
-- an error or a rejected promise inside a driver method (a query with `$type`, for instance) ends the call with that error;
-  it used to leave the call pending forever, and `$type` in a query answers `400` because a JSON query cannot express it;
-- `exists(id)` answers `false` for a record that is not there (it answered `true` for every id);
-- the query of `getImportMap` (used by the import) understands `$in`, `$gt` and the other operators, and is validated like
-  any other client query;
-- the PostgreSQL and MongoDB stores release their connections when the CMS closes, and a dropped idle PostgreSQL connection
-  no longer ends the process;
-- a write to a resource with no replication peer no longer logs an error with a stack trace.
+- `importFromRemote` downloads a file once, doesn't log the password, and sends the credentials only to the remote;
+- an error or a rejected promise inside a driver method (a query with `$type`, for instance) ends the call with that error, and `$type` in a query answers `400` because a JSON query can't express it;
+- `exists(id)` answers `false` for a record that is not there;
+- the query of `getImportMap` (used by the import) understands `$in`, `$gt` and the other operators, and is validated like any other client query;
+- the PostgreSQL and MongoDB stores release their connections when the CMS closes, and a dropped idle PostgreSQL connection doesn't end the process;
+- a write to a resource with no replication peer doesn't log an error with a stack trace.
 
 ## Recommended production configuration
 
-This is the `cms.json` that follows the decisions taken for this deployment, setting every choice explicitly instead of
-relying on the defaults (a setting only has to be written here when it differs from them). `test/unit/securityConfig.unit.test.js` reads
-the block below, so option names and values in it are checked against the code. Replace the three `REPLACE_WITH_*` values
-with random strings of at least 32 characters (they belong in a secret store, never in version control), and put your own
-peers in `replication`.
+This is the `cms.json` for a production deployment, with every choice written out instead of relying on the defaults (a setting only has to be written when it differs from them). `test/unit/securityConfig.test.js` reads the block below, so option names and values in it are checked against the code. Replace the three `REPLACE_WITH_*` values with random strings of at least 32 characters (they belong in a secret store, never in version control), and put your own peers in `replication`.
 
 <!-- example-config:start -->
 ```json
@@ -149,7 +124,7 @@ peers in `replication`.
   },
   "security": {
     "strongSecrets": true,
-    "localAdmin": true,
+    "localAdmin": false,
     "passwordHash": "scrypt",
     "hideCredentials": true,
     "genericLockout": true,
@@ -163,8 +138,8 @@ peers in `replication`.
     "sseCors": [],
     "safeRegex": true,
     "uniformErrors": true,
-    "safeAttachments": false,
-    "strictUploads": false,
+    "safeAttachments": true,
+    "strictUploads": true,
     "restrictRemoteUrls": true,
     "strictReplication": true,
     "wsAuth": true,
@@ -176,100 +151,65 @@ peers in `replication`.
 ```
 <!-- example-config:end -->
 
-What each deviation from the defaults means, and what still needs a decision:
+The values that depend on your setup:
 
-| Setting | Value here | Note |
-|---|---|---|
-| `localAdmin` | `true` | Production would turn it off. The account stays, and every boot logs an error while it has its default password: change that password or delete the account |
-| `safeAttachments` | `false` | HTML and SVG attachments display inline and run with the privileges of the site for whoever opens them (accepted risk). Set `true` to send them as downloads |
-| `strictUploads` | `false` | No file name sanitising, no content-based type, and **no upload limits** |
-| `uniformErrors` | `true` | Not yet confirmed by the owner: JSON errors without stack traces |
-| `limits.json` | `"100kb"` | Not yet confirmed: the size of the largest JSON body (a record, an import) decides whether it must be raised |
-| `allowedOrigins` | `[]` | Add the origin of the admin app if it is served from another host than the API |
-| `trustProxy` | `1` | One reverse proxy in front of the CMS; change it to the real number |
-| `replication.strictTypes` | `true` | Every peer needs a `direction`, or it stops syncing `_users`, `_groups` and `_settings` |
+- `trustProxy` is the number of reverse proxies in front of the CMS; change `1` to the real number.
+- `allowedOrigins` takes the origin of the admin app when it is served from another host than the API.
+- `limits.json` is `"100kb"`, the size of the largest JSON body (a record, an import); raise it when a record is bigger.
+- `replication.strictTypes` is on, so every peer needs a `direction`, or it stops syncing `_users`, `_groups` and `_settings`.
+- `localAdmin` is off. A `localAdmin` record that already exists stays, and every boot logs an error while it has its default password: change that password or delete the account.
+- `safeAttachments` and `strictUploads` are on. Turning `safeAttachments` off displays HTML and SVG attachments inline, with the privileges of the site for whoever opens them. Turning `strictUploads` off removes the file name sanitising, the content-based type and the upload limits.
 
-Not in the block because it depends on the environment: `imageConcurrency` (one per core by default), the `importFromRemote` remotes (`restrictUrls`, `allowedHosts` per remote) and the peers list. In
-development, run without `NODE_ENV=production` and without this block: the defaults apply (with `localAdmin` and the default
-secrets allowed). The Content-Security-Policy has only been checked against the built admin app.
+Not in the block because it depends on the environment: `imageConcurrency` (one per core by default), the `importFromRemote` remotes (`restrictUrls`, `allowedHosts` per remote) and the peers list. In development, run without `NODE_ENV=production` and without this block: the defaults apply (with `localAdmin` and the default secrets allowed). The default Content-Security-Policy is written for the built admin app; a plugin page that loads from another origin needs its own `contentSecurityPolicy`.
 
 ## Hardening checklist
 
 Run with `NODE_ENV=production`, then check:
 
-1. **Secrets.** Set `auth.secret` and `session.secret` to random values of at least 32 characters in `cms.json` (or set
-   `security.generateSecrets` and back up `<data>/.secrets.json`). Keep the file out of version control.
-2. **Accounts.** Log in once with your own administrator and delete `localAdmin` if it exists. Do not set
-   `security.localAdmin`.
-3. **Password hashes.** Leave `passwordHash` on `scrypt`. If nodes replicate `_users`, upgrade every node first: a node
-   that runs an earlier release cannot verify an scrypt hash.
-4. **Proxy.** Behind a reverse proxy, set `trustProxy` to the number of proxies, forward `X-Forwarded-Proto`, and serve the
-   admin app over https (cookies get `Secure`, HSTS is sent).
+1. **Secrets.** Set `auth.secret` and `session.secret` to random values of at least 32 characters in `cms.json` (or set `security.generateSecrets` and back up `<data>/.secrets.json`). Keep the file out of version control.
+2. **Accounts.** Log in once with your own administrator and delete `localAdmin` if it exists. Do not set `security.localAdmin`.
+3. **Password hashes.** Leave `passwordHash` on `scrypt`. If nodes replicate `_users`, upgrade every node first: a node that runs an earlier release cannot verify an scrypt hash.
+4. **Proxy.** Behind a reverse proxy, set `trustProxy` to the number of proxies, forward `X-Forwarded-Proto`, and serve the admin app over https (cookies get `Secure`, HSTS is sent).
 5. **CSRF and origins.** If the admin app is served from another origin than the API, list it in `allowedOrigins`.
-6. **Replication.** Set the same `replication.secret` on every node, firewall the replication port to the peers, and set a
-   `direction` on every peer before turning on `replication.strictTypes`.
-7. **Uploads.** Tune `limits.upload` to what your editors need. Do not add `text/html` or `image/svg+xml` to `inlineTypes`
-   unless you trust everyone who can upload.
+6. **Replication.** Set the same `replication.secret` on every node, firewall the replication port to the peers, and set a `direction` on every peer before turning on `replication.strictTypes`.
+7. **Uploads.** Tune `limits.upload` to what your editors need. Do not add `text/html` or `image/svg+xml` to `inlineTypes` unless you trust everyone who can upload.
 8. **Configuration.** `cms.json` is not editable from the admin: nothing on the web can read or rewrite the secrets.
-9. **Logs.** `/api/_syslog` shows the log to every user who can log in: keep secrets out of log lines (the backend does not
-   write passwords or tokens) and give the `plugins` right of the group only to administrators. The log page and the log file
-   are bounded by `syslog.maxLineLength`, `syslog.maxFileSize` and `syslog.maxClientBuffer`.
+9. **Logs.** `/api/_syslog` shows the log to every user who can log in: keep secrets out of log lines (the backend does not write passwords or tokens) and give the `plugins` right of the group only to administrators. The log page and the log file are bounded by `syslog.maxLineLength`, `syslog.maxFileSize` and `syslog.maxClientBuffer`.
 10. **Dependencies.** Run `npm audit --omit=dev` in CI (the workflow does).
 
 ## Not covered
 
 - The frontend (`src/`) was not changed by this work. Its own protections (DOMPurify) are separate.
-- Transport encryption of the replication port: the shared secret authenticates the peers, it does not encrypt what they
-  exchange. Run the replication port on a private network or through a tunnel.
+- Transport encryption of the replication port: the shared secret authenticates the peers, it does not encrypt what they exchange. Run the replication port on a private network or through a tunnel.
 - MongoDB and PostgreSQL servers are configured by their operators; the CMS only guarantees the queries it sends.
-- Regular expressions are checked, not sandboxed: a pattern that passes the check can still be slow on a very long text
-  field. If that matters to you, keep `limits.json` small and consider a regular expression engine with a linear time
-  guarantee in front of the query filter.
+- Regular expressions are checked, not sandboxed: a pattern that passes the check can still be slow on a very long text field. If that matters to you, keep `limits.json` small and consider a regular expression engine with a linear time guarantee in front of the query filter.
 
 ## Changelog
 
 ### Embed CMS, after 3.0.0
 
-- **The configuration editor is removed.** `/admin/cms-config` (a page that rewrote `cms.json` from the browser and restarted the
-  process) no longer exists: nothing on the web can read or change the secrets, the ports or the plugin settings. Edit
-  `cms.json` on the server. Hardening item 8 and the `redactConfig` setting follow from it.
-- **The mode without any authentication works.** With `disableAuthentication` and `disableJwtLogin` both on, the admin used to reload
-  for ever (the schemas of the paragraphs answered 401), showed nothing (the `anonymous` group had no right) and signed writes
-  "anonymous~false". The `anonymous` group now has every right in that mode, and an error line in the log says so at every start.
-- **The log cannot exhaust the disk or the memory.** A line over `syslog.maxLineLength` is cut on the log page, a log file over
-  `syslog.maxFileSize` is rotated to `<path>.1`, and a page that stops reading is dropped after `syslog.maxClientBuffer` bytes
-  (see [CONFIG.md](docs/CONFIG.md)).
-- **The cookies are renamed with the product and named after the server** (`embedCmsJwt-<mid>` for the login token, `embedCmsSid-<mid>`
-  for the session, `embedCmsUser` for the session key): everyone is logged out once at the upgrade. Browsers share the cookies of
-  a host between its ports, so two CMS on `localhost` used to overwrite and clear each other's login; they now keep their own. A
-  client that sends the login token as a cookie must use the name of the server (the `x-access-token` header needs no name), and
-  `importFromRemote` now sends the token in that header.
+- **The configuration editor is removed.** `/admin/cms-config` (a page that rewrote `cms.json` from the browser and restarted the process) no longer exists: nothing on the web can read or change the secrets, the ports or the plugin settings. Edit `cms.json` on the server. Hardening item 8 and the `redactConfig` setting follow from it.
+- **The mode without any authentication works.** With `disableAuthentication` and `disableJwtLogin` both on, the admin used to reload for ever (the schemas of the paragraphs answered 401), showed nothing (the `anonymous` group had no right) and signed writes "anonymous~false". The `anonymous` group now has every right in that mode, and an error line in the log says so at every start.
+- **The log cannot exhaust the disk or the memory.** A line over `syslog.maxLineLength` is cut on the log page, a log file over `syslog.maxFileSize` is rotated to `<path>.1`, and a page that stops reading is dropped after `syslog.maxClientBuffer` bytes (see [CONFIG.md](docs/reference/CONFIG.md)).
+- **The cookies are renamed with the product and named after the server** (`embedCmsJwt-<mid>` for the login token, `embedCmsSid-<mid>` for the session, `embedCmsUser` for the session key): everyone is logged out once at the upgrade. Browsers share the cookies of a host between its ports, so two CMS on `localhost` used to overwrite and clear each other's login; they now keep their own. A client that sends the login token as a cookie must use the name of the server (the `x-access-token` header needs no name), and `importFromRemote` now sends the token in that header.
 
 ### Backend hardening (merged in PR #1)
 
 Options added, with defaults (see the tables above):
 
-- `strongSecrets`, `generateSecrets`, `localAdmin`, `passwordHash`, `hideCredentials`,
-  `genericLockout`, `csrf`, `allowedOrigins`, `cookies`, `strictSessions`, `redactConfig`, `strictAdmin`, `headers`,
-  `contentSecurityPolicy`, `sseCors`, `safeRegex`, `uniformErrors`, `safeAttachments`, `inlineTypes`, `strictUploads`,
-  `restrictRemoteUrls`, `strictReplication`, `wsAuth`, `wsMaxPayload`, `authCacheTtl`, `limits.json`, `limits.upload`
+- `strongSecrets`, `generateSecrets`, `localAdmin`, `passwordHash`, `hideCredentials`, `genericLockout`, `csrf`, `allowedOrigins`, `cookies`, `strictSessions`, `redactConfig`, `strictAdmin`, `headers`, `contentSecurityPolicy`, `sseCors`, `safeRegex`, `uniformErrors`, `safeAttachments`, `inlineTypes`, `strictUploads`, `restrictRemoteUrls`, `strictReplication`, `wsAuth`, `wsMaxPayload`, `authCacheTtl`, `limits.json`, `limits.upload`
 - top level: `trustProxy`, `imageConcurrency`, `attachmentCleanupGrace`; `blockRetry: false` turns the lockout off
 - `replication.secret`, `replication.strictTypes`, `replication.settleDelay`, `replication.maxRecordBytes`
 - `importFromRemote.remote.restrictUrls`, `importFromRemote.remote.allowedHosts`
 
-Files written by the backend: `<data>/.secrets.json` (only with `generateSecrets`), `<data>/.revoked-tokens.json`,
-`<data>/<resource>/json/db.json.corrupt-<time>` (only when a store file could not be read).
+Files written by the backend: `<data>/.secrets.json` (only with `generateSecrets`), `<data>/.revoked-tokens.json`, `<data>/<resource>/json/db.json.corrupt-<time>` (only when a store file could not be read).
 
 Phases, in order (each is one commit on the branch):
 
 1. Audit of the backend.
-2. Authentication and secrets: secret policy, `localAdmin`, scrypt hashes, no credentials in tokens, lockout, cookies,
-   sessions, CSRF, configuration editor.
-3. HTTP hardening: headers, event stream CORS, regular expression check, error handler, size limits, uploads, attachment
-   serving, `importFromRemote`.
-4. Replication and sync: authenticated handshake, validation of what a peer sends, websocket authentication, `strictTypes`,
-   and the repair of the sync of the json store.
-5. Performance: sorted key index and range search in the json store, query prefilter, paging, adaptive and sliced flush,
-   indexed import map, one read per export sheet, verified password cache, image concurrency limit.
+2. Authentication and secrets: secret policy, `localAdmin`, scrypt hashes, no credentials in tokens, lockout, cookies, sessions, CSRF, configuration editor.
+3. HTTP hardening: headers, event stream CORS, regular expression check, error handler, size limits, uploads, attachment serving, `importFromRemote`.
+4. Replication and sync: authenticated handshake, validation of what a peer sends, websocket authentication, `strictTypes`, and the repair of the sync of the json store.
+5. Performance: sorted key index and range search in the json store, query prefilter, paging, adaptive and sliced flush, indexed import map, one read per export sheet, verified password cache, image concurrency limit.
 6. Database drivers: contract suite for the json store, PostgreSQL and MongoDB, and the fixes it found.
 7. Cleanup and documentation.

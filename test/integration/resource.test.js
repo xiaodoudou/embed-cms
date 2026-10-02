@@ -167,7 +167,7 @@ describe('Resource API - Attachments', () => {
     const createRes = await request(serverUrl)
       .post(`/api/articles/${recordId}/attachments`)
       .auth('localAdmin', 'localAdmin')
-      .attach('file', './test/man.jpg')
+      .attach('file', './test/fixtures/man.jpg')
     attachmentId = createRes.body._id
     const res = await request(serverUrl)
       .get(`/api/articles/${recordId}/attachments/${attachmentId}`)

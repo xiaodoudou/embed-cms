@@ -30,7 +30,7 @@ describe('recommended production configuration (SECURITY.md)', () => {
       const settings = await withNodeEnv(env, () => resolveSecurity(example()))
       expect(settings).to.deep.include({
         strongSecrets: true,
-        localAdmin: true,
+        localAdmin: false,
         passwordHash: 'scrypt',
         hideCredentials: true,
         genericLockout: true,
@@ -41,8 +41,8 @@ describe('recommended production configuration (SECURITY.md)', () => {
         headers: true,
         safeRegex: true,
         uniformErrors: true,
-        safeAttachments: false,
-        strictUploads: false,
+        safeAttachments: true,
+        strictUploads: true,
         restrictRemoteUrls: true,
         strictReplication: true,
         wsAuth: true,
@@ -51,8 +51,7 @@ describe('recommended production configuration (SECURITY.md)', () => {
       })
       expect(settings.sseCors).to.deep.equal([])
       expect(settings.cookies).to.deep.equal({ httpOnly: true, sameSite: 'lax', secure: 'auto' })
-      // strictUploads is off: no upload limits
-      expect(settings.limits.upload).to.deep.equal({})
+      expect(settings.limits.upload).to.deep.equal({ fileSize: '256mb', files: 20, fields: 200, fieldSize: '1mb', parts: 260 })
       expect(settings.limits.json).to.equal('100kb')
       expect(settings.blockRetry).to.deep.equal({ retry: 10, duration: 5 })
     }
@@ -67,7 +66,7 @@ describe('recommended production configuration (SECURITY.md)', () => {
       expect(res.headers['content-security-policy'], 'headers').to.be.a('string')
       expect(res.headers['x-powered-by']).to.equal(undefined)
       const login = await request(app.url).post('/admin/login').send({ username: 'localAdmin', password: 'localAdmin' })
-      expect(login.status, 'localAdmin was kept, with its default password').to.equal(200)
+      expect(login.status, 'localAdmin is off: the default password opens nothing').to.not.equal(200)
       expect(JSON.stringify(login.body), 'hideCredentials').to.not.match(/salt/i)
     } finally {
       await app.close()

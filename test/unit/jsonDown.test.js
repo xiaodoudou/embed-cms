@@ -2,7 +2,7 @@ const fs = require('fs')
 const os = require('os')
 const path = require('path')
 const { expect } = require('chai')
-const JsonDOWN = require('../../lib/db/leveldown/jsondown')
+const JsonDOWN = require('../../lib/db/local/JsonDown')
 
 const create = (location) => new JsonDOWN(location, { keyEncoding: 'utf8', valueEncoding: 'json' })
 const keysOf = async (db, options) => {

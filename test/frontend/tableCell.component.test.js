@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import TableCell from '@c/TableCell.vue'
+import TableCell from '@c/records/TableCell.vue'
 import { mountComponent } from './helpers/mountField.js'
 
 const cell = (kind, record, extra = {}, helpers = {}) => mountComponent(TableCell, {

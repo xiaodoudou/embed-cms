@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import SearchField from '@c/SearchField.vue'
+import SearchField from '@c/records/SearchField.vue'
 import { mountComponent } from './helpers/mountField.js'
 
 const field = (props = {}) => mountComponent(SearchField, { props: { placeholder: 'Search', ...props }, attachTo: document.body })

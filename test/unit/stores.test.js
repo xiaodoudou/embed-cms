@@ -2,8 +2,8 @@ const os = require('os')
 const fs = require('fs-extra')
 const path = require('path')
 const { expect } = require('chai')
-const createJsonStore = require('../../lib/db/json_store')
-const FileStore = require('../../lib/db/file_store')
+const createJsonStore = require('../../lib/db/jsonStore')
+const FileStore = require('../../lib/db/FileStore')
 
 const MID = '42424242'
 const id = (n) => `abcdefgh${MID}${String(n).padStart(4, '0')}`

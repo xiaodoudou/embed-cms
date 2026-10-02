@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import TableColumnMenu from '@c/TableColumnMenu.vue'
+import TableColumnMenu from '@c/records/TableColumnMenu.vue'
 import { mountComponent } from './helpers/mountField.js'
 
 const columns = [

@@ -51,6 +51,6 @@ describe('CustomInput (text, number, email...)', () => {
   it('is not editable when read-only, and says so', () => {
     const wrapper = mountField(CustomInput, { model: { title: 'x' }, schema: { model: 'title', readonly: true } })
     expect(wrapper.get('input').attributes('readonly')).toBeDefined()
-    expect(wrapper.find('.cms-field-lock').exists()).toBe(true)
+    expect(wrapper.find('.cms-field-readonly').exists()).toBe(true)
   })
 })

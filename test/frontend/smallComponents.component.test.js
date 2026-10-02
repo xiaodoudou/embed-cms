@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import ThemeSwitch from '@c/ThemeSwitch.vue'
+import ThemeSwitch from '@c/layout/ThemeSwitch.vue'
 import PluginPage from '@c/pages/PluginPage.vue'
 import LoginService from '@s/LoginService'
 import TranslateService from '@s/TranslateService'

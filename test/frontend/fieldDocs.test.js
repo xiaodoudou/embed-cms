@@ -5,7 +5,7 @@ import FormService from '@s/FormService'
 
 // Guards the field documentation: one page per input type and no broken screenshot link.
 
-const DOCS = path.resolve(__dirname, '../../docs/fields')
+const DOCS = path.resolve(__dirname, '../../docs/reference/fields')
 // group is an internal type used to nest dotted keys, it is never declared in a schema
 const inputTypes = Object.keys(FormService.typeMapper).filter((type) => type !== 'group')
 const pages = fs.readdirSync(DOCS).filter((name) => name.endsWith('.md'))
@@ -15,7 +15,7 @@ describe('field documentation', () => {
     expect(fs.existsSync(path.join(DOCS, `${type}.md`))).toBe(true)
   })
 
-  it('links every type page from docs/FIELDS.md', () => {
+  it('links every type page from docs/reference/FIELDS.md', () => {
     const index = fs.readFileSync(path.resolve(DOCS, '../FIELDS.md'), 'utf8')
     for (const type of inputTypes) {
       expect(index).toContain(`fields/${type}.md`)

@@ -7,8 +7,8 @@ import * as directives from 'vuetify/directives'
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
 import { mdiChevronDown } from '@mdi/js'
 import TranslateService from '@s/TranslateService'
-import TranslateFilter from '@f/Translate'
-import TruncateFilter from '@f/Truncate'
+import TranslateFilter from '@f/translate'
+import TruncateFilter from '@f/truncate'
 import FieldLabel from '@c/fields/FieldLabel.vue'
 
 // The real English dictionary, so that tests read the words a person sees (and a renamed key fails them)

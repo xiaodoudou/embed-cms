@@ -5,7 +5,7 @@ const sharp = require('sharp')
 const { expect } = require('chai')
 const { startApp, ADMIN } = require('../helpers/app')
 
-const image = path.join(__dirname, '..', 'man.jpg')
+const image = path.join(__dirname, '..', 'fixtures', 'man.jpg')
 
 const binary = (res, callback) => {
   const chunks = []

@@ -31,7 +31,7 @@ afterEach(() => {
 describe('DesignSystem (the living reference page)', () => {
   it('shows each section of the reference', async () => {
     await page()
-    expect(wrapper.findAll('section h2').map((item) => item.text())).toEqual(['Buttons', 'Toggles, chips and tags', 'Dialogs and toasts', 'Form controls', 'Dropdown'])
+    expect(wrapper.findAll('section h2').map((item) => item.text())).toEqual(['Buttons', 'Toggles, chips and tags', 'Dialogs and toasts', 'Form controls', 'Links', 'Dropdown', 'Plugin UI kit', 'Public tokens'])
   })
 
   it('shows every kind of button in every size and state', async () => {

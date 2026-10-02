@@ -6,7 +6,7 @@ const sharp = require('sharp')
 const fs = require('fs-extra')
 const path = require('path')
 const { expect } = require('chai')
-const { getCMSInstance } = require('./cmsInstance')
+const { getCMSInstance } = require('../helpers/cmsInstance')
 
 const sizes = [
   { resize: '500xauto', smart: false },
@@ -24,7 +24,7 @@ const bufferOf = async (stream) => {
 }
 
 describe('smart cropping through the resource API', function () {
-  const testImagePath = path.join(__dirname, 'man.jpg')
+  const testImagePath = path.join(__dirname, '..', 'fixtures', 'man.jpg')
   let api
 
   before(async function () {

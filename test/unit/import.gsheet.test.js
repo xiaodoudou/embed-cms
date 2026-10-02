@@ -31,7 +31,7 @@ describe('import plugin: Google Sheets access (unit)', () => {
 
 describe('cms-import command: Google Sheets access and options (unit)', () => {
   const root = path.join(__dirname, '../..')
-  const source = fs.readFileSync(path.join(root, 'import.js'), 'utf8')
+  const source = fs.readFileSync(path.join(root, 'bin', 'cmsImport.js'), 'utf8')
 
   it('no longer calls useServiceAccountAuth', () => {
     expect(source).to.not.match(/\.useServiceAccountAuth\(/)
@@ -42,7 +42,7 @@ describe('cms-import command: Google Sheets access and options (unit)', () => {
   })
 
   it('describes -c differently from -s', () => {
-    const help = execFileSync(process.execPath, [path.join(root, 'import.js'), '--help'], { encoding: 'utf8' })
+    const help = execFileSync(process.execPath, [path.join(root, 'bin', 'cmsImport.js'), '--help'], { encoding: 'utf8' })
     const describeFlag = flag => help.split('\n').find(line => line.includes(flag)).replace(/^\s*-\w,\s*--\w+\s*/, '').trim()
     expect(describeFlag('--createFolders')).to.not.equal(describeFlag('--skip'))
   })

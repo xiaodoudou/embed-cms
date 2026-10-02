@@ -3,9 +3,9 @@ const fs = require('fs-extra')
 const path = require('path')
 const express = require('express')
 const { spawn } = require('child_process')
-const logger = require('../lib/logger')
-const { getCMSInstance, options: cmsOptions } = require('./cmsInstance')
-const pkg = require('../package.json')
+const logger = require('../../lib/logger')
+const { getCMSInstance, options: cmsOptions } = require('../helpers/cmsInstance')
+const pkg = require('../../package.json')
 
 // Define resources that should be public for anonymousRead tests
 const publicResources = ['publicData']
@@ -138,7 +138,7 @@ process.on('exit', () => {
   killPeers()
 })
 
-const spawnArgs = ['mocha', '--exit', '-R', 'spec', '-b', '-t', '40000', '--timeout', '60000', './test/runTests.js']
+const spawnArgs = ['mocha', '--exit', '-R', 'spec', '-b', '-t', '40000', '--timeout', '60000', './test/integration/runTests.js']
 
 function spawnRunTests(withPeers = false) {
   const testProcess = spawn('npx', spawnArgs, { stdio: 'inherit', shell: true })

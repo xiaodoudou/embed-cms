@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import TopBarLocaleList from '@c/TopBarLocaleList.vue'
+import TopBarLocaleList from '@c/layout/TopBarLocaleList.vue'
 import TranslateService from '@s/TranslateService'
 import { mountComponent } from './helpers/mountField.js'
 
@@ -22,6 +22,43 @@ describe('TopBarLocaleList (the back button and the language switch)', () => {
     expect(wrapper.get('.back').text()).toBe('Back')
     await wrapper.get('.back').trigger('click')
     expect(back).toHaveBeenCalledTimes(1)
+  })
+
+  it('has one box under the selected language, whatever the number of languages', async () => {
+    list({ locales: ['enUS', 'zhCN', 'frFR'], locale: 'zhCN' })
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findAll('.locale-indicator')).toHaveLength(1)
+    expect(wrapper.get('.locale-indicator').attributes('style')).toContain('opacity: 1')
+    await wrapper.setProps({ locale: 'frFR' })
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('.locale-indicator').attributes('style')).toContain('translate(')
+    await wrapper.setProps({ locale: 'xxXX' })
+    // the watcher moves the box on the tick after the one that renders the new locale
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('.locale-indicator').attributes('style')).toContain('opacity: 0')
+  })
+
+  it('toggles between two languages: any click on the switch goes to the other one', async () => {
+    const selectLocale = vi.fn()
+    list({ selectLocale })
+    await buttons()[0].trigger('click')
+    expect(selectLocale).toHaveBeenLastCalledWith('zhCN')
+    await wrapper.get('.locales').trigger('click')
+    expect(selectLocale).toHaveBeenCalledTimes(2)
+    expect(selectLocale).toHaveBeenLastCalledWith('zhCN')
+    await wrapper.setProps({ locale: 'zhCN' })
+    await buttons()[1].trigger('click')
+    expect(selectLocale).toHaveBeenLastCalledWith('enUS')
+  })
+
+  it('selects the clicked language when there are more than two, and ignores a click beside the buttons', async () => {
+    const selectLocale = vi.fn()
+    list({ selectLocale, locales: ['enUS', 'zhCN', 'frFR'] })
+    await buttons()[2].trigger('click')
+    expect(selectLocale).toHaveBeenLastCalledWith('frFR')
+    await wrapper.get('.locales').trigger('click')
+    expect(selectLocale).toHaveBeenCalledTimes(1)
   })
 
   it('has one button per language, in words', () => {

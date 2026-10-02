@@ -3,7 +3,7 @@ const path = require('path')
 const crypto = require('crypto')
 const fs = require('fs-extra')
 const express = require('express')
-const { getCMSInstance, options: baseOptions } = require('../cmsInstance')
+const { getCMSInstance, options: baseOptions } = require('./cmsInstance')
 
 const ADMIN = ['localAdmin', 'localAdmin']
 

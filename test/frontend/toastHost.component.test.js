@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import ToastHost from '@c/ToastHost.vue'
+import ToastHost from '@c/feedback/ToastHost.vue'
 import NotificationsService from '@s/NotificationsService'
 import { mountComponent } from './helpers/mountField.js'
 

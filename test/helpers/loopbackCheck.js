@@ -1,5 +1,5 @@
-// Diagnoses a machine that drops connections to freshly opened local ports (see docs/TESTING.md): opens 300 small
-// servers one after the other and connects to each. A healthy machine prints only "ok". Run: node test/helpers/loopback-check.js
+// Diagnoses a machine that drops connections to freshly opened local ports (see docs/contributing/TESTING.md): opens 300 small
+// servers one after the other and connects to each. A healthy machine prints only "ok". Run: node test/helpers/loopbackCheck.js
 const http = require('http')
 async function once (host) {
   const server = http.createServer((req, res) => res.end('ok'))

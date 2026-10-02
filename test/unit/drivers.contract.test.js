@@ -6,7 +6,7 @@ const { expect } = require('chai')
 const { startApp } = require('../helpers/app')
 const { engines } = require('../helpers/engines')
 
-const IMAGE = path.join(__dirname, '..', 'man.jpg')
+const IMAGE = path.join(__dirname, '..', 'fixtures', 'man.jpg')
 
 // the records the queries run on
 const FIXTURE = [
@@ -78,7 +78,7 @@ for (const engine of engines()) {
         // no server answered: the suite is skipped, not failed
         return this.skip()
       }
-      app = await startApp({ resources: './test/helpers/contract-resources', ...prepared.options }, { keepData: true })
+      app = await startApp({ resources: './test/fixtures/contractResources', ...prepared.options }, { keepData: true })
       api = app.cms.api()
       items = api('items')
       for (const record of FIXTURE) {
@@ -346,7 +346,7 @@ for (const engine of engines()) {
       it('finds the records again when the CMS is started on the same database', async function () {
         const before = keysOf(await items.list()).sort()
         await app.close()
-        app = await startApp({ resources: './test/helpers/contract-resources', ...prepared.options }, { dataDir: app.dataDir, keepData: true })
+        app = await startApp({ resources: './test/fixtures/contractResources', ...prepared.options }, { dataDir: app.dataDir, keepData: true })
         api = app.cms.api()
         items = api('items')
         expect(keysOf(await items.list()).sort()).to.deep.equal(before)

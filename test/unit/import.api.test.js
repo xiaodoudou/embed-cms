@@ -5,8 +5,8 @@ const express = require('express')
 const { expect } = require('chai')
 const { startApp, ADMIN } = require('../helpers/app')
 const { muteConsole } = require('../helpers/console')
-const ImportApi = require('../../lib-import/api')
-const RemoteApi = require('../../lib-importFromRemote/api')
+const ImportApi = require('../../lib/importers/spreadsheet/api')
+const RemoteApi = require('../../lib/importers/remote/api')
 
 describe('import command api clients (unit)', () => {
   let server, host, calls

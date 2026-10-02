@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken')
 const { expect } = require('chai')
 const { startApp, ADMIN } = require('../helpers/app')
 
-const SECRET = require('../cmsInstance').options.auth.secret
+const SECRET = require('../helpers/cmsInstance').options.auth.secret
 
 describe('authentication (unit)', () => {
   let app, auth
@@ -94,6 +94,17 @@ describe('authentication (unit)', () => {
       const create = await request(app.url).post('/api/articles').auth('editor', 'editorPass').send({ title: 'by editor' })
       expect(create.status).to.equal(200)
       expect(create.body._updatedBy).to.match(/editor$/)
+    })
+    it('writes who created a record once: a later update, or a client, cannot change it', async () => {
+      const created = await request(app.url).post('/api/articles').auth('editor', 'editorPass').send({ title: 'mine', _createdBy: 'admins~localAdmin' })
+      expect(created.body._createdBy).to.match(/editor$/)
+      expect(created.body._createdBy).to.equal(created.body._updatedBy)
+      const updated = await request(app.url).put(`/api/articles/${created.body._id}`).auth(...ADMIN).send({ title: 'edited', _createdBy: 'admins~someoneElse' })
+      expect(updated.status).to.equal(200)
+      expect(updated.body._createdBy).to.equal(created.body._createdBy)
+      expect(updated.body._updatedBy).to.equal('admins~localAdmin')
+      const found = await request(app.url).get(`/api/articles/${created.body._id}`).auth(...ADMIN)
+      expect(found.body._createdBy).to.equal(created.body._createdBy)
     })
     it('refuses actions and resources the group does not grant', async () => {
       const created = await request(app.url).post('/api/articles').auth(...ADMIN).send({ title: 'x' })

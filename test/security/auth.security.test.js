@@ -4,7 +4,7 @@ const fs = require('fs-extra')
 const jwt = require('jsonwebtoken')
 const request = require('supertest')
 const { expect } = require('chai')
-const { getCMSInstance, options: baseOptions } = require('../cmsInstance')
+const { getCMSInstance, options: baseOptions } = require('../helpers/cmsInstance')
 const { startApp, ADMIN, randomSecret, hardened, createUser, withNodeEnv } = require('../helpers/app')
 
 // Published defaults of `defaultConfig()` in index.js: they must never be accepted in production.

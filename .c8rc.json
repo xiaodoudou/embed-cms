@@ -2,7 +2,7 @@
   "all": true,
   "src": ["lib", "index.js"],
   "include": ["lib/**/*.js", "index.js"],
-  "exclude": ["lib/jsdoc-types.js", "lib/db/postgres/**", "test/**"],
+  "exclude": ["lib/jsdocTypes.js", "lib/db/postgres/**", "test/**"],
   "reporter": ["text-summary", "text"],
   "check-coverage": false
 }

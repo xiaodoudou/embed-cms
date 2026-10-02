@@ -18,7 +18,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Lint
-        run: npx eslint lib src index.js test/unit test/security test/helpers test/bench
+        run: npx eslint lib src index.js test/unit test/security test/integration test/helpers test/bench
       - name: Backend unit and security tests
         run: npm run test:unit
       - name: Frontend tests

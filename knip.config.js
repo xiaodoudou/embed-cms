@@ -2,7 +2,6 @@ export default {
   entry: [
     // Resource files are dynamically loaded
     'resources/**/*.js',
-    'docs/resourceExamples/**/*.js',
     // Plugins that are conditionally loaded based on options
     'lib/plugins/rest/index.js',
     'lib/plugins/admin/index.js',
@@ -20,10 +19,8 @@ export default {
   project: [
     'src/**/*.{js,ts,vue}',
     'lib/**/*.js',
-    'lib-import/**/*.js',
-    'lib-importFromRemote/**/*.js',
+    'bin/*.js',
     'resources/**/*.js',
-    'docs/resourceExamples/**/*.js',
     'test/**/*.js',
     '*.js'
   ],
@@ -31,7 +28,7 @@ export default {
     // Files we know are unused but want to keep
     'src/.plugins/js/main.js',
     // Type definitions kept as documentation (referenced from index.js)
-    'lib/jsdoc-types.js',
+    'lib/jsdocTypes.js',
     // Consumed as `FileType.fromBuffer(...)`, which knip cannot follow
     'lib/util/fileType.js',
     // exports the Logger class next to the shared instance; only the tests use the class
@@ -53,16 +50,6 @@ export default {
     '@static/*': ['src/static/*'],
     '@p/*': ['src/plugins/*']
   },
-  ignoreDependencies: [
-    // Vue component aliases not properly resolved by Knip (temporary workaround)
-    '@c/SystemInfo',
-    '@c/BrandLogo',
-    '@c/PreviewAttachment',
-    '@c/Omnibar',
-    '@c/ThemeSwitch',
-    '@c/PreviewMultiple',
-    '@c/FileInputErrors'
-  ],
   // Ignore binaries that are referenced in package.json but not installed
   // exports only used inside their own file (and by tests) are fine
   ignoreExportsUsedInFile: true,

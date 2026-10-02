@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Moves the content of a CMS from one local storage engine to another: node scripts/migrate-store.js --help
+// Moves the content of a CMS from one local storage engine to another: node scripts/migrateStore.js --help
 const path = require('path')
 const { migrateStore } = require('../lib/util/migrateStore')
 
@@ -10,7 +10,7 @@ const option = (name) => {
 }
 
 if (args.includes('--help') || !option('from') || !option('to')) {
-  console.log(`Usage: node scripts/migrate-store.js --from <engine> --to <engine> [--data ./data] [--dry-run]
+  console.log(`Usage: node scripts/migrateStore.js --from <engine> --to <engine> [--data ./data] [--dry-run]
 
 Copies every resource from one local engine to another: jsondown, sqlite or leveldb. Stop the CMS first.
 The old files stay where they are. Afterwards set "dbEngine": { "type": "<engine>" } in cms.json.`)

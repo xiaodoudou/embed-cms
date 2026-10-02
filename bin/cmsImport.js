@@ -4,7 +4,7 @@ const program = require('commander')
 const _ = require('lodash')
 const path = require('path')
 const fs = require('fs-extra')
-const logger = require('./lib/logger')
+const logger = require('../lib/logger')
 const { GoogleSpreadsheet } = require('google-spreadsheet')
 const md5File = require('md5-file')
 const prompt = require('prompt')
@@ -12,10 +12,10 @@ const pAll = require('p-all')
 const {setTimeout} = require('node:timers/promises')
 const { JWT } = require('google-auth-library')
 
-const h = require('./lib-import/helper')
-const Api = require('./lib-import/api')
+const h = require('../lib/importers/spreadsheet/helper')
+const Api = require('../lib/importers/spreadsheet/api')
 
-const pkg = require('./package.json')
+const pkg = require('../package.json')
 
 program.on('--help', () => {
   console.log('')
@@ -159,12 +159,12 @@ class ImportManager {
         } else if (program.skip) {
           return endProcess('skip')
         }
-        let jsonFile = path.join(__dirname, 'cached', `${sheet.id}-active.json`)
+        let jsonFile = path.join(__dirname, '..', 'cached', `${sheet.id}-active.json`)
         if (!fs.existsSync(path.dirname(jsonFile))) {
           fs.mkdirpSync(path.dirname(jsonFile))
         }
         let jsonLastModified = null
-        let gsheetLastModified = null
+        let gsheetLastModified
         if (fs.existsSync(jsonFile)) {
           jsonLastModified = fs.statSync(jsonFile).mtime
         }
@@ -213,7 +213,7 @@ class ImportManager {
     return await pAll(_.map(resourceList, sheet => {
       return async () => {
         let endProcess = h.startProcess(`Get Data from cached json ${sheet.id} ... ... `)
-        let jsonPath = path.join(__dirname, 'cached', `${sheet.id}-active.json`)
+        let jsonPath = path.join(__dirname, '..', 'cached', `${sheet.id}-active.json`)
         if (!fs.existsSync(jsonPath)) {
           throw new Error(`${jsonPath} not exists`)
         }
@@ -438,8 +438,7 @@ class ImportManager {
         const relationMap = await this.getRelationMap(resource)
         const list = await this.getNormalizedRecords(resource, relationMap)
         let existingKeys = _.map(list, item => _.pick(item, uniqueKeys))
-        let newKeys = null
-        newKeys = _.map(data, item => _.pick(item, uniqueKeys))
+        let newKeys = _.map(data, item => _.pick(item, uniqueKeys))
         newKeys = _.filter(newKeys, item => !_.find(existingKeys, item))
         let funcs2 = _.map(newKeys, key => {
           return async () => {
@@ -478,7 +477,7 @@ class ImportManager {
       return async () => {
         let endProcess = h.startProcess('remove old records %s ... ... ', resource)
         const uniqueKeys = this.api(resource).getUniqueKeys()
-        let oldRecords = null
+        let oldRecords
         const relationMap = await this.getRelationMap(resource)
         const list = await this.getNormalizedRecords(resource, relationMap)
         let oldKeys = _.map(list, item => _.pick(item, uniqueKeys))
@@ -563,7 +562,7 @@ class ImportManager {
             }
           })
 
-          errors = _.map(errors, (error) => error += `, in record ${JSON.stringify(_.pick(item, uniqueKeys))}`)
+          errors = _.map(errors, (error) => error + `, in record ${JSON.stringify(_.pick(item, uniqueKeys))}`)
           resourceErrors = resourceErrors.concat(errors)
         })
         if (!_.isEmpty(resourceErrors)) {

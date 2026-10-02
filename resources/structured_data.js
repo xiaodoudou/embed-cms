@@ -29,6 +29,25 @@ module.exports = {
         }
       }
     },
+    // An object that must be filled in
+    {
+      field: 'requiredSettings',
+      input: 'object',
+      label: 'Required settings',
+      localised: false,
+      required: true,
+      options: {
+        hint: 'Required: the title must be filled in (the JSON schema says minLength 1)',
+        jsonEditorOptions: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', minLength: 1 },
+            enabled: { type: 'boolean', format: 'checkbox', default: true }
+          },
+          required: ['title']
+        }
+      }
+    },
     // A list of objects edited as a table
     {
       field: 'rows',

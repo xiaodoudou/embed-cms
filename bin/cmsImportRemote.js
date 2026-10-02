@@ -5,7 +5,7 @@ const program = require('commander')
 const path = require('path')
 const prompt = require('prompt')
 
-const ImportWrapper = require('./lib-importFromRemote')
+const ImportWrapper = require('../lib/importers/remote')
 
 program.on('--help', () => {
   console.log('')

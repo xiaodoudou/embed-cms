@@ -7,9 +7,8 @@
       :variant="getVariant()" :flat="get('flat')" :rounded="get('rounded')" :density="get('density')" :disabled="disabled" :readonly="get('readonly')" :aria-readonly="get('readonly') ? 'true' : undefined"
       persistent-placeholder hide-details="auto" :aria-label="schema.label" :aria-required="schema.required ? 'true' : undefined" @update:model-value="onChangeData" @update:focused="onFieldFocus"
     >
-      <template #prepend><field-label :schema="schema" /></template>
+      <template #prepend><field-label :schema="schema" :disabled="disabled" /></template>
       <template #label />
-      <template v-if="get('readonly')" #append-inner><v-icon class="cms-field-lock" size="16" icon="$lockOutline" :title="$filters.translate('TL_READ_ONLY')" /></template>
     </v-text-field>
     <div v-if="showHint()" class="help-block">
       <v-icon size="small" icon="$information" />

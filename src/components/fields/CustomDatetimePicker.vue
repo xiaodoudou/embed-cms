@@ -1,6 +1,6 @@
 <template>
   <div class="date-picker-wrapper" :class="{'is-readonly': isReadonly, 'is-disabled': isDisabled}">
-    <field-label :schema="schema" />
+    <field-label :schema="schema" :disabled="disabled" />
     <div class="date-row">
       <div class="date-control">
         <date-picker
@@ -21,7 +21,6 @@
           model-type="timestamp"
           @focus="onFieldFocus(true)" @blur="onFieldFocus(false)"
         />
-        <v-icon v-if="isReadonly" class="cms-field-lock date-lock" size="16" icon="$lockOutline" :title="$filters.translate('TL_READ_ONLY')" />
       </div>
       <v-btn v-if="enableTimePicker && !isLocked" class="date-now" variant="outlined" size="small" @click="setNow">{{ $filters.translate('TL_NOW') }}</v-btn>
     </div>
@@ -143,18 +142,11 @@
     min-width: 0;
   }
 
-  .date-lock {
-    position: absolute;
-    top: 50%;
-    right: var(--cms-space-3);
-    transform: translateY(-50%);
-  }
-
   .date-now {
     flex: 0 0 auto;
   }
 
-  // the field states are the same as every other control (see base.css)
+  // the field states are the same as every other control (see base.scss)
   .dp--input {
     height: var(--cms-field-h);
     padding-top: 0;

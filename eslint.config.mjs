@@ -8,7 +8,7 @@ export default [
   // Vue configuration
   ...pluginVue.configs['flat/recommended'],
   {
-    files: ['resources/**/*.js', 'docs/resourceExamples/**/*.js'],
+    files: ['resources/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'commonjs',
@@ -27,7 +27,7 @@ export default [
     }
   },
   {
-    files: ['lib/**/*.js', 'lib-import/**/*.js', 'lib-importFromRemote/**/*.js', 'old_tests/**/*.js', 'test/**/*.js', 'scripts/**/*.js', '*.js', '*.cjs'],
+    files: ['lib/**/*.js', 'bin/**/*.js', 'test/**/*.js', 'scripts/**/*.js', '*.js', '*.cjs'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'commonjs',

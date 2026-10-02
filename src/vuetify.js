@@ -41,6 +41,9 @@ import {
   mdiArrowURightTop,
   mdiRefresh,
   mdiLockOutline,
+  mdiAccountOutline,
+  mdiAccountMultipleOutline,
+  mdiEyeOutline,
   mdiLockOpenOutline,
   mdiWrap,
   mdiTarget,
@@ -73,7 +76,7 @@ import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
 import 'vuetify/styles'
 
 /*
- * Vuetify palette. Keep in sync with src/styles/tokens.css (which is the source
+ * Vuetify palette. Keep in sync with src/styles/tokens.scss (which is the source
  * of truth for the hand written CSS). Every foreground/background pair here
  * meets WCAG AA. Custom keys are exposed as --v-theme-<name> and as
  * `bg-<name>` / `text-<name>` utility classes.
@@ -224,6 +227,9 @@ const vuetify = createVuetify({
       lockOpenOutline: mdiLockOpenOutline,
       wrap: mdiWrap,
       lockOutline: mdiLockOutline,
+      accountOutline: mdiAccountOutline,
+      accountMultipleOutline: mdiAccountMultipleOutline,
+      eyeOutline: mdiEyeOutline,
       target: mdiTarget,
       flagOutline: mdiFlagOutline,
       alertBoxOutline: mdiAlertBoxOutline,

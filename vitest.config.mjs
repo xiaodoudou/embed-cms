@@ -17,10 +17,7 @@ export default defineConfig({
       '@c': src('components'),
       '@m': src('mixins'),
       '@f': src('filters'),
-      '@a': src('assets'),
-      '@v': src('views'),
-      '@l': src('lib'),
-      '@r': src('router')
+      '@a': src('assets')
     }
   },
   test: {

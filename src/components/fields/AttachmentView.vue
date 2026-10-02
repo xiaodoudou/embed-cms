@@ -1,7 +1,7 @@
 <template>
   <div class="attachment-view">
     <form enctype="multipart/form-data">
-      <field-label :schema="schema" />
+      <field-label :schema="schema" :disabled="disabled" />
       <v-card
         v-if="!isFieldDisabled()"
         :theme="theme"
@@ -10,7 +10,7 @@
       >
         <v-file-input
           ref="input"
-          :theme="theme" flat :rules="getRules()" prepend-icon="" prepend-inner-icon="$upload" :label="getPlaceholder()" :placeholder="getPlaceholder()" :clearable="false" hide-details="auto"
+          :theme="theme" flat :rules="getRules()" prepend-icon="" prepend-inner-icon="$upload" :placeholder="getPlaceholder()" :clearable="false" hide-details="auto"
           density="compact" :variant="getVariant()" rounded persistent-placeholder single-line :multiple="isForMultipleImages()" :accept="schema.accept"
           @change="onUploadChanged" @update:focused="onFieldFocus"
         >
@@ -29,8 +29,8 @@
 <script>
   import AbstractField from '@m/AbstractField'
   import FileInputField from '@m/FileInputField'
-  import PreviewMultiple from '@c/PreviewMultiple'
-  import FileInputErrors from '@c/FileInputErrors'
+  import PreviewMultiple from '@c/attachments/PreviewMultiple.vue'
+  import FileInputErrors from '@c/attachments/FileInputErrors.vue'
 
   export default {
     components: {PreviewMultiple, FileInputErrors},

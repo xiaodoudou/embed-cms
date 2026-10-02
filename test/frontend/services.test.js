@@ -4,8 +4,8 @@ import TranslateService from '@s/TranslateService'
 import ResourceService from '@s/ResourceService'
 import ConfigService from '@s/ConfigService'
 import LoginService from '@s/LoginService'
-import TranslateFilter from '@f/Translate'
-import TruncateFilter from '@f/Truncate'
+import TranslateFilter from '@f/translate'
+import TruncateFilter from '@f/truncate'
 
 const respond = (body, { status = 200, ok = status >= 200 && status < 300 } = {}) => ({
   ok,

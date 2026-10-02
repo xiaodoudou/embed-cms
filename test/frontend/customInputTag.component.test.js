@@ -58,6 +58,6 @@ describe('CustomInputTag (the pillbox)', () => {
 
   it('is not editable when read-only', () => {
     const wrapper = tags({ tags: ['a'] }, { readonly: true })
-    expect(wrapper.get('input').attributes('readonly')).toBeDefined()
+    expect(wrapper.get('input:not([type=hidden])').attributes('readonly')).toBeDefined()
   })
 })

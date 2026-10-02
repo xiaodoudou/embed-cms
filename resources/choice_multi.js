@@ -28,6 +28,11 @@ module.exports = {
     { field: 'requiredTags', input: 'pillbox', label: 'Required tags', localised: false, required: true, options: { hint: 'Required: add at least one tag' } },
     { field: 'localisedTags', input: 'pillbox', label: 'Tags per locale', options: { hint: 'One list of tags per locale' } },
     // pillbox: between 2 and 4 tags
-    { field: 'boundedTags', input: 'pillbox', label: 'Keywords (2 to 4)', localised: false, min: 2, max: 4, options: { hint: 'Add between 2 and 4 tags' } }
+    { field: 'boundedTags', input: 'pillbox', label: 'Keywords (2 to 4)', localised: false, min: 2, max: 4, options: { hint: 'Add between 2 and 4 tags' } },
+    // pillbox: locked
+    { field: 'readOnlyTags', input: 'pillbox', label: 'Read-only tags', localised: false, options: { readonly: true, hint: 'Read-only: visible, not editable' } },
+    { field: 'disabledTags', input: 'pillbox', label: 'Disabled tags', localised: false, options: { disabled: true, hint: 'Disabled: greyed out and not focusable' } },
+    // multiselect: a button that selects or deselects every value
+    { field: 'allFlags', input: 'multiselect', label: 'Colour flags with a select all button', localised: false, source: ['red', 'green', 'blue'], options: { listBox: true, hint: 'A button next to the label selects or deselects every value' } }
   ]
 }

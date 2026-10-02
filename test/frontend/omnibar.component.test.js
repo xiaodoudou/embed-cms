@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import Omnibar from '@c/Omnibar.vue'
+import Omnibar from '@c/layout/Omnibar.vue'
 import NotificationsService from '@s/NotificationsService'
 import { mountComponent } from './helpers/mountField.js'
 import { groupedList, products, orders, pages, syslog } from './helpers/navFixtures.js'

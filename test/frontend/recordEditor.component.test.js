@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import RecordEditor from '@c/RecordEditor.vue'
+import RecordEditor from '@c/records/RecordEditor.vue'
 import RequestService from '@s/RequestService'
 import NotificationsService from '@s/NotificationsService'
 import { mountComponent } from './helpers/mountField.js'

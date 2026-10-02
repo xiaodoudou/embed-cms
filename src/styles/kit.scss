@@ -1,0 +1,835 @@
+// The UI kit for plugins: plain HTML, plain classes, nothing but tokens (see docs/extending/PLUGIN_UI_KIT.md).
+//
+// The classes the admin already had (cms-page, cms-card, cms-empty, cms-chip, cms-toolbar, cms-icon-btn, cms-kbd, cms-check,
+// cms-visually-hidden) are defined in base.scss and are part of the kit; this file adds the rest. It is plain CSS with single-class
+// selectors, after base.scss and before the CSS of a plugin: it wins over Vuetify's layers and over the element rules of base.scss
+// (ul, li, a), and a plugin's own CSS, which comes later, wins over it.
+
+// The three breakpoints of the kit (they are also the tokens --cms-bp-sm, --cms-bp-md and --cms-bp-lg)
+$bp-sm: 600px;
+$bp-md: 768px;
+$bp-lg: 1024px;
+// The steps of the space scale that exist as tokens (--cms-space-7 and -9 do not)
+$space-steps: 1, 2, 3, 4, 5, 6, 8, 10, 12;
+// The status colours, each with its soft background
+$statuses: success, warning, error;
+
+@mixin focus-ring($offset: 2px) {
+  outline: 2px solid var(--cms-focus-ring);
+  outline-offset: $offset;
+}
+
+@mixin heading($size, $weight) {
+  margin: 0;
+  color: var(--cms-text);
+  font-size: var(--cms-fs-#{$size});
+  font-weight: var(--cms-fw-#{$weight});
+  line-height: var(--cms-lh-tight);
+}
+
+// ---- Foundations ------------------------------------------------------------
+.cms-h1 { @include heading(2xl, bold); }
+.cms-h2 { @include heading(xl, semibold); }
+.cms-h3 { @include heading(lg, semibold); }
+.cms-h4 { @include heading(md, semibold); }
+
+.cms-text {
+  margin: 0;
+  color: var(--cms-text);
+  font-size: var(--cms-fs-base);
+  line-height: var(--cms-lh-base);
+}
+
+.cms-text-sm {
+  font-size: var(--cms-fs-sm);
+}
+
+.cms-text-muted {
+  color: var(--cms-text-muted);
+}
+
+.cms-text-primary {
+  color: var(--cms-primary);
+}
+
+@each $status in $statuses {
+  .cms-text-#{$status} {
+    color: var(--cms-#{$status});
+  }
+}
+
+.cms-code {
+  padding-inline: var(--cms-space-1);
+  border-radius: var(--cms-radius-xs);
+  background: var(--cms-surface-2);
+  font-family: var(--cms-font-mono);
+  font-size: 0.92em;
+}
+
+.cms-divider {
+  margin-block: var(--cms-space-4);
+  border: 0;
+  border-block-start: 1px solid var(--cms-border);
+}
+
+// spacing from the scale: padding, margin and gap
+@each $step in $space-steps {
+  .cms-p-#{$step} { padding: var(--cms-space-#{$step}); }
+  .cms-m-#{$step} { margin: var(--cms-space-#{$step}); }
+  .cms-gap-#{$step} { gap: var(--cms-space-#{$step}); }
+}
+
+// ---- Links ------------------------------------------------------------------
+.cms-link {
+  border-radius: var(--cms-radius-xs);
+  color: var(--cms-primary);
+  text-decoration: none;
+
+  &:visited {
+    color: color-mix(in srgb, var(--cms-primary) 78%, var(--cms-text));
+  }
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &.is-muted,
+  &.is-muted:visited {
+    color: var(--cms-text-muted);
+  }
+}
+
+// a link that leaves the admin gets a small arrow, with no markup
+a.cms-link[target='_blank']::after {
+  content: '\2197';
+  margin-inline-start: 0.2em;
+  font-size: 0.85em;
+}
+
+// a whole card or row as one link
+a.cms-link-card {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    border-color: var(--cms-primary);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+// ---- Layout -----------------------------------------------------------------
+.cms-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-gap, var(--cms-space-4));
+}
+
+.cms-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--row-gap, var(--cms-space-3));
+
+  &.is-between {
+    justify-content: space-between;
+  }
+
+  &.is-end {
+    justify-content: flex-end;
+  }
+}
+
+.cms-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--grid-gap, var(--cms-space-4));
+
+  // under 600px every column is a whole line
+  // (:where keeps this rule as weak as the cms-col-N rules below, so that they win from 600px up)
+  > :where([class*='cms-col-']) {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+}
+
+// cms-col-N from 600px, cms-col-md-N from 768px, cms-col-lg-N from 1024px
+@each $prefix, $min in ('': $bp-sm, 'md-': $bp-md, 'lg-': $bp-lg) {
+  @media (min-width: $min) {
+    @for $i from 1 through 12 {
+      .cms-col-#{$prefix}#{$i} { grid-column: span $i; }
+    }
+  }
+}
+
+.cms-split {
+  display: grid;
+  grid-template-columns: var(--split-side, 280px) minmax(0, 1fr);
+  gap: var(--cms-space-4);
+
+  @media (max-width: $bp-md - 0.02px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.cms-split-side,
+.cms-split-main {
+  min-width: 0;
+}
+
+.cms-section {
+  margin-block-start: var(--cms-space-6);
+  padding-block-start: var(--cms-space-4);
+  border-block-start: 1px solid var(--cms-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--cms-space-3);
+}
+
+// ---- Boxes ------------------------------------------------------------------
+// (the variants of cms-card are at the end of the file: cms-card itself is defined in base.scss)
+.cms-card-header,
+.cms-card-body,
+.cms-card-footer {
+  padding: var(--cms-space-4) var(--cms-space-5);
+}
+
+.cms-card-header {
+  border-block-end: 1px solid var(--cms-border);
+  font-weight: var(--cms-fw-semibold);
+}
+
+.cms-card-footer {
+  border-block-start: 1px solid var(--cms-border);
+}
+
+.cms-panel {
+  padding: var(--cms-space-4);
+  border-radius: var(--cms-radius-md);
+  background: var(--cms-surface-2);
+}
+
+.cms-callout {
+  --callout-color: var(--cms-info);
+  --callout-bg: var(--cms-info-soft);
+  padding: var(--cms-space-3) var(--cms-space-4);
+  border-inline-start: 4px solid var(--callout-color);
+  border-radius: var(--cms-radius-md);
+  background: var(--callout-bg);
+  color: var(--cms-text);
+  font-size: var(--cms-fs-base);
+  line-height: var(--cms-lh-base);
+
+  @each $status in $statuses {
+    &.is-#{$status} {
+      --callout-color: var(--cms-#{$status});
+      --callout-bg: var(--cms-#{$status}-soft);
+    }
+  }
+}
+
+.cms-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cms-space-1);
+}
+
+.cms-stat-label {
+  color: var(--cms-text-muted);
+  font-size: var(--cms-fs-sm);
+  font-weight: var(--cms-fw-medium);
+}
+
+.cms-stat-value {
+  color: var(--cms-text);
+  font-size: 2.5rem;
+  font-weight: var(--cms-fw-bold);
+  line-height: var(--cms-lh-tight);
+  font-variant-numeric: tabular-nums;
+}
+
+.cms-stat-hint {
+  color: var(--cms-text-muted);
+  font-size: var(--cms-fs-sm);
+}
+
+.cms-skeleton {
+  min-height: 1em;
+  border-radius: var(--cms-radius-sm);
+  background: linear-gradient(90deg, var(--cms-surface-2) 25%, var(--cms-surface-3) 50%, var(--cms-surface-2) 75%);
+  background-size: 200% 100%;
+  animation: cms-kit-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes cms-kit-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+// ---- Tables (a plain HTML table; cms-table is the record grid of the admin) --
+.cms-datatable-scroll {
+  overflow: auto;
+  border: 1px solid var(--cms-border);
+  border-radius: var(--cms-radius-lg);
+  background: var(--cms-surface);
+}
+
+.cms-datatable {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--cms-text);
+  font-size: var(--cms-fs-base);
+  line-height: var(--cms-lh-base);
+
+  th,
+  td {
+    padding: var(--cms-space-3) var(--cms-space-4);
+    border-block-end: 1px solid var(--cms-border);
+    text-align: start;
+  }
+
+  thead th {
+    position: sticky;
+    inset-block-start: 0;
+    background: var(--cms-surface);
+    font-weight: var(--cms-fw-semibold);
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td {
+    border-block-end: 0;
+  }
+
+  &.is-compact th,
+  &.is-compact td {
+    padding-block: var(--cms-space-1);
+  }
+
+  &.is-striped tbody tr:nth-child(even) {
+    background: var(--cms-surface-2);
+  }
+
+  &.is-hover tbody tr:hover {
+    background: var(--cms-surface-3);
+  }
+
+  th[aria-sort] {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  th[aria-sort='ascending']::after {
+    content: ' \2191';
+  }
+
+  th[aria-sort='descending']::after {
+    content: ' \2193';
+  }
+
+  // the cells of a number column, over the start alignment of every cell
+  th.cms-num,
+  td.cms-num {
+    text-align: end;
+  }
+}
+
+.cms-num {
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.cms-cell-truncate {
+  max-width: 24rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// ---- Lists (the flat rows of the compact record list) -----------------------
+.cms-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--cms-surface);
+
+  &.is-striped > .cms-list-item:nth-child(even) {
+    background: var(--cms-surface-2);
+  }
+}
+
+.cms-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--cms-space-3);
+  min-height: 44px;
+  padding: var(--cms-space-2) var(--cms-space-4);
+  border-block-end: 1px solid var(--cms-border);
+  border-inline-start: 3px solid transparent;
+  color: var(--cms-text);
+  text-decoration: none;
+
+  &.is-selected {
+    border-inline-start-color: var(--cms-primary);
+    background: var(--cms-primary-soft);
+    color: var(--cms-on-primary-soft);
+  }
+}
+
+a.cms-list-item:hover,
+button.cms-list-item:hover {
+  background: var(--cms-surface-3);
+}
+
+// ---- Forms ------------------------------------------------------------------
+.cms-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cms-space-1);
+}
+
+.cms-label {
+  color: var(--cms-text);
+  font-size: var(--cms-fs-sm);
+  font-weight: var(--cms-fw-semibold);
+
+  // the eye (read-only) and the lock (disabled) after a label, like the admin's own fields; the icon is a mask, so it
+  // follows the colour
+  &[data-state='readonly']::after,
+  &[data-state='disabled']::after {
+    content: '';
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-inline-start: var(--cms-space-1);
+    background: var(--cms-text-muted);
+    vertical-align: -2px;
+    mask: var(--label-icon) center / contain no-repeat;
+  }
+
+  &[data-state='readonly'] {
+    --label-icon: url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M12%2C9A3%2C3%200%200%2C1%2015%2C12A3%2C3%200%200%2C1%2012%2C15A3%2C3%200%200%2C1%209%2C12A3%2C3%200%200%2C1%2012%2C9M12%2C4.5C17%2C4.5%2021.27%2C7.61%2023%2C12C21.27%2C16.39%2017%2C19.5%2012%2C19.5C7%2C19.5%202.73%2C16.39%201%2C12C2.73%2C7.61%207%2C4.5%2012%2C4.5M3.18%2C12C4.83%2C15.36%208.24%2C17.5%2012%2C17.5C15.76%2C17.5%2019.17%2C15.36%2020.82%2C12C19.17%2C8.64%2015.76%2C6.5%2012%2C6.5C8.24%2C6.5%204.83%2C8.64%203.18%2C12Z%22%2F%3E%3C%2Fsvg%3E');
+  }
+
+  &[data-state='disabled'] {
+    --label-icon: url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M12%2C17C10.89%2C17%2010%2C16.1%2010%2C15C10%2C13.89%2010.89%2C13%2012%2C13A2%2C2%200%200%2C1%2014%2C15A2%2C2%200%200%2C1%2012%2C17M18%2C20V10H6V20H18M18%2C8A2%2C2%200%200%2C1%2020%2C10V20A2%2C2%200%200%2C1%2018%2C22H6C4.89%2C22%204%2C21.1%204%2C20V10C4%2C8.89%204.89%2C8%206%2C8H7V6A5%2C5%200%200%2C1%2012%2C1A5%2C5%200%200%2C1%2017%2C6V8H18M12%2C3A3%2C3%200%200%2C0%209%2C6V8H15V6A3%2C3%200%200%2C0%2012%2C3Z%22%2F%3E%3C%2Fsvg%3E');
+  }
+}
+
+.cms-hint {
+  color: var(--cms-text-muted);
+  font-size: var(--cms-fs-sm);
+  line-height: 20px;
+}
+
+.cms-error {
+  color: var(--cms-error);
+  font-size: var(--cms-fs-sm);
+  font-weight: var(--cms-fw-medium);
+}
+
+.cms-input,
+.cms-select,
+.cms-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--cms-field-h);
+  padding: 0 var(--cms-space-3);
+  border: 1px solid var(--cms-border-strong);
+  border-radius: var(--cms-radius-md);
+  background: var(--cms-field-bg);
+  color: var(--cms-text);
+  font-family: var(--cms-font-sans);
+  font-size: var(--cms-fs-base);
+
+  &:hover {
+    border-color: var(--cms-text-muted);
+  }
+
+  &:focus {
+    border-color: var(--cms-primary);
+    box-shadow: 0 0 0 3px var(--cms-field-ring);
+    outline: none;
+  }
+
+  &[readonly] {
+    border-color: transparent;
+    background: var(--cms-field-readonly-bg);
+  }
+
+  &:disabled {
+    border: 1px dashed var(--cms-border-strong);
+    background: var(--cms-field-disabled-bg);
+    color: var(--cms-text-muted);
+    cursor: not-allowed;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--cms-error);
+  }
+}
+
+.cms-textarea {
+  padding-block: var(--cms-space-2);
+  line-height: var(--cms-lh-base);
+  resize: vertical;
+}
+
+// the admin's switch: a checkbox that looks like one
+.cms-switch {
+  appearance: none;
+  position: relative;
+  width: 44px;
+  height: 24px;
+  margin: 0;
+  border: 1px solid var(--cms-border-strong);
+  border-radius: var(--cms-radius-pill);
+  background: var(--cms-surface-3);
+  cursor: pointer;
+  transition: background-color var(--cms-motion-fast) var(--cms-ease);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 2px;
+    inset-inline-start: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: var(--cms-radius-pill);
+    background: var(--cms-surface);
+    box-shadow: var(--cms-shadow-1);
+    transition: transform var(--cms-motion-fast) var(--cms-ease);
+  }
+
+  &:checked {
+    border-color: var(--cms-primary);
+    background: var(--cms-primary);
+
+    &::after {
+      transform: translateX(20px);
+    }
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &:disabled {
+    border-style: dashed;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+// ---- Buttons ----------------------------------------------------------------
+.cms-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cms-space-2);
+  box-sizing: border-box;
+  min-height: var(--cms-field-h);
+  padding: 0 var(--cms-space-4);
+  border: 1px solid transparent;
+  border-radius: var(--cms-radius-md);
+  background: transparent;
+  color: var(--cms-text);
+  font-family: var(--cms-font-sans);
+  font-size: var(--cms-fs-base);
+  font-weight: var(--cms-fw-medium);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--cms-motion-fast) var(--cms-ease), border-color var(--cms-motion-fast) var(--cms-ease);
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &:disabled,
+  &[aria-disabled='true'] {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &.is-sm {
+    min-height: 32px;
+    padding: 0 var(--cms-space-3);
+    font-size: var(--cms-fs-sm);
+  }
+
+  &.is-primary {
+    background: var(--cms-primary);
+    color: var(--cms-on-primary);
+
+    &:hover:not(:disabled) {
+      background: var(--cms-primary-hover);
+    }
+  }
+
+  &.is-secondary {
+    border-color: var(--cms-primary);
+    color: var(--cms-primary);
+  }
+
+  &.is-tertiary {
+    color: var(--cms-primary);
+  }
+
+  &.is-secondary:hover:not(:disabled),
+  &.is-tertiary:hover:not(:disabled) {
+    background: var(--cms-primary-soft);
+  }
+
+  &.is-danger {
+    background: var(--cms-error);
+    color: var(--cms-on-error);
+  }
+
+  &.is-danger-outline {
+    border-color: var(--cms-error);
+    color: var(--cms-error);
+
+    &:hover:not(:disabled) {
+      background: var(--cms-error-soft);
+    }
+  }
+}
+
+.cms-btn-group {
+  display: inline-flex;
+
+  > .cms-btn:not(:first-child) {
+    margin-inline-start: -1px;
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+  }
+
+  > .cms-btn:not(:last-child) {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+  }
+}
+
+// a segmented control of equal buttons: the selected one is marked with aria-pressed, and a box slides to it
+.cms-toggle {
+  --toggle-size: 32px;
+  position: relative;
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--cms-border-strong);
+  border-radius: var(--cms-radius-md);
+  background: var(--cms-surface);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block-start: 2px;
+    inset-inline-start: 2px;
+    width: var(--toggle-size);
+    height: var(--toggle-size);
+    border-radius: var(--cms-radius-sm);
+    background: var(--cms-primary-soft);
+    transition: transform var(--cms-motion-base) var(--cms-ease);
+    pointer-events: none;
+  }
+
+  @for $position from 2 through 6 {
+    &:has(> :nth-child(#{$position})[aria-pressed='true'])::before {
+      transform: translateX(calc(#{$position - 1} * (var(--toggle-size) + 2px)));
+    }
+  }
+
+  > button {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: var(--toggle-size);
+    height: var(--toggle-size);
+    padding: 0;
+    border: 0;
+    border-radius: var(--cms-radius-sm);
+    background: transparent;
+    color: var(--cms-text-muted);
+    cursor: pointer;
+
+    &[aria-pressed='true'] {
+      color: var(--cms-on-primary-soft);
+    }
+
+    &:focus-visible {
+      @include focus-ring(1px);
+    }
+  }
+}
+
+// ---- Feedback ---------------------------------------------------------------
+.cms-badge {
+  --badge-color: var(--cms-text);
+  --badge-bg: var(--cms-surface-3);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--cms-space-2);
+  border-radius: var(--cms-radius-pill);
+  background: var(--badge-bg);
+  color: var(--badge-color);
+  font-size: var(--cms-fs-xs);
+  font-weight: var(--cms-fw-semibold);
+  line-height: 20px;
+
+  &.is-primary {
+    --badge-color: var(--cms-on-primary-soft);
+    --badge-bg: var(--cms-primary-soft);
+  }
+
+  @each $status in $statuses {
+    &.is-#{$status} {
+      --badge-color: var(--cms-#{$status});
+      --badge-bg: var(--cms-#{$status}-soft);
+    }
+  }
+}
+
+.cms-progress {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 4px;
+  border: 0;
+  border-radius: var(--cms-radius-pill);
+  background: var(--cms-surface-3);
+  overflow: hidden;
+
+  &::-webkit-progress-bar {
+    background: var(--cms-surface-3);
+  }
+
+  &::-webkit-progress-value {
+    background: var(--cms-primary);
+  }
+
+  &::-moz-progress-bar {
+    background: var(--cms-primary);
+  }
+}
+
+.cms-spinner {
+  display: inline-block;
+  width: 1.25em;
+  height: 1.25em;
+  border: 2px solid currentcolor;
+  border-inline-end-color: transparent;
+  border-radius: var(--cms-radius-pill);
+  animation: cms-kit-spin 0.8s linear infinite;
+}
+
+@keyframes cms-kit-spin {
+  to { transform: rotate(360deg); }
+}
+
+// a short hint, with no JavaScript: use title when the browser's own tooltip is enough
+[data-tip] {
+  position: relative;
+
+  &::after {
+    content: attr(data-tip);
+    position: absolute;
+    inset-block-end: calc(100% + var(--cms-space-1));
+    inset-inline-start: 50%;
+    z-index: var(--cms-z-toast);
+    padding: var(--cms-space-1) var(--cms-space-2);
+    border-radius: var(--cms-radius-sm);
+    background: var(--cms-text);
+    color: var(--cms-text-inverse);
+    font-size: var(--cms-fs-xs);
+    white-space: nowrap;
+    transform: translateX(-50%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &:hover::after,
+  &:focus-visible::after {
+    opacity: 1;
+  }
+}
+
+// ---- Icons ------------------------------------------------------------------
+.cms-icon {
+  display: inline-block;
+  width: 1.25em;
+  height: 1.25em;
+  fill: currentcolor;
+  vertical-align: middle;
+
+  &.is-sm {
+    width: 1em;
+    height: 1em;
+  }
+
+  &.is-lg {
+    width: 1.75em;
+    height: 1.75em;
+  }
+}
+
+// ---- Comfortable on touch, calm for people who ask for it -------------------
+@media (pointer: coarse) {
+  .cms-btn,
+  .cms-input,
+  .cms-select {
+    min-height: 44px;
+  }
+
+  .cms-toggle {
+    --toggle-size: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cms-skeleton,
+  .cms-spinner,
+  .cms-toggle::before,
+  .cms-switch,
+  .cms-switch::after {
+    animation: none;
+    transition: none;
+  }
+}
+
+// The variants of cms-card (the card itself is defined in base.scss)
+.cms-card {
+  &:has(> .cms-card-header, > .cms-card-body, > .cms-card-footer) {
+    padding: 0;
+  }
+
+  &.is-flat {
+    border-color: transparent;
+  }
+
+  &.is-raised {
+    box-shadow: var(--cms-shadow-1);
+  }
+
+  &.is-interactive {
+    cursor: pointer;
+    transition: border-color var(--cms-motion-fast) var(--cms-ease), box-shadow var(--cms-motion-fast) var(--cms-ease);
+
+    &:hover {
+      border-color: var(--cms-primary);
+      box-shadow: var(--cms-shadow-1);
+    }
+
+    &:focus-visible {
+      @include focus-ring;
+    }
+  }
+}

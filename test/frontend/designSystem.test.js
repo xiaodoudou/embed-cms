@@ -2,16 +2,18 @@ import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 
-// Guards the design system: the look is defined once in src/styles/tokens.css (and the matching Vuetify palette in
+// Guards the design system: the look is defined once in src/styles/tokens.scss (and the matching Vuetify palette in
 // src/vuetify.js). Components must reference tokens, never hard-code colours or patch with !important.
 
 const SRC = path.resolve(__dirname, '../../src')
-const TOKENS = path.join(SRC, 'styles/tokens.css')
+const TOKENS = path.join(SRC, 'styles/tokens.scss')
 const NOT_CHECKED_FOR_LITERALS = new Set([TOKENS, path.join(SRC, 'vuetify.js')])
 // Legitimate colour data, not styling: the default value of the colour field
 const ALLOWED_LITERALS = [/#000000FF/]
 // !important is a patch. This number may only go down; lower it when you remove some.
 const IMPORTANT_BASELINE = 60
+// the reset of Vuetify 3 (ress.css), kept as it was: it is not our styling
+const THIRD_PARTY = new Set([path.join(SRC, 'styles/reset.scss')])
 
 const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
   const full = path.join(dir, entry.name)
@@ -42,11 +44,11 @@ describe('design system', () => {
         }
       })
     }
-    expect(offenders, `use a token from src/styles/tokens.css instead:\n${offenders.join('\n')}`).toEqual([])
+    expect(offenders, `use a token from src/styles/tokens.scss instead:\n${offenders.join('\n')}`).toEqual([])
   })
 
   it('does not add !important patches', () => {
-    const counts = files.map((file) => [rel(file), (read(file).match(/!important/g) || []).length]).filter(([, n]) => n > 0)
+    const counts = files.filter((file) => !THIRD_PARTY.has(file)).map((file) => [rel(file), (read(file).match(/!important/g) || []).length]).filter(([, n]) => n > 0)
     const total = counts.reduce((sum, [, n]) => sum + n, 0)
     const detail = counts.sort((a, b) => b[1] - a[1]).map(([f, n]) => `${n} ${f}`).join('\n')
     expect(total, `!important may only go down (baseline ${IMPORTANT_BASELINE}):\n${detail}`).toBeLessThanOrEqual(IMPORTANT_BASELINE)
@@ -59,11 +61,11 @@ describe('design system', () => {
     }
     const missing = []
     for (const file of files) {
-      for (const match of read(file).matchAll(/var\(\s*(--cms-[a-z0-9-]+)/g)) {
+      for (const match of read(file).matchAll(/var\(\s*(--cms-[a-z0-9-]+)(?![a-z0-9#-])/g)) {
         if (!defined.has(match[1])) missing.push(`${rel(file)} uses ${match[1]}`)
       }
     }
-    expect([...new Set(missing)], 'undefined design tokens (typo, or add them to tokens.css)').toEqual([])
+    expect([...new Set(missing)], 'undefined design tokens (typo, or add them to tokens.scss)').toEqual([])
   })
 
   it('defines every colour token in both the light and the dark palette', () => {

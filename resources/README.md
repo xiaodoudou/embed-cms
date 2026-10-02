@@ -1,3 +1,5 @@
+← [Documentation](../docs/README.md) · [Field types](../docs/reference/FIELDS.md)
+
 # Field catalogue
 
 Every resource here demonstrates ONE family of field types with each variation the CMS supports. Nothing here models a
@@ -8,6 +10,7 @@ real project: copy the field you need into your own resource.
 | Text | `text_strings` | string, transliterate |
 | Text | `text_long` | text, wysiwyg, code |
 | Text | `text_formats` | email, url, password |
+| Text | `languages` | text, rich text, tags, selects, image and switch in four languages (English, Chinese, French, Thai) |
 | Numbers | `numbers` | number, integer, double |
 | Date and time | `dates` | date, time, datetime |
 | Choice | `choice_boolean` | checkbox |

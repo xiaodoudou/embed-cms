@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import MultiselectPage from '@c/MultiselectPage.vue'
+import MultiselectPage from '@c/records/MultiselectPage.vue'
 import RequestService from '@s/RequestService'
 import NotificationsService from '@s/NotificationsService'
 import DialogService from '@s/DialogService'

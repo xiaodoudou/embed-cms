@@ -12,7 +12,7 @@
 @use "./components/Pager.scss" as *;
 
 // Global element rules, tokens and Vuetify overrides live in src/styles
-// (tokens.css, base.css). This file only holds shared layout for the
+// (tokens.scss, base.scss). This file only holds shared layout for the
 // record screens.
 
 .cms-layout {
@@ -26,8 +26,21 @@
   .v-chip {
     display: inline-flex !important;
     align-items: center;
+    // Chromium paints square patches on the rounded corners of a chip that has transitions on it and clips its tinted
+    // layers with overflow: no transition, and the layers follow the radius themselves
+    transition: none;
+    isolation: isolate;
+    .v-chip__underlay,
+    .v-chip__overlay {
+      border-radius: inherit;
+      transition: none;
+    }
     .v-chip__content {
       line-height: 1;
+      // the font has more room above its baseline than below: centred in the chip, lowercase text sits about 2px below the
+      // centre of the close icon (measured: x-height centre 35.9px, chip centre 34px)
+      position: relative;
+      top: -2px;
     }
   }
 

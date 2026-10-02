@@ -1,9 +1,9 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import FileInputErrors from '@c/FileInputErrors.vue'
-import ShowAttachment from '@c/ShowAttachment.vue'
-import PreviewAttachment from '@c/PreviewAttachment.vue'
-import PreviewMultiple from '@c/PreviewMultiple.vue'
+import FileInputErrors from '@c/attachments/FileInputErrors.vue'
+import ShowAttachment from '@c/attachments/ShowAttachment.vue'
+import PreviewAttachment from '@c/attachments/PreviewAttachment.vue'
+import PreviewMultiple from '@c/attachments/PreviewMultiple.vue'
 import { mountComponent } from './helpers/mountField.js'
 
 // The cropper is a library of its own and needs a real canvas: a stand-in keeps these tests on what the components do around it.

@@ -36,6 +36,34 @@ class ViteUtils {
     }
   }
 
+  /**
+   * The Vite plugin that writes dist/kit.css: the design tokens (light and dark), the classes the admin shares with plugins and the UI kit in one stylesheet, served as
+   * /admin/kit.css. A page that a plugin serves itself, or a plugin that styles its own shadow root, links it to get the look of the admin.
+   * @returns {import('vite').Plugin}
+   */
+  kitStylesheetPlugin = () => {
+    const styles = path.join(this.embedCmsSrcPath, 'styles')
+    return {
+      name: 'embed-cms-kit-stylesheet',
+      apply: 'build',
+      generateBundle () {
+        const sass = require('sass')
+        const compile = (name) => sass.compile(path.join(styles, name)).css
+        const tokens = compile('tokens.scss')
+        const primitives = compile('primitives.scss')
+        const kit = compile('kit.scss')
+        this.emitFile({
+          type: 'asset',
+          fileName: 'kit.css',
+          source: `/* The design tokens and the UI kit of the embed-cms admin (docs/extending/PLUGIN_UI_KIT.md) */
+${tokens}
+${primitives}
+${kit}`
+        })
+      }
+    }
+  }
+
   getAliasPath = (folderPath) => {
     return path.resolve(this.embedCmsSrcPath, folderPath)
   }

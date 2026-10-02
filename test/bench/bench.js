@@ -278,7 +278,7 @@ async function runAttachments (results) {
   const auth = { Authorization: `Basic ${Buffer.from('localAdmin:localAdmin').toString('base64')}` }
   try {
     const record = await app.cms.api()('products').create({ sku: 'IMG-1', name: { enUS: 'with image' } })
-    const image = fs.readFileSync(path.join(__dirname, '..', 'man.jpg'))
+    const image = fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'man.jpg'))
     const form = new FormData()
     form.append('_filename', 'man.jpg')
     form.append('photo', new Blob([image], { type: 'image/jpeg' }), 'man.jpg')

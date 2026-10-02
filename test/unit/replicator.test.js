@@ -194,7 +194,7 @@ describe('replicator (unit)', () => {
           .post(`/api/articles/${articleId}/attachments`)
           .auth(...ADMIN)
           .field('_filename', 'man.jpg')
-          .attach('image', path.join(__dirname, '..', 'man.jpg'), { contentType: 'image/jpeg' })
+          .attach('image', path.join(__dirname, '..', 'fixtures', 'man.jpg'), { contentType: 'image/jpeg' })
         attachmentId = att.body._id
       })
 
@@ -211,7 +211,7 @@ describe('replicator (unit)', () => {
         const res = await fetch(url(), peerFetchOptions(resource))
         expect(res.status).to.equal(200)
         const body = Buffer.from(await res.arrayBuffer())
-        expect(body.length).to.equal(fs.statSync(path.join(__dirname, '..', 'man.jpg')).size)
+        expect(body.length).to.equal(fs.statSync(path.join(__dirname, '..', 'fixtures', 'man.jpg')).size)
       })
     })
   })

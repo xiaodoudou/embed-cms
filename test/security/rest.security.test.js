@@ -55,7 +55,7 @@ describe('security regressions (REST)', () => {
         .post(`/api/articles/${created.body._id}/attachments`)
         .auth(...ADMIN)
         .field('_filename', 'man.jpg')
-        .attach('image', './test/man.jpg', { contentType: 'image/jpeg' })
+        .attach('image', './test/fixtures/man.jpg', { contentType: 'image/jpeg' })
       const res = await request(app.url).get(`/api/articles/file/${att.body._id}`)
       expect(res.status).to.be.oneOf([401, 403, 404])
     })

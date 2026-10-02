@@ -3,7 +3,7 @@ const fs = require('fs-extra')
 const path = require('path')
 const { expect } = require('chai')
 const { isLocalId } = require('../../lib/util/localId')
-const createJsonStore = require('../../lib/db/json_store')
+const createJsonStore = require('../../lib/db/jsonStore')
 
 // A record id is 8 characters of time, the id of the machine (8 characters), then a random tail. The machine id used by the tests is
 // "42424242", and a time part that ends in "42" puts that id at position 6 as well as at position 8: looking for it with indexOf

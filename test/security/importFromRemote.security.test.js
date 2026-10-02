@@ -4,8 +4,8 @@ const os = require('os')
 const path = require('path')
 const fs = require('fs-extra')
 const { expect } = require('chai')
-const RequestService = require('../../lib-importFromRemote/RequestService')
-const makeApi = require('../../lib-importFromRemote/api')
+const RequestService = require('../../lib/importers/remote/RequestService')
+const makeApi = require('../../lib/importers/remote/api')
 const logger = require('../../lib/logger')
 
 /**

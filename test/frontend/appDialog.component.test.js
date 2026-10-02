@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import AppDialog from '@c/AppDialog.vue'
+import AppDialog from '@c/feedback/AppDialog.vue'
 import { mountComponent } from './helpers/mountField.js'
 
 // A Vuetify dialog teleports its content to the body: it is queried there

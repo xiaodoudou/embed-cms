@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import SystemInfo from '@c/SystemInfo.vue'
+import SystemInfo from '@c/layout/SystemInfo.vue'
 import DialogService from '@s/DialogService'
 import LoginService from '@s/LoginService'
 import { mountComponent } from './helpers/mountField.js'

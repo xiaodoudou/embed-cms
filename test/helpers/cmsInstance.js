@@ -1,6 +1,7 @@
-exports = {
+const CMS = require('../../')
+const options = {
   ns: [],
-  resources: './test/resources',
+  resources: './test/fixtures/resources',
   data: './test/data',
   autoload: true,
   disableDarkMode: true,
@@ -10,7 +11,7 @@ exports = {
   disableAdmin: false,
   mountPath: '/',
   disableJwtLogin: false,
-  disableAuthentication: true,
+  disableAuthentication: false,
   wsRecordUpdates: true,
   auth: {
     secret: '$C&F)J@NcRfUjXn2r5u8x/A?D*G-KaPd'
@@ -28,10 +29,16 @@ exports = {
   defaultPaging: 12,
   test: true,
   replication: {
-    peers: [], // Will be set dynamically in the test
+    peers: [9991, 9992],
     peersByResource: {
       articles: ['http://localhost:9991'],
       authors: ['http://localhost:9992']
     }
   }
 }
+
+function getCMSInstance(customOptions = {}) {
+  return new CMS({ ...options, ...customOptions })
+}
+
+module.exports = { getCMSInstance, options }

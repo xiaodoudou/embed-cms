@@ -2,9 +2,9 @@ const fs = require('fs')
 const os = require('os')
 const path = require('path')
 const { expect } = require('chai')
-const { createLocalEngine, LOCAL_ENGINES } = require('../../lib/db/leveldown/localEngines')
+const { createLocalEngine, LOCAL_ENGINES } = require('../../lib/db/local/localEngines')
 const { migrateStore } = require('../../lib/util/migrateStore')
-const createJsonStore = require('../../lib/db/json_store')
+const createJsonStore = require('../../lib/db/jsonStore')
 
 const OPTIONS = { keyEncoding: 'utf8', valueEncoding: 'json' }
 const RECORDS = [

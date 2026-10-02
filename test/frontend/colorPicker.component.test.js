@@ -5,6 +5,15 @@ import { mountField } from './helpers/mountField.js'
 const picker = (model = {}, schema = {}) => mountField(ColorPicker, { model, schema: { model: 'colour', label: 'Colour', ...schema }, attachTo: document.body })
 
 describe('ColorPicker', () => {
+  it('looks read-only or disabled like the other fields, with the eye or the lock after the label', () => {
+    const readonly = picker({}, { readonly: true })
+    expect(readonly.classes()).toContain('is-readonly')
+    expect(readonly.find('.field-label .cms-field-readonly').exists()).toBe(true)
+    const disabled = picker({}, { disabled: true })
+    expect(disabled.classes()).toContain('is-disabled')
+    expect(disabled.find('.field-label .cms-field-lock').exists()).toBe(true)
+  })
+
   it('shows the label, the hint and the picker', () => {
     const wrapper = picker({}, { options: { hint: 'A colour swatch' } })
     expect(wrapper.find('.field-label').text()).toContain('Colour')

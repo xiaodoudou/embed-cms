@@ -3,7 +3,7 @@ const path = require('path')
 const { expect } = require('chai')
 const FileType = require('../../lib/util/fileType')
 
-const image = path.join(__dirname, '..', 'man.jpg')
+const image = path.join(__dirname, '..', 'fixtures', 'man.jpg')
 
 describe('fileType adapter', () => {
   it('detects a buffer', async () => {

@@ -4,7 +4,7 @@ const { expect } = require('chai')
 const { startApp } = require('../helpers/app')
 const { Driver } = require('../../lib/util/driver')
 
-const image = path.join(__dirname, '..', 'man.jpg')
+const image = path.join(__dirname, '..', 'fixtures', 'man.jpg')
 
 describe('driver / resource CRUD (unit)', () => {
   let app, api, notes, cities

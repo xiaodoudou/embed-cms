@@ -1,8 +1,8 @@
 const path = require('path')
 const request = require('supertest')
 const { expect } = require('chai')
-const utils = require('../../lib-importFromRemote/utils')
-const ImportWrapper = require('../../lib-importFromRemote/index')
+const utils = require('../../lib/importers/remote/utils')
+const ImportWrapper = require('../../lib/importers/remote/index')
 const { startApp, ADMIN } = require('../helpers/app')
 const { muteConsole } = require('../helpers/console')
 

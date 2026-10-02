@@ -2,7 +2,7 @@ const request = require('supertest')
 const { expect } = require('chai')
 const { startApp, ADMIN, hardened, createUser } = require('../helpers/app')
 
-// disableJwtLogin: false and disableAuthentication: false (the combination test/cmsInstance.js uses): the admin logs in
+// disableJwtLogin: false and disableAuthentication: false (the combination test/helpers/cmsInstance.js uses): the admin logs in
 // with the JWT login and calls the REST API with the cookies of that login
 describe('both login modes on (security)', () => {
   const profiles = {

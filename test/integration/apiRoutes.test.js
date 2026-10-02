@@ -40,7 +40,7 @@ describe('API Route Coverage', () => {
       .auth('localAdmin', 'localAdmin')
       .field('_locale', 'enUS')
       .field('_filename', 'man.jpg')
-      .attach('image', './test/man.jpg', { contentType: 'image/jpeg' })
+      .attach('image', './test/fixtures/man.jpg', { contentType: 'image/jpeg' })
     expect(res.status).to.equal(200)
     expect(res.body).to.have.property('_id')
     expect(res.body).to.have.property('_filename')
@@ -93,7 +93,7 @@ describe('API Route Coverage', () => {
       .post(`/api/articles/${articleId}/attachments`)
       .auth('localAdmin', 'localAdmin')
       .field('_filename', 'man.jpg')
-      .attach('image', './test/man.jpg', { contentType: 'image/jpeg' })
+      .attach('image', './test/fixtures/man.jpg', { contentType: 'image/jpeg' })
     expect(att2.status).to.equal(200)
     // Delete the first attachment
     const delRes = await request(serverUrl)
@@ -163,7 +163,7 @@ describe('API Route Coverage', () => {
       .auth('localAdmin', 'localAdmin')
       .field('field', 'image')
       .field('_filename', 'man.jpg')
-      .attach('image', './test/man.jpg', { contentType: 'image/jpeg' })
+      .attach('image', './test/fixtures/man.jpg', { contentType: 'image/jpeg' })
     expect(res.status).to.equal(200)
     expect(res.body).to.be.an('object')
     expect(res.body._id).to.be.a('string')
@@ -186,7 +186,7 @@ describe('API Route Coverage', () => {
       .field('field', 'localizedImage')
       .field('locale', 'enUS')
       .field('_filename', 'man.jpg')
-      .attach('localizedImage', './test/man.jpg', { contentType: 'image/jpeg' })
+      .attach('localizedImage', './test/fixtures/man.jpg', { contentType: 'image/jpeg' })
     expect(res.status).to.equal(200)
     expect(res.body).to.be.an('object')
     expect(res.body).to.have.property('_id')
@@ -206,8 +206,8 @@ describe('API Route Coverage', () => {
   it('GET /api/articles/:id should include both non-localized and localized attachments in the response', async () => {
     const article = await request(serverUrl).post('/api/articles').auth('localAdmin', 'localAdmin').send({ title: 'Attachments response test' })
     createdId = article.body._id
-    await request(serverUrl).post(`/api/articles/${createdId}/attachments`).auth('localAdmin', 'localAdmin').field('field', 'image').field('_filename', 'man.jpg').attach('image', './test/man.jpg', { contentType: 'image/jpeg' })
-    await request(serverUrl).post(`/api/articles/${createdId}/attachments`).auth('localAdmin', 'localAdmin').field('field', 'localizedImage').field('locale', 'enUS').field('_filename', 'man.jpg').attach('localizedImage', './test/man.jpg', { contentType: 'image/jpeg' })
+    await request(serverUrl).post(`/api/articles/${createdId}/attachments`).auth('localAdmin', 'localAdmin').field('field', 'image').field('_filename', 'man.jpg').attach('image', './test/fixtures/man.jpg', { contentType: 'image/jpeg' })
+    await request(serverUrl).post(`/api/articles/${createdId}/attachments`).auth('localAdmin', 'localAdmin').field('field', 'localizedImage').field('locale', 'enUS').field('_filename', 'man.jpg').attach('localizedImage', './test/fixtures/man.jpg', { contentType: 'image/jpeg' })
 
     const res = await request(serverUrl)
       .get(`/api/articles/${createdId}`)
@@ -294,7 +294,7 @@ describe('API Route Coverage', () => {
   it('GET /api/articles/:id/attachments/:aid.' + attachmentExt + '/cropped should return cropped attachment', async () => {
     const article = await request(serverUrl).post('/api/articles').auth('localAdmin', 'localAdmin').send({ title: 'Cropped attachment test' })
     createdId = article.body._id
-    const attachment = await request(serverUrl).post(`/api/articles/${createdId}/attachments`).auth('localAdmin', 'localAdmin').field('_filename', 'man.jpg').attach('image', './test/man.jpg', { contentType: 'image/jpeg' })
+    const attachment = await request(serverUrl).post(`/api/articles/${createdId}/attachments`).auth('localAdmin', 'localAdmin').field('_filename', 'man.jpg').attach('image', './test/fixtures/man.jpg', { contentType: 'image/jpeg' })
     attachmentId = attachment.body._id
     attachmentExt = 'jpeg'
 

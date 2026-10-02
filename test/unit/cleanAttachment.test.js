@@ -3,7 +3,7 @@ const path = require('path')
 const { expect } = require('chai')
 const { startApp } = require('../helpers/app')
 
-const IMAGE = path.join(__dirname, '..', 'man.jpg')
+const IMAGE = path.join(__dirname, '..', 'fixtures', 'man.jpg')
 
 describe('cleanAttachment (unit)', () => {
   let app, articles, article, attachment, folder

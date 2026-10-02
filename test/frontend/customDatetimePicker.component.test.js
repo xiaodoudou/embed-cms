@@ -213,18 +213,18 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
       picker('datetime', { when: LOCAL }, { readonly: true })
       await flushPromises()
       expect(wrapper.classes()).toContain('is-readonly')
-      expect(wrapper.find('.cms-field-lock').exists()).toBe(true)
+      expect(wrapper.find('.cms-field-readonly').exists()).toBe(true)
       expect(inner().props('readonly')).toBe(true)
       expect(inner().props('inputAttrs').clearable).toBe(false)
       expect(input().element.value).toBe('2026-10-01 14:30:15')
     })
 
-    it('a disabled field is greyed out, without the lock icon', () => {
+    it('a disabled field is greyed out, with the lock icon', () => {
       picker('date', {}, { disabled: true })
       expect(wrapper.classes()).toContain('is-disabled')
       expect(inner().props('disabled')).toBe(true)
       expect(inner().props('inputAttrs').clearable).toBe(false)
-      expect(wrapper.find('.cms-field-lock').exists()).toBe(false)
+      expect(wrapper.find('.cms-field-lock').exists()).toBe(true)
     })
 
     it('a field disabled by its parent is disabled too', () => {

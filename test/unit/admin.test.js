@@ -1,7 +1,7 @@
 const request = require('supertest')
 const { expect } = require('chai')
 const { startApp, hardened, createUser } = require('../helpers/app')
-const { options: baseOptions } = require('../cmsInstance')
+const { options: baseOptions } = require('../helpers/cmsInstance')
 
 describe('admin plugin (unit)', () => {
   let app, auth
@@ -38,6 +38,16 @@ describe('admin plugin (unit)', () => {
       expect(status.status).to.equal(200)
       expect(status.body).to.include({ username: 'editor', language: 'zhCN', theme: 'dark' })
       await auth.users.update(user._id, { language: '', theme: 'light' })
+    })
+    it('tells the rights of the group of the person, for the admin to know what to offer', async () => {
+      const { agent } = await loginAs('editor', 'editorPass')
+      const status = await agent.get('/admin/login')
+      expect(status.body.rights).to.have.all.keys('read', 'create', 'update', 'remove', 'attachments')
+      expect(status.body.rights.read).to.include('articles')
+      const admin = await loginAs('localAdmin', 'localAdmin')
+      const adminStatus = await admin.agent.get('/admin/login')
+      expect(adminStatus.body.rights.update).to.include('articles')
+      expect(adminStatus.body.rights.remove).to.include('articles')
     })
     it('names its cookies after the server, so that another CMS on the same host does not clear them', async () => {
       const { res, agent } = await loginAs('localAdmin', 'localAdmin')
@@ -267,6 +277,7 @@ describe('admin wrong Basic credentials (unit)', () => {
         const res = await get('/admin/login', ['localAdmin', 'localAdmin'])
         expect(res.status).to.equal(200)
         expect(res.body).to.include({ username: 'localAdmin', group: 'admins' })
+        expect(res.body.rights.read).to.be.an('array')
       })
     })
   })

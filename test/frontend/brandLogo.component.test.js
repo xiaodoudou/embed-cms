@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import BrandLogo from '@c/BrandLogo.vue'
+import BrandLogo from '@c/layout/BrandLogo.vue'
 import { mountComponent } from './helpers/mountField.js'
 
 let wrapper

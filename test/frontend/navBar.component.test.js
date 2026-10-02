@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import NavBar from '@c/NavBar.vue'
+import NavBar from '@c/layout/NavBar.vue'
 import ResourceService from '@s/ResourceService'
 import NotificationsService from '@s/NotificationsService'
 import { mountComponent } from './helpers/mountField.js'

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import VueTableGenerator from '@c/VueTableGenerator.vue'
+import VueTableGenerator from '@c/records/VueTableGenerator.vue'
 import { buildColumns, fieldsFromSchema } from '@u/tableModel.js'
 import { mountComponent } from './helpers/mountField.js'
 

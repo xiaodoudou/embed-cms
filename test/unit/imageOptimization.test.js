@@ -122,7 +122,7 @@ describe('ImageOptimization (unit)', () => {
     })
     it('crops a real photo to the requested size', async function () {
       this.timeout(30000)
-      const result = await ImageOptimization.smartCropAttachment(Readable.from([fs.readFileSync(path.join(__dirname, '..', 'man.jpg'))]), '120x80')
+      const result = await ImageOptimization.smartCropAttachment(Readable.from([fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'man.jpg'))]), '120x80')
       const meta = await sharp(await resultBuffer(result)).metadata()
       expect([meta.width, meta.height]).to.deep.equal([120, 80])
       expect(result.mimeType).to.match(/^image\//)

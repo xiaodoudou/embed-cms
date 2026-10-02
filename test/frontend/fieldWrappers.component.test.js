@@ -138,8 +138,23 @@ describe('CustomCode (a code editor)', () => {
 
   it('shows the label and the code of the model', async () => {
     await code({ script: 'let a = 1' })
-    expect(wrapper.get('.label').text()).toBe('Script')
+    expect(wrapper.get('.field-label').text()).toBe('Script')
     expect(editor().getValue()).toBe('let a = 1')
+  })
+
+  it('uses the theme made of tokens, so it follows the light and dark themes', async () => {
+    await code({ script: 'let a = 1' })
+    expect(wrapper.find('.CodeMirror').classes()).toContain('cm-s-cms')
+  })
+
+  it('says it is read-only with an eye after the label, and disabled with a lock', async () => {
+    await code({ script: 'a' }, { readonly: true })
+    expect(wrapper.classes()).toContain('is-readonly')
+    expect(wrapper.find('.field-label .cms-field-readonly').exists()).toBe(true)
+    wrapper.unmount()
+    await code({ script: 'a' }, { disabled: true })
+    expect(wrapper.classes()).toContain('is-disabled')
+    expect(wrapper.find('.field-label .cms-field-lock').exists()).toBe(true)
   })
 
   it('writes the edits into the model', async () => {

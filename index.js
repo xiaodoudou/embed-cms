@@ -1,7 +1,7 @@
 /**
  * @fileoverview Embed CMS - A flexible content management system
  * @author Embed CMS Team
- * @see {@link ./lib/jsdoc-types.js} For complete type definitions
+ * @see {@link ./lib/jsdocTypes.js} For complete type definitions
  */
 /**
  * @typedef {import('./lib/ResourceAPIWrapper.js')} ResourceAPIWrapper
@@ -23,7 +23,7 @@ const SyslogManager = require('./lib/SyslogManager')
 const SystemManager = require('./lib/SystemManager')
 const UpdatesManager = require('./lib/UpdatesManager')
 const escapeRegExp = require('./lib/util/escapeRegExp')
-const Resource = require('./lib/resource')
+const Resource = require('./lib/Resource')
 const ResourceAPIWrapper = require('./lib/ResourceAPIWrapper')
 const OSSHelper = require('./lib/util/OSSHelper')
 const ImageOptimization = require('./lib/util/imageOptimization')
@@ -747,4 +747,4 @@ CMS.ResourceAPIWrapper = ResourceAPIWrapper
  * Export RestHelper for middleware reuse in external projects
  * @type {RestHelper}
  */
-CMS.RestHelper = require('./lib/plugins/rest/helper')
+CMS.RestHelper = require('./lib/plugins/rest/RestHelper')

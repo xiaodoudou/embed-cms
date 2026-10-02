@@ -49,6 +49,7 @@ export default defineConfig(async ({ mode }) => {
     },
     plugins: [
       cacheControl(),
+      viteUtils.kitStylesheetPlugin(),
       vue({exclude: 'os'}),
       vueJsx({}),
       vuetify({ autoImport: true }),
@@ -61,14 +62,10 @@ export default defineConfig(async ({ mode }) => {
         '@s': 'services',
         // the folder createPluginsSymlink settled on: the project's embed-cms/plugins, else the bundled src/.plugins
         '@p': viteUtils.plugins.source,
-        '@static': 'static',
         '@a': 'assets',
         '@c': 'components',
-        '@v': 'views',
         '@f': 'filters',
         '@u': 'utils',
-        '@l': 'lib',
-        '@r': 'router',
         '@m': 'mixins'
       })
     },

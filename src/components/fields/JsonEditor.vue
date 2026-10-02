@@ -1,7 +1,9 @@
 <template>
   <div class="json-editor-field">
-    <field-label :schema="schema" />
+    <field-label :schema="schema" :disabled="disabled" />
     <div ref="input" class="json-editor" :disabled="disabled" />
+    <!-- the form (a v-form) only validates Vuetify inputs: this one carries the verdict of the JSON schema, and its message -->
+    <v-input class="schema-validity" :model-value="snapshot" :rules="[schemaRule]" validate-on="input" density="compact" />
     <div v-if="showHint()" class="help-block">
       <v-icon size="small" icon="$information" />
       <span>{{ schema.options.hint }}</span>
@@ -16,7 +18,6 @@
   import CodeMirror from 'codemirror'
   import 'codemirror/mode/javascript/javascript.js'
   import 'codemirror/lib/codemirror.css'
-  import 'codemirror/theme/dracula.css'
   import { JSONEditor } from '@json-editor/json-editor'
 
   const OPEN_MODAL = '.json-editor-modal:not([style*="display: none"])'
@@ -25,7 +26,9 @@
     data () {
       return {
         editor: null,
-        originalValue: null
+        originalValue: null,
+        // the value as text: when it changes, the verdict of the JSON schema is worked out again
+        snapshot: ''
       }
     },
     watch: {
@@ -352,9 +355,25 @@
       this.editor.on('change', () => {
         const value = this.editor.getValue()
         _.set(this.model, this.schema.model, value)
+        this.snapshot = JSON.stringify(value)
       })
     },
     methods: {
+      // the constraints of the JSON schema are part of the form's validation: a value the schema refuses blocks the save
+      listSchemaErrors () {
+        if (!this.editor || !this.editor.ready) {
+          return []
+        }
+        return _.uniq(_.map(this.editor.validate(), (error) => {
+          const path = String(error.path || '').replace(/^root\.?/, '')
+          return path ? `${path}: ${error.message}` : error.message
+        }))
+      },
+      // the rule of the hidden input: true, or the message
+      schemaRule () {
+        const errors = this.isLocked() ? [] : this.listSchemaErrors()
+        return errors.length === 0 || errors.join(' · ')
+      },
       // A form has ancestors that trap position: fixed, so an open modal is moved to the body (into a holder with the
       // same class, so that it keeps its styles) and put back in its place when the library hides it again.
       watchModals (root) {
@@ -582,7 +601,7 @@
         } else {
           textarea._cm = CodeMirror.fromTextArea(textarea, {
             mode: { name: 'javascript', json: true },
-            theme: 'dracula',
+            theme: 'cms',
             lineNumbers: true,
             tabSize: 2,
             indentWithTabs: false,

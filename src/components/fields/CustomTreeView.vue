@@ -1,6 +1,6 @@
 <template>
   <div class="json-viewer-wrapper">
-    <field-label :schema="schema" />
+    <field-label :schema="schema" :disabled="disabled" />
     <json-viewer v-if="schema" ref="input" :key="schema.model" :value="getData()" :copyable="true" tabindex="-1" @focus="onFieldFocus(true)" @blur="onFieldFocus(false)">
       <template #copy><v-btn icon size="small" elevation="0" variant="flat"><v-icon icon="$contentCopy" /></v-btn></template>
     </json-viewer>

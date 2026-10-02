@@ -65,16 +65,16 @@
 
       <section class="cms-card ds-section" aria-labelledby="ds-forms">
         <h2 id="ds-forms">Form controls</h2>
-        <p class="ds-note">One state system for every control: editable (field surface, strong border, hover darkens it, focus adds the accent border and ring), read-only (tinted, no border, lock icon, still copyable), disabled (page colour, dashed border, muted text), error (red border, icon and message).</p>
+        <p class="ds-note">One state system for every control: editable (field surface, strong border, hover darkens it, focus adds the accent border and ring), read-only (tinted, no border, an eye after the label, still copyable), disabled (page colour, dashed border, muted text, a lock after the label), error (red border, icon and message).</p>
         <div class="ds-forms">
           <div v-for="state in formStates" :key="state.name" class="ds-form-col">
             <h3>{{ state.name }}<small>{{ state.hint }}</small></h3>
+            <field-label :schema="{ label: 'Name', readonly: state.readonly, disabled: state.disabled }" />
             <v-text-field
               v-bind="fieldProps(state)" persistent-placeholder aria-label="Text"
               :placeholder="state.name === 'Editable' ? 'Placeholder' : ''" :model-value="state.empty ? '' : 'Nordic oak chair'"
             >
               <template #label />
-              <template v-if="state.readonly" #append-inner><v-icon class="cms-field-lock" size="16" icon="$lockOutline" /></template>
             </v-text-field>
             <v-textarea v-bind="fieldProps(state)" :rows="2" no-resize model-value="A sturdy chair with a solid oak frame." aria-label="Text area"><template #label /></v-textarea>
             <v-autocomplete v-bind="fieldProps(state)" :items="['Chairs', 'Tables']" model-value="Chairs" menu-icon="$chevronDown" aria-label="Select"><template #label /></v-autocomplete>
@@ -83,16 +83,31 @@
               <div class="date-row">
                 <div class="date-control">
                   <date-picker
-                    class="date-picker" :model-value="1772668800000" model-type="timestamp" :format="formatDate" :text-input="true" :clearable="!state.readonly && !state.disabled"
-                    :readonly="state.readonly" :disabled="state.disabled" placeholder="YYYY-MM-DD" :enable-time-picker="false"
+                    class="date-picker" :model-value="1772668800000" model-type="timestamp" :formats="{ input: formatDate }" :text-input="true" :clearable="!state.readonly && !state.disabled"
+                    :readonly="state.readonly" :disabled="state.disabled" placeholder="YYYY-MM-DD" :time-config="{ enableTimePicker: false }"
                   />
-                  <v-icon v-if="state.readonly" class="cms-field-lock date-lock" size="16" icon="$lockOutline" />
                 </div>
               </div>
             </div>
             <custom-checkbox :model="{flag: true}" :schema="{label: 'Published', model: 'flag', readonly: state.readonly, disabled: state.disabled, options: {}}" :disabled="state.disabled" />
           </div>
         </div>
+      </section>
+
+      <section class="cms-card ds-section" aria-labelledby="ds-links">
+        <h2 id="ds-links">Links</h2>
+        <p class="ds-note">One link style, in the page, in a table and in a plugin: the primary colour, an underline on hover and on keyboard focus, a darker shade once visited. A link that leaves the admin gets an arrow.</p>
+        <div class="ds-row">
+          <a class="cms-link" href="#/?id=design-system">A link to a page of the admin</a>
+          <a class="cms-link is-muted" href="#/?id=design-system">A secondary link</a>
+          <a class="cms-link" href="https://example.com" target="_blank" rel="noopener">A link to another site</a>
+        </div>
+        <table class="cms-datatable is-hover">
+          <tbody>
+            <tr><td><a class="cms-link" href="#/?id=design-system">Winter ferry timetable</a></td><td>Articles</td><td class="cms-text-muted">1 hour ago</td></tr>
+            <tr><td><a class="cms-link" href="#/?id=design-system">Letters to the editor</a></td><td>Articles</td><td class="cms-text-muted">3 hours ago</td></tr>
+          </tbody>
+        </table>
       </section>
 
       <section class="cms-card ds-section" aria-labelledby="ds-dropdown">
@@ -102,14 +117,20 @@
           <v-autocomplete v-model="options" :items="['articles', 'authors', 'comments', 'groups', 'users', 'settings', 'admin settings', 'config']" multiple chips closable-chips aria-label="Multiple select" hide-details="auto" />
         </div>
       </section>
+
+      <kit-reference />
+      <public-tokens />
     </div>
   </div>
 </template>
 
 <script>
   import NotificationsService from '@s/NotificationsService'
+  import KitReference from './KitReference.vue'
+  import PublicTokens from './PublicTokens.vue'
 
   export default {
+    components: { KitReference, PublicTokens },
     data () {
       return {
         mode: 'a',
@@ -119,8 +140,8 @@
           { name: 'Editable', hint: 'hover darkens the border' },
           { name: 'Focus', hint: 'accent border and ring', focused: true },
           { name: 'Error', hint: 'red border, icon, message', error: true },
-          { name: 'Read-only', hint: 'tinted, lock, copyable', readonly: true },
-          { name: 'Disabled', hint: 'dashed, muted, not focusable', disabled: true }
+          { name: 'Read-only', hint: 'tinted, eye, copyable', readonly: true },
+          { name: 'Disabled', hint: 'dashed, muted, lock', disabled: true }
         ],
         options: ['articles', 'authors', 'admin settings', 'config', 'groups'],
         variants: [

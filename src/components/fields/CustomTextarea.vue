@@ -4,9 +4,8 @@
       ref="input" :class="[schema.labelClasses]" :type="getType()" :model-value="_value" :max-length="schema.max" :min-length="schema.min" auto-grow :density="get('density')" :flat="get('flat')" :disabled="schema.disabled"
       :readonly="schema.readonly" :aria-readonly="schema.readonly ? 'true' : undefined" :rules="[validateField]" hide-details="auto" validate-on="blur" :aria-label="schema.label" :variant="getVariant()" :rounded="get('rounded')" @update:model-value="onChangeData" @update:focused="onFieldFocus"
     >
-      <template #prepend><field-label :schema="schema" /></template>
+      <template #prepend><field-label :schema="schema" :disabled="disabled" /></template>
       <template #label />
-      <template v-if="schema.readonly" #append-inner><v-icon class="cms-field-lock" size="16" icon="$lockOutline" :title="$filters.translate('TL_READ_ONLY')" /></template>
     </v-textarea>
     <div v-if="showHint()" class="help-block">
       <v-icon size="small" icon="$information" />

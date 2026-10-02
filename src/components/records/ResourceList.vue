@@ -50,7 +50,7 @@
 <script>
   import _ from 'lodash'
   import TranslateService from '@s/TranslateService'
-  import SearchField from '@c/SearchField.vue'
+  import SearchField from '@c/records/SearchField.vue'
   import ResourceService from '@s/ResourceService'
   import { groupSettingsName } from '@u/navModel'
   import { getResourceLabel } from '@u/recordLabel'

@@ -32,9 +32,9 @@
 <script>
   import _ from 'lodash'
   import { getResourceLabel } from '@u/recordLabel'
-  import SystemInfo from '@c/SystemInfo'
-  import BrandLogo from '@c/BrandLogo'
-  import Omnibar from '@c/Omnibar'
+  import SystemInfo from '@c/layout/SystemInfo.vue'
+  import BrandLogo from '@c/layout/BrandLogo.vue'
+  import Omnibar from '@c/layout/Omnibar.vue'
   import ResourceService from '@s/ResourceService'
   import NotificationsService from '@s/NotificationsService'
 

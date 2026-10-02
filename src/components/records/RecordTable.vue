@@ -99,13 +99,13 @@
     visibleLocales, richTextToPlain, isColumnHidden, attachmentOf, DENSITIES
   } from '@u/tableModel'
   import { readChoice, writePreference } from '@u/preferences'
-  import VueTableGenerator from '@c/VueTableGenerator.vue'
-  import TableColumnMenu from '@c/TableColumnMenu.vue'
-  import ResourceSelector from '@c/ResourceSelector.vue'
-  import SearchField from '@c/SearchField.vue'
-  import TopBarLocaleList from '@c/TopBarLocaleList.vue'
+  import VueTableGenerator from '@c/records/VueTableGenerator.vue'
+  import TableColumnMenu from '@c/records/TableColumnMenu.vue'
+  import ResourceSelector from '@c/records/ResourceSelector.vue'
+  import SearchField from '@c/records/SearchField.vue'
+  import TopBarLocaleList from '@c/layout/TopBarLocaleList.vue'
 
-  import RecordEditor from '@c/RecordEditor.vue'
+  import RecordEditor from '@c/records/RecordEditor.vue'
   import Notification from '@m/Notification'
 
   const TEXTUAL_KINDS = ['text', 'richtext', 'select', 'multi', 'link', 'number']

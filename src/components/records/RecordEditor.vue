@@ -53,11 +53,12 @@
   import pAll from 'p-all'
   import TranslateService from '@s/TranslateService'
   import FieldSelectorService from '@s/FieldSelectorService'
-  import AbstractEditorView from './AbstractEditorView'
+  import AbstractEditorView from '@m/AbstractEditorView'
   import Notification from '@m/Notification'
   import NotificationsService from '@s/NotificationsService'
-  import TopBarLocaleList from '@c/TopBarLocaleList.vue'
+  import TopBarLocaleList from '@c/layout/TopBarLocaleList.vue'
   import RequestService from '@s/RequestService'
+  import { host } from '@s/HostService'
   import { getRecordLabel, recordMessage } from '@u/recordLabel'
   import { createSnapshot, changedParts, isDirty, missingRequired, absorbPaths, unsetSwitchesToFalse } from '@u/dirtyTracker'
 
@@ -334,6 +335,7 @@
           try {
             await RequestService.delete(`../api/${this.resource.title}/${this.editingRecord._id}`)
             this.notify(recordMessage('DELETED', this.resource, this.editingRecord, this.locale), 'success')
+            host.emit('record:removed', { resource: this.resource.title, id: this.editingRecord._id })
             this.$emit('updateRecordList', null)
           } catch (error) {
             console.error('Error happen during deleteRecord:', error)
@@ -669,6 +671,7 @@
           let data = await RequestService.post(`../api/${this.resource.title}`, uploadObject)
           await this.uploadAttachments(data._id, newAttachments)
           this.notify(recordMessage('CREATED', this.resource, { ...this.editingRecord, _id: data._id }, this.locale), 'success')
+          host.emit('record:saved', { resource: this.resource.title, record: data, created: true })
           this.$emit('updateRecordList', data)
         } catch (error) {
           console.error('Error happen during createRecord:', error)
@@ -700,6 +703,7 @@
           // read the record back: the files change it
           const data = await RequestService.get(url)
           this.notify(recordMessage('SAVED', this.resource, this.editingRecord, this.locale), 'success')
+          host.emit('record:saved', { resource: this.resource.title, record: data, created: false })
           this.$emit('updateRecordList', data)
         } catch (error) {
           console.error('Error happen during updateRecord:', error)

@@ -1,0 +1,242 @@
+/* The classes of the admin that a plugin may use too (with the UI kit, see kit.scss). They live in their own file so that the
+   stylesheet for pages outside the admin (kit.css) can carry them. Same names as before, same rules. */
+
+/* Chips and toggles: the shape of a tag */
+.cms-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cms-space-1);
+  min-height: 28px;
+  padding: var(--cms-space-1) var(--cms-space-3);
+  border-radius: var(--cms-radius-pill);
+  font-family: var(--cms-font-sans);
+  font-size: var(--cms-fs-sm);
+  line-height: 1.4;
+  font-weight: var(--cms-fw-medium);
+  letter-spacing: 0;
+  text-transform: none;
+  overflow: visible;
+}
+
+/* ---- Accessibility ------------------------------------------------------ */
+.cms-visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Keyboard shortcut badge */
+.cms-kbd {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px var(--cms-space-2);
+  border: 1px solid var(--cms-border);
+  border-radius: var(--cms-radius-xs);
+  font-family: var(--cms-font-mono);
+  font-size: var(--cms-fs-xs);
+  line-height: 1.5;
+  background: var(--cms-surface);
+  color: var(--cms-text-muted);
+}
+
+/* ---- Shared page primitives (used by plugin pages and empty states) ------ */
+.cms-page {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--cms-space-6);
+  background: var(--cms-bg);
+}
+
+.cms-page-inner {
+  max-width: var(--cms-content-max);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cms-space-4);
+}
+
+.cms-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cms-space-3);
+}
+
+.cms-page-title {
+  margin: 0;
+  font-size: var(--cms-fs-xl);
+  line-height: var(--cms-lh-tight);
+  font-weight: var(--cms-fw-semibold);
+  color: var(--cms-text);
+}
+
+.cms-page-subtitle {
+  margin: var(--cms-space-1) 0 0;
+  color: var(--cms-text-muted);
+  font-size: var(--cms-fs-base);
+}
+
+.cms-card {
+  background: var(--cms-surface);
+  border: 1px solid var(--cms-border);
+  border-radius: var(--cms-radius-lg);
+  padding: var(--cms-space-5);
+}
+
+.cms-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--cms-space-2);
+  padding: var(--cms-space-10) var(--cms-space-6);
+  color: var(--cms-text-muted);
+}
+
+.cms-empty .cms-empty-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--cms-radius-pill);
+  background: var(--cms-surface-2);
+  color: var(--cms-text-muted);
+}
+
+.cms-empty .cms-empty-title {
+  margin: 0;
+  font-size: var(--cms-fs-lg);
+  font-weight: var(--cms-fw-semibold);
+  color: var(--cms-text);
+}
+
+.cms-empty .cms-empty-text {
+  margin: 0;
+  max-width: 44ch;
+}
+
+@media (max-width: 599.98px) {
+  .cms-page {
+    padding: var(--cms-space-4);
+  }
+}
+
+/* ---- Shared toolbar rows (list and table views look the same) ------------------ */
+.cms-toolbar {
+  flex: 0 0 auto;
+  background: var(--cms-surface);
+  border-bottom: 1px solid var(--cms-border);
+}
+
+.cms-toolbar .search {
+  padding: var(--cms-space-3) var(--cms-space-4);
+  gap: var(--cms-space-2);
+}
+
+.cms-toolbar-controls {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--cms-space-2);
+  padding: var(--cms-space-2) var(--cms-space-3);
+  background: var(--cms-surface);
+  border-bottom: 1px solid var(--cms-border);
+}
+
+/* ---- Ghost icon button (row actions, copy id, column menu): 28px, 44px on touch ------ */
+.cms-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--cms-radius-sm);
+  background: transparent;
+  color: var(--cms-text-muted);
+  cursor: pointer;
+  transition: background-color var(--cms-motion-fast) var(--cms-ease), color var(--cms-motion-fast) var(--cms-ease);
+}
+
+.cms-icon-btn:hover:not(:disabled) {
+  background: var(--cms-overlay-hover);
+  color: var(--cms-text);
+}
+
+.cms-icon-btn.danger:hover:not(:disabled) {
+  background: var(--cms-error-soft);
+  color: var(--cms-error);
+}
+
+.cms-icon-btn:disabled {
+  color: var(--cms-text-muted);
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.cms-icon-btn:focus-visible {
+  outline: 2px solid var(--cms-focus-ring);
+  outline-offset: -2px;
+}
+
+@media (pointer: coarse) {
+  .cms-icon-btn {
+    width: var(--cms-touch-target);
+    height: var(--cms-touch-target);
+  }
+}
+
+/* ---- Native checkbox used in tables and menus ------------------------------------ */
+.cms-check {
+  appearance: none;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1px solid var(--cms-border-strong);
+  border-radius: var(--cms-radius-xs);
+  background: var(--cms-surface) center / 12px no-repeat;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: background-color var(--cms-motion-fast) var(--cms-ease), border-color var(--cms-motion-fast) var(--cms-ease);
+}
+
+.cms-check:hover {
+  border-color: var(--cms-primary);
+}
+
+.cms-check:checked,
+.cms-check:indeterminate {
+  border-color: var(--cms-primary);
+  background-color: var(--cms-primary);
+}
+
+.cms-check:checked {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.5l2.5 2.5 4.5-5.5' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.cms-check:indeterminate {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6h6' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+.cms-check:focus-visible {
+  outline: 2px solid var(--cms-focus-ring);
+  outline-offset: 1px;
+}
+
+.cms-check:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

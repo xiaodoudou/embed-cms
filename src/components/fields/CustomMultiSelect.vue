@@ -15,7 +15,7 @@
       @update:focused="onFieldFocus"
     >
       <template #prepend>
-        <field-label :schema="schema" :label="getLabel()" />
+        <field-label :schema="schema" :disabled="disabled" :label="getLabel()" />
         <span v-if="getSelectOpt('multiple') && selectedCount > 0" class="selected-count" aria-live="polite">{{ $filters.translate('TL_N_SELECTED', { num: selectedCount }) }}</span>
         <v-btn v-if="schema.listBox" variant="tonal" size="small" rounded elevation="0" @click="onChangeSelectAll">{{ $filters.translate(allOptionsSelected() ? 'TL_DESELECT_ALL' : 'TL_SELECT_ALL') }}</v-btn>
       </template>
@@ -37,9 +37,6 @@
       </template>
       <template #no-data>
         <v-list-item density="compact" :title="$filters.translate('TL_NO_MATCHES')" class="option-empty" />
-      </template>
-      <template v-if="schema.readonly" #append-inner>
-        <v-icon class="cms-field-lock" size="16" icon="$lockOutline" :title="$filters.translate('TL_READ_ONLY')" />
       </template>
     </v-autocomplete>
     <div v-if="showHint()" class="help-block">

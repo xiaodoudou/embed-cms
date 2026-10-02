@@ -26,15 +26,15 @@
 <script>
   import pAll from 'p-all'
   import _ from 'lodash'
-  import RecordNameHelper from '@c/RecordNameHelper'
-  import AbstractEditorView from '@c/AbstractEditorView'
+  import RecordName from '@m/RecordName'
+  import AbstractEditorView from '@m/AbstractEditorView'
   import TranslateService from '@s/TranslateService'
   import Notification from '@m/Notification'
   import RequestService from '@s/RequestService'
   import { getRecordLabel } from '@u/recordLabel'
 
   export default {
-    mixins: [RecordNameHelper, AbstractEditorView, Notification],
+    mixins: [RecordName, AbstractEditorView, Notification],
     props: {
       resource: { type: Object, default: () => {} },
       locale: { type: String, default: 'enUS' },

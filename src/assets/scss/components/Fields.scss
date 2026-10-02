@@ -43,7 +43,9 @@
   margin-top: var(--cms-space-1);
   color: var(--cms-text-muted);
   font-size: var(--cms-fs-sm);
-  line-height: var(--cms-lh-base);
+  // a whole number of pixels (13px x 1.5 = 19.5px): a half pixel per help text shifts every field below it to a fractional
+  // position, where Chromium sometimes paints the 1px border of the field cut
+  line-height: 1.25rem;
   font-weight: var(--cms-fw-regular);
   filter: none;
 }

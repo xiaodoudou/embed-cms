@@ -7,7 +7,7 @@
       :variant="getVariant()" :flat="get('flat')" :rounded="get('rounded')" :density="get('density')" :disabled="disabled" :readonly="get('readonly')" clearable
       @update:model-value="onChangeData" @update:focused="onFieldFocus" @paste="onPaste"
     >
-      <template #prepend><field-label :schema="schema" /></template>
+      <template #prepend><field-label :schema="schema" :disabled="disabled" /></template>
       <template #label />
       <template #chip="{ props, item }">
         <v-chip

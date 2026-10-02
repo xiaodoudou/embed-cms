@@ -17,7 +17,7 @@
   align-self: stretch;
 
   .record-list-top-bar .search {
-    // resource selector and search share the toolbar look of the table view (see .cms-toolbar in base.css)
+    // resource selector and search share the toolbar look of the table view (see .cms-toolbar in base.scss)
     min-width: 0;
   }
 
@@ -86,15 +86,18 @@
     padding-right: 28px;
   }
 
-  // compact rows show the id instead of the meta line while selected (it is always in the tooltip)
-  .meta:has(.id-inline) > :not(.id-inline) {
-    display: none;
-  }
-
-  .id-inline {
+  // compact rows keep the meta line on one line: id and time, the id is cut when it does not fit
+  &.compact .meta {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  // the id in place of the author, in the flow of the meta line
+  .id.id-lead {
+    display: inline;
+    width: auto;
+    padding-right: 0;
   }
 
   .tooltip-id {
@@ -226,15 +229,46 @@
     }
   }
 
+  // compact: plain rows, not cards. Full width, no radius, no border around, a hairline between two rows; the selected row has the
+  // soft fill and a bar on its left edge, a hovered one the surface tint
   &.compact .records .item {
     height: var(--cms-list-row-compact);
+    padding: 0;
   }
 
-  // compact: 2px above and below each card instead of 4px, and no vertical padding inside it
   &.compact .records .item .item-info {
-    height: calc(var(--cms-list-row-compact) - var(--cms-space-1));
+    height: 100%;
     align-items: center;
     padding-block: 0;
+    border: 0;
+    border-bottom: 1px solid var(--cms-border);
+    border-left: 3px solid transparent;
+    border-radius: 0;
+    background-color: var(--cms-surface);
+  }
+
+  // every other row is tinted, the others are the surface colour (the scroller recycles its rows, so the position comes from the index, not from :nth-child)
+  &.compact .records .item.alt .item-info {
+    background-color: var(--cms-surface-2);
+  }
+
+  &.compact .records .item:hover .item-info {
+    background-color: var(--cms-surface-3);
+  }
+
+  &.compact .records .item.selected .item-info {
+    background-color: $sidebar-records-list-item-background-selected;
+    border-left-color: var(--cms-primary);
+    border-left-width: 3px;
+    box-shadow: none;
+  }
+
+  &.compact .records .item.frozen .item-info {
+    background-color: $sidebar-records-list-item-background-disabled;
+  }
+
+  &.compact .records .item:focus-visible .item-info {
+    outline-offset: -2px;
   }
 
   .badge-readonly {
@@ -363,8 +397,28 @@
   border: 1px solid var(--cms-border-strong);
   border-radius: var(--cms-radius-md);
   background-color: $sidebar-toggle-view-mode-background;
+  position: relative;
+
+  // the selection is one tile that slides under the two buttons: a click on either button switches to the other side
+  &::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--cms-radius-sm);
+    background-color: var(--cms-primary-soft);
+    transition: transform var(--cms-motion-base, 200ms) var(--cms-ease);
+    pointer-events: none;
+  }
+
+  &[data-pos='1']::before {
+    transform: translateX(34px);
+  }
 
   .toggle-mode-btn {
+    position: relative;
     display: inline-grid;
     place-items: center;
     width: 32px;
@@ -382,7 +436,7 @@
     &.selected,
     &[aria-pressed='true'] {
       color: $sidebar-records-list-delete-icon-selected-color;
-      background-color: var(--cms-primary-soft);
+      background-color: transparent;
     }
   }
 }

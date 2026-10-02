@@ -1,8 +1,8 @@
-// SCSS aliases for the design tokens defined in src/styles/tokens.css.
+// SCSS aliases for the design tokens defined in src/styles/tokens.scss.
 //
 // The values live in CSS custom properties (so they switch with the light/dark
 // theme at runtime). This file only gives them SCSS names so that component
-// styles can `@use` them. To re-theme, edit tokens.css, not this file.
+// styles can `@use` them. To re-theme, edit tokens.scss, not this file.
 
 // ---- Core tokens -----------------------------------------------------------
 $cms-bg: var(--cms-bg);

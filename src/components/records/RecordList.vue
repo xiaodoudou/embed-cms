@@ -15,11 +15,11 @@
     </div>
     <template v-if="maxCount != 1">
       <div v-if="hasEditableRecords()" class="records-top-bar cms-toolbar-controls">
-        <div class="toggle-view-mode" role="group" :aria-label="$filters.translate('TL_VIEW')">
-          <button type="button" class="toggle-mode-btn" :aria-pressed="!multiselect ? 'true' : 'false'" :aria-label="$filters.translate('TL_EDIT_MODE')" :title="$filters.translate('TL_EDIT_MODE')" @click="multiselect && toggleViewMode()">
+        <div class="toggle-view-mode" role="group" :data-pos="multiselect ? 1 : 0" :aria-label="$filters.translate('TL_VIEW')">
+          <button type="button" class="toggle-mode-btn" :aria-pressed="!multiselect ? 'true' : 'false'" :aria-label="$filters.translate('TL_EDIT_MODE')" :title="$filters.translate('TL_EDIT_MODE')" @click="toggleViewMode()">
             <v-icon size="small" icon="$noteEditOutline" />
           </button>
-          <button type="button" class="toggle-mode-btn" :aria-pressed="multiselect ? 'true' : 'false'" :aria-label="$filters.translate('TL_SELECT_MODE')" :title="$filters.translate('TL_SELECT_MODE')" @click="!multiselect && toggleViewMode()">
+          <button type="button" class="toggle-mode-btn" :aria-pressed="multiselect ? 'true' : 'false'" :aria-label="$filters.translate('TL_SELECT_MODE')" :title="$filters.translate('TL_SELECT_MODE')" @click="toggleViewMode()">
             <v-icon size="small" icon="$formatListChecks" />
           </button>
         </div>
@@ -27,12 +27,14 @@
           <button type="button" class="multiselect-action" :disabled="allRecordsSelected()" @click="onClickSelectAll">{{ $filters.translate('TL_SELECT_ALL') }}</button>
           <button type="button" class="multiselect-action" :disabled="multiselectItems.length === 0" @click="onClickDeselectAll">{{ $filters.translate('TL_DESELECT_ALL') }}</button>
         </div>
-        <button
-          v-if="!multiselect" type="button" class="filter-chip" :class="{active: onlyMine}" :aria-pressed="onlyMine ? 'true' : 'false'"
-          @click="onlyMine = !onlyMine"
-        >
-          {{ $filters.translate('TL_ONLY_MINE') }}
-        </button>
+        <div v-if="!multiselect" class="toggle-view-mode toggle-owner" role="group" :data-pos="onlyMine ? 1 : 0" :aria-label="$filters.translate('TL_ONLY_MINE')">
+          <button type="button" class="toggle-mode-btn" :aria-pressed="!onlyMine ? 'true' : 'false'" :aria-label="$filters.translate('TL_ALL_RECORDS')" :title="$filters.translate('TL_ALL_RECORDS')" @click="onlyMine = !onlyMine">
+            <v-icon size="small" icon="$accountMultipleOutline" />
+          </button>
+          <button type="button" class="toggle-mode-btn" :aria-pressed="onlyMine ? 'true' : 'false'" :aria-label="$filters.translate('TL_ONLY_MINE')" :title="$filters.translate('TL_ONLY_MINE')" @click="onlyMine = !onlyMine">
+            <v-icon size="small" icon="$accountOutline" />
+          </button>
+        </div>
         <button
           v-if="!multiselect" type="button" class="cms-icon-btn density-btn" :aria-pressed="isCompact ? 'true' : 'false'"
           :aria-label="$filters.translate('TL_COMPACT_ROWS')" :title="$filters.translate('TL_COMPACT_ROWS')" @click="toggleDensity"
@@ -67,9 +69,9 @@
           <h2 class="cms-empty-title">{{ $filters.translate(search ? 'TL_NO_RESULTS' : 'TL_NO_RECORDS') }}</h2>
           <p class="cms-empty-text">{{ $filters.translate(search ? 'TL_NO_RESULTS_HINT' : 'TL_NO_RECORDS_HINT') }}</p>
         </div>
-        <RecycleScroller v-slot="{ item }" ref="scroller" class="list" role="listbox" :items="filteredList || []" :item-size="itemSize" key-field="_id" :aria-label="$filters.translate('TL_RECORDS')">
+        <RecycleScroller v-slot="{ item, index }" ref="scroller" class="list" role="listbox" :items="filteredList || []" :item-size="itemSize" key-field="_id" :aria-label="$filters.translate('TL_RECORDS')">
           <div
-            class="item" :class="{selected: isItemSelected(item), frozen:!item._local}" :data-id="item._id" role="option" tabindex="0" :aria-selected="isItemSelected(item) ? 'true' : 'false'"
+            class="item" :class="{selected: isItemSelected(item), frozen:!item._local, alt: index % 2 === 1}" :data-id="item._id" role="option" tabindex="0" :aria-selected="isItemSelected(item) ? 'true' : 'false'"
             @click.exact="select($event, item)" @click.shift="selectTo(item)" @click.ctrl="selectTo(item, true)"
             @keydown.enter.self.prevent="select($event, item)" @keydown.space.self.prevent="select($event, item)" @keydown.c.self.exact="copyIdToClipboard(item._id)"
           >
@@ -88,12 +90,13 @@
                 </div>
                 <div class="meta">
                   <v-icon v-if="item._id && !item._local" class="meta-lock" size="12" icon="$lockOutline" role="img" :aria-label="$filters.translate('TL_READ_ONLY')" :title="$filters.translate('TL_READ_ONLY')" />
-                  <span class="update">{{ $filters.translate('TL_UPDATED_BY', {user: getUpdatedBy(item)}) }}</span>
+                  <span v-if="!hidesAuthor(item) || !item._id" class="update">{{ $filters.translate('TL_UPDATED_BY', {user: getUpdatedBy(item)}) }}</span>
+                  <!-- compact rows: the id takes the place of the author when only the records of the person are shown (it is known), and on the selected row -->
+                  <span v-if="isCompact && item._id && hidesAuthor(item)" class="id id-lead" v-html="renderBaseOnSearch(item._id)" />
                   <template v-if="item._id">
-                    <span class="separator" aria-hidden="true"> &middot; </span>
+                    <span v-if="!hidesAuthor(item) || isCompact" class="separator" aria-hidden="true"> &middot; </span>
                     <span class="time-ago">{{ getTimeAgo(item) }}</span>
                   </template>
-                  <span v-if="isCompact && item._id && isItemSelected(item)" class="id id-inline" v-html="renderBaseOnSearch(item._id)" />
                 </div>
                 <div v-if="!isCompact && item._id" class="id" v-html="renderBaseOnSearch(item._id)" />
               </div>
@@ -121,9 +124,9 @@
   import NotificationsService from '@s/NotificationsService'
   import LoginService from '@s/LoginService'
 
-  import RecordNameHelper from './RecordNameHelper'
-  import SearchField from '@c/SearchField.vue'
-  import ResourceSelector from '@c/ResourceSelector.vue'
+  import RecordName from '@m/RecordName'
+  import SearchField from '@c/records/SearchField.vue'
+  import ResourceSelector from '@c/records/ResourceSelector.vue'
   import { readChoice, writePreference } from '@u/preferences'
   import sift from 'sift'
   import JSON5 from 'json5'
@@ -133,7 +136,7 @@
 
   export default {
     components: { SearchField, ResourceSelector },
-    mixins: [Notification, RecordNameHelper],
+    mixins: [Notification, RecordName],
     props: {
       selectResourceCallback: { type: Function, default: () => {} },
       list: { type: [Array, Boolean], default: () => [] },
@@ -200,7 +203,7 @@
           fields = [_.first(this.resource.schema)]
         }
         const me = _.get(LoginService, 'user.username', false)
-        const source = this.onlyMine && me ? _.filter(this.list, (item) => this.getUpdatedBy(item) === me) : this.list
+        const source = this.onlyMine && me ? _.filter(this.list, (item) => this.getUpdatedBy(item) === me || this.getCreatedBy(item) === me) : this.list
         _.each(source, item => item._searchable = { id: false, keyFields: false, query: false })
         if (this.sift.isQuery) {
           return _.each(source.filter(sift(this.query)), item => item._searchable.query = true)
@@ -330,8 +333,16 @@
         this.density = this.isCompact ? 'comfortable' : 'compact'
         writePreference('list.density', this.density)
       },
+      // the meta line leaves the author out: all the records shown are the person's, or it is the id of the selected compact row that comes first
+      hidesAuthor (item) {
+        return this.onlyMine || (this.isCompact && this.isItemSelected(item))
+      },
       getUpdatedBy(item) {
         return _.last(_.get(item, '_updatedBy', '~API').split('~'))
+      },
+      // records from before _createdBy existed have none: they count by their last editor only
+      getCreatedBy(item) {
+        return _.last(_.get(item, '_createdBy', '').split('~')) || false
       },
       sanitizeHtml,
       renderBaseOnSearch(value) {

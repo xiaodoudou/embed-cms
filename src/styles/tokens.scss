@@ -59,7 +59,7 @@
   --cms-list-width: 324px;
   --cms-content-max: 1200px;
   --cms-touch-target: 44px;
-  /* Navigation density: row heights of the resources column (touch devices get --cms-touch-target in base.css) */
+  /* Navigation density: row heights of the resources column (touch devices get --cms-touch-target in base.scss) */
   --cms-nav-group-row: 30px;
   --cms-nav-item-row: 28px;
 
@@ -90,11 +90,16 @@
   /* Form controls: one height for every input type */
   --cms-field-h: 40px;
 
-  /* Motion (zeroed for prefers-reduced-motion in base.css) */
+  /* Motion (zeroed for prefers-reduced-motion in base.scss) */
   --cms-motion-fast: 120ms;
   --cms-motion-nav: 160ms;
   --cms-motion-base: 200ms;
   --cms-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Breakpoints, for a plugin's own scripts and media queries (a custom property cannot be used inside a media query: the kit repeats the numbers) */
+  --cms-bp-sm: 600px;
+  --cms-bp-md: 768px;
+  --cms-bp-lg: 1024px;
 
   /* Z layers */
   --cms-z-appbar: 1000;
@@ -171,6 +176,18 @@
   --cms-shadow-3: 0 16px 40px rgba(16, 24, 40, 0.2);
 
   --cms-code-bg: #f1f3f8;
+  /* the code field (CodeMirror): follows the theme, unlike the always dark terminal and rich text code block */
+  --cms-cm-bg: #f1f3f8;
+  --cms-cm-text: #1b2030;
+  --cms-cm-gutter-text: #5d6579;
+  --cms-cm-active-line: rgba(63, 70, 180, 0.07);
+  --cms-cm-selection: rgba(63, 70, 180, 0.22);
+  --cms-cm-comment: #5d6579;
+  --cms-cm-keyword: #a1237d;
+  --cms-cm-string: #0b5f2a;
+  --cms-cm-number: #9a4b00;
+  --cms-cm-property: #0b5aa8;
+  --cms-cm-name: #6b3fb3;
   --cms-overlay-hover: rgba(22, 27, 38, 0.06); /* hover on chips and cards */
   --cms-overlay-strong: rgba(22, 27, 38, 0.24); /* hover on filled chips */
   --cms-scrollbar-thumb: #b4bbcd; /* thin scrollbars: 2.0:1 on surface, decorative (the content is the affordance) */
@@ -260,6 +277,17 @@
   --cms-shadow-3: 0 16px 40px rgba(0, 0, 0, 0.6);
 
   --cms-code-bg: #12151b;
+  --cms-cm-bg: #12151b;
+  --cms-cm-text: #f1f3f8;
+  --cms-cm-gutter-text: #7a849c;
+  --cms-cm-active-line: rgba(255, 255, 255, 0.06);
+  --cms-cm-selection: rgba(150, 160, 255, 0.3);
+  --cms-cm-comment: #9aa5b8;
+  --cms-cm-keyword: #ff79c6;
+  --cms-cm-string: #faf594;
+  --cms-cm-number: #fbbc88;
+  --cms-cm-property: #66d9ef;
+  --cms-cm-name: #50fa7b;
   --cms-overlay-hover: rgba(255, 255, 255, 0.08);
   --cms-overlay-strong: rgba(255, 255, 255, 0.22);
   --cms-scrollbar-thumb: #4a5266;

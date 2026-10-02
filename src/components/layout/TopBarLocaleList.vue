@@ -4,12 +4,13 @@
       <v-icon icon="$chevronLeft" /> {{ $filters.translate("TL_BACK") }}
     </v-btn>
     <div
-      v-if="locales && locales.length > 0" class="locales" role="group" :aria-label="$filters.translate('TL_CONTENT_LANGUAGE')"
-      :title="$filters.translate('TL_LOCALE_LEGEND')"
+      v-if="locales && locales.length > 0" ref="group" class="locales" :class="{ready: indicatorReady}" role="group" :aria-label="$filters.translate('TL_CONTENT_LANGUAGE')"
+      :title="$filters.translate('TL_LOCALE_LEGEND')" @click.self="toggleLocale"
     >
+      <span class="locale-indicator" aria-hidden="true" :style="indicatorStyle" />
       <button
-        v-for="(item, i) in locales" :key="i" type="button" class="locale-btn" :class="{selected: item === locale}"
-        :aria-pressed="item === locale ? 'true' : 'false'" @click="selectLocale(item)"
+        v-for="(item, i) in locales" :key="i" ref="buttons" type="button" class="locale-btn" :class="{selected: item === locale}"
+        :aria-pressed="item === locale ? 'true' : 'false'" @click="onClickLocale(item)"
       >
         {{ getLocaleTranslation(item) }}
         <span
@@ -39,7 +40,59 @@
       dirtyLocales: { type: Array, default: () => [] },
       missing: { type: Object, default: () => ({}) }
     },
+    data () {
+      return { indicatorStyle: { opacity: 0 }, indicatorReady: false }
+    },
+    watch: {
+      locale () {
+        this.$nextTick(this.moveIndicator)
+      },
+      locales () {
+        this.$nextTick(this.moveIndicator)
+      },
+      // a dot or a count on a button changes its width
+      dirtyLocales () {
+        this.$nextTick(this.moveIndicator)
+      },
+      missing: {
+        deep: true,
+        handler () {
+          this.$nextTick(this.moveIndicator)
+        }
+      }
+    },
+    mounted () {
+      this.moveIndicator()
+      if (typeof ResizeObserver !== 'undefined' && this.$refs.group) {
+        this.resizeObserver = new ResizeObserver(() => this.moveIndicator())
+        this.resizeObserver.observe(this.$refs.group)
+      }
+      // the box appears where it belongs, then moves from there: no slide in from the corner on the first paint
+      requestAnimationFrame(() => {
+        this.indicatorReady = true
+      })
+    },
+    beforeUnmount () {
+      if (this.resizeObserver) {
+        this.resizeObserver.disconnect()
+      }
+    },
     methods: {
+      // the selected box is one element that slides and stretches to the selected button, whatever the number of languages
+      moveIndicator () {
+        const index = _.indexOf(this.locales, this.locale)
+        const button = _.get(this.$refs, ['buttons', index])
+        if (!button || index < 0) {
+          this.indicatorStyle = { opacity: 0 }
+          return
+        }
+        this.indicatorStyle = {
+          opacity: 1,
+          width: `${button.offsetWidth}px`,
+          height: `${button.offsetHeight}px`,
+          transform: `translate(${button.offsetLeft}px, ${button.offsetTop}px)`
+        }
+      },
       isDirty (locale) {
         return _.includes(this.dirtyLocales, locale)
       },
@@ -56,8 +109,18 @@
       getLocaleTranslation (locale) {
         return TranslateService.get('TL_' + locale.toUpperCase())
       },
+      // with two languages the switch is a toggle: a click on either button, or anywhere on the switch, goes to the other one
+      onClickLocale (locale) {
+        if (this.locales.length === 2) {
+          this.toggleLocale()
+        } else {
+          this.selectLocale(locale)
+        }
+      },
       toggleLocale () {
-        this.selectLocale(_.find(this.locales, (l) => l !== this.locale))
+        if (this.locales.length === 2) {
+          this.selectLocale(_.find(this.locales, (l) => l !== this.locale))
+        }
       }
     }
   }
@@ -72,6 +135,7 @@
   min-width: 0;
 
   .locales {
+    position: relative;
     display: inline-flex;
     flex-wrap: wrap;
     gap: 2px;
@@ -81,7 +145,23 @@
     background: var(--cms-surface-2);
   }
 
+  // the active locale is a white box with a primary outline, under the buttons; it moves and stretches to the selected one
+  .locale-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: var(--cms-radius-sm);
+    background: $locales-selected-background;
+    box-shadow: inset 0 0 0 1.5px var(--cms-primary), var(--cms-shadow-1);
+    pointer-events: none;
+  }
+
+  .locales.ready .locale-indicator {
+    transition: transform var(--cms-motion-base) var(--cms-ease), width var(--cms-motion-base) var(--cms-ease), height var(--cms-motion-base) var(--cms-ease), opacity var(--cms-motion-fast) var(--cms-ease);
+  }
+
   .locale-btn {
+    position: relative;
     min-width: 40px;
     height: 32px;
     padding: 0 var(--cms-space-3);
@@ -100,14 +180,13 @@
       background: var(--cms-surface-3);
     }
 
-    // the active locale is a white segment with a primary outline
+    // the box under the selected button is the indicator: the button itself only changes its text colour
     &.selected {
       color: $locales-selected-color;
-      background: $locales-selected-background;
-      box-shadow: inset 0 0 0 1.5px var(--cms-primary), var(--cms-shadow-1);
+      background: transparent;
 
       &:hover {
-        background: var(--cms-surface);
+        background: transparent;
       }
 
       .locale-dirty {

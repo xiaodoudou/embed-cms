@@ -1,6 +1,9 @@
 <template>
-  <div ref="wysiwygWrapper" class="wysiwyg-wrapper" :data-val="schema.required ? getVal() : 'not-required'">
-    <field-label :schema="schema" />
+  <div
+    ref="wysiwygWrapper" class="wysiwyg-wrapper" :class="{'is-readonly': schema.readonly, 'is-disabled': disabled || schema.disabled}"
+    :data-val="schema.required ? getVal() : 'not-required'"
+  >
+    <field-label :schema="schema" :disabled="disabled" />
     <div class="border-wrapper">
       <v-card v-if="editor" class="editor" rounded elevation="0">
         <tiptap-menu-bar class="editor__header" :class="{locked: isLocked()}" :editor="editor" :buttons="getButtons()" />
@@ -213,6 +216,29 @@
   .editor {
     background-color: $wysiwyg-editor-background;
     border-radius: 0 !important;
+  }
+  // read-only: tinted, no border, still selectable. disabled: the page colour, a dashed border, muted text. Like the other fields.
+  &.is-readonly .border-wrapper,
+  &.is-readonly .border-wrapper .editor,
+  &.is-readonly .border-wrapper .editor__header {
+    background-color: var(--cms-field-readonly-bg);
+  }
+  &.is-readonly .border-wrapper,
+  &.is-readonly .border-wrapper:hover {
+    border-color: transparent;
+  }
+  &.is-disabled .border-wrapper,
+  &.is-disabled .border-wrapper .editor,
+  &.is-disabled .border-wrapper .editor__header {
+    background-color: var(--cms-field-disabled-bg);
+  }
+  &.is-disabled .border-wrapper,
+  &.is-disabled .border-wrapper:hover {
+    border: 1px dashed var(--cms-border-strong);
+  }
+  &.is-disabled .editor-content {
+    color: var(--cms-text-muted);
+    cursor: not-allowed;
   }
   // a locked editor keeps its toolbar for orientation, but it does nothing
   .editor__header.locked {

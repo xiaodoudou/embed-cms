@@ -1,6 +1,6 @@
 /**
  * Applies a theme name ('light' | 'dark') to the document so that the CSS
- * tokens in src/styles/tokens.css switch for everything, including content
+ * tokens in src/styles/tokens.scss switch for everything, including content
  * teleported outside the Vuetify application root (menus, omnibar, dialogs).
  */
 export function applyThemeToDocument (name) {

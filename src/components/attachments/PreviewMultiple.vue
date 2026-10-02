@@ -17,7 +17,7 @@
 </template>
 
 <script>
-  import PreviewAttachment from '@c/PreviewAttachment'
+  import PreviewAttachment from '@c/attachments/PreviewAttachment.vue'
   import DragList from '@m/DragList'
 
   export default {

@@ -97,7 +97,7 @@
 <script>
   import _ from 'lodash'
   import TranslateService from '@s/TranslateService'
-  import TableCell from '@c/TableCell.vue'
+  import TableCell from '@c/records/TableCell.vue'
   import {
     distributeWidths, rowWindow, scrollTopForRow, moveFocus, selectionState, toggleAllIds, toggleId, selectRange, DENSITY_ROW_HEIGHT
   } from '@u/tableModel'

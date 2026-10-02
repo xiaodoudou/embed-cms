@@ -39,8 +39,8 @@
 <script>
   import _ from 'lodash'
 
-  import Loading from '@c/Loading.vue'
-  import BrandLogo from '@c/BrandLogo.vue'
+  import Loading from '@c/feedback/Loading.vue'
+  import BrandLogo from '@c/layout/BrandLogo.vue'
   import { applyThemeToDocument, pickTheme } from '@u/theme'
   import LoadingService from '@s/LoadingService'
   import ConfigService from '@s/ConfigService'

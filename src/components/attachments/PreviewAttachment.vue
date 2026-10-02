@@ -16,7 +16,7 @@
 
 <script>
   import _ from 'lodash'
-  import ShowAttachment from '@c/ShowAttachment.vue'
+  import ShowAttachment from '@c/attachments/ShowAttachment.vue'
   import Notification from '@m/Notification'
 
   export default {

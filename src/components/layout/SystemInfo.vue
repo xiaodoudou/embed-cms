@@ -79,7 +79,7 @@
   import Dayjs from 'dayjs'
   import relativeTime from 'dayjs/plugin/relativeTime'
   import LoginService from '@s/LoginService'
-  import ThemeSwitch from '@c/ThemeSwitch'
+  import ThemeSwitch from '@c/layout/ThemeSwitch.vue'
   import { useTheme } from 'vuetify'
   import { applyThemeToDocument } from '@u/theme'
 

@@ -1,6 +1,6 @@
 <template>
-  <div class="wrapper-color">
-    <field-label :schema="schema" />
+  <div class="wrapper-color" :class="{'is-readonly': schema.readonly, 'is-disabled': disabled || schema.disabled}">
+    <field-label :schema="schema" :disabled="disabled" />
     <v-color-picker
       v-if="options.model" ref="input" :key="schema.model + 'custom'" :model-value="color" variant="outlined" elevation="0"
       :dot-size="options.dotSize" :hide-canvas="options.hideCanvas" :hide-sliders="options.hideSliders" :hide-inputs="options.hideInputs"
@@ -79,6 +79,14 @@
     &:focus-within {
       border-color: var(--cms-primary);
     }
+  }
+  &.is-readonly .v-color-picker {
+    background: var(--cms-field-readonly-bg);
+    border-color: transparent;
+  }
+  &.is-disabled .v-color-picker {
+    background: var(--cms-field-disabled-bg);
+    border: 1px dashed var(--cms-border-strong);
   }
   .v-color-picker-edit__input input {
     border: 1px solid var(--cms-border-strong);

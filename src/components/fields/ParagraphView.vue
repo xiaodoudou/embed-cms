@@ -953,7 +953,7 @@
 .disabled {
   pointer-events: none;
 }
-// Add / remove buttons use the shared button system (base.css); only alignment lives here
+// Add / remove buttons use the shared button system (base.scss); only alignment lives here
 .add-new-item, .add-multiple-items {
   height: 40px;
 }

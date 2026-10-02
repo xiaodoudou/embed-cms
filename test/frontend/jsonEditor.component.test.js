@@ -262,4 +262,30 @@ describe('JsonEditor (object and list fields)', () => {
       await vi.waitFor(() => expect(openModal()).toBe(null))
     })
   })
+  describe('the constraints of the JSON schema', () => {
+    const verdict = async () => {
+      const input = wrapper.findComponent({ name: 'VInput' })
+      await input.vm.validate()
+      await wrapper.vm.$nextTick()
+      return input
+    }
+
+    it('block the save with a message, then follow the edits', async () => {
+      await editor({ type: 'object', properties: { count: { type: 'integer', minimum: 5, default: 1 }, title: { type: 'string', minLength: 1 } } })
+      expect(wrapper.vm.schemaRule()).toMatch(/count/)
+      let input = await verdict()
+      expect(input.classes()).toContain('v-input--error')
+      expect(wrapper.find('.schema-validity .v-messages').text()).toMatch(/count/)
+      change(inputOf('count'), '7')
+      change(inputOf('title'), 'Hello')
+      await vi.waitFor(() => expect(wrapper.vm.schemaRule()).toBe(true), { timeout: 3000 })
+      input = await verdict()
+      expect(input.classes()).not.toContain('v-input--error')
+    })
+
+    it('are not checked on a locked field', async () => {
+      await editor({ type: 'object', properties: { count: { type: 'integer', minimum: 5, default: 1 } } }, {}, { readonly: true })
+      expect(wrapper.vm.schemaRule()).toBe(true)
+    })
+  })
 })

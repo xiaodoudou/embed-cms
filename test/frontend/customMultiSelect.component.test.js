@@ -132,6 +132,6 @@ describe('CustomMultiSelect (select and multiselect)', () => {
   })
 
   it('is not editable when read-only', () => {
-    expect(select({ status: 'draft' }, { readonly: true }).get('input').attributes('readonly')).toBeDefined()
+    expect(select({ status: 'draft' }, { readonly: true }).get('input:not([type=hidden])').attributes('readonly')).toBeDefined()
   })
 })

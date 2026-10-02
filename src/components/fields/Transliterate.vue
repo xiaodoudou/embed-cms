@@ -16,7 +16,7 @@
       hide-details
       @update:model-value="onChangeData"
     >
-      <template #prepend><field-label :schema="schema" /></template>
+      <template #prepend><field-label :schema="schema" :disabled="disabled" /></template>
       <template #label />
     </v-text-field>
     <div v-if="showHint()" class="help-block">

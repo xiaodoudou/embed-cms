@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import UploadPanel from '@c/UploadPanel.vue'
+import UploadPanel from '@c/attachments/UploadPanel.vue'
 import UploadService from '@s/UploadService'
 import { mountComponent } from './helpers/mountField.js'
 

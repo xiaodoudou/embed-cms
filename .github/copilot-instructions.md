@@ -140,17 +140,17 @@ These rules apply to all projects unless overridden by project-specific instruct
 These rules provide deep context for the `embed-cms` repository.
 
 ### 3.1. Architecture Overview
-- **Core:** A flexible CMS built on Express.js. The main class is exported from `index.js`. Core data logic is in `lib/resource.js`.
-- **Storage:** Records go to a LevelDB folder per resource by default (`lib/db/leveldown/leveldbdown.js`; a resource that still has a `db.json` keeps it), or to jsondown, SQLite, MongoDB or PostgreSQL (`dbEngine.type`, see `docs/STORAGE.md`); attachments are plain files per resource (`lib/db/file_store.js`). See `docs/ARCHITECTURE.md`.
+- **Core:** A flexible CMS built on Express.js. The main class is exported from `index.js`. Core data logic is in `lib/Resource.js`.
+- **Storage:** Records go to a LevelDB folder per resource by default (`lib/db/local/leveldbDown.js`; a resource that still has a `db.json` keeps it), or to jsondown, SQLite, MongoDB or PostgreSQL (`dbEngine.type`, see `docs/operations/STORAGE.md`); attachments are plain files per resource (`lib/db/FileStore.js`). See `docs/contributing/ARCHITECTURE.md`.
 - **Plugins:** Features are modular and located in `lib/plugins/` (e.g., REST API, admin UI, authentication).
 - **Resources:** Data models are defined by schemas in `resources/*.js`. These schemas auto-generate the REST API and the admin UI.
 - **Frontend:** The admin panel is a Vue 3 application using the Vuetify component library, built with Vite.
 
 ### 3.2. Critical Files for Context
 - `index.js`: Main CMS class, configuration, and bootstrapping.
-- `lib/resource.js`: Core data operations (CRUD) and attachment handling.
+- `lib/Resource.js`: Core data operations (CRUD) and attachment handling.
 - `lib/plugins/rest/index.js`: REST API implementation.
-- `server.js`: Example server startup, database configuration.
+- `bin/cms.js`: the `cms` command (`npm start`), server startup.
 - `vite.config.js`: Frontend build and development server configuration.
 - `resources/`: Directory containing all resource schema definitions.
 

@@ -1,6 +1,6 @@
 <template>
   <div class="custom-checkbox" :class="{disabled: isDisabled, readonly: isReadonly}">
-    <field-label :schema="schema" />
+    <field-label :schema="schema" :disabled="disabled" />
     <div
       ref="input" class="switch" role="switch" :aria-checked="getValue() ? 'true' : 'false'" :aria-label="schema.label"
       :aria-readonly="isReadonly ? 'true' : undefined" :aria-disabled="isDisabled ? 'true' : undefined" :class="{active: getValue()}"
@@ -12,7 +12,6 @@
         <span class="label inactive">{{ $filters.translate('TL_NO') }}</span>
         <span class="label active">{{ $filters.translate('TL_YES') }}</span>
       </div>
-      <v-icon v-if="isReadonly" class="cms-field-lock lock" size="16" icon="$lockOutline" :title="$filters.translate('TL_READ_ONLY')" />
     </div>
     <div v-if="showHint()" class="help-block">
       <v-icon size="small" icon="$information" />
@@ -119,11 +118,6 @@
         color: var(--cms-text);
         .drag {
           background-color: var(--cms-text-muted);
-        }
-        .lock {
-          position: absolute;
-          right: -26px;
-          top: 8px;
         }
       }
       &.disabled .switch {

@@ -2,28 +2,19 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "baseUrl": "./",
     "jsx": "preserve",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowJs": true,
     "checkJs": false,
     "declaration": false,
     "paths": {
-      "@/*": [
-        "src/*",
-        "lib/*"
-      ],
-      "@s/*": ["src/services/*"],
-      "@c/*": ["src/components/*"],
-      "@v/*": ["src/views/*"],
-      "@f/*": ["src/filters/*"],
-      "@u/*": ["src/utils/*"],
-      "@l/*": ["src/lib/*"],
-      "@r/*": ["src/router/*"],
-      "@m/*": ["src/mixins/*"],
-      "@a/*": ["src/assets/*"],
-      "@static/*": ["src/static/*"],
-      "@p/*": ["src/plugins/*"]
+      "@s/*": ["./src/services/*"],
+      "@c/*": ["./src/components/*"],
+      "@f/*": ["./src/filters/*"],
+      "@u/*": ["./src/utils/*"],
+      "@m/*": ["./src/mixins/*"],
+      "@a/*": ["./src/assets/*"],
+      "@p/*": ["./src/plugins/*"]
     },
     "lib": [
       "esnext",

@@ -5,7 +5,7 @@ const request = require('supertest')
 const { expect } = require('chai')
 const { startApp, hardened, createUser } = require('../helpers/app')
 
-const IMAGE = path.join(__dirname, '..', 'man.jpg')
+const IMAGE = path.join(__dirname, '..', 'fixtures', 'man.jpg')
 const HTML = Buffer.from('<html><script>alert(document.domain)</script></html>')
 
 const UPLOAD_DIR = path.join(os.tmpdir(), 'embed-cms', 'uploads')

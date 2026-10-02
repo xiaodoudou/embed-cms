@@ -22,7 +22,7 @@ describe('CustomTextarea', () => {
   it('is read-only and says so when locked', () => {
     const wrapper = mountField(CustomTextarea, { model: { summary: 'x' }, schema: { model: 'summary', readonly: true } })
     expect(wrapper.get('textarea').attributes('readonly')).toBeDefined()
-    expect(wrapper.find('.cms-field-lock').exists()).toBe(true)
+    expect(wrapper.find('.cms-field-readonly').exists()).toBe(true)
   })
 
   it('is disabled when disabled', () => {

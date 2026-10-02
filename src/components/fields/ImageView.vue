@@ -1,7 +1,7 @@
 <template>
   <div class="image-view" :class="{'full-width': !(schema.width && schema.height)}">
     <form enctype="multipart/form-data">
-      <field-label :schema="schema" />
+      <field-label :schema="schema" :disabled="disabled" />
       <v-card
         v-if="!isFieldDisabled()"
         :theme="theme"
@@ -12,7 +12,7 @@
           ref="input"
           :theme="theme"
           variant="solo-filled" :rules="getRules()" hide-details="auto" prepend-icon="" prepend-inner-icon="$upload" flat single-line
-          :placeholder="getPlaceholder()" :clearable="false" :label="getPlaceholder()"
+          :placeholder="getPlaceholder()" :clearable="false"
           density="compact" rounded persistent-placeholder :multiple="isForMultipleImages()" :accept="schema.accept"
           @change="onUploadChanged" @update:focused="onFieldFocus"
         >
@@ -32,8 +32,8 @@
   import _ from 'lodash'
   import AbstractField from '@m/AbstractField'
   import FileInputField from '@m/FileInputField'
-  import PreviewMultiple from '@c/PreviewMultiple'
-  import FileInputErrors from '@c/FileInputErrors'
+  import PreviewMultiple from '@c/attachments/PreviewMultiple.vue'
+  import FileInputErrors from '@c/attachments/FileInputErrors.vue'
 
   export default {
     components: {PreviewMultiple, FileInputErrors},

@@ -2,7 +2,7 @@
 @use "./variables.scss" as vars;
 
 // Deprecated: the UI used to scale text with the viewport width. Sizes are now
-// fixed rem/px tokens (see src/styles/tokens.css); this stays as an identity
+// fixed rem/px tokens (see src/styles/tokens.scss); this stays as an identity
 // function so older call sites keep compiling.
 @function vw($px-vw, $base-vw: 1440px) {
   @return $px-vw;
@@ -141,5 +141,5 @@
   }
 }
 
-// Scrollbars are styled once for every element in src/styles/base.css (thin, palette coloured, no arrows). Do not set
+// Scrollbars are styled once for every element in src/styles/base.scss (thin, palette coloured, no arrows). Do not set
 // `scrollbar-width` on an element: in Chromium it switches that styling off and brings back the native scrollbar with its buttons.

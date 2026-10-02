@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import RecordList from '@c/RecordList.vue'
+import RecordList from '@c/records/RecordList.vue'
 import { mountComponent } from './helpers/mountField.js'
+import LoginService from '@s/LoginService'
 
 // The real virtual scroller renders only what fits the (absent) layout: this one renders every item through the same slot.
 const RecycleScroller = {
   props: ['items'],
-  template: '<div class="list"><template v-for="item in items" :key="item._id"><slot :item="item" /></template></div>'
+  template: '<div class="list"><template v-for="(item, index) in items" :key="item._id"><slot :item="item" :index="index" /></template></div>'
 }
 // the shortcut directive of vue3-shortkey is registered by the app
 const shortkey = { mounted () {}, updated () {} }
@@ -138,9 +139,14 @@ describe('RecordList', () => {
 
   it('shows only the records of the person when "only mine" is on', async () => {
     const wrapper = list()
-    expect(wrapper.get('button.filter-chip').attributes('aria-pressed')).toBe('false')
-    await wrapper.get('button.filter-chip').trigger('click')
-    expect(wrapper.get('button.filter-chip').attributes('aria-pressed')).toBe('true')
+    const [all, mine] = wrapper.findAll('.toggle-owner .toggle-mode-btn')
+    expect(all.attributes('aria-pressed')).toBe('true')
+    expect(mine.attributes('aria-pressed')).toBe('false')
+    await mine.trigger('click')
+    expect(all.attributes('aria-pressed')).toBe('false')
+    expect(mine.attributes('aria-pressed')).toBe('true')
+    await all.trigger('click')
+    expect(all.attributes('aria-pressed')).toBe('true')
   })
 
   it('switches to select mode and back, telling the parent', async () => {
@@ -167,5 +173,66 @@ describe('RecordList', () => {
     await wrapper.get('button.density-btn').trigger('click')
     expect(wrapper.get('button.density-btn').attributes('aria-pressed')).toBe('true')
     expect(wrapper.classes()).toContain('compact')
+  })
+
+  it('marks every other row, so that the compact rows can alternate their colour', () => {
+    const rows = items(list({ list: [{ ...records[0], _id: 'a' }, { ...records[0], _id: 'b' }, { ...records[0], _id: 'c' }] }))
+    expect(rows.map((row) => row.classes().includes('alt'))).toEqual([false, true, false])
+  })
+
+  it('shows under "me" the records the person created, even when someone else changed them last, and the older ones they last changed', async () => {
+    LoginService.user = { username: 'localAdmin', group: 'admins' }
+    try {
+      const wrapper = list({
+        list: [
+          { _id: 'a', name: 'Created by me', _local: true, _createdBy: 'admins~localAdmin', _updatedBy: 'admins~editor' },
+          { _id: 'b', name: 'Created by the editor', _local: true, _createdBy: 'admins~editor', _updatedBy: 'admins~editor' },
+          { _id: 'c', name: 'Older, last changed by me', _local: true, _updatedBy: 'admins~localAdmin' }
+        ]
+      })
+      await wrapper.findAll('.toggle-owner .toggle-mode-btn')[1].trigger('click')
+      const names = items(wrapper).map((row) => row.find('.main').text())
+      expect(names.sort()).toEqual(['Created by me', 'Older, last changed by me'])
+    } finally {
+      LoginService.user = undefined
+    }
+  })
+
+  it('leaves out who updated a record when only the records of the person are shown', async () => {
+    const wrapper = list()
+    expect(items(wrapper)[0].find('.update').exists()).toBe(true)
+    await wrapper.findAll('.toggle-owner .toggle-mode-btn')[1].trigger('click')
+    expect(items(wrapper)[0].find('.update').exists()).toBe(false)
+    expect(items(wrapper)[0].find('.separator').exists()).toBe(false)
+    expect(items(wrapper)[0].find('.time-ago').exists()).toBe(true)
+  })
+
+  it('shows the id in place of the author on compact rows when only the records of the person are shown', async () => {
+    const wrapper = list()
+    await wrapper.get('button.density-btn').trigger('click')
+    expect(items(wrapper)[0].find('.id-lead').exists()).toBe(false)
+    await wrapper.findAll('.toggle-owner .toggle-mode-btn')[1].trigger('click')
+    expect(items(wrapper)[0].find('.id-lead').text()).toBe(records[0]._id)
+    expect(items(wrapper)[0].find('.update').exists()).toBe(false)
+  })
+
+  it('shows the id and the time on the selected compact row', async () => {
+    const wrapper = list({ selectedItem: records[0] })
+    await wrapper.get('button.density-btn').trigger('click')
+    const [selected, other] = items(wrapper)
+    expect(selected.find('.id-lead').exists()).toBe(true)
+    expect(selected.find('.time-ago').exists()).toBe(true)
+    expect(other.find('.id-lead').exists()).toBe(false)
+    expect(other.find('.update').exists()).toBe(true)
+  })
+
+  it('switches the two toggles whichever of their buttons is clicked', async () => {
+    const wrapper = list()
+    const [, , all, mine] = wrapper.findAll('.toggle-mode-btn')
+    await all.trigger('click')
+    expect(wrapper.get('.toggle-owner').attributes('data-pos')).toBe('1')
+    expect(mine.attributes('aria-pressed')).toBe('true')
+    await mine.trigger('click')
+    expect(wrapper.get('.toggle-owner').attributes('data-pos')).toBe('0')
   })
 })

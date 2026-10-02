@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import NavRail from '@c/NavRail.vue'
+import NavRail from '@c/layout/NavRail.vue'
 import NotificationsService from '@s/NotificationsService'
 import ResourceService from '@s/ResourceService'
 import { mountComponent } from './helpers/mountField.js'

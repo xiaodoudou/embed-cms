@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import UpdatesNotifier from '@c/UpdatesNotifier.vue'
+import UpdatesNotifier from '@c/feedback/UpdatesNotifier.vue'
 import LoginService from '@s/LoginService'
 import { mountComponent } from './helpers/mountField.js'
 

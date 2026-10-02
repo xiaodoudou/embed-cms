@@ -1,0 +1,44 @@
+const CMS = require('../../')
+const options = {
+  ns: [],
+  resources: './test/fixtures/resources',
+  data: './test/data',
+  autoload: true,
+  disableDarkMode: true,
+  mode: 'normal',
+  mid: '42424242',
+  disableREST: false,
+  disableAdmin: false,
+  mountPath: '/',
+  disableJwtLogin: false,
+  disableAuthentication: false,
+  wsRecordUpdates: true,
+  auth: {
+    secret: '$C&F)J@NcRfUjXn2r5u8x/A?D*G-KaPd'
+  },
+  disableAnonymous: false,
+  session: {
+    secret: 'MdjIwFRi9ezT',
+    resave: true,
+    saveUninitialized: true
+  },
+  syslog: {
+    method: 'file',
+    path: './syslog.log'
+  },
+  defaultPaging: 12,
+  test: true,
+  replication: {
+    peers: [9991, 9992],
+    peersByResource: {
+      articles: ['http://localhost:9991'],
+      authors: ['http://localhost:9992']
+    }
+  }
+}
+
+function getCMSInstance(customOptions = {}) {
+  return new CMS({ ...options, ...customOptions })
+}
+
+module.exports = { getCMSInstance, options }

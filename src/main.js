@@ -13,15 +13,18 @@ import '@vuepic/vue-datepicker/dist/main.css'
 import { VueDraggableNext } from 'vue-draggable-next'
 import vuetify from './vuetify.js'
 import '@p/js/main.js'
-import './styles/tokens.css'
-import './styles/base.css'
+import './styles/reset.scss'
+import './styles/tokens.scss'
+import './styles/base.scss'
+import './styles/primitives.scss'
+import './styles/kit.scss'
 import '@a/scss/main.scss'
 import '@p/scss/main.scss'
 
 // Global components
 import App from '@c/App.vue'
 import LoginApp from '@c/LoginApp.vue'
-import CustomForm from '@c/CustomForm.vue'
+import CustomForm from '@c/records/CustomForm.vue'
 
 // Pages
 import PluginPage from '@c/pages/PluginPage.vue'
@@ -49,13 +52,14 @@ import CustomInputTag from '@c/fields/CustomInputTag.vue'
 import Transliterate from '@c/fields/Transliterate.vue'
 import Group from '@c/fields/Group.vue'
 
-import Loading from './modules/Loading'
+import Loading from './utils/loadingPlugin'
 
-import TranslateFilter from '@f/Translate'
-import TruncateFilter from '@f/Truncate'
+import TranslateFilter from '@f/translate'
+import TruncateFilter from '@f/truncate'
 import TranslateService from '@s/TranslateService'
 import RequestService from '@s/RequestService.js'
 import DialogService from '@s/DialogService.js'
+import { host } from '@s/HostService'
 import { pluginPages, replicationEnabled } from '@u/pluginPages'
 
 const router = createRouter({
@@ -72,6 +76,10 @@ const app = createApp({
     return h(mountEl.getAttribute('type') === 'login' ? LoginApp : App)
   }
 })
+// the host: what a plugin of the admin may rely on (window.embedCms.host, useAdmin(), this.$admin)
+app.host = host.start()
+app.provide('host', host)
+app.config.globalProperties.$admin = host
 window.embedCms = app
 app.config.globalProperties.$filters = {
   translate: TranslateFilter,

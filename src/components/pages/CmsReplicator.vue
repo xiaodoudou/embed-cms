@@ -49,7 +49,7 @@
 </template>
 <script>
   import _ from 'lodash'
-  import AppDialog from '@c/AppDialog.vue'
+  import AppDialog from '@c/feedback/AppDialog.vue'
   import NotificationsService from '@s/NotificationsService'
   import RequestService from '@s/RequestService'
   import TranslateService from '@s/TranslateService'

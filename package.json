@@ -1,18 +1,14 @@
 {
   "name": "embed-cms",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "description": "Content management system, written in node.js, uses leveldb as an asset and content store.",
   "main": "index.js",
   "types": "index.d.ts",
   "files": [
     "index.js",
     "index.d.ts",
-    "server.js",
-    "import.js",
-    "importFromRemote.js",
+    "bin/",
     "lib/",
-    "lib-import/",
-    "lib-importFromRemote/",
     "src/",
     "public/",
     "dist/",
@@ -29,12 +25,13 @@
     "prepare": "node scripts/prepare.js",
     "prepack": "npm run build",
     "preview": "vite preview",
-    "serve-prod": "cross-env NODE_ENV=production node server.js",
-    "serve-backend": "cross-env VITE_DEV_MODE=true node --inspect --no-deprecation server.js",
+    "start": "node bin/cms.js",
+    "serve-prod": "cross-env NODE_ENV=production node bin/cms.js",
+    "serve-backend": "cross-env VITE_DEV_MODE=true node --inspect --no-deprecation bin/cms.js",
     "lint": "eslint --fix lib src",
     "knip": "knip",
     "knip-lint": "knip && npm run lint",
-    "test": "node --no-deprecation test/server.js",
+    "test": "node --no-deprecation test/integration/server.js",
     "test:unit": "mocha test/unit test/security",
     "unit": "mocha -w test/unit test/security",
     "mongodb": "ulimit -n 1000 && mongod --ipv6 --dbpath=../embed-cms-mongodb-data",
@@ -44,7 +41,10 @@
     "test:coverage": "c8 mocha test/unit test/security",
     "bench:stores": "node --expose-gc test/bench/stores.js",
     "bench:stores:crash": "node test/bench/stores.js --crash",
-    "migrate-store": "node scripts/migrate-store.js"
+    "docs:reflow": "node test/docs/reflowMarkdown.js",
+    "docs:screenshots": "node test/docs/screenshots/run.js",
+    "bench:engines": "node --expose-gc test/bench/engines.js",
+    "migrate-store": "node scripts/migrateStore.js"
   },
   "engines": {
     "node": "^22.12.0"
@@ -73,9 +73,9 @@
     ]
   },
   "bin": {
-    "cms": "server.js",
-    "cms-import": "import.js",
-    "cms-import-remote": "importFromRemote.js"
+    "cms": "bin/cms.js",
+    "cms-import": "bin/cmsImport.js",
+    "cms-import-remote": "bin/cmsImportRemote.js"
   },
   "author": "Edouard Durand",
   "license": "GPL-3.0-only",
@@ -153,7 +153,7 @@
     "vue-json-viewer": "^3.0.4",
     "vue-router": "^4.6.3",
     "vue-virtual-scroller": "^3.0.5",
-    "vuetify": "^3.10.9",
+    "vuetify": "^4.2.3",
     "ws": "^8.18.0"
   },
   "config": {

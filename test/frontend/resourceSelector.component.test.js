@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import ResourceSelector from '@c/ResourceSelector.vue'
+import ResourceSelector from '@c/records/ResourceSelector.vue'
 import { mountComponent } from './helpers/mountField.js'
 import { groupedList, products, orders, notes, syslog } from './helpers/navFixtures.js'
 

@@ -10,7 +10,8 @@ module.exports = {
     { field: 'active', input: 'checkbox', localised: false },
     { field: 'category', input: 'string', localised: false },
     { field: 'released', input: 'date', localised: false },
-    { field: 'photo', input: 'image', localised: false, options: { maxCount: 3 } }
+    { field: 'photo', input: 'image', localised: false, options: { maxCount: 3 } },
+    { field: 'document', input: 'file', localised: false, options: { maxCount: 100 } }
   ],
   locales: ['enUS', 'zhCN'],
   type: 'normal'

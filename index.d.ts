@@ -45,10 +45,13 @@ declare module 'embed-cms' {
 
     /**
      * Resource API: a function that gives the API of a resource, with the rights of the code (no user, no group check).
+     * The resources named after the resource are resolved: the records come with the records their `select` and
+     * `multiselect` fields point to (inside paragraph blocks too), instead of their ids.
      * @example
      * const api = cms.api()
      * const groups = await api('_groups').list()
      * const user = await api('_users').find('user-id')
+     * const comment = await api('comments', 'authors').find('comment-id')   // comment.author is the record
      */
     api(): (resourceName: string, ...resolves: string[]) => CMS.ResourceAPI
 
@@ -381,6 +384,11 @@ declare module 'embed-cms' {
       removeAttachment(id: string, aid: string): Promise<boolean>
       /** Remove the files no record points to (only those idle for `attachmentCleanupGrace`) */
       cleanAttachment(): Promise<boolean>
+      /**
+       * Runs many writes as one: inside `work`, the writes of this resource do not wait for the disk, which is waited for once
+       * at the end. For a sync or an import of many records.
+       */
+      bulk<T>(work: () => Promise<T>): Promise<T>
       /** What an import would create, update and remove */
       getImportMap(importList: any[], query?: Record<string, any>, checkRequired?: boolean): Promise<{
         create: CMSRecord[]

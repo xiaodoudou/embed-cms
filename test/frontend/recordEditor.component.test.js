@@ -3,6 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import RecordEditor from '@c/records/RecordEditor.vue'
 import RequestService from '@s/RequestService'
 import NotificationsService from '@s/NotificationsService'
+import ResourceService from '@s/ResourceService'
 import { mountComponent } from './helpers/mountField.js'
 
 vi.mock('@s/RequestService', () => ({
@@ -244,5 +245,141 @@ describe('RecordEditor', () => {
   it('looks locked when the record cannot be edited', async () => {
     await editor({ _id: 'mu0aaaaa', _local: false, name: 'x' })
     expect(wrapper.classes()).toContain('frozen')
+  })
+
+  describe('jump to', () => {
+    const page = {
+      title: 'pages',
+      displayname: { enUS: 'Pages' },
+      locales: ['enUS'],
+      schema: [
+        { field: 'name', input: 'string', label: 'Name', localised: false },
+        { field: 'tiles', input: 'paragraph', label: 'Tiles', localised: false, options: { types: ['tile'] } }
+      ]
+    }
+
+    beforeEach(() => {
+      ResourceService.paragraphs = { tile: { title: 'tile', displayname: { enUS: 'Tile' }, schema: [{ field: 'heading', input: 'string', label: 'Heading' }] } }
+    })
+    afterEach(() => { ResourceService.paragraphs = {} })
+
+    it('offers the menu on every resource, short or long', async () => {
+      await editor({ _local: true }, { resource: { ...page, schema: [page.schema[0]] } })
+      expect(wrapper.find('.jump-to').exists()).toBe(true)
+      wrapper.unmount()
+      await editor()
+      expect(wrapper.find('.jump-to').exists()).toBe(true)
+    })
+
+    it('lists the blocks of a paragraph field under it, named by their type and first text', async () => {
+      await editor({ _local: true, tiles: [{ _type: 'tile', heading: 'News' }, { _type: 'tile' }] }, { resource: page })
+      expect(wrapper.vm.outlineEntries.map((entry) => entry.label)).toEqual(['Name', 'Tiles', 'Tile · News', 'Heading', 'Tile 2', 'Heading'])
+      await edit({ tiles: [{ _type: 'tile', heading: 'Only' }] })
+      expect(wrapper.vm.outlineEntries.map((entry) => entry.label)).toEqual(['Name', 'Tiles', 'Tile · Only', 'Heading'])
+    })
+
+    it('marks the rows that changed since the record was loaded', async () => {
+      await editor({ _id: 'mu0aaaaa', _local: true, name: 'Home', tiles: [{ _type: 'tile', heading: 'News' }] }, { resource: page })
+      const changed = () => wrapper.vm.outlineEntries.filter((entry) => entry.dirty).map((entry) => entry.label)
+      expect(changed()).toEqual([])
+      await edit({ name: 'Home page' })
+      expect(changed()).toEqual(['Name'])
+      await edit({ tiles: [{ _type: 'tile', heading: 'Latest' }] })
+      expect(changed()).toEqual(['Name', 'Tiles', 'Tile · Latest', 'Heading'])
+    })
+
+    it('scrolls to the block of the row, and to the field for a row of a field', async () => {
+      await editor({ _local: true, tiles: [{ _type: 'tile' }, { _type: 'tile' }] }, { resource: page })
+      const field = document.createElement('div')
+      field.className = 'field-wrapper'
+      field.dataset.model = 'tiles'
+      field.innerHTML = '<div class="item nested-level-1"></div><div class="item nested-level-1"><div class="item nested-level-2"></div></div>'
+      wrapper.element.appendChild(field)
+      const [first, second] = field.querySelectorAll('.item.nested-level-1')
+      const scrolled = []
+      for (const element of [field, first, second]) {
+        element.scrollIntoView = () => scrolled.push(element)
+      }
+      const entries = wrapper.vm.outlineEntries
+      // rows: Name, Tiles, Tile 1, Heading, Tile 2, Heading
+      wrapper.vm.jumpToEntry(entries[4])
+      wrapper.vm.jumpToEntry(entries[1])
+      expect(scrolled).toEqual([second, field])
+    })
+
+    it('scrolls to the field of a block, not to the same field of a block inside it, and to the block when it is not drawn', async () => {
+      await editor({ _local: true, tiles: [{ _type: 'tile' }] }, { resource: page })
+      const field = document.createElement('div')
+      field.className = 'field-wrapper'
+      field.dataset.model = 'tiles'
+      field.innerHTML = '<div class="item nested-level-1"><div class="item nested-level-2"><div class="field-wrapper" data-model="_value.heading"></div></div><div class="field-wrapper" data-model="_value.heading"></div></div>'
+      wrapper.element.appendChild(field)
+      const block = field.querySelector('.item.nested-level-1')
+      const own = block.querySelector(':scope > .field-wrapper')
+      const scrolled = []
+      for (const element of [field, block, own]) {
+        element.scrollIntoView = () => scrolled.push(element)
+      }
+      wrapper.vm.jumpToEntry(wrapper.vm.outlineEntries[3])
+      expect(scrolled).toEqual([own])
+      scrolled.length = 0
+      own.remove()
+      wrapper.vm.jumpToEntry(wrapper.vm.outlineEntries[3])
+      expect(scrolled).toEqual([block])
+    })
+
+    it('lights up the place it jumps to for a moment, and again at a second jump', async () => {
+      await editor({ _local: true, tiles: [{ _type: 'tile' }, { _type: 'tile' }] }, { resource: page })
+      const field = document.createElement('div')
+      field.className = 'field-wrapper'
+      field.dataset.model = 'tiles'
+      field.innerHTML = '<div class="item nested-level-1"><div class="field-wrapper" data-model="_value.heading"></div></div><div class="item nested-level-1"></div>'
+      wrapper.element.appendChild(field)
+      const [first, second] = field.querySelectorAll('.item.nested-level-1')
+      const heading = first.querySelector('.field-wrapper')
+      for (const element of [field, first, second, heading]) {
+        element.scrollIntoView = () => {}
+      }
+      // rows: Name, Tiles, Tile 1, Heading, Tile 2, Heading
+      const entries = wrapper.vm.outlineEntries
+      wrapper.vm.jumpToEntry(entries[1])
+      wrapper.vm.jumpToEntry(entries[4])
+      wrapper.vm.jumpToEntry(entries[3])
+      expect([field, second, heading].map((element) => element.classList.contains('jump-flash'))).toEqual([true, true, true])
+      expect(first.classList.contains('jump-flash')).toBe(false)
+      vi.advanceTimersByTime(1300)
+      expect([field, second, heading].map((element) => element.classList.contains('jump-flash'))).toEqual([false, false, false])
+      wrapper.vm.jumpToEntry(entries[1])
+      expect(field.classList.contains('jump-flash')).toBe(true)
+    })
+
+    it('lights the place for the whole time after a second jump to it, not only until the first one would have ended', async () => {
+      await editor({ _local: true, tiles: [] }, { resource: page })
+      const field = document.createElement('div')
+      field.className = 'field-wrapper'
+      field.dataset.model = 'tiles'
+      field.scrollIntoView = () => {}
+      wrapper.element.appendChild(field)
+      wrapper.vm.jumpToEntry(wrapper.vm.outlineEntries[1])
+      vi.advanceTimersByTime(1000)
+      wrapper.vm.jumpToEntry(wrapper.vm.outlineEntries[1])
+      // the first jump would have ended at 1200ms
+      vi.advanceTimersByTime(1000)
+      expect(field.classList.contains('jump-flash')).toBe(true)
+      vi.advanceTimersByTime(300)
+      expect(field.classList.contains('jump-flash')).toBe(false)
+    })
+
+    it('falls back to the field when the block is not drawn', async () => {
+      await editor({ _local: true, tiles: [{ _type: 'tile' }] }, { resource: page })
+      const field = document.createElement('div')
+      field.className = 'field-wrapper'
+      field.dataset.model = 'tiles'
+      wrapper.element.appendChild(field)
+      const scrolled = []
+      field.scrollIntoView = () => scrolled.push(field)
+      wrapper.vm.jumpToEntry(wrapper.vm.outlineEntries[2])
+      expect(scrolled).toEqual([field])
+    })
   })
 })

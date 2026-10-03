@@ -86,6 +86,16 @@ What counts as an answer: `false` (a checkbox turned off) and `0` count; an unto
 
 One detail: when a text or number field fails its own rules (for example an empty required `Name`), the empty required dates and colours are listed in the toast but are not outlined until the text field is fixed and Create is clicked again; select-like fields are outlined at once.
 
+## Jump to a field
+
+The list button in the top bar of the record form opens **Jump to field**: one row for each field of the form, in the order of the form. A click scrolls to the field and tints it for a moment, a little past its edges, so the eye finds it (with reduced motion on, it scrolls without animation and the tint stays for the same time).
+
+- A required field that is still empty has a red mark, and a field that changed since the record was loaded or saved has an amber dot, the same dot as on its label.
+- Under a [paragraph field](fields/paragraph.md) there is a row for each of its blocks, in the order they have now, named by the type and the first text the block holds (`Half · News`), or by the type and its place (`Half 3`) when it holds none. Under each block there is a row for each of its fields. A click scrolls to that block or field. A block or field that changed has the amber dot, and so does the paragraph field around it. A block that moved to another place counts as changed.
+- Blocks inside a block are not listed.
+
+The button is there on every form, long or short.
+
 ## What is checked where
 
 | Rule | Admin (UI) | Server (REST) |

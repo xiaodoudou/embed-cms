@@ -907,6 +907,63 @@ a {
   font-weight: var(--cms-fw-semibold);
 }
 
+/* "Jump to": the place a row points at lights up for a moment (RecordEditor adds the class, and takes it away after 1.2s) */
+.jump-flash {
+  border-radius: var(--cms-radius-md);
+  animation: jumpFlash 1.2s ease-out;
+}
+
+/* room above and below a field or a block that the menu scrolls to, so its halo is not cut by the bar above the form */
+.record-editor-form .field-wrapper,
+.record-editor-form .item {
+  scroll-margin-block: 24px;
+}
+
+/* one tint of the primary colour over the whole field, and 5px past its edges (the shadow is outside the box, so it does not paint over the
+   field twice): the label and the hint have room inside it. It fades out */
+@keyframes jumpFlash {
+  from {
+    background-color: color-mix(in srgb, var(--cms-primary) 14%, transparent);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--cms-primary) 14%, transparent);
+  }
+  to {
+    background-color: transparent;
+    box-shadow: 0 0 0 5px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* no fade: the tint stays while the class does */
+  .jump-flash {
+    animation: none;
+    background-color: color-mix(in srgb, var(--cms-primary) 14%, transparent);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--cms-primary) 14%, transparent);
+  }
+}
+
+/* "Jump to": the blocks of a paragraph field sit under it, and the fields of a block under the block, each level indented and quieter */
+.v-menu .outline-list .v-list-item.outline-block {
+  padding-inline-start: var(--cms-space-8);
+  color: var(--cms-text-muted);
+  font-size: var(--cms-fs-sm);
+}
+
+/* a row that changed since the record was loaded: the amber dot of the unsaved label marker */
+.v-menu .outline-list .outline-dirty {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-inline-start: var(--cms-space-2);
+  border-radius: var(--cms-radius-pill);
+  background: var(--cms-warning);
+}
+
+.v-menu .outline-list .v-list-item.outline-field {
+  padding-inline-start: var(--cms-space-12);
+  color: var(--cms-text-muted);
+  font-size: var(--cms-fs-xs);
+}
+
 .v-select__content .v-list-item--active::after,
 .v-combobox__content .v-list-item--active::after,
 .v-autocomplete__content .v-list-item--active::after {

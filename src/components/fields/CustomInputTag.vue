@@ -2,7 +2,7 @@
   <div class="custom-input-tag">
     <v-combobox
       ref="input"
-      :theme="theme" :class="[schema.labelClasses]" :type="getType()" :model-value="_value" :input-value="_value"
+      :theme="theme" :class="[schema.labelClasses]" :type="getType()" :model-value="_value" :input-value="_value" :items="suggestions"
       :max-length="schema.max" :min-length="schema.min" autocomplete="off" validate-on-submit :rules="[validateField]" persistent-placeholder hide-details="auto" chips closable-chips multiple
       :variant="getVariant()" :flat="get('flat')" :rounded="get('rounded')" :density="get('density')" :disabled="disabled" :readonly="get('readonly')" clearable
       @update:model-value="onChangeData" @update:focused="onFieldFocus" @paste="onPaste"
@@ -31,6 +31,16 @@
 
   export default {
     mixins: [AbstractField, Notification],
+    computed: {
+      // the drop-down of a field that suggests values: `options.suggest: 'adminPlugins'` lists the plugin pages this admin has
+      // (the built-in ones that run, and those of the project), so that a group is given them by picking, not by typing a name
+      suggestions () {
+        if (_.get(this.schema, 'options.suggest') === 'adminPlugins') {
+          return _.uniq(_.compact(_.map(window.plugins, 'displayname')))
+        }
+        return []
+      }
+    },
     methods: {
       getType () {
         return _.get(this.schema, 'inputFieldType', 'text')

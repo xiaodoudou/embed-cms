@@ -21,6 +21,7 @@ Catalogue: `resources/choice_multi.js`, fields `tags`, `requiredTags`, `localise
 | `required` | boolean | `false` | At least one tag: an empty required pillbox refuses the save (`This field is required!`). |
 | `min` / `max` | number | none | Minimum / maximum number of tags, declared at field level (next to `input`, not in `options`). Messages: `Add at least 2 tags` / `At most 4 tags`, under the field, on blur and on save. |
 | `options.hint` | string | none | Help text under the field. |
+| `options.suggest` | `'adminPlugins'` | none | Adds a drop-down of values to pick from. `'adminPlugins'` lists the plugin pages of the admin, which is what the Plugins field of a group uses. |
 | `options.readonly` | boolean | `false` | Passed to the combobox as `readonly`: the tags stay, and can't be added or removed (see `readOnlyTags`). |
 | `options.disabled` | boolean | `false` | Greyed out (see `disabledTags`). |
 

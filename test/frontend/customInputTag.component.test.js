@@ -60,4 +60,14 @@ describe('CustomInputTag (the pillbox)', () => {
     const wrapper = tags({ tags: ['a'] }, { readonly: true })
     expect(wrapper.get('input:not([type=hidden])').attributes('readonly')).toBeDefined()
   })
+
+  it('offers the plugin pages of the admin when the field suggests them', () => {
+    window.plugins = [{ displayname: 'Syslog' }, { displayname: 'Dashboard' }, { displayname: 'Syslog' }, {}]
+    try {
+      expect(tags({}, { options: { suggest: 'adminPlugins' } }).vm.suggestions).toEqual(['Syslog', 'Dashboard'])
+      expect(tags().vm.suggestions).toEqual([])
+    } finally {
+      delete window.plugins
+    }
+  })
 })

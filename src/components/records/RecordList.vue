@@ -282,29 +282,11 @@
     mounted () {
       this.sortMode = _.get(_.first(this.sortOptions), 'value', '_updatedAt')
       NotificationsService.events.on('omnibar-display-status', this.onGetOmnibarDisplayStatus)
-      document.addEventListener('keydown', this.onDocumentKeydown)
     },
     beforeUnmount () {
       NotificationsService.events.off('omnibar-display-status', this.onGetOmnibarDisplayStatus)
-      document.removeEventListener('keydown', this.onDocumentKeydown)
     },
     methods: {
-      // "/" jumps to the search field from anywhere outside a text field
-      onDocumentKeydown (event) {
-        if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey || this.omnibarDisplayed) {
-          return
-        }
-        const target = event.target
-        const tag = _.toLower(_.get(target, 'tagName', ''))
-        if (_.includes(['input', 'textarea', 'select'], tag) || _.get(target, 'isContentEditable', false)) {
-          return
-        }
-        const search = _.get(this.$refs, 'search', false)
-        if (search && _.isFunction(search.focus)) {
-          event.preventDefault()
-          search.focus()
-        }
-      },
       // Up/Down move between rows (the list is virtualised, so scroll first), Home/End jump to the ends
       async onListKeydown (event) {
         const keys = { ArrowDown: 1, ArrowUp: -1, Home: 'first', End: 'last' }
@@ -376,8 +358,9 @@
       onGetOmnibarDisplayStatus (status) {
         this.omnibarDisplayed = status
       },
+      // Ctrl+/ and "/" jump to the search field from anywhere outside a text field, while the switcher is closed
       getShortcuts () {
-        return this.omnibarDisplayed ? {} : {open: ['ctrl', '/']}
+        return this.omnibarDisplayed ? {} : { open: ['ctrl', '/'], jump: ['/'] }
       },
       getSelectedRecordIds () {
         return _.map(this.localMultiselectItems, '_id')
@@ -481,13 +464,11 @@
         this.dive('', arr, newObj)
         return newObj
       },
-      async interactiveSearch (event) {
-        const action = _.get(event, 'srcKey', false)
-        const elem = _.get(this.$refs, '[\'search\']', false)
-        if (!action || !elem) {
-          return
+      interactiveSearch () {
+        const elem = _.get(this.$refs, 'search', false)
+        if (elem) {
+          elem.focus()
         }
-        return elem.focus()
       },
       select (event, item, clickedCheckbox = false) {
         if (clickedCheckbox) {

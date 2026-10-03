@@ -1,15 +1,15 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import RecordList from '@c/records/RecordList.vue'
 import { mountComponent } from './helpers/mountField.js'
 import LoginService from '@s/LoginService'
+import NotificationsService from '@s/NotificationsService'
 
 // The real virtual scroller renders only what fits the (absent) layout: this one renders every item through the same slot.
 const RecycleScroller = {
   props: ['items'],
   template: '<div class="list"><template v-for="(item, index) in items" :key="item._id"><slot :item="item" :index="index" /></template></div>'
 }
-// the shortcut directive of vue3-shortkey is registered by the app
-const shortkey = { mounted () {}, updated () {} }
 
 const resource = {
   title: 'products',
@@ -25,17 +25,26 @@ const makeRecords = () => [
 ]
 
 let records
-const list = (props = {}) => mountComponent(RecordList, {
-  props: { resource, list: records, groupedList: [group], resourceGroup: group, selectedItem: false, ...props },
-  global: { stubs: { RecycleScroller }, directives: { shortkey } },
-  attachTo: document.body
-})
+const mounted = []
+const list = (props = {}) => {
+  const wrapper = mountComponent(RecordList, {
+    props: { resource, list: records, groupedList: [group], resourceGroup: group, selectedItem: false, ...props },
+    global: { stubs: { RecycleScroller } },
+    attachTo: document.body
+  })
+  mounted.push(wrapper)
+  return wrapper
+}
 const items = (wrapper) => wrapper.findAll('.record-list .item')
 
 beforeEach(() => {
   // the list marks the records it filters (`_searchable`): every test gets its own copies
   records = makeRecords()
   window.localStorage.clear()
+})
+afterEach(() => {
+  mounted.splice(0).forEach((wrapper) => wrapper.unmount())
+  document.body.innerHTML = ''
 })
 
 describe('RecordList', () => {
@@ -234,5 +243,39 @@ describe('RecordList', () => {
     expect(mine.attributes('aria-pressed')).toBe('true')
     await mine.trigger('click')
     expect(wrapper.get('.toggle-owner').attributes('data-pos')).toBe('0')
+  })
+  describe('the keys to the search field', () => {
+    const press = (init, target = document) => {
+      const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init })
+      target.dispatchEvent(event)
+      return event
+    }
+    const searchInput = (wrapper) => wrapper.get('input.search-input').element
+
+    it('focuses the search field with "/" and with Ctrl+/, and keeps the key from the page', () => {
+      const wrapper = list()
+      expect(press({ key: '/' }).defaultPrevented).toBe(true)
+      expect(document.activeElement).toBe(searchInput(wrapper))
+      searchInput(wrapper).blur()
+      expect(press({ key: '/', ctrlKey: true, shiftKey: true }).defaultPrevented).toBe(true)
+      expect(document.activeElement).toBe(searchInput(wrapper))
+    })
+
+    it('leaves "/" to a text field that has the focus', () => {
+      list()
+      const field = document.createElement('textarea')
+      document.body.appendChild(field)
+      field.focus()
+      expect(press({ key: '/' }, field).defaultPrevented).toBe(false)
+      expect(document.activeElement).toBe(field)
+    })
+
+    it('leaves the keys alone while the quick switcher is open', async () => {
+      const wrapper = list()
+      NotificationsService.sendOmnibarDisplayStatus(true)
+      await flushPromises()
+      expect(press({ key: '/' }).defaultPrevented).toBe(false)
+      expect(document.activeElement).not.toBe(searchInput(wrapper))
+    })
   })
 })

@@ -180,8 +180,7 @@
     "vite": "^6.4.1",
     "vite-plugin-vuetify": "^2.0.1",
     "vitest": "^5.0.2",
-    "vue-eslint-parser": "^10.4.1",
-    "vue3-shortkey": "https://github.com/Zegfault/vue3-shortkey/archive/da8ee7ead0c618de22a227da2274d88c33e29aae.tar.gz"
+    "vue-eslint-parser": "^10.4.1"
   },
   "overrides": {
     "excel4node": {

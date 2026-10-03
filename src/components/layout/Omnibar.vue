@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div id="omnibar" v-shortkey="getShortcuts()" @shortkey="interactiveSearch">
+    <div id="omnibar" v-shortkey.anywhere="getShortcuts()" @shortkey="onShortkey">
       <div id="omnibar-backdrop" :class="{displayed: showOmnibar}" @click="showHideOmnibar(false)" />
       <v-card v-show="showOmnibar" elevation="0" role="dialog" aria-modal="true" :aria-label="$filters.translate('TL_SEARCH_RESOURCES')">
         <v-card-title class="search">
@@ -53,11 +53,7 @@
         scrolledToBottom: false,
         entries: [],
         results: [],
-        highlightedItem: 0,
-        // Ctrl+K is handled by the top bar; this one opens it too while it is closed
-        shortcutsWhenClosed: {
-          'open': ['ctrl', 'p']
-        }
+        highlightedItem: 0
       }
     },
     watch: {
@@ -80,8 +76,9 @@
       currentLabel () {
         return this.selectedItem ? this.labelOf(this.selectedItem) : ''
       },
+      // Ctrl+K opens and closes the switcher from anywhere, a field included
       getShortcuts () {
-        return this.showOmnibar ? {} : this.shortcutsWhenClosed
+        return { toggle: ['ctrl', 'k'] }
       },
       onScroll ({ target }) {
         this.scrolledToBottom = isScrolledToBottom(target)
@@ -118,7 +115,7 @@
       },
       // keys typed in the search field: arrows move, Enter opens, Escape closes
       onSearchKeydown (event) {
-        if (event.key === 'Escape' || (event.ctrlKey && _.toLower(event.key) === 'p')) {
+        if (event.key === 'Escape') {
           event.preventDefault()
           this.showHideOmnibar(false)
         } else if (_.includes(['ArrowDown', 'ArrowUp'], event.key)) {
@@ -135,11 +132,8 @@
           this.selectResult()
         }
       },
-      // the shortcut library only opens the switcher (Ctrl+P); everything else is typed in the field
-      interactiveSearch (event) {
-        if (!this.showOmnibar && _.startsWith(_.get(event, 'srcKey', ''), 'open')) {
-          this.showHideOmnibar(true)
-        }
+      onShortkey () {
+        this.showHideOmnibar(!this.showOmnibar)
       }
     }
   }

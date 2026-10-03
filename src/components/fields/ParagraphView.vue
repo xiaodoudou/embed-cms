@@ -41,7 +41,6 @@
           @end="onEndDrag"
         >
           <v-card v-for="(item, idx) in items" :key="`paragraph-item-${idx}`" :theme="theme" elevation="0" :class="getItemClasses(idx, item)" :style="getItemStyles(item)">
-            <span v-if="isDynamicLayoutContainer" class="slots-badge" :title="getSlotsLabel(item)" :aria-label="getSlotsLabel(item)">{{ getItemSlots(item) }}/{{ parentSlots }}</span>
             <v-card-title class="handle paragraph-header">
               <div class="paragraph-title">{{ getLabel(item) }}</div>
               <div class="add-btn-wrapper">
@@ -215,9 +214,6 @@
           }
         }
         return slots || 2
-      },
-      getSlotsLabel(item) {
-        return this.$filters.translate('TL_BLOCK_WIDTH_SLOTS', { slots: this.getItemSlots(item), total: this.parentSlots })
       },
       getItemStyles(item) {
         if (this.isDynamicLayoutContainer) {
@@ -1004,6 +1000,7 @@
   align-content: center;
   justify-content: space-between;
   height: 34px;
+  gap: var(--cms-space-1);
   padding-right: 0;
   padding-left: 16px;
   // the top corners follow the rounded border of the block card (8px less its 2px border)
@@ -1157,20 +1154,11 @@
       .item-main {
         overflow: hidden;
       }
-      .slots-badge {
-        position: absolute;
-        top: 2px;
-        left: 50%;
-        background: var(--cms-overlay-hover);
-        font-size: 10px;
-        line-height: 1.2;
-        padding: 2px 4px;
-        border-radius: 2px;
-        color: var(--cms-text-muted);
-        z-index: 10;
-        transform: translate(-50%, 0);
-        cursor: default;
-        user-select: none;
+      .paragraph-title {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
     }
 

@@ -106,5 +106,5 @@ The server stores what it receives, so if you write over REST, validate your own
 
 - Nested fields: `{ label: 'City', field: 'address.city', input: 'string' }` stores `{ address: { city: ... } }` and groups the fields under an `address` heading (`groups.address.label` in the resource sets its title).
 - Import and sync files reference records of a `select` / `multiselect` source by their first `unique` field.
-- The look of the form is in the [Design system](../extending/DESIGN_SYSTEM.md); blocks side by side in a paragraph field are in [Dynamic layout](DYNAMIC_LAYOUT.md).
+- The look of the form is in the [Design system](../extending/DESIGN_SYSTEM.md); fields side by side in the form are in [Form layout](FORM_LAYOUT.md), and blocks side by side in a paragraph field in [Dynamic layout](DYNAMIC_LAYOUT.md).
 - A field label shows a small lock when the field is read-only. A disabled field has no icon: it is greyed out with a dashed border.

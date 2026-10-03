@@ -325,7 +325,6 @@
     "TL_TAGS_TOO_FEW": "至少添加 {{ min }} 个标签",
     "TL_TAGS_TOO_MANY": "最多 {{ max }} 个标签",
     "TL_SHOW_IN_MENU": "在菜单中显示",
-    "TL_BLOCK_WIDTH_SLOTS": "宽度：{{ total }} 栏中占 {{ slots }} 栏",
     "TL_SIGN_OUT_HINT": "如需退出登录，请关闭所有浏览器窗口。",
     "TL_SYSLOG": "系统日志",
     "TL_CMS_IMPORT": "导入",

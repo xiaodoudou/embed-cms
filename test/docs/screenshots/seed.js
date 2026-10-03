@@ -92,6 +92,32 @@ async function seed (base, user, password, files) {
       featured: n % 3 === 0
     })
   }
+  // a record with tiles for the pictures of the dynamic layout: 2 by 2, 3 by 3 and a mixed row
+  const tiles = (type, titles) => titles.map((title) => ({ _type: type, title, text: 'A short text under the title.' }))
+  const grid = await post('structured_grid', {
+    name: 'Home page',
+    twoByTwo: tiles('tile_half', ['News', 'Events', 'Shop', 'About']),
+    threeByThree: tiles('tile_third', ['Spring', 'Summer', 'Autumn', 'Winter', 'North', 'East', 'South', 'West', 'Centre']),
+    fourByTwo: tiles('tile_quarter', ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight']),
+    mixed: [...tiles('tile_half', ['Wide']), ...tiles('tile_quarter', ['Small', 'Small']), ...tiles('tile_third', ['Third', 'Third', 'Third'])]
+  })
+  ids.grid = grid._id
+  // a record for the picture of the form layout
+  const layout = await post('structured_layout', {
+    name: 'Ana Moreau',
+    firstName: 'Ana',
+    lastName: 'Moreau',
+    email: 'ana.moreau@example.com',
+    phone: '+33 1 23 45 67 89',
+    street: 'Rue des Lilas',
+    number: '12',
+    city: 'Lyon',
+    postcode: '69003',
+    country: 'France',
+    notes: 'Prefers to be contacted by email.',
+    reference: 'CUST-0042'
+  })
+  ids.layout = layout._id
   return ids
 }
 

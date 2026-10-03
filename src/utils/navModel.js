@@ -23,10 +23,18 @@ export function resolveNavMode ({ pref = null, wide = true, drawer = false } = {
   return wide ? 'expanded' : 'rail'
 }
 
+/**
+ * @param {string} mode
+ * @returns {string} the other one
+ */
 export function toggledPref (mode) {
   return mode === 'rail' ? 'expanded' : 'rail'
 }
 
+/**
+ * @param {*} value
+ * @returns {number} rounded and clamped; the default when not a number
+ */
 export function clampNavWidth (value) {
   const width = Number(value)
   return Number.isFinite(width) ? _.clamp(Math.round(width), NAV_MIN_WIDTH, NAV_MAX_WIDTH) : NAV_DEFAULT_WIDTH
@@ -89,6 +97,10 @@ export function flyoutPosition (rect, viewportHeight, flyoutHeight, gap = 8) {
 
 const OTHERS = 'TL_OTHERS'
 
+/**
+ * @param {Object} group
+ * @returns {boolean}
+ */
 export function isOthersGroup (group) {
   return _.get(group, 'name', '') === OTHERS
 }
@@ -115,6 +127,10 @@ export function menuIconMap (settings) {
   return map
 }
 
+/**
+ * @param {Object} group
+ * @returns {string} kebab-case of its English name
+ */
 export function groupKey (group) {
   const name = _.get(group, 'name.enUS', _.get(group, 'name'))
   return _.kebabCase(_.isString(name) ? name : JSON.stringify(name))

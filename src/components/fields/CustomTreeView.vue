@@ -32,6 +32,7 @@
       }
     },
     methods: {
+      /** @returns {*} the value of the field, false when unset */
       getData () {
         return objGet(this.model, this.schema.model, false)
       }

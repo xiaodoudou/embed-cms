@@ -131,6 +131,7 @@
         })
         return result
       },
+      /** @returns {Array<Object>} the labelled fields, one per original model */
       outlineFields () {
         return _.uniqBy(_.filter(_.get(this.schema, 'fields', []), (f) => f.label && f.originalModel), 'originalModel')
       },
@@ -202,15 +203,18 @@
       clearTimeout(this.settleTimer)
     },
     methods: {
+      /** @returns {string} Save or Create */
       getActionText() {
         return TranslateService.get(this.editingRecord._id ? 'TL_SAVE' : 'TL_CREATE')
       },
+      /** @param {BeforeUnloadEvent} event the leave prompt of the browser while the record is dirty */
       onBeforeUnload (event) {
         if (this.isDirty) {
           event.preventDefault()
           event.returnValue = ''
         }
       },
+      /** Back to the record as loaded; the form is mounted again. */
       discardChanges () {
         this.cloneEditingRecord()
         this.formKey++
@@ -252,6 +256,7 @@
           }
         })
       },
+      /** Jumps to the first required field without a value. */
       focusFirstMissing () {
         const field = _.find(this.outlineFields, (f) => this.isFieldMissing(f))
         if (!field) {
@@ -263,6 +268,10 @@
           input.focus({ preventScroll: true })
         }
       },
+      /**
+       * @param {Object} field
+       * @returns {boolean} required and empty, shared or in the current locale
+       */
       isFieldMissing (field) {
         const name = field.originalModel
         return _.includes(this.missing.shared, name) || _.includes(_.get(this.missing.byLocale, this.locale, []), name)
@@ -284,6 +293,7 @@
           this.jumpToField(entry.field)
         }
       },
+      /** @param {Object} field scrolled to and flashed */
       jumpToField (field) {
         const elem = this.$el.querySelector(`.field-wrapper[data-model="${field.model}"]`)
         if (elem) {
@@ -302,18 +312,29 @@
         clearTimeout(element.jumpFlashTimer)
         element.jumpFlashTimer = setTimeout(() => element.classList.remove('jump-flash'), JUMP_FLASH_MS)
       },
+      /** @param {{target: HTMLElement}} event */
       onScroll ({ target }) {
         this.scrolledToBottom = isScrolledToBottom(target)
       },
+      /** With two locales, goes to the other one. */
       toggleLocale () {
         this.selectLocale(_.find(this.resource.locales, (l) => l !== this.locale))
       },
+      /**
+       * @param {string} locale
+       * @returns {string} its translated name
+       */
       getLocaleTranslation (locale) {
         return TranslateService.get('TL_' + locale.toUpperCase())
       },
+      /**
+       * @param {Object|HTMLElement} elem a component or an element
+       * @returns {number} its top, 50px above for the sticky bar
+       */
       getFieldRealOffset (elem) {
         return _.get(elem, '$el.offsetTop', elem.offsetTop, 0) - 50
       },
+      /** @param {Object} field from the outline: flagged focused in the schema */
       onFieldSelected (field) {
         this.schema.fields = _.map(this.schema.fields, (f) => {
           const key = `${field.field}${f.localised ? `.${TranslateService.locale}` : ''}`
@@ -328,9 +349,15 @@
       back () {
         this.$emit('back')
       },
+      /** @param {string} item a locale, emitted as update:locale */
       selectLocale (item) {
         this.$emit('update:locale', item)
       },
+      /**
+       * @param {Object} field
+       * @param {*} value
+       * @returns {*} a deep copy, the empty value of the field when there is none
+       */
       cloneValue(field, value) {
         value = this.fieldValueOrDefault(field, value)
         if (_.isPlainObject(value)) {
@@ -338,6 +365,7 @@
         }
         return value
       },
+      /** Copies the record into editingRecord, every field of the schema present (per locale when localised). */
       cloneEditingRecord () {
         const dummy = {}
         _.each(this.resource.schema, (field) => {
@@ -358,6 +386,7 @@
         this.removeDirtyFlags()
         this.resetSnapshot()
       },
+      /** Asks for confirmation with the name of the record. */
       deleteRecord () {
         const name = getRecordLabel(this.resource, this.record, this.locale) || this.editingRecord._id
         window.DialogService.show({
@@ -370,6 +399,7 @@
           callback: () => this.doDeleteRecord()
         })
       },
+      /** A record not saved yet is just dropped. */
       async doDeleteRecord () {
         if (_.isUndefined(this.editingRecord._id)) {
           this.editingRecord = {}
@@ -388,6 +418,7 @@
           this.$loading.stop('delete-record')
         }
       },
+      /** Validates the form and collects the required fields left empty. */
       async checkFormValid () {
         let formValid
         try {
@@ -427,6 +458,11 @@
           }, 500)
         }
       },
+      /**
+       * @param {Object} field
+       * @param {*} value
+       * @returns {*} the value, or the empty value of its input type
+       */
       fieldValueOrDefault (field, value) {
         if (field.input === 'pillbox') {
           return value || []
@@ -435,6 +471,12 @@
         }
         return value
       },
+      /**
+       * @param {Object} originalData the record as loaded
+       * @param {Object} data the record edited
+       * @param {Object} field
+       * @returns {Object} the value per locale, the original one where the form is not valid
+       */
       getLocalisedFieldValue (originalData, data, field) {
         const fieldValue = {}
         _.each(this.resource.locales, (locale) => {
@@ -464,9 +506,16 @@
         })
         return fieldValue
       },
+      /** @param {*} msg logged */
       handleFormNotValid (msg) {
         log.debug('form not valid', msg)
       },
+      /**
+       * @param {Object} originalData the record as loaded
+       * @param {Object} data the record edited
+       * @param {Object} field
+       * @returns {*} the value to send, per locale when the field is localised
+       */
       getFieldValue(originalData, data, field) {
         const isLocalised = this.resource.locales && (field.localised || _.isUndefined(field.localised))
         if (isLocalised) {
@@ -492,6 +541,11 @@
         }
         return value
       },
+      /**
+       * @param {Object} resource
+       * @param {Object} record
+       * @returns {Array<Object>} the attachments at the attachment fields of the resource, paragraphs included
+       */
       getAttachmentsOfRecord(resource, record) {
         let attachments = []
         let attachmentsPaths = []
@@ -553,6 +607,11 @@
         attachments = _.compact(attachments)
         return {attachments, attachmentsPaths}
       },
+      /**
+       * @param {Array<Object>} attachments
+       * @param {boolean} removeDuplicate
+       * @returns {Array<Object>} without the _isAttachment flag
+       */
       cleanAttachments(attachments, removeDuplicate = true) {
         attachments = _.map(attachments, attachment => {
           delete attachment._isAttachment
@@ -564,6 +623,11 @@
         return attachments
       },
 
+      /**
+       * @param {Object} oldA
+       * @param {Object} newA
+       * @returns {boolean} name, position or crop changed
+       */
       attachmentWasUpdated(oldA, newA) {
         if (_.get(newA, '_name', '?') !== _.get(oldA, '_name', '?') ||
           _.get(newA, '_payload.index', 0) !== _.get(oldA, '_payload.index', 0) ||
@@ -572,6 +636,12 @@
         }
         return false
       },
+      /**
+       * @param {Object} resource
+       * @param {Object} originalRecord
+       * @param {Object} record
+       * @returns {Object} the fields to send and the attachments to add, update and delete
+       */
       getDataToUpload(resource, originalRecord, record) {
         // log.debug(originalRecord)
         const originalRecordAttachments = this.getAttachmentsOfRecord(resource, originalRecord)
@@ -608,6 +678,7 @@
           uploadObject: uploadObject
         }
       },
+      /** Validates every locale in turn, the form shown in each. */
       async checkFormValidForAllLocales() {
         await pAll(_.map(this.resource.locales, locale => {
           return async () => {
@@ -629,6 +700,7 @@
         })
         return _.size(names) > 3 ? `${_.take(names, 3).join(', ')}...` : names.join(', ')
       },
+      /** @returns {string} the message naming the missing fields and the locales short of them */
       summariseMissing () {
         const firstLocale = _.find(this.resource.locales, (locale) => _.has(this.missing.byLocale, locale))
         if (firstLocale) {
@@ -639,6 +711,7 @@
         const fields = this.missing.shared
         return fields.length > 0 ? `${TranslateService.get(fields.length === 1 ? 'TL_REQUIRED_MISSING_ONE' : 'TL_REQUIRED_MISSING_MANY', { num: fields.length })}: ${this.namesOfFields(fields)}` : ''
       },
+      /** Validates, then creates or updates the record with its attachments. */
       async createUpdateClicked () {
         if (!this.canCreateUpdate)  {
           return
@@ -707,6 +780,10 @@
         window.DialogService.send(false)
         this.canCreateUpdate = true
       },
+      /**
+       * @param {Object} uploadObject
+       * @param {Array<Object>} newAttachments uploaded once the record exists
+       */
       async createRecord (uploadObject, newAttachments) {
         this.$loading.start('create-record')
         try {
@@ -721,6 +798,11 @@
         }
         this.$loading.stop('create-record')
       },
+      /**
+       * @param {Array<Object>} newAttachments
+       * @param {Array<Object>} updatedAttachments
+       * @param {Array<Object>} deletedAttachments removed first
+       */
       async handleAttachmentsUpdates(newAttachments, updatedAttachments, deletedAttachments) {
         if (deletedAttachments.length > 0) {
           await this.removeAttachments(this.editingRecord._id, deletedAttachments)
@@ -732,6 +814,12 @@
           await this.updateAttachments(this.editingRecord._id, updatedAttachments)
         }
       },
+      /**
+       * @param {Object} uploadObject
+       * @param {Array<Object>} newAttachments
+       * @param {Array<Object>} updatedAttachments
+       * @param {Array<Object>} deletedAttachments
+       */
       async updateRecord (uploadObject, newAttachments, updatedAttachments, deletedAttachments) {
         this.$loading.start('update-record')
         try {
@@ -753,6 +841,10 @@
         }
         this.$loading.stop('update-record')
       },
+      /**
+       * @param {Object} attachment
+       * @returns {string} the model path of its field, the locale first when localised
+       */
       getAttachmentModel (attachment) {
         const modelParts = []
         if (_.get(attachment, '_fields.locale', false)) {
@@ -761,29 +853,47 @@
         modelParts.push(attachment._name)
         return _.join(modelParts, '.')
       },
+      /**
+       * @param {Array<Object>} attachments
+       * @returns {Array<Object>} those whose crop changed
+       */
       getUpdatedAttachments (attachments) {
         return _.filter(attachments, (attachment) => _.get(attachment, 'cropOptions.updated', false))
       },
+      /**
+       * @param {*} value
+       * @param {string} model the field path; nothing without one
+       */
       updateFields (value, model) {
         if (!model || _.isUndefined(model)) {
           return
         }
         _.set(this.editingRecord, model, value)
       },
+      /**
+       * @param {*} value
+       * @param {string} model the field path
+       */
       onModelUpdated (value, model) {
         this.updateFields(value, model)
         this.checkDirty()
       },
+      /**
+       * @param {string} model a field path
+       * @returns {boolean} whether its input takes files
+       */
       isAttachmentField (model) {
         const foundField = _.get(_.find(_.get(this.schema, 'fields', []), {model: model}), 'originalModel', false)
         const fieldType = _.get(_.find(this.resource.schema, {field: foundField}), 'input', false)
         return _.includes(this.fileInputTypes, fieldType)
       },
+      /** Takes the record as it is as the clean state. */
       resetSnapshot () {
         this.snapshot = createSnapshot(this.editingRecord)
         this.attempted = false
         this.checkDirty()
       },
+      /** Compares the record with the snapshot; the dirty locales and fields follow. */
       checkDirty () {
         if (!this.snapshot) {
           return
@@ -810,6 +920,10 @@
           delete field.labelClasses
         })
       },
+      /**
+       * @param {Object} schema
+       * @returns {{key: string, locale?: string}} the field name and the locale of the model path
+       */
       getKeyLocale (schema) {
         const options = {}
         const list = schema.model.split('.')

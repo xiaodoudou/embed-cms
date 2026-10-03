@@ -3,6 +3,10 @@ import _ from 'lodash'
 import TranslateServiceLib from '@s/TranslateService'
 
 const TranslateService = window.TranslateService || TranslateServiceLib
+/**
+ * @param {Object} schema
+ * @returns {{key: string, locale?: string}} the field name and the locale of the model path
+ */
 const getKeyLocale = (schema) => {
   const options = {}
   const list = _.get(schema, 'model', '').split('.')
@@ -13,6 +17,10 @@ const getKeyLocale = (schema) => {
   return options
 }
 
+/**
+ * @param {string} email
+ * @returns {boolean|Array} empty passes; else the match
+ */
 const validateEmail = (email) => {
   return _.isUndefined(email) || String(email).length === 0 || String(email)
     .toLowerCase()
@@ -22,6 +30,10 @@ const validateEmail = (email) => {
 }
 
 const validators = {
+  /**
+   * @param {string} u
+   * @returns {boolean}
+   */
   url: (u) => {
     try {
       const validUrl = new URL(u)
@@ -30,21 +42,54 @@ const validators = {
       return false
     }
   },
+  /**
+   * @param {*} n
+   * @returns {boolean}
+   */
   number: (n) => _.isNumber(n),
+  /**
+   * @param {*} n
+   * @returns {boolean}
+   */
   integer: (n) => _.isNumber(n) && _.isInteger(n),
+  /**
+   * @param {*} n
+   * @returns {boolean}
+   */
   double: (n) => _.isNumber(n) && (_.isInteger(n) || (n === +n && n !== (n | 0))),
+  /**
+   * @param {*} t
+   * @returns {boolean}
+   */
   text: (t) => _.isString(t),
+  /**
+   * @param {*} a
+   * @returns {boolean}
+   */
   array: (a) => _.isArray(a),
+  /**
+   * @param {*} e
+   * @returns {boolean|Array}
+   */
   email: (e) => validateEmail(e)
 }
 
+/** @returns {string} the translated message */
 const fieldIsRequired = () => {
   return TranslateService.get('TL_FIELD_IS_REQUIRED')
 }
+/** @returns {string} the translated message */
 const invalidFormat = () => {
   return TranslateService.get('TL_INVALID_FORMAT')
 }
 
+/**
+ * @param {Object} field
+ * @param {*} value
+ * @param {Object} model
+ * @param {string} type number, integer or double
+ * @returns {true|string}
+ */
 const checkNumber = (field, value, model, type) => {
   if (_.get(field, 'required', false) && !_.isNumber(value)) {
     return TranslateService.get('TL_FIELD_IS_REQUIRED')
@@ -60,13 +105,31 @@ const checkNumber = (field, value, model, type) => {
   return false
 }
 
+/**
+ * @param {*} item
+ * @param {Object} labelProp labels by value
+ * @returns {string}
+ */
 const customLabel = (item, labelProp) => {
   return _.get(labelProp, item, item)
 }
 
 const customValidators = {
+  /**
+   * @param {*} a
+   * @returns {boolean}
+   */
   array: (a) => _.isArray(a),
+  /**
+   * @param {*} e
+   * @returns {boolean}
+   */
   email: (e) => (new RegExp('/^\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*(\\.\\w{2,3})+$/')).test(e),
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @returns {true|string}
+   */
   text: (value, field) => {
     if (_.get(field, 'required', false) && (!_.isString(value) || _.isEmpty(value))) {
       return fieldIsRequired()
@@ -98,14 +161,37 @@ const customValidators = {
     }
     return true
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @returns {true|string} an empty paragraph counts as empty
+   */
   wysiwyg: (value, field) => {
     if (_.get(field, 'required', false) && (!_.isString(value) || _.isEmpty(value)) || value === '<p></p>') {
       return fieldIsRequired()
     }
     return true
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @returns {true|string}
+   */
   number: (value, field, model) => checkNumber(field, value, model, 'number'),
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @returns {true|string}
+   */
   double: (value, field, model) => checkNumber(field, value, model, 'double'),
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @returns {true|string}
+   */
   integer: (value, field, model) => {
     if (_.isNil(value)) {
       value = ''
@@ -115,6 +201,12 @@ const customValidators = {
     }
     return checkNumber(field, value, model, 'integer')
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model the record, where the attachment of the field is looked up
+   * @returns {true|string}
+   */
   image: (value, field, model) => {
     const { key, locale } = getKeyLocale(field)
     const attachment = _.find(_.get(model, '_attachments', []), (item) => {
@@ -125,6 +217,12 @@ const customValidators = {
     }
     return true
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model the record, where the attachment of the field is looked up
+   * @returns {true|string}
+   */
   file: (value, field, model) => {
     const { key, locale } = getKeyLocale(field)
     const attachment = _.find(_.get(model, '_attachments', []), (item) => {
@@ -135,9 +233,19 @@ const customValidators = {
     }
     return true
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @returns {true|string}
+   */
   select: (value, field) => {
     return _.get(field, 'required', false) && _.isEmpty(value) ? fieldIsRequired() : true
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @returns {true|string}
+   */
   pillbox: (value, field) => {
     if (_.get(field, 'required', false) && (!_.isArray(value) || _.isEmpty(value))) {
       return fieldIsRequired()
@@ -227,6 +335,12 @@ const typeMapper = {
     selectOptions: {
       multiple: true,
       searchable: true,
+      /**
+       * @param {string} newTag
+       * @param {string} id
+       * @param {Array} options receives it
+       * @param {Array} value receives it
+       */
       onNewTag (newTag, id, options, value) {
         options.push(newTag)
         value.push(newTag)
@@ -315,6 +429,10 @@ class FormService {
     this.typeMapper = typeMapper
   }
 
+  /**
+   * @param {Object} schema
+   * @returns {{key: string, locale?: string}}
+   */
   getKeyLocale (schema) {
     return getKeyLocale(schema)
   }

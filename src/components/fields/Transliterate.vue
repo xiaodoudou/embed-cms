@@ -99,6 +99,7 @@
       }
     },
     methods: {
+      /** @param {string} data typed by hand: the field no longer follows its source */
       onChangeData(data) {
         // Mark that user has manually edited the field
         if (!this.isReadonly) {

@@ -86,11 +86,13 @@
     },
     methods: {
       sanitizeHtml,
+      /** @returns {Array<Function>} the Vuetify rule: xlsx, xls or csv */
       getRules () {
         return [
           (value) => !value || value.type === 'text/xlsx' || value.type === 'text/xls' || value.type === 'text/csv' || 'Only XLSX/XLS/CSV files allowed'
         ]
       },
+      /** @param {DragEvent} event a single file; more are refused */
       onDrop (event) {
         this.dragover = false
         const files = _.get(event, 'dataTransfer.files', [])
@@ -100,6 +102,10 @@
         }
         this.onChangeXlsxFile(event, files)
       },
+      /**
+       * @param {Event|File} event the change event, or the file itself
+       * @param {File[]|false} files from a drop
+       */
       async onChangeXlsxFile (event, files = false) {
         this.uploadedXlsx = null
         // the change event holds the files, a drop hands them over, and some Vuetify versions hand over the file itself
@@ -109,10 +115,12 @@
         }
         this.uploadedXlsx = file
       },
+      /** Opens the Google sheet of the config in a new tab. */
       openFile () {
         // a blocked pop-up gives no window
         window.open(`https://docs.google.com/spreadsheets/d/${this.config.gsheetId}/edit`, '_blank')?.focus()
       },
+      /** Asks the server what the remote import would change. */
       async checkStatus () {
         this.loading = true
         this.status = null
@@ -132,6 +140,7 @@
         this.$loading.stop('cms-import')
         this.loading = false
       },
+      /** Runs the remote import. */
       async execute () {
         this.loading = true
         this.status = null
@@ -151,6 +160,7 @@
         this.$loading.stop('cms-import')
         this.loading = false
       },
+      /** Asks the server what the uploaded spreadsheet would change. */
       async checkXlsxStatus () {
         this.loading = true
         this.status = null
@@ -172,6 +182,7 @@
         this.$loading.stop('xlsx-import')
         this.loading = false
       },
+      /** Imports the uploaded spreadsheet. */
       async executeXlsx () {
         this.loading = true
         this.status = null

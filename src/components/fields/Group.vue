@@ -33,9 +33,11 @@
       }
     },
     methods: {
+      /** @param {Error} error logged */
       onError (error) {
         console.error('Group - onError:', error)
       },
+      /** @throws {Error} when the inner form has errors, kept in this.errors */
       async validate () {
         const isValid = _.get(await this.$refs.input.validate(), 'length', 0) === 0
         if (!isValid) {
@@ -44,12 +46,18 @@
         }
         return isValid
       },
+      /** @returns {*} what the inner form answers */
       debouncedValidate () {
         return this.$refs.input.debouncedValidate()
       },
+      /** @returns {*} what the inner form answers */
       clearValidationErrors () {
         return this.$refs.input.clearValidationErrors()
       },
+      /**
+       * @param {*} value
+       * @param {string} model the field path; both emitted as input
+       */
       onModelUpdated (value, model) {
         this.$emit('input', value, model)
       }

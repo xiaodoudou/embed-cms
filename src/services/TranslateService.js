@@ -20,6 +20,7 @@ class TranslateService {
     this.state.locale = locale
   }
 
+  /** Loads the language config and the dictionaries. */
   async init () {
     const data = await RequestService.get(`${window.location.pathname}i18n/config.json`)
     this.config = _.get(data, 'config.language', { 'defaultLocale': 'enUS', 'locales': ['enUS'] })
@@ -33,14 +34,22 @@ class TranslateService {
     }
   }
 
+  /** @returns {Array<string>} */
   getLocales() {
     return _.get(this.config, 'locales', [])
   }
 
+  /** @param {string} locale */
   setLocale (locale) {
     this.locale = locale
   }
 
+  /**
+   * @param {string} translation a Mustache template
+   * @param {Object} params
+   * @param {string|false} locale
+   * @returns {string}
+   */
   renderTranslation(translation, params, locale = false) {
     try {
       return Mustache.render(translation, params || {})
@@ -50,6 +59,7 @@ class TranslateService {
     return ''
   }
 
+  /** @param {string} key logged, once the dictionary is loaded */
   translationNotFound(key) {
     // nothing is missing while the dictionary is still loading
     if (_.isEmpty(this.dict[this.locale])) {
@@ -65,6 +75,11 @@ class TranslateService {
     )
   }
 
+  /**
+   * @param {string} key
+   * @param {Object} [params]
+   * @returns {string} the translation, or the key
+   */
   get (key, params) {
     if (_.isString(key)) {
       if (_.isEmpty(key)) {

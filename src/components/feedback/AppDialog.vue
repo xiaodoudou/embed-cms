@@ -54,6 +54,7 @@
       }
     },
     computed: {
+      /** @returns {string} the icon prop, else one by type: info, warning, or the bin */
       iconName () {
         if (this.icon) {
           return this.icon
@@ -69,12 +70,14 @@
       }
     },
     methods: {
+      /** @param {boolean} value closing emits cancel too */
       onUpdate (value) {
         if (!value) {
           this.$emit('cancel')
         }
         this.$emit('update:modelValue', value)
       },
+      /** The cancel button of a destructive dialog, the confirm button otherwise. */
       focusDefault () {
         const target = this.type === 'destructive' ? this.$refs.cancelButton : this.$refs.confirmButton
         const elem = _.get(target, '$el', false)
@@ -82,6 +85,7 @@
           elem.focus()
         }
       },
+      /** Back to the element that opened the dialog, when it is still in the page. */
       restoreFocus () {
         const trigger = this.trigger
         this.trigger = null

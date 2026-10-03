@@ -4,7 +4,7 @@
     <v-card class="record-table" :class="{'has-back-button': record}" elevation="0">
       <template v-if="!record">
         <div class="cms-toolbar">
-          <div v-shortkey="getShortcuts()" class="search" @shortkey="interactiveSearch">
+          <div v-shortkey="getShortcuts()" class="search" @shortkey="focusSearch">
             <search-field ref="search" v-model="search" :placeholder="$filters.translate('TL_SEARCH')" :aria-label="$filters.translate('TL_SEARCH')" name="search" />
             <v-btn v-if="maxCount <= 0 || listCount < maxCount" elevation="0" class="new" @click="createRecord">
               <v-icon size="small" icon="$notePlusOutline" />
@@ -145,21 +145,27 @@
       }
     },
     computed: {
+      /** @returns {string} */
       resourceTitle () {
         return getResourceLabel(this.resource)
       },
+      /** @returns {Array<Object>} the list, [] when it is not an array */
       clonedRecordList () {
         return _.isArray(this.recordList) ? this.recordList : []
       },
+      /** @returns {number} 0 when unlimited */
       maxCount () {
         return _.get(this.resource, 'maxCount', 0)
       },
+      /** @returns {number} */
       listCount () {
         return this.clonedRecordList.length
       },
+      /** @returns {boolean} */
       showAllLocales () {
         return !!this.prefs.showAllLocales
       },
+      /** @returns {Function} (column) => its translated label, else its field */
       labelOf () {
         return (raw) => TranslateService.get(raw.label) || raw.field
       },
@@ -168,24 +174,31 @@
         const fields = fieldsFromSchema(this.resource, this.locale, this.labelOf)
         return buildColumns(fields, this.resource, { showAllLocales: this.showAllLocales, labelOf: this.labelOf })
       },
+      /** @returns {Array<Object>} the visible columns in the saved order */
       columns () {
         return applyPrefs(this.allColumns, this.prefs)
       },
+      /** @returns {number} */
       hiddenColumnCount () {
         return this.allColumns.length - this.columns.length
       },
+      /** @returns {number} */
       visibleLocaleCount () {
         return visibleLocales(this.columns).length
       },
+      /** @returns {boolean} several locales and a localised column */
       canShowAllLocales () {
         return _.size(this.resource.locales) > 1 && _.some(this.allColumns, 'locale')
       },
+      /** @returns {Object<string, Object>} */
       columnByKey () {
         return _.keyBy(this.allColumns, 'key')
       },
+      /** @returns {Object} the cell helpers handed to TableCell */
       helpers () {
         return { optionLabel: this.optionLabel, imageUrl: this.imageUrl, fileName: this.fileName }
       },
+      /** @returns {Array<Object>} the records matching the search */
       filteredList () {
         if (_.isEmpty(_.trim(this.search))) {
           return this.clonedRecordList
@@ -198,9 +211,11 @@
           return matchesSearch(this.search, values)
         })
       },
+      /** @returns {Array<Object>} the filtered records, sorted */
       rows () {
         return sortRows(this.filteredList, this.sortBy, (row, key) => sortValue(row, this.columnByKey[key] || {}, { labelOf: (column) => (value) => this.optionLabel(column, value) }))
       },
+      /** @returns {string} the count, "n of total" when filtered */
       footerText () {
         const total = this.clonedRecordList.length
         return this.rows.length === total
@@ -243,6 +258,7 @@
       NotificationsService.events.off('omnibar-display-status', this.onGetOmnibarDisplayStatus)
     },
     methods: {
+      /** @param {boolean} status */
       onGetOmnibarDisplayStatus (status) {
         this.omnibarDisplayed = status
       },
@@ -250,7 +266,7 @@
       getShortcuts () {
         return this.omnibarDisplayed ? {} : { open: ['ctrl', '/'], jump: ['/'] }
       },
-      interactiveSearch () {
+      focusSearch () {
         const elem = _.get(this.$refs, 'search', false)
         if (elem) {
           elem.focus()
@@ -261,32 +277,52 @@
         this.prefs = prefs
         savePrefs(window.localStorage, this.resource.title, prefs)
       },
+      /** The sort is reset: the column keys change. */
       toggleAllLocales () {
         // the column keys change with the locale expansion, so the remembered column choices no longer apply
         this.updatePrefs({ showAllLocales: !this.showAllLocales })
         this.sortBy = []
       },
+      /** @param {string} key */
       onToggleColumn (key) {
         this.updatePrefs(toggleColumn(this.allColumns, this.prefs, key))
       },
+      /**
+       * @param {string} key
+       * @param {number} delta -1 or 1
+       */
       onMoveColumn (key, delta) {
         this.updatePrefs(moveColumn(this.allColumns, this.prefs, key, delta))
       },
+      /** Back to the default columns; the locales and the sort are kept. */
       onResetColumns () {
         clearPrefs(window.localStorage, this.resource.title)
         this.updatePrefs(_.pick(this.prefs, ['showAllLocales', 'sortBy']))
       },
+      /**
+       * @param {string} key
+       * @param {boolean} additive shift: added to the current sort
+       */
       onSort (key, additive) {
         this.sortBy = nextSort(this.sortBy, key, additive)
         this.updatePrefs({ ...this.prefs, sortBy: this.sortBy })
       },
+      /** @param {string} density saved as a preference */
       setDensity (density) {
         this.density = density
         writePreference('table.density', density)
       },
+      /**
+       * @param {string} density
+       * @returns {string}
+       */
       densityLabel (density) {
         return TranslateService.get(`TL_DENSITY_${_.toUpper(density)}`)
       },
+      /**
+       * @param {string} key
+       * @returns {boolean}
+       */
       isColumnHidden (key) {
         return isColumnHidden(this.allColumns, this.prefs, key)
       },
@@ -323,16 +359,36 @@
         }
         return _.toString(value)
       },
+      /**
+       * @param {Object} record
+       * @param {Object} column
+       * @returns {Object|undefined}
+       */
       findAttachment (record, column) {
         return attachmentOf(record, column)
       },
+      /**
+       * @param {Object} record
+       * @param {Object} column
+       * @returns {string|false} the url, resized to 64px high
+       */
       imageUrl (record, column) {
         const url = _.get(this.findAttachment(record, column), 'url', false)
         return url ? `${url}?resize=autox64` : false
       },
+      /**
+       * @param {Object} record
+       * @param {Object} column
+       * @returns {string}
+       */
       fileName (record, column) {
         return _.get(this.findAttachment(record, column), '_filename', '')
       },
+      /**
+       * @param {Object} item
+       * @param {Object} column
+       * @returns {string} the value as text, by kind
+       */
       cellText (item, column) {
         const value = _.get(item, column.model)
         if (column.kind === 'richtext') {
@@ -346,6 +402,10 @@
         }
         return _.isObject(value) ? '' : value
       },
+      /**
+       * @param {Object} row
+       * @returns {string} its label, else its id
+       */
       rowName (row) {
         return getRecordLabel(this.resource, row, this.locale) || _.get(row, '_id', '')
       },
@@ -353,16 +413,23 @@
       updateRecordList (record) {
         this.$emit('updateRecordList', record)
       },
+      /** @param {Object} record emitted as update:record */
       selectRecord (record) {
         this.localLocale = this.locale
         this.$emit('update:record', record)
       },
+      /** @param {Object} record */
       editRecord (record) {
         this.selectRecord(record)
       },
       createRecord () {
         this.selectRecord({ _local: true })
       },
+      /**
+       * @param {boolean} forMultipleRecords
+       * @param {Object|false} record named in the question
+       * @returns {Promise<boolean>}
+       */
       askConfirmation (forMultipleRecords = false, record = false) {
         const name = record ? (getRecordLabel(this.resource, record, this.locale) || record._id) : ''
         return window.DialogService.ask({
@@ -402,6 +469,7 @@
         this.selectedRecords = failed
         this.$emit('updateRecordList', null)
       },
+      /** @param {Object} record after confirmation */
       async removeRecord (record) {
         if (!(await this.askConfirmation(false, record))) {
           return
@@ -418,6 +486,11 @@
         }
         this.$loading.stop('delete-record')
       },
+      /**
+       * @param {Error|Object} error a 400 adds its message
+       * @param {string} type create, update or delete
+       * @param {Object} record
+       */
       manageError (error, type, record) {
         let errorMessage = TranslateService.get(`TL_ERROR_ON_RECORD_${_.toUpper(type)}`)
         if (_.get(error, 'code', 500) === 400 && _.get(error, 'message', false)) {
@@ -426,12 +499,19 @@
         console.error(errorMessage, record)
         this.notify(errorMessage, 'error')
       },
+      /** @returns {Array<Object>} */
       getSearchableFields () {
         return _.filter(this.resource.schema, {searchable: true})
       },
+      /** @param {string} item a locale, emitted as update:locale */
       selectLocale (item) {
         this.$emit('update:locale', item)
       },
+      /**
+       * @param {Object} item
+       * @param {Object} field
+       * @returns {*} the value of the field, empty without a field
+       */
       getValue (item, field) {
         if (!field) {
           return ''

@@ -25,6 +25,7 @@
   export default {
     mixins: [AbstractField],
     methods: {
+      /** @returns {string} schema.inputFieldType, text by default */
       getType () {
         return _.get(this.schema, 'inputFieldType', 'text')
       },

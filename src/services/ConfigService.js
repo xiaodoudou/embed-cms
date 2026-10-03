@@ -5,6 +5,7 @@ class ConfigService {
     this.config = {}
   }
 
+  /** Loads the config of the server into this.config. */
   async init () {
     try {
       this.config = await RequestService.get(`${window.location.pathname}config`)

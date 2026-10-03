@@ -93,19 +93,39 @@
           transform: `translate(${button.offsetLeft}px, ${button.offsetTop}px)`
         }
       },
+      /**
+       * @param {string} locale
+       * @returns {boolean}
+       */
       isDirty (locale) {
         return _.includes(this.dirtyLocales, locale)
       },
+      /**
+       * @param {string} locale
+       * @returns {number} the required fields without a value in it
+       */
       missingCount (locale) {
         return _.get(this.missing, locale, 0)
       },
+      /**
+       * @param {string} locale
+       * @returns {string}
+       */
       dirtyLabel (locale) {
         return TranslateService.get('TL_UNSAVED_IN_LOCALE', { locale: this.getLocaleTranslation(locale) })
       },
+      /**
+       * @param {string} locale
+       * @returns {string} singular or plural
+       */
       missingLabel (locale) {
         const count = this.missingCount(locale)
         return TranslateService.get(count === 1 ? 'TL_REQUIRED_MISSING_IN_LOCALE_ONE' : 'TL_REQUIRED_MISSING_IN_LOCALE_MANY', { num: count, locale: this.getLocaleTranslation(locale) })
       },
+      /**
+       * @param {string} locale
+       * @returns {string} its translated name
+       */
       getLocaleTranslation (locale) {
         return TranslateService.get('TL_' + locale.toUpperCase())
       },
@@ -117,6 +137,7 @@
           this.selectLocale(locale)
         }
       },
+      /** With two locales, goes to the other one. */
       toggleLocale () {
         if (this.locales.length === 2) {
           this.selectLocale(_.find(this.locales, (l) => l !== this.locale))

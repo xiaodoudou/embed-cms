@@ -74,36 +74,61 @@
         options.disable_array_delete = true
       }
       JSONEditor.defaults.themes.cms = class cms extends JSONEditor.AbstractTheme {
+        /**
+         * @param {number} min
+         * @param {number} max
+         * @param {number} step
+         * @returns {HTMLInputElement}
+         */
         getRangeInput (min, max, step) {
           return super.getRangeInput(min, max, step)
         }
+        /** @returns {HTMLDivElement} */
         getGridContainer () {
           const el = document.createElement('div')
           el.className = 'json-editor-grid-container'
           return el
         }
+        /** @returns {HTMLDivElement} */
         getGridRow () {
           const el = document.createElement('div')
           el.className = 'json-editor-grid-row'
           return el
         }
+        /**
+         * @param {string} text
+         * @returns {HTMLLabelElement}
+         */
         getFormInputLabel (text) {
           // styled by assets/scss/components/JsonEditor.scss, like the label of every other field
           const el = super.getFormInputLabel(text)
           el.className = 'json-editor-input-label'
           return el
         }
+        /**
+         * @param {HTMLElement} el
+         * @param {number} size 1 to 12, the class span<size>
+         */
         setGridColumnSize (el, size) {
           el.className = `span${size}`
         }
+        /**
+         * @param {Array} options
+         * @returns {HTMLSelectElement}
+         */
         getSelectInput (options) {
           const input = super.getSelectInput(options)
           return input
         }
+        /**
+         * @param {string} type
+         * @returns {HTMLInputElement}
+         */
         getFormInputField (type) {
           const el = super.getFormInputField(type)
           return el
         }
+        /** @param {HTMLElement} input placed in its control group; an error queued before it was ready is shown now */
         afterInputReady (input) {
           if (input.controlgroup) {
             return
@@ -121,10 +146,12 @@
             this.addInputError(input, text)
           }
         }
+        /** @returns {HTMLDivElement} */
         getIndentedPanel () {
           const el = document.createElement('div')
           return el
         }
+        /** @returns {HTMLDivElement} */
         getModal () {
           // the pop-ups (Edit JSON, Object properties) are styled as a modal by assets/scss/components/JsonEditor.scss;
           // the library only toggles display
@@ -133,6 +160,10 @@
           el.style.display = 'none'
           return el
         }
+        /**
+         * @param {string} text the tooltip
+         * @returns {HTMLElement}
+         */
         getInfoButton (text) {
           const icon = document.createElement('span')
           icon.className = 'icon-info-sign pull-right'
@@ -160,12 +191,23 @@
           icon.appendChild(tooltip)
           return icon
         }
+        /**
+         * @param {string} text
+         * @returns {HTMLParagraphElement}
+         */
         getFormInputDescription (text) {
           const el = document.createElement('p')
           el.className = 'help-inline'
           el.textContent = text
           return el
         }
+        /**
+         * @param {HTMLElement} label
+         * @param {HTMLElement} input
+         * @param {HTMLElement} [description]
+         * @param {HTMLElement} [infoText]
+         * @returns {HTMLDivElement} the control group
+         */
         getFormControl (label, input, description, infoText) {
           const ret = document.createElement('div')
           ret.className = 'control-group'
@@ -196,30 +238,44 @@
           }
           return ret
         }
+        /** @returns {HTMLDivElement} */
         getHeaderButtonHolder () {
           const el = this.getButtonHolder()
           el.className += ' btn-groups'
           return el
         }
+        /** @returns {HTMLDivElement} */
         getButtonHolder () {
           const el = document.createElement('div')
           el.className = 'btn-group'
           return el
         }
+        /**
+         * @param {string} text
+         * @param {HTMLElement} icon
+         * @param {string} title
+         * @returns {HTMLButtonElement}
+         */
         getButton (text, icon, title) {
           const el = super.getButton(text, icon, title)
           el.className += ' btn btn-default'
           return el
         }
+        /** @returns {HTMLTableElement} */
         getTable () {
           const el = document.createElement('table')
           el.className = 'table table-bordered'
           return el
         }
+        /** @returns {HTMLTableCellElement} */
         getTableCell () {
           const el = document.createElement('td')
           return el
         }
+        /**
+         * @param {HTMLElement} input
+         * @param {string} text kept for later when the input has no control group yet
+         */
         addInputError (input, text) {
           if (!input.controlgroup) {
             this.queuedInputErrorText = text
@@ -239,6 +295,7 @@
 
           input.errmsg.textContent = text
         }
+        /** @param {HTMLElement} input */
         removeInputError (input) {
           if (!input.controlgroup) {
             delete this.queuedInputErrorText
@@ -249,6 +306,10 @@
           input.errmsg.style.display = 'none'
           input.controlgroup.className = input.controlgroup.className.replace(/\s?error/g, '')
         }
+        /**
+         * @param {string} [propertyName]
+         * @returns {HTMLDivElement} tabs on the left
+         */
         getTabHolder (propertyName) {
           const pName = _.isUndefined(propertyName) ? '' : propertyName
           const el = document.createElement('div')
@@ -256,6 +317,10 @@
           el.innerHTML = `<ul class='nav nav-tabs'  id='${pName}'></ul><div class='tab-content well well-small' id='${pName}'></div>`
           return el
         }
+        /**
+         * @param {string} [propertyName]
+         * @returns {HTMLDivElement} tabs on top
+         */
         getTopTabHolder (propertyName) {
           const pName = _.isUndefined(propertyName) ? '' : propertyName
           const el = document.createElement('div')
@@ -263,6 +328,11 @@
           el.innerHTML = `<ul class='nav nav-tabs' id='${pName}'></ul><div class='tab-content well well-small'  id='${pName}'></div>`
           return el
         }
+        /**
+         * @param {HTMLElement|string} text
+         * @param {string} tabId
+         * @returns {HTMLLIElement}
+         */
         getTab (text, tabId) {
           const el = document.createElement('li')
           el.className = 'nav-item'
@@ -272,6 +342,11 @@
           el.appendChild(a)
           return el
         }
+        /**
+         * @param {HTMLElement|string} text
+         * @param {string} tabId
+         * @returns {HTMLLIElement}
+         */
         getTopTab (text, tabId) {
           const el = document.createElement('li')
           el.className = 'nav-item'
@@ -281,38 +356,59 @@
           el.appendChild(a)
           return el
         }
+        /**
+         * @param {HTMLElement} tabHolder
+         * @returns {HTMLElement} its second child
+         */
         getTabContentHolder (tabHolder) {
           return tabHolder.children[1]
         }
+        /**
+         * @param {HTMLElement} tabHolder
+         * @returns {HTMLElement} its second child
+         */
         getTopTabContentHolder (tabHolder) {
           return tabHolder.children[1]
         }
+        /** @returns {HTMLDivElement} */
         getTabContent () {
           const el = document.createElement('div')
           el.className = 'tab-pane'
           return el
         }
+        /** @returns {HTMLDivElement} */
         getTopTabContent () {
           const el = document.createElement('div')
           el.className = 'tab-pane'
           return el
         }
+        /** @param {{tab: HTMLElement, container: HTMLElement}} row */
         markTabActive (row) {
           row.tab.className = row.tab.className.replace(/\s?active/g, '')
           row.tab.className += ' active'
           row.container.className = row.container.className.replace(/\s?active/g, '')
           row.container.className += ' active'
         }
+        /** @param {{tab: HTMLElement, container: HTMLElement}} row */
         markTabInactive (row) {
           row.tab.className = row.tab.className.replace(/\s?active/g, '')
           row.container.className = row.container.className.replace(/\s?active/g, '')
         }
+        /**
+         * @param {HTMLElement} holder
+         * @param {HTMLElement} tab appended to its first child
+         */
         addTab (holder, tab) {
           holder.children[0].appendChild(tab)
         }
+        /**
+         * @param {HTMLElement} holder
+         * @param {HTMLElement} tab appended to its first child
+         */
         addTopTab (holder, tab) {
           holder.children[0].appendChild(tab)
         }
+        /** @returns {HTMLDivElement} */
         getProgressBar () {
           const container = document.createElement('div')
           container.className = 'progress'
@@ -324,6 +420,10 @@
 
           return container
         }
+        /**
+         * @param {HTMLElement} progressBar
+         * @param {number} progress 0 to 100
+         */
         updateProgressBar (progressBar, progress) {
           if (!progressBar) {
             return
@@ -331,6 +431,7 @@
 
           progressBar.firstChild.style.width = `${progress}%`
         }
+        /** @param {HTMLElement} progressBar set to indeterminate */
         updateProgressBarUnknown (progressBar) {
           if (!progressBar) {
             return
@@ -504,6 +605,10 @@
         // the library sets values and the disabled state without any event
         root.querySelectorAll('select[data-je-select]').forEach((select) => select._jeSync && select._jeSync())
       },
+      /**
+       * @param {HTMLSelectElement} select
+       * @param {HTMLElement} trigger its button; a second click on it closes the menu
+       */
       toggleMenu (select, trigger) {
         if (this.menu && this.menu._trigger === trigger) {
           this.closeMenu()
@@ -511,6 +616,10 @@
           this.openMenu(select, trigger)
         }
       },
+      /**
+       * @param {HTMLSelectElement} select its options become the items of the menu
+       * @param {HTMLElement} trigger the menu is placed under it
+       */
       openMenu (select, trigger) {
         this.closeMenu()
         const menu = document.createElement('div')
@@ -558,6 +667,10 @@
         document.addEventListener('keydown', this.menuClose, true)
         window.addEventListener('scroll', this.menuClose, true)
       },
+      /**
+       * @param {KeyboardEvent} event arrows move the highlight, Enter picks, Escape closes
+       * @param {HTMLSelectElement} select
+       */
       onMenuKey (event, select) {
         const items = Array.from(this.menu.querySelectorAll('.je-menu__item'))
         const current = items.findIndex((item) => item.classList.contains('je-menu__item--highlighted'))
@@ -585,6 +698,7 @@
         document.removeEventListener('keydown', this.menuClose, true)
         window.removeEventListener('scroll', this.menuClose, true)
       },
+      /** @returns {HTMLElement|null} the pop-up open in the editor */
       openModal () {
         return this.modalHost && this.modalHost.querySelector(OPEN_MODAL)
       },
@@ -619,6 +733,7 @@
           textarea._cm.save()
         }
       },
+      /** @param {MouseEvent} event a click elsewhere than on a button is ignored */
       onEditorClick (event) {
         const button = event.target.closest && event.target.closest('button')
         if (!button) {
@@ -645,6 +760,7 @@
           target.click()
         }
       },
+      /** @param {KeyboardEvent} event Escape closes the open pop-up and goes no further */
       onEditorKeydown (event) {
         const modal = event.key === 'Escape' && this.openModal()
         if (modal) {
@@ -652,6 +768,7 @@
           this.closeModal(modal)
         }
       },
+      /** @param {MouseEvent} event a press outside the open pop-up and its button closes it */
       onOutsideMouseDown (event) {
         const modal = this.openModal()
         if (modal && !modal.contains(event.target) && !event.target.closest('.json-editor-btntype-editjson, .json-editor-btntype-properties')) {

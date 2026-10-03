@@ -105,10 +105,12 @@
           this.$vuetify.theme.change(this.loginTheme)
         }
       },
+      /** @param {boolean} isLoading */
       async onLoading(isLoading) {
         await this.$nextTick()
         this.isLoading = isLoading
       },
+      /** Posts the credentials; an empty field takes the focus instead. */
       async login () {
         if (this.loggingIn) {
           return

@@ -66,25 +66,32 @@
     },
     methods: {
       sanitizeHtml,
+      /** Emits reloadResource with the id of the updated record. */
       reloadResource() {
         this.$emit('reloadResource', _.get(this.receivedUpdate, 'data._id', false))
         this.receivedUpdate = false
       },
+      /** @returns {'RECORD'|'RESOURCE'} the part of the translation keys */
       recordOrResource() {
         return this.isSameRecord() ? 'RECORD' : 'RESOURCE'
       },
+      /** @returns {string} a translation key */
       getTitle() {
         return `TL_WS_UPDATES_${this.recordOrResource()}_TITLE`
       },
+      /** @returns {string} a translation key */
       getDescription() {
         return `TL_WS_UPDATES_${this.recordOrResource()}_DESCRIPTION`
       },
+      /** @returns {string} the translated description, with the name of the resource */
       describe() {
         return TranslateService.get(this.getDescription(), { resourceName: _.get(this.receivedUpdate, 'data.resource', '') })
       },
+      /** @returns {boolean} whether the update is about the selected record */
       isSameRecord() {
         return _.get(this.receivedUpdate, 'data._id', '?') === _.get(this.selectedRecord, '_id', '??')
       },
+      /** @returns {string} a translation key: connecting, connected or disconnected */
       getConnectionStatus() {
         if (this.isConnecting) {
           return 'TL_WS_UPDATES_CONNECTING'
@@ -93,6 +100,7 @@
         }
         return 'TL_WS_UPDATES_RECONNECTING'
       },
+      /** Opens /_updates on the ws scheme of the page and binds the handlers. */
       connectToWebsocketServer() {
         const url = `${window.location.origin.replace(/^(http)/, 'ws')}/_updates`
         this.client = new WebSocket(url)
@@ -114,10 +122,15 @@
         this.isConnecting = false
         this.isConnected = true
       },
+      /**
+       * @param {Object} msg
+       * @returns {boolean} whether _updatedBy is the logged-in user
+       */
       isFromSelf(msg) {
         const user = _.get(LoginService, 'user', {})
         return _.get(msg, 'data._updatedBy', false) === `${user.group}~${user.username}`
       },
+      /** @param {MessageEvent} event a JSON message: a ping is answered, an update is kept for the banner */
       onmessage (event) {
         const msg = JSON.parse(event.data)
         if (!_.get(msg, 'action', false)) {
@@ -132,6 +145,7 @@
           }
         }
       },
+      /** @param {Object} data sent as JSON; a failure is logged, not thrown */
       send (data) {
         try {
           this.client.send(JSON.stringify(data))
@@ -144,6 +158,7 @@
         this.send({ action: 'pong' })
         this.onHeartbeat()
       },
+      /** Arms the timeout that closes the socket when the server stops pinging. */
       onHeartbeat () {
         clearTimeout(this.heatbeat)
         this.heatbeat = setTimeout(() => {

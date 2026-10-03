@@ -16,6 +16,7 @@
     // window.DialogService.show({event: 'event-test', data: '', callback: ()=> this.test('test log')})
     },
     methods: {
+      /** @param {*} data logged */
       test(data) {
         console.log('test ', data)
       }

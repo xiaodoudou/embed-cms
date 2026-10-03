@@ -70,9 +70,14 @@
     },
     methods: {
       sanitizeHtml,
+      /**
+       * @param {Object} item
+       * @returns {string}
+       */
       labelOf (item) {
         return getResourceLabel(item)
       },
+      /** @returns {string} the label of the selected item, empty without one */
       currentLabel () {
         return this.selectedItem ? this.labelOf(this.selectedItem) : ''
       },
@@ -80,12 +85,18 @@
       getShortcuts () {
         return { toggle: ['ctrl', 'k'] }
       },
+      /** @param {{target: HTMLElement}} event */
       onScroll ({ target }) {
         this.scrolledToBottom = isScrolledToBottom(target)
       },
+      /**
+       * @param {string} type
+       * @returns {string} the cog for a plugin, the package otherwise
+       */
       getIcon (type) {
         return type === 'plugin' ? '$cogOutline' : '$package'
       },
+      /** @param {boolean} display the search is reset; opening focuses the field */
       showHideOmnibar (display) {
         this.showOmnibar = display
         this.search = ''
@@ -97,6 +108,7 @@
         }
         this.sendOmnibarDisplayStatus(display)
       },
+      /** @param {number} i the result, the highlighted one by default */
       selectResult (i = -1) {
         const result = _.get(this.results, `[${i === -1 ? this.highlightedItem : i}]`, false)
         if (!result) {
@@ -107,6 +119,7 @@
         }
         this.showHideOmnibar(false)
       },
+      /** Keeps the highlighted result in view. */
       scrollToResult () {
         const elem = document.getElementById(`result-${this.highlightedItem}`)
         if (elem) {
@@ -132,6 +145,7 @@
           this.selectResult()
         }
       },
+      /** Toggles the omnibar. */
       onShortkey () {
         this.showHideOmnibar(!this.showOmnibar)
       }

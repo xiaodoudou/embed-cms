@@ -12,6 +12,10 @@ const TranslateService = window.TranslateService || TranslateServiceLib
 export default {
   mixins: [Notification],
   methods: {
+    /**
+     * @param {string} id the record
+     * @param {Array<Object>} attachments uploaded one by one; the failures are reported together
+     */
     async uploadAttachments (id, attachments) {
       this.$loading.start('uploadAttachments')
       const url = `../api/${this.resource.title}/${id}/attachments`
@@ -54,9 +58,18 @@ export default {
       }
       this.$loading.stop('uploadAttachments')
     },
+    /**
+     * @param {Array<Object>} attachments
+     * @param {Array<string>} fieldsToKeep
+     * @returns {Array<Object>}
+     */
     formatAttachments(attachments, fieldsToKeep = ['_id', 'cropOptions', 'order', '_name']) {
       return _.map(attachments, (attachment)=> _.pick(attachment, fieldsToKeep))
     },
+    /**
+     * @param {string} id the record
+     * @param {Array<Object>} attachments
+     */
     async updateAttachments (id, attachments) {
       this.$loading.start('updateAttachments')
       try {
@@ -66,6 +79,10 @@ export default {
       }
       this.$loading.stop('updateAttachments')
     },
+    /**
+     * @param {string} id the record
+     * @param {Array<Object>} attachments
+     */
     async removeAttachments (id, attachments) {
       this.$loading.start('remove-attachments')
       try {
@@ -75,17 +92,30 @@ export default {
       }
       this.$loading.stop('remove-attachments')
     },
-    getTypePrexix (type) {
+    /**
+     * @param {string} type create, update or delete
+     * @returns {string} the translated "error on record" message
+     */
+    recordErrorMessage (type) {
       return TranslateService.get(`TL_ERROR_ON_RECORD_${_.toUpper(type)}`)
     },
+    /**
+     * @param {Error|Object} error a 400 adds its message
+     * @param {string} type create, update or delete
+     * @param {Object} record
+     */
     manageError (error, type, record) {
-      let errorMessage = this.getTypePrexix(type)
+      let errorMessage = this.recordErrorMessage(type)
       if (_.get(error, 'code', 500) === 400 && _.get(error, 'message', false)) {
         errorMessage += `: ${_.get(error, 'message', TranslateService.get('TL_UNKNOWN_ERROR'))}`
       }
       console.error(errorMessage, record)
       this.notify(errorMessage, 'error')
     },
+    /**
+     * @param {Object} schema
+     * @returns {Object} the schema with its fields placed on layout.lines; as it is without a layout
+     */
     formatSchemaLayout (schema) {
       if (!_.get(schema, 'layout.lines', false)) {
         return schema
@@ -115,6 +145,7 @@ export default {
       })
       return schema
     },
+    /** Builds the form schema of the resource; the fields are disabled on a record that is not local. */
     async updateSchema () {
       try {
         const disabled = !(this.record && this.record._local)

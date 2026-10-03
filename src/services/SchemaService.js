@@ -11,6 +11,16 @@ class SchemaService {
     this.typeMapper = FormService.typeMapper
   }
 
+  /**
+   * @param {Array<Object>} schema
+   * @param {Object} resource
+   * @param {string} locale
+   * @param {string} userLocale
+   * @param {boolean} disabled
+   * @param {Object} extraSources
+   * @param {boolean} rootView
+   * @returns {Array<Object>} the form fields
+   */
   getSchemaFields (schema, resource, locale, userLocale, disabled, extraSources, rootView) {
     const fields = _.map(schema, (field) => {
       const isLocalised = resource.locales && (field.localised || _.isUndefined(field.localised))
@@ -87,6 +97,13 @@ class SchemaService {
     return fields
   }
 
+  /**
+   * @param {Array<Object>} fields
+   * @param {Object} field a select with a source: its options come from the cache
+   * @param {string} id
+   * @param {string} locale
+   * @param {Object} extraSources
+   */
   updateFieldSchema (fields, field, id, locale, extraSources) {
     const cachedData = ResourceService.get(field.source)
     // handle extra source
@@ -136,10 +153,22 @@ class SchemaService {
     }
   }
 
+  /**
+   * @param {Object} schema
+   * @returns {{key: string, locale?: string}}
+   */
   getKeyLocale (schema) {
     return FormService.getKeyLocale(schema)
   }
 
+  /**
+   * @param {Object} resource
+   * @param {Array<Object>} fields
+   * @param {number} level
+   * @param {string} path
+   * @param {string} prefix
+   * @returns {Object} the fields grouped by their model path
+   */
   getNestedGroups (resource, fields, level, path, prefix) {
     let groups = _.groupBy(fields, item => {
       let list = item.originalModel

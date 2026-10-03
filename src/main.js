@@ -68,6 +68,7 @@ const router = createRouter({
 })
 
 const app = createApp({
+  /** @returns {VNode} the App; without a #app element, the App alone */
   render: () => {
     const mountEl = document.querySelector('#app')
     if (!mountEl) {
@@ -120,6 +121,13 @@ app.use(router)
   .use(VueVirtualScroller)
   .directive('shortkey', shortkey)
 
+/**
+ * @param {string} title
+ * @param {string} displayName
+ * @param {string} group
+ * @param {Array<string>} allowed the groups that see it
+ * @param {string} label
+ */
 function addPlugin (title, displayName, group = 'System', allowed = ['admins'], label = displayName) {
   window.plugins = window.plugins || []
   log.debug('adding plugin', displayName)

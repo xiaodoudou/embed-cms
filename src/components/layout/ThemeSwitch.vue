@@ -15,10 +15,12 @@
   const theme = useTheme()
   const currentTheme = ref(theme.global.name.value)
 
+  /** @returns {boolean} */
   function isDark () {
     return currentTheme.value === 'dark'
   }
 
+  /** Asks the server for the other theme and applies it. */
   async function toggleTheme () {
     if (_.isFunction(theme.change)) {
       const newTheme = await LoginService.changeTheme()

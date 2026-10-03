@@ -43,6 +43,10 @@
       unknownIsImage () {
         return true
       },
+      /**
+       * @param {number} index of the attachment
+       * @param {{coordinates: Object}} data the crop, stored in its cropOptions and flagged updated
+       */
       onCropperChange (index, data) {
         const attachments = this.getAttachments()
         _.set(attachments, `[${index}].cropOptions`, {data: {coordinates: data.coordinates}, updated: true})

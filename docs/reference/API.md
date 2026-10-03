@@ -187,8 +187,24 @@ Note the difference between the two lookups: **`find` returns one record (or `nu
 | `findFile(aid)` | The stream of an attachment by its id alone. |
 | `updateAttachment(id, aid, data)`, `removeAttachment(id, aid)` | Change or remove an attachment. |
 | `cleanAttachment()` | Remove files no record points to (only those idle for `attachmentCleanupGrace`). |
+| `bulk(work)` | Run many writes as one: inside `work` (an async function), the writes of this resource do not wait for the disk, and the disk is waited for once at the end. A write normally waits for the disk, which is most of its time; a sync or an import of thousands of records is many times faster inside `bulk`. A power cut while it runs can lose the last records, as it can lose any write before its flush. |
 | `before(event, fn)`, `after(event, fn)` | Hooks, see below. |
 | `options` | The resource declaration. |
+
+### Resolving relations
+
+A `select` or `multiselect` field holds the id of the record it points to. Name the resources you want followed after the resource name, and the records come back with those records in place of the ids: in `list`, `find`, and in what `create` and `update` answer. The stored record keeps the ids.
+
+```js
+const comments = cms.api()('comments', 'authors')
+const one = await comments.find(id)
+one.author            // { _id, name, article: '<id>', ... } instead of '<id>'
+
+const deeper = cms.api()('comments', 'authors', 'articles')
+(await deeper.find(id)).author.article   // the article too: a related record has its own relations followed, one level down
+```
+
+A value per language is followed language by language, a multiselect gives an array of records, and the relations inside the blocks of a `paragraph` field are followed as well. An id that no record has becomes `null`. Each record gets its own copy of the related record, so changing one does not change another. Resolving lists the named resources once per call: keep it for code that needs the related records, not for a hot path over a large resource.
 
 The JavaScript API runs with full rights: there is no user and no group check, and `_updatedBy` is not set. Check rights yourself before you expose it to a request.
 

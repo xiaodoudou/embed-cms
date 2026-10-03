@@ -86,6 +86,7 @@
   import TranslateService from '@s/TranslateService'
   import DragList from '@m/DragList'
   import pAll from 'p-all'
+  import { queueFiles, takeFiles } from '@u/pendingFiles'
 
   export default {
     mixins: [DragList],
@@ -97,6 +98,7 @@
       paragraphLevel: { type: Number, default: 0 },
       theme: { type: String, default: 'default' }
     },
+    emits: ['input', 'notify'],
     data () {
       return {
         items: _.cloneDeep(_.get(this.model, this.schema.model, [])),
@@ -318,10 +320,9 @@
         const {resource, locale, userLocale, disabled} = this.schema
         if (item.input === 'group') {
           schemaItems = _.map(item.schema, schemaItems => {
-            let paragraphKey = `${this.paragraphLevel > 1 ? this.schema.paragraphKey : this.schema.model}[${index}].${schemaItems.field}`
             return _.extend({}, schemaItems, {
               field: `_value.${schemaItems.field}`,
-              paragraphKey,
+              paragraphKey: this.fieldKey(index, schemaItems.field),
               paragraphType: item.title,
               localised: _.get(schemaItems, 'localised', false),
               label: schemaItems.label || schemaItems.field
@@ -333,7 +334,7 @@
             localised: this.schema.localised
           }))
         }
-        let extraSources = _.isString(item.source) ? _.get(ResourceService.getSchema(item.source), 'extraSources', {}) : {}
+        const extraSources = _.isString(item.source) ? _.get(ResourceService.getSchema(item.source), 'extraSources', {}) : {}
         const fields = SchemaService.getSchemaFields(schemaItems, resource, locale, userLocale, disabled, extraSources, this.schema.rootView || this)
         const groups = SchemaService.getNestedGroups(resource, fields, 0, null, '_value.')
         const schema = this.formatSchemaLayout({
@@ -444,7 +445,6 @@
         this.updateItems()
       },
       updateItems() {
-        // console.warn('updateItems before ', _.cloneDeep(this.items))
         const items = _.compact(_.map(this.items, (item)=> {
           const obj = _.get(item, '_value', {})
           if (!_.get(item, 'title', false)) {
@@ -484,11 +484,9 @@
         event.target.value = ''
       },
       async processFiles(files) {
-        // Process files sequentially to avoid race conditions
+        // one after the other: each file gets its own block, mounted before the next one is made
         for (const file of files) {
           await this.processSingleFile(file)
-          // Small delay to ensure DOM updates are complete
-          await new Promise(resolve => setTimeout(resolve, 50))
         }
       },
       async processSingleFile(file) {
@@ -510,14 +508,11 @@
           // Find the paragraph type in our available types
           const paragraphType = _.find(this.types, { title: paragraphConfig.type })
           if (paragraphType) {
-            console.warn(`Processing file ${file.name} for field ${paragraphConfig.field}`)
             await this.createParagraphWithFile(paragraphType, file, paragraphConfig.field)
           } else {
-            console.warn(`Paragraph type ${paragraphConfig.type} is not an existing paragraph resource type, ignoring file: ${file.name}`)
             this.$emit('notify', `Paragraph type ${paragraphConfig.type} is not available for file: ${file.name}`)
           }
         } else {
-          console.warn(`No paragraph type found for file extension: ${extension}`)
           this.$emit('notify', `No paragraph type supports files with extension: ${extension}`)
         }
       },
@@ -532,235 +527,20 @@
         await this.requestResourcesForParagraph(newItem)
         this.items.push(newItem)
         this.updateItems()
-        // Wait for the component to be fully rendered
+        // the file waits for the file field of the new block, under the key that field gets (see getSchema): the field takes
+        // it when it mounts, and runs its own checks and preview as for a file dropped on it
+        const key = this.fieldKey(this.items.length - 1, targetField)
+        queueFiles(key, [file])
         await this.$nextTick()
-        // Trigger file processing on the target field
-        // Use the current index of the newly added item (length - 1)
-        const currentItemIndex = this.items.length - 1
-        console.warn(`Creating paragraph with file ${file.name} at index ${currentItemIndex}`)
-        this.triggerFileUpload(targetField, file, currentItemIndex)
-      },
-      triggerFileUpload(targetField, file, itemIndex) {
-        // console.warn(`Triggering file upload for field: ${targetField} in item ${itemIndex}`)
-        // Use a more targeted approach with setTimeout to ensure components are mounted
-        setTimeout(() => {
-          const success = this.findAndTriggerFileValidation(targetField, file, itemIndex)
-          if (!success) {
-            console.warn(`Could not trigger file validation for field: ${targetField}. Trying alternative method...`)
-            const altSuccess = this.findAndTriggerFileValidationByRef(targetField, file, itemIndex)
-            if (!altSuccess) {
-              console.warn(`Alternative method also failed. Trying synthetic file input...`)
-              this.triggerSyntheticFileInput(targetField, file, itemIndex)
-            }
-          }
-        }, 200) // Increased delay to ensure components are fully mounted and rendered
-      },
-      findAndTriggerFileValidation(targetField, file, itemIndex) {
-        try {
-          const paragraphItems = this.$el.querySelectorAll('.v-card.item')
-          if (paragraphItems && paragraphItems[itemIndex]) {
-            const paragraphElement = paragraphItems[itemIndex]
-            const fieldWrappers = paragraphElement.querySelectorAll('.field-wrapper')
-            for (let wrapper of fieldWrappers) {
-              const labels = wrapper.querySelectorAll('label, .field-label')
-              const fieldMatches = _.some(labels, label => {
-                const labelText = label.textContent || label.innerText || ''
-                return labelText.toLowerCase().includes(targetField.toLowerCase())
-              })
-              if (fieldMatches) {
-                const filesToPass = [file]
-                const refInputElements = wrapper.querySelectorAll('*')
-                for (let element of refInputElements) {
-                  if (element.__vueParentComponent || element.__vue__ || element._vnode) {
-                    const vueInstance = element.__vueParentComponent || element.__vue__ || element._vnode?.component
-                    if (vueInstance) {
-                      if (_.get(vueInstance, 'ctx.onUploadChanged', false)) {
-                        vueInstance.ctx.onUploadChanged(filesToPass)
-                        return true
-                      } else if (_.get(vueInstance, 'exposed.onUploadChanged', false)) {
-                        vueInstance.exposed.onUploadChanged(filesToPass)
-                        return true
-                      } else if (_.get(vueInstance, 'setupState.onUploadChanged', false)) {
-                        vueInstance.setupState.onUploadChanged(filesToPass)
-                        return true
-                      }
-                    }
-                  }
-                }
-                // Alternative approach: look for the v-file-input component specifically
-                const fileInputComponents = wrapper.querySelectorAll('.v-file-input')
-                for (let fileInputEl of fileInputComponents) {
-                  const vueComponent = this.findVueComponent(fileInputEl)
-                  if (vueComponent && vueComponent.onUploadChanged) {
-                    // console.warn(`Found v-file-input component with onUploadChanged method for field: ${targetField}`)
-                    vueComponent.onUploadChanged(filesToPass)
-                    return true
-                  }
-                }
-              }
-            }
-            // Fallback: try to find by field name or data attributes
-            const allInputs = paragraphElement.querySelectorAll('input[type="file"]')
-            for (let input of allInputs) {
-              if (input.name && input.name.includes(targetField)) {
-                const vueComponent = this.findVueComponent(input)
-                if (_.get(vueComponent, 'onUploadChanged', false)) {
-                  // console.warn(`Fallback: triggering onUploadChanged for field: ${targetField}`)
-                  const filesToPass = [file]
-                  vueComponent.onUploadChanged(filesToPass)
-                  return true
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Could not find and trigger file validation:', error)
+        await this.$nextTick()
+        // still waiting: the block shows no such field (not in its layout, or not a file field)
+        if (takeFiles(key).length) {
+          this.$emit('notify', `${file.name}: ${targetField} is not a file field shown by ${paragraphType.title}`)
         }
-        return false
       },
-      findVueComponentForField(fieldWrapper, targetField) {
-        const elements = fieldWrapper.querySelectorAll('*')
-        for (let element of elements) {
-          if (element.__vueParentComponent) {
-            const component = element.__vueParentComponent
-            if (_.isFunction(_.get(component, 'ctx.onUploadChanged', false)) && _.get(component, 'ctx.schema.field', []).includes(targetField)) {
-              return component.ctx
-            } else if (_.isFunction(_.get(component, 'exposed.onUploadChanged', false)) && _.get(component, 'exposed.schema.field', []).includes(targetField)) {
-              return component.exposed
-            } else if (_.isFunction(_.get(component, 'setupState.onUploadChanged', false)) && _.get(component, 'setupState.schema.field', []).includes(targetField)) {
-              return component.setupState
-            }
-          }
-          if (element.__vue__) {
-            const component = element.__vue__
-            if (_.isFunction(_.get(component, 'onUploadChanged', false)) && _.get(component, 'schema.field', []).includes(targetField)) {
-              return component
-            }
-          }
-        }
-        return null
-      },
-      findAndTriggerFileValidationByRef(targetField, file, itemIndex) {
-        try {
-          const paragraphItems = this.$el.querySelectorAll('.v-card.item')
-          if (paragraphItems && paragraphItems[itemIndex]) {
-            const paragraphElement = paragraphItems[itemIndex]
-            console.warn(`Alternative method: Found paragraph element at index ${itemIndex}`)
-            const fieldWrappers = paragraphElement.querySelectorAll('.field-wrapper')
-            for (let wrapper of fieldWrappers) {
-              const labels = wrapper.querySelectorAll('label, .field-label')
-              const fieldMatches = _.some(labels, label => {
-                const labelText = label.textContent || label.innerText || ''
-                return labelText.toLowerCase().includes(targetField.toLowerCase())
-              })
-              if (fieldMatches) {
-                console.warn(`Alternative method: Found matching field wrapper for ${targetField}`)
-                const filesToPass = [file]
-                const parentComponent = this.findVueComponent(wrapper)
-                if (parentComponent) {
-                  console.warn(`Alternative method: Found parent Vue component`, parentComponent)
-                  if (parentComponent.$refs && parentComponent.$refs.input) {
-                    const inputRef = parentComponent.$refs.input
-                    console.warn(`Alternative method: Found input ref`, inputRef)
-                    if (inputRef.onUploadChanged) {
-                      console.warn(`Alternative method: Triggering onUploadChanged via input ref`)
-                      inputRef.onUploadChanged(filesToPass)
-                      return true
-                    }
-                    if (parentComponent.onUploadChanged) {
-                      console.warn(`Alternative method: Triggering onUploadChanged via parent component`)
-                      parentComponent.onUploadChanged(filesToPass)
-                      return true
-                    }
-                  }
-                  if (parentComponent.onUploadChanged) {
-                    console.warn(`Alternative method: Directly triggering onUploadChanged on parent`)
-                    parentComponent.onUploadChanged(filesToPass)
-                    return true
-                  }
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.warn('Alternative method failed:', error)
-        }
-        return false
-      },
-      triggerSyntheticFileInput(targetField, file, itemIndex) {
-        try {
-          // Look for the specific paragraph item by index
-          const paragraphItems = this.$el.querySelectorAll('.v-card.item')
-          if (paragraphItems && paragraphItems[itemIndex]) {
-            const paragraphElement = paragraphItems[itemIndex]
-            console.warn(`Synthetic method: Found paragraph element at index ${itemIndex}`)
-            // Look for all field wrappers within this specific paragraph
-            const fieldWrappers = paragraphElement.querySelectorAll('.field-wrapper')
-            for (let wrapper of fieldWrappers) {
-              // Check for field labels or other identifiers to match our target field
-              const labels = wrapper.querySelectorAll('label, .field-label')
-              const fieldMatches = _.some(labels, label => {
-                const labelText = label.textContent || label.innerText || ''
-                return labelText.toLowerCase().includes(targetField.toLowerCase())
-              })
-              if (fieldMatches) {
-                console.warn(`Synthetic method: Found matching field wrapper for ${targetField}`)
-                // Find the actual file input element
-                const fileInput = wrapper.querySelector('input[type="file"]')
-                if (fileInput) {
-                  console.warn(`Synthetic method: Found file input element`)
-                  // Create a synthetic file list with only one file
-                  const dataTransfer = new DataTransfer()
-                  dataTransfer.items.add(file)  // Always add only one file per call
-                  // Set the files property
-                  fileInput.files = dataTransfer.files
-                  // Create and dispatch a change event
-                  const changeEvent = new Event('change', {
-                    bubbles: true,
-                    cancelable: true
-                  })
-                  // Add the files to the event
-                  Object.defineProperty(changeEvent, 'target', {
-                    value: fileInput,
-                    enumerable: true
-                  })
-                  console.warn(`Synthetic method: Dispatching change event on file input with ${fileInput.files.length} file(s)`)
-                  fileInput.dispatchEvent(changeEvent)
-
-                  return true
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.warn('Synthetic method failed:', error)
-        }
-        return false
-      },
-      findVueComponent(element) {
-        // Traverse up the DOM tree to find the Vue component
-        let currentElement = element
-        while (currentElement && currentElement.parentNode) {
-          // Check for Vue 3 component instance
-          if (currentElement.__vueParentComponent) {
-            const component = currentElement.__vueParentComponent
-            if (component.ctx && component.ctx.onUploadChanged) {
-              return component.ctx
-            }
-            if (component.exposed && component.exposed.onUploadChanged) {
-              return component.exposed
-            }
-            if (component.setupState && component.setupState.onUploadChanged) {
-              return component.setupState
-            }
-          }
-          // Check for Vue 2 component instance (fallback)
-          if (currentElement.__vue__) {
-            return currentElement.__vue__
-          }
-          currentElement = currentElement.parentNode
-        }
-        return null
+      // the paragraphKey of a field of a block, as getSchema gives it to the field
+      fieldKey (index, field) {
+        return `${this.paragraphLevel > 1 ? this.schema.paragraphKey : this.schema.model}[${index}].${field}`
       },
       getAllAcceptedTypes() {
         const mapping = _.get(this.schema, 'options.mapping', {})

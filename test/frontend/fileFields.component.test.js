@@ -338,3 +338,43 @@ describe('what only the image field does', () => {
     expect(model.photo[0].cropOptions).toBeUndefined()
   })
 })
+
+describe('files dropped on the paragraph field of the block', () => {
+  // the paragraph field queues the file under the paragraphKey of the field (see ParagraphView); the field takes it when it mounts
+  it('takes the files waiting under its paragraphKey when it mounts, as if they were dropped on it', async () => {
+    const { queueFiles } = await import('@u/pendingFiles')
+    queueFiles('blocks[0].picture', [png('dropped.png')])
+    field(ImageView, { paragraphKey: 'blocks[0].picture', model: '_value.picture' })
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    await flushPromises()
+    expect(wrapper.vm.attachments.map((a) => a._filename)).toEqual(['dropped.png'])
+    expect(previews()).toHaveLength(1)
+  })
+
+  it('leaves the files of another field alone', async () => {
+    const { queueFiles, takeFiles } = await import('@u/pendingFiles')
+    queueFiles('blocks[1].picture', [png('other.png')])
+    field(ImageView, { paragraphKey: 'blocks[0].picture', model: '_value.picture' })
+    await flushPromises()
+    expect(wrapper.vm.attachments).toEqual([])
+    expect(takeFiles('blocks[1].picture')).toHaveLength(1)
+  })
+})
+
+describe('a required field that has nothing yet', () => {
+  // the rules run against the files that arrive, not against the box (which only knows the files picked in it)
+  it('takes the files dropped on it', async () => {
+    const model = {}
+    field(ImageView, { required: true }, model)
+    wrapper.vm.onDrop({ dataTransfer: { files: [png('first.png')] } })
+    await vi.waitFor(() => expect(model.photo).toHaveLength(1))
+  })
+
+  it('takes the file handed over by the paragraph field', async () => {
+    const { queueFiles } = await import('@u/pendingFiles')
+    queueFiles('blocks[3].picture', [png('handed.png')])
+    field(ImageView, { required: true, paragraphKey: 'blocks[3].picture', model: '_value.picture' })
+    await vi.waitFor(() => expect(wrapper.vm.attachments.map((a) => a._filename)).toEqual(['handed.png']))
+  })
+})

@@ -6,6 +6,7 @@ import ParagraphView from '@c/fields/ParagraphView.vue'
 import ResourceService from '@s/ResourceService'
 import FieldSelectorService from '@s/FieldSelectorService'
 import { mountField } from './helpers/mountField.js'
+import { takeFiles } from '@u/pendingFiles'
 
 vi.mock('@s/ResourceService', () => ({
   default: { getParagraphSchema: vi.fn(), get: vi.fn(), cache: vi.fn(async () => []), getSchema: vi.fn(() => ({})) }
@@ -337,5 +338,45 @@ describe('ParagraphView (blocks)', () => {
     expect(wrapper.vm.getParagraphLevel()).toBe(0)
     await paragraph({}, {}, { paragraphLevel: 3 })
     expect(wrapper.vm.getParagraphLevel()).toBe(2)
+  })
+})
+
+describe('ParagraphView: a dropped file reaches the file field of its block', () => {
+  const mapping = { jpg: { _type: 'block_media', field: 'picture' } }
+  // a form whose file field takes what waits for it, as the real one does when it mounts (test/frontend/fileFields.component.test.js)
+  const taken = []
+  const takingForm = {
+    props: ['schema', 'model', 'paragraphIndex', 'paragraphLevel'],
+    template: '<div class="form-stub" />',
+    mounted () {
+      taken.push(...takeFiles(`blocks[${this.paragraphIndex}].picture`))
+    }
+  }
+
+  it('makes the block and hands the file to its field, under the key the field gets', async () => {
+    taken.length = 0
+    wrapper = mountField(ParagraphView, {
+      model: {},
+      schema: { model: 'blocks', label: 'Blocks', types: ['block_text', 'block_media'], resource: { title: 'pages' }, locale: 'enUS', userLocale: 'enUS', options: { mapping } },
+      global: { components: { draggable, CustomForm: takingForm, JsonViewer: jsonViewer } },
+      attachTo: document.body
+    })
+    await flushPromises()
+    const file = new File(['x'], 'photo.jpg')
+    await wrapper.vm.processSingleFile(file)
+    await flushPromises()
+    expect(cards()).toHaveLength(1)
+    expect(lastEmitted()[0][0]._type).toBe('block_media')
+    expect(taken).toEqual([file])
+    expect(wrapper.emitted('notify')).toBeUndefined()
+  })
+
+  it('tells the parent when the block shows no such field, and keeps no file waiting', async () => {
+    await paragraph({ options: { mapping } })
+    await wrapper.vm.processSingleFile(new File(['x'], 'photo.jpg'))
+    await flushPromises()
+    expect(cards()).toHaveLength(1)
+    expect(wrapper.emitted('notify')[0][0]).toContain('picture')
+    expect(takeFiles('blocks[0].picture')).toEqual([])
   })
 })

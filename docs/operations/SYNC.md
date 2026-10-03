@@ -63,6 +63,8 @@ For each resource, the source exports its records with the internal fields remov
 - **deletes its records that are not in the export**;
 - copies the **attachments** (the files): file by file, a file it already has (same content and same name) is left alone, the ones the source no longer has are removed, and only the missing ones are downloaded, so syncing twice copies nothing the second time; the files of a record it deletes go with it.
 
+This holds for the files and the relations inside the blocks of a `paragraph` field too, and for the blocks inside blocks. A `select` or `multiselect` of a block is sent as the `unique` value of the record it points to and turned back into that record's id on the other server, like the ones of the resource itself, so the resources the blocks point to have to be synced, and have a `unique` field, as well. The files of a block keep their place (the path of their block and their order) and are copied with their content type, so an image stays an image.
+
 A file that cannot be downloaded does not stop the sync: the records are still written, but the sync ends as an **error** (`N attachments could not be copied`) rather than as done, and a second sync copies what is missing. The report, the Sync page and `cms-sync` count the attachments copied (`attachmentsAdded`) and removed (`attachmentsRemoved`) next to the records.
 
 The work runs in the background; the request answers at once.

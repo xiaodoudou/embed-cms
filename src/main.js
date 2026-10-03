@@ -5,7 +5,7 @@ import * as Vue from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import JsonViewer from 'vue-json-viewer'
 import VueCookies from 'vue-cookies'
-import VueShortkey from 'vue3-shortkey'
+import shortkey from '@u/shortkey'
 import VueVirtualScroller from 'vue-virtual-scroller'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import { VueDatePicker } from '@vuepic/vue-datepicker'
@@ -118,7 +118,7 @@ app.use(router)
   .use(VueCookies)
   .use(Loading)
   .use(VueVirtualScroller)
-  .use(VueShortkey, {prevent: ['input', 'textarea']})
+  .directive('shortkey', shortkey)
 
 function addPlugin (title, displayName, group = 'System', allowed = ['admins'], label = displayName) {
   window.plugins = window.plugins || []

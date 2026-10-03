@@ -238,34 +238,17 @@
     },
     mounted () {
       NotificationsService.events.on('omnibar-display-status', this.onGetOmnibarDisplayStatus)
-      document.addEventListener('keydown', this.onDocumentKeydown)
     },
     beforeUnmount () {
       NotificationsService.events.off('omnibar-display-status', this.onGetOmnibarDisplayStatus)
-      document.removeEventListener('keydown', this.onDocumentKeydown)
     },
     methods: {
       onGetOmnibarDisplayStatus (status) {
         this.omnibarDisplayed = status
       },
+      // Ctrl+/ and "/" jump to the search field from anywhere outside a text field, while the switcher is closed (as in the list)
       getShortcuts () {
-        return this.omnibarDisplayed ? {} : {open: ['ctrl', '/']}
-      },
-      // "/" jumps to the search field from anywhere outside a text field (same as the list)
-      onDocumentKeydown (event) {
-        if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey || this.omnibarDisplayed || this.record) {
-          return
-        }
-        const target = event.target
-        const tag = _.toLower(_.get(target, 'tagName', ''))
-        if (_.includes(['input', 'textarea', 'select'], tag) || _.get(target, 'isContentEditable', false)) {
-          return
-        }
-        const search = _.get(this.$refs, 'search', false)
-        if (search && _.isFunction(search.focus)) {
-          event.preventDefault()
-          search.focus()
-        }
+        return this.omnibarDisplayed ? {} : { open: ['ctrl', '/'], jump: ['/'] }
       },
       interactiveSearch () {
         const elem = _.get(this.$refs, 'search', false)

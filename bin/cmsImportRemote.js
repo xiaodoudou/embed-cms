@@ -33,8 +33,13 @@ class ImportManager {
     this.importWrapper.startImport(config, program.opts(), this.askConfirmation)
   }
 
+  /**
+   * @param {{protocol: string, host: string}} config
+   * @returns {string} the address of the server
+   */
   buildUrl = (config) => `${config.protocol}${config.host}`
 
+  /** Asks before importing, unless --yes was given. */
   askConfirmation = async () => {
     if (program.opts().yes) {
       return

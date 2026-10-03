@@ -52,6 +52,7 @@ class ImportManager {
     this.init()
   }
 
+  /** Runs the import end to end: the confirmation, the connection, the sheets, then the dummy folders (--createFolders) or the records, the binaries and the attachments. */
   async init () {
     // ---------------------- start populating ------------------------------
     const endAllProcess = h.startProcess('Populating data to %s%s ... ... ', this.config.protocol, this.config.host)
@@ -79,6 +80,7 @@ class ImportManager {
     endAllProcess('done')
   }
 
+  /** Asks before writing, unless --yes was given. */
   async askConfirmation () {
     if (program.yes) {
       return
@@ -103,6 +105,7 @@ class ImportManager {
     }
   }
 
+  /** Logs in to the CMS; throws when it does not answer. */
   async checkConnection () {
     logger.info('')
     logger.info('### Check Server Connection ###')
@@ -130,6 +133,7 @@ class ImportManager {
     await this.loadDataFromCachedJson(resourceList)
   }
 
+  /** @returns {Promise<{id: string}[]>} the sheets to read, from the configuration */
   async getResourceList () {
     logger.info('')
     logger.info('### Preparing data from gsheet ###')
@@ -140,6 +144,10 @@ class ImportManager {
     return resourcesList
   }
 
+  /**
+   * Downloads each sheet that changed since its cached copy, as JSON in `cached/`.
+   * @param {{id: string}[]} resourceList
+   */
   async downloadDataFromResourceList (resourceList) {
     // get jwt client to check file
     const jwtClient = new JWT({
@@ -195,6 +203,11 @@ class ImportManager {
     }), {concurrency: 1})
   }
 
+  /**
+   * @param {string} gsheetId
+   * @param {import('google-auth-library').JWT} jwtClient
+   * @returns {Promise<string>} when the spreadsheet was last changed (the Drive API)
+   */
   async getGsheetLastModifiedDate (gsheetId, jwtClient) {
     if (_.isEmpty(jwtClient.credentials.access_token)) {
       throw new Error('jwt is not ready')
@@ -209,6 +222,10 @@ class ImportManager {
     return new Date(data.modifiedTime)
   }
 
+  /**
+   * Loads the cached JSON of each sheet into `this.data`, converted to the fields of its resource.
+   * @param {{id: string}[]} resourceList
+   */
   async loadDataFromCachedJson (resourceList) {
     return await pAll(_.map(resourceList, sheet => {
       return async () => {
@@ -307,6 +324,7 @@ class ImportManager {
     }))
   }
 
+  /** Throws when two rows of a resource share their unique keys. */
   async checkDuplicatedRecord () {
     const endProcess = h.startProcess('Check duplicated records ... ... ')
     const duplicatedMap = {}
@@ -327,6 +345,7 @@ class ImportManager {
     endProcess('done')
   }
 
+  /** Creates the attachment folders of each record, for files to be put in by hand (--createFolders). */
   async createDummyFolders () {
     logger.info('')
     logger.info('### Create dummy folders ###')
@@ -347,6 +366,7 @@ class ImportManager {
     return await pAll(funcs, {concurrency: 1})
   }
 
+  /** Downloads the files the sheets link to, into the folders of their records. */
   async downloadBinaries () {
     logger.info('')
     logger.info('### Download binaries ###')
@@ -391,6 +411,10 @@ class ImportManager {
     return await pAll(funcs, {concurrency: 1})
   }
 
+  /**
+   * @param {string} resource
+   * @returns {Promise<Object<string, object[]>>} the records of each resource the relations point to, by name
+   */
   async getRelationMap (resource) {
     const schema = this.schemaMap[resource]
     const relationMap = {}
@@ -403,6 +427,11 @@ class ImportManager {
     return relationMap
   }
 
+  /**
+   * @param {string} resource
+   * @param {Object<string, object[]>} relationMap
+   * @returns {Promise<object[]>} the records of the CMS with their relations as unique values, comparable with the rows
+   */
   async getNormalizedRecords (resource, relationMap) {
     const schema = this.schemaMap[resource]
     let list = await this.api(resource).list()
@@ -425,6 +454,10 @@ class ImportManager {
     return list
   }
 
+  /**
+   * Creates the records the sheets have and the CMS has not, with their unique keys only, so that relations can point to them.
+   * @returns {Promise<Object<string, object[]>>} the records created, by resource
+   */
   async createDummyRecords () {
     logger.info('')
     logger.info('### Create dummy new records ###')
@@ -469,6 +502,7 @@ class ImportManager {
     return createdListMap
   }
 
+  /** Removes the records of the CMS that the sheets no longer have. */
   async deleteUnusedRecords () {
     // ---------------------- Delete unused records ------------------------------
     logger.info('')
@@ -495,6 +529,10 @@ class ImportManager {
     return await pAll(funcs, {concurrency: 1})
   }
 
+  /**
+   * Writes the rows over the records, then their attachments.
+   * @param {Object<string, object[]>} createdRecordsMap the records created, by resource
+   */
   async updateRecords (createdRecordsMap) {
     await this.cacheCmsRecords()
     await this.updateCmsRecords(createdRecordsMap)
@@ -503,6 +541,7 @@ class ImportManager {
     await this.deleteCmsDeleteAttachments(createdRecordsMap)
   }
 
+  /** Loads the records of the resources imported, and of the ones their relations point to, into `cmsRecordsMap`. */
   async cacheCmsRecords () {
     logger.info('')
     logger.info('### cache cms records ###')
@@ -523,6 +562,10 @@ class ImportManager {
     return this.cmsRecordsMap
   }
 
+  /**
+   * Writes the rows over the records, the relations turned into ids.
+   * @param {Object<string, object[]>} createdRecordsMap the records created, by resource
+   */
   async updateCmsRecords (createdRecordsMap) {
     // ---------------------- update records ------------------------------
     logger.info('')
@@ -612,6 +655,7 @@ class ImportManager {
     return await pAll(funcs, {concurrency: 1})
   }
 
+  /** Reads the files of the seed folder into `attachmentMap`: which file goes with which record and field. */
   async loadAttachmentMapData () {
     logger.info('')
     logger.info('### load attachments data ###')
@@ -674,6 +718,10 @@ class ImportManager {
     return pAll(funcs, {concurrency: 1})
   }
 
+  /**
+   * Uploads the files of the attachment map that the records do not have yet.
+   * @param {Object<string, object[]>} createdRecordsMap the records created, by resource
+   */
   async createCmsRecordAttachments (createdRecordsMap) {
     logger.info('')
     logger.info('### create attachments ###')
@@ -706,6 +754,10 @@ class ImportManager {
     }), {concurrency: 5})
   }
 
+  /**
+   * Removes the attachments the records have and the attachment map does not.
+   * @param {Object<string, object[]>} createdRecordsMap the records created, by resource
+   */
   async deleteCmsDeleteAttachments (createdRecordsMap) {
     logger.info('### remove attachments ###')
     const funcs = _.map(_.keys(this.data), resource => {

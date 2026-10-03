@@ -22,7 +22,7 @@ const UUID = require('./lib/util/uuid')
 const SyslogManager = require('./lib/SyslogManager')
 const SystemManager = require('./lib/SystemManager')
 const UpdatesManager = require('./lib/UpdatesManager')
-const escapeRegExp = require('./lib/util/escapeRegExp')
+const { fieldPathPattern, BLOCK_WILDCARD } = require('./lib/util/fieldPathPattern')
 const Resource = require('./lib/Resource')
 const ResourceAPIWrapper = require('./lib/ResourceAPIWrapper')
 const OSSHelper = require('./lib/util/OSSHelper')
@@ -456,8 +456,8 @@ class CMS {
         if (_.includes(['file', 'image'], fieldItem.input)) {
           const field = _.cloneDeep(fieldItem)
           field.path = rootPath
-          _.set(this._resources, `["${resourceKey}"].options._attachmentFields["${escapeRegExp(rootPath)}"]`, field)
-          _.set(this._attachmentFields, `${resourceKey}["${escapeRegExp(rootPath)}"]`, field)
+          _.set(this._resources, [resourceKey, 'options', '_attachmentFields', fieldPathPattern(rootPath)], field)
+          _.set(this._attachmentFields, [resourceKey, fieldPathPattern(rootPath)], field)
         } else if (fieldItem.input === 'paragraph') {
           this._processAttachmentFieldsParagraph(fieldItem, resourceKey, rootPath)
         }
@@ -469,12 +469,12 @@ class CMS {
     _.each(paragraphTypes, paragraphType => {
       const schema = _.get(this._paragraphs, `["${paragraphType}"].schema`, [])
       _.each(schema, paragraphFieldItem => {
-        const paragraphRootPath = `${rootPath}.{{*}}.${paragraphFieldItem.field}`
+        const paragraphRootPath = `${rootPath}.${BLOCK_WILDCARD}.${paragraphFieldItem.field}`
         if (_.includes(['file', 'image'], paragraphFieldItem.input)) {
           const field = _.cloneDeep(paragraphFieldItem)
           field.path = paragraphRootPath
-          _.set(this._resources, `["${resourceKey}"].options._attachmentFields["${escapeRegExp(paragraphRootPath, field.localised)}"]`, field)
-          _.set(this._attachmentFields,  `${resourceKey}["${escapeRegExp(paragraphRootPath)}"]`, field)
+          _.set(this._resources, [resourceKey, 'options', '_attachmentFields', fieldPathPattern(paragraphRootPath, field.localised)], field)
+          _.set(this._attachmentFields, [resourceKey, fieldPathPattern(paragraphRootPath)], field)
         } else if (paragraphFieldItem.input === 'paragraph') {
           this._processAttachmentFieldsParagraph(paragraphFieldItem, resourceKey, paragraphRootPath)
         }
@@ -492,8 +492,8 @@ class CMS {
         if (this.isValidRelation(fieldItem)) {
           const field = _.cloneDeep(fieldItem)
           field.path = rootPath
-          _.set(this._resources, `["${resourceKey}"].options._relations["${escapeRegExp(rootPath)}"]`, field)
-          _.set(this._relations, `${resourceKey}["${escapeRegExp(rootPath)}"]`, field)
+          _.set(this._resources, [resourceKey, 'options', '_relations', fieldPathPattern(rootPath)], field)
+          _.set(this._relations, [resourceKey, fieldPathPattern(rootPath)], field)
         } else if (fieldItem.input === 'paragraph') {
           this._processSourceFieldsParagraph(fieldItem, resourceKey, rootPath)
         }
@@ -505,12 +505,12 @@ class CMS {
     _.each(paragraphTypes, paragraphType => {
       const schema = _.get(this._paragraphs, `["${paragraphType}"].schema`, [])
       _.each(schema, paragraphFieldItem => {
-        const paragraphRootPath = `${rootPath}.{{*}}.${paragraphFieldItem.field}`
+        const paragraphRootPath = `${rootPath}.${BLOCK_WILDCARD}.${paragraphFieldItem.field}`
         if (this.isValidRelation(paragraphFieldItem)) {
           const field = _.cloneDeep(paragraphFieldItem)
           field.path = paragraphRootPath
-          _.set(this._resources, `["${resourceKey}"].options._relations["${escapeRegExp(paragraphRootPath)}"]`, field)
-          _.set(this._relations,  `${resourceKey}["${escapeRegExp(paragraphRootPath)}"]`, field)
+          _.set(this._resources, [resourceKey, 'options', '_relations', fieldPathPattern(paragraphRootPath)], field)
+          _.set(this._relations, [resourceKey, fieldPathPattern(paragraphRootPath)], field)
         } else if (paragraphFieldItem.input === 'paragraph') {
           this._processSourceFieldsParagraph(paragraphFieldItem, resourceKey, paragraphRootPath)
         }

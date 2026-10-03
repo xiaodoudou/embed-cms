@@ -12,8 +12,27 @@ const ROOT = path.resolve(__dirname, '..', '..')
 // replication off) into the cms.json of every new project.
 describe('cms command options (unit)', () => {
   it('uses the development options in the embed-cms folder itself', () => {
-    expect(cliOptions(ROOT, ROOT)).to.deep.equal(DEV_OPTIONS)
+    expect(cliOptions(ROOT, ROOT, () => ({}))).to.deep.equal(DEV_OPTIONS)
     expect(DEV_OPTIONS).to.have.property('sync')
+  })
+
+  it('keeps the sync block of cms.json in the embed-cms folder: the harness only turns the plugin on when there is none', () => {
+    const sync = { schedule: { push: '0 3 * * *' } }
+    expect(cliOptions(ROOT, ROOT, () => ({ sync }))).to.deep.equal({ disableReplication: true })
+    expect(cliOptions(ROOT, ROOT, () => ({ disableDarkMode: false }))).to.deep.equal(DEV_OPTIONS)
+  })
+
+  it('reads the cms.json of the folder, and goes without when it is missing or broken', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'embed-cms-cliopts-'))
+    try {
+      expect(cliOptions(dir, dir)).to.deep.equal(DEV_OPTIONS)
+      fs.writeFileSync(path.join(dir, 'cms.json'), '{ not json')
+      expect(cliOptions(dir, dir)).to.deep.equal(DEV_OPTIONS)
+      fs.writeFileSync(path.join(dir, 'cms.json'), JSON.stringify({ sync: { resources: ['a'] } }))
+      expect(cliOptions(dir, dir)).to.not.have.property('sync')
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true })
+    }
   })
 
   it('uses no options of its own in a project folder', () => {

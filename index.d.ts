@@ -78,6 +78,9 @@ declare module 'embed-cms' {
     /** Send a message to every admin that listens on the update websocket */
     broadcast(message: { action: string; data?: any; [key: string]: any }): void
 
+    /** The sync plugin, when the `sync` option is on: run a push or a pull from your own code, see docs/operations/SYNC.md */
+    readonly $sync?: CMS.SyncPlugin
+
     /** Add a heading to the admin menu (a resource's `group` does this by itself) */
     addMenuGroupName(group: string): void
 
@@ -192,7 +195,47 @@ declare module 'embed-cms' {
     interface SyncOptions {
       /** The resources that may be synced until some are chosen in the Sync settings of the admin, which then take over */
       resources?: string[]
+      /**
+       * When to run a push or a pull of all the resources to sync on its own: a cron expression of five fields (minute hour day-of-month
+       * month day-of-week) in the time zone of the server, such as `'0 3 * * *'` for every night at 3. A direction left out is not scheduled.
+       */
+      schedule?: { push?: string | null; pull?: string | null }
       [setting: string]: any
+    }
+
+    /** How one resource went in a sync run */
+    interface SyncResult {
+      resource: string
+      status: 'done' | 'error'
+      created?: number
+      updated?: number
+      removed?: number
+      /** Why it failed, when `status` is `'error'` */
+      error?: string
+      startedAt: number
+      finishedAt: number
+    }
+
+    /** A run of the syncs of the resources to sync, one after the other */
+    interface SyncRun {
+      direction: 'push' | 'pull'
+      /** Who started it: `'api'` (your code), `'manual'` (the admin or `cms-sync`), `'schedule'` */
+      trigger: 'api' | 'manual' | 'schedule'
+      status: 'done' | 'error'
+      startedAt: number
+      finishedAt: number
+      resources: string[]
+      results: SyncResult[]
+    }
+
+    /** `cms.$sync`: syncing from code. Only one run goes on at a time: a second one is refused with an error whose `code` is 409. */
+    interface SyncPlugin {
+      /** Sync one resource now and answer how it went, when the other CMS has finished with it. `push`: this CMS writes to the other one. `pull`: the other CMS writes here. */
+      run(resource: string, direction: 'push' | 'pull'): Promise<SyncResult>
+      /** Sync the resources to sync (or only `options.resources`), one after the other, and answer when they are all done. One that fails does not stop the others. */
+      runAll(direction: 'push' | 'pull', options?: { resources?: string[] }): Promise<SyncRun>
+      /** The resources this CMS may sync: the ones chosen in the Sync settings, else the ones of `sync.resources` */
+      syncedResources(): Promise<string[]>
     }
 
     /** `import`: the Google Sheets import, see docs/operations/IMPORT.md */

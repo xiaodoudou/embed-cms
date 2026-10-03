@@ -27,7 +27,7 @@ This is the map: GitHub shows it when you open the `docs/` folder, so it's the o
 - [**Storage engines**](operations/STORAGE.md): LevelDB, SQLite, JSON file, MongoDB or PostgreSQL: which to pick, real benchmarks through the whole CMS, what a crash loses, how to switch.
 - [**Security**](../SECURITY.md): the security settings, the recommended production configuration, the hardening checklist, and how to report a vulnerability.
 - [**Replication**](operations/REPLICATION.md): keeping several servers in step, continuously.
-- [**Sync**](operations/SYNC.md): copying chosen resources between two servers, such as staging and production.
+- [**Sync**](operations/SYNC.md): copying chosen resources between two servers, such as staging and production, on demand from the admin, from code or the `cms-sync` command, or on a schedule.
 - [**Import and export**](operations/IMPORT.md): Google Sheets, Excel files, and copying from another embed-cms.
 
 ## Extending the admin (`extending/`)

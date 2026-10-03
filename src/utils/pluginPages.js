@@ -19,7 +19,8 @@ export function pluginPages (config = {}, { replication = false } = {}) {
   }
   // importFromRemote has no admin page: the plugin is driven through its routes (/importFromRemote/…)
   if (_.get(config, 'sync') && !_.get(config, 'sync.disablePlugin')) {
-    pages.push(['SyncResource', 'Sync Resource', 'TL_SYNC_RESOURCE'])
+    // next to the Sync settings (CMS group), which it is the page of
+    pages.push(['SyncResource', 'Sync Resource', 'TL_SYNC_RESOURCE', 'CMS'])
   }
   return _.map(pages, ([title, displayname, label, group]) => (group ? { title, displayname, label, group } : { title, displayname, label }))
 }

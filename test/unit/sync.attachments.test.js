@@ -68,7 +68,7 @@ describe('sync plugin: attachments (unit)', () => {
     await api(B).createAttachment(found._id, { name: 'file', stream: fs.createReadStream(IMAGE), fields: { _filename: 'man.jpg' } })
     const result = await A.cms.$sync.run('articles', 'pull')
     expect(result).to.include({ status: 'done', created: 1, attachmentsAdded: 1 })
-    expect((await files(A, 'a man'))[0]._md5sum).to.equal(md5(fs.readFileSync(IMAGE)))
+    expect((await files(A, 'a man'))[0]).to.include({ _md5sum: md5(fs.readFileSync(IMAGE)), _contentType: 'image/jpeg' })
   })
 
   it('changes nothing, and copies no file, when both are alike', async () => {

@@ -48,13 +48,30 @@ describe('resource API: resolving relations (unit)', () => {
       expect(found.content[0].title).to.equal('top')
     })
 
-    it('answers null for an id no record has, and leaves a relation that is not set', async () => {
+    it('gives undefined, in its place, for an id no record has, and leaves a relation that is not set', async () => {
       const made = await page('gone', { topic: 'musxxxxxxxxxxxxxxxxxxxxx', content: [{ _type: 'block_rel', title: 'no tag', tags: ['musxxxxxxxxxxxxxxxxxxxxx', red._id] }] })
       const found = await api('pages', 'tags').find(made._id)
-      expect(found.topic).to.equal(null)
+      expect(found).to.have.property('topic', undefined)
       expect(found.content[0]).to.not.have.property('tag')
-      expect(found.content[0].tags[0]).to.equal(null)
+      // the list keeps its positions
+      expect(found.content[0].tags).to.have.length(2)
+      expect(found.content[0].tags[0]).to.equal(undefined)
       expect(found.content[0].tags[1]).to.include({ name: 'red' })
+    })
+
+    it('gives undefined for the language whose id no record has, and keeps the others', async () => {
+      const A2 = await startApp({ disableJwtLogin: true })
+      try {
+        const api2 = A2.cms.api()
+        const article = await api2('articles').create({ string: { enUS: 'kept' } })
+        const author = await api2('authors').create({ article: { enUS: article._id, zhCN: 'musxxxxxxxxxxxxxxxxxxxxx' }, name: { enUS: 'A' } })
+        const found = await api2('authors', 'articles').find(author._id)
+        expect(found.article).to.have.all.keys('enUS', 'zhCN')
+        expect(found.article.zhCN).to.equal(undefined)
+        expect(found.article.enUS).to.include({ _id: article._id })
+      } finally {
+        await A2.close()
+      }
     })
 
     it('gives each record its own copy of the related record', async () => {

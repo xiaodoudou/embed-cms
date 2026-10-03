@@ -39,7 +39,7 @@ class ImportManager {
     if (program.opts().yes) {
       return
     }
-    let schema = {
+    const schema = {
       name: 'confirm',
       description: `Are you sure you want to import data from ${this.buildUrl(config.remote)} to ${this.buildUrl(config.local)} ? [yes/no]`,
       type: 'string',
@@ -59,6 +59,6 @@ class ImportManager {
   }
 }
 
-let config = require(path.resolve(program.args[0]))
+const config = require(path.resolve(program.args[0]))
 
 exports = new ImportManager(config)

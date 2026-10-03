@@ -56,6 +56,8 @@ export default [
       'no-case-declarations': 'off',
       'no-return-await': 'off',
       'no-return-assign': 'off',
+      'prefer-const': 'error',
+      'eqeqeq': 'error',
       'no-empty': ['error', { 'allowEmptyCatch': true }],
       'no-unused-vars': ['error', {
         'argsIgnorePattern': '^_',

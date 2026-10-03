@@ -2,6 +2,7 @@ import { log } from '@u/log'
 import _ from 'lodash'
 import { filesize } from 'filesize'
 import TranslateService from '@s/TranslateService'
+import { takeFiles } from '@u/pendingFiles'
 
 export default {
   data () {
@@ -12,6 +13,11 @@ export default {
   },
   mounted () {
     this.attachments = _.cloneDeep(this._value) || []
+    // files dropped on the paragraph field for the block of this field (see ParagraphView): taken as if dropped here
+    const waiting = this.schema.paragraphKey ? takeFiles(this.schema.paragraphKey) : []
+    if (waiting.length) {
+      this.onUploadChanged(waiting)
+    }
   },
   methods: {
     onEndDrag () {
@@ -185,7 +191,6 @@ export default {
     removeImage (attachment, index) {
       _.remove(this.attachments, (val, i)=> i === index)
       this._value = this.attachments
-      this.$forceUpdate()
       // work around to force label update
       const dummy = this.schema.label
       this.schema.label = null
@@ -233,13 +238,12 @@ export default {
         log.debug(`Reached max number of files for ${this.schema.paragraphKey || this.schema.model}`, totalNbFiles, maxCount)
         files = _.take(files, files.length - (totalNbFiles - maxCount))
       }
-      if (_.get(this.$refs, 'input', false)) {
-        await this.$nextTick()
-        const errorMessage = await this.$refs.input.validate()
-        if (_.get(errorMessage, 'length', 0) !== 0) {
-          console.error('validation error, will not upload files:', errorMessage)
-          return
-        }
+      // the rules, against the files that arrive: the box only knows the files picked in it, not the ones dropped on it or handed
+      // over by the paragraph field, and a required field has to take its first file
+      const errors = _.reject(_.map(this.getRules(), rule => rule(files)), result => result === true)
+      if (errors.length) {
+        console.error('validation error, will not upload files:', errors)
+        return
       }
       this.attachments = await this.readAllFiles(files)
       this._value = this.attachments
@@ -283,7 +287,6 @@ export default {
           const reader = new FileReader()
           if (_.get(file, 'type', false).indexOf('video/') !== -1) {
             this.addAttachment(file, {target: {result: URL.createObjectURL(file)}})
-            this.$forceUpdate()
             nbFilesToRead--
             if (nbFilesToRead === 0) {
               if (this.isForMultipleImages()) {
@@ -295,7 +298,6 @@ export default {
             const vm = this
             reader.onload = (element) => {
               vm.addAttachment(file, element)
-              vm.$forceUpdate()
               nbFilesToRead--
               if (nbFilesToRead === 0) {
                 if (this.isForMultipleImages()) {

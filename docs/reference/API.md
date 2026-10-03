@@ -204,7 +204,7 @@ const deeper = cms.api()('comments', 'authors', 'articles')
 (await deeper.find(id)).author.article   // the article too: a related record has its own relations followed, one level down
 ```
 
-A value per language is followed language by language, a multiselect gives an array of records, and the relations inside the blocks of a `paragraph` field are followed as well. An id that no record has becomes `null`. Each record gets its own copy of the related record, so changing one does not change another. Resolving lists the named resources once per call: keep it for code that needs the related records, not for a hot path over a large resource.
+A value per language is followed language by language, a multiselect gives an array of records, and the relations inside the blocks of a `paragraph` field are followed as well. An id that no record has becomes `undefined` in its place: the field, the entry of the list (the list keeps its positions) or the language. Each record gets its own copy of the related record, so changing one does not change another. Resolving lists the named resources once per call: keep it for code that needs the related records, not for a hot path over a large resource.
 
 The JavaScript API runs with full rights: there is no user and no group check, and `_updatedBy` is not set. Check rights yourself before you expose it to a request.
 

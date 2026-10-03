@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import CustomInputTag from '@c/fields/CustomInputTag.vue'
+import ResourceService from '@s/ResourceService'
 import { mountField } from './helpers/mountField.js'
 
 const tags = (model = {}, schema = {}) => mountField(CustomInputTag, { model, schema: { model: 'tags', label: 'Tags', ...schema }, attachTo: document.body })
@@ -69,5 +70,15 @@ describe('CustomInputTag (the pillbox)', () => {
     } finally {
       delete window.plugins
     }
+  })
+
+  it('offers the resources of the CMS the person can see, in order, without the system ones, when the field suggests them', () => {
+    ResourceService.setSchemas([{ title: 'products' }, { title: '_users' }, { title: 'articles' }, { title: '_sync' }, {}])
+    try {
+      expect(tags({}, { options: { suggest: 'resources' } }).vm.suggestions).toEqual(['articles', 'products'])
+    } finally {
+      ResourceService.setSchemas(undefined)
+    }
+    expect(tags({}, { options: { suggest: 'resources' } }).vm.suggestions).toEqual([])
   })
 })

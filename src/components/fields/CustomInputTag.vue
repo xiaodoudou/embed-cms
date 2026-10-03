@@ -28,15 +28,21 @@
   import AbstractField from '@m/AbstractField'
   import { validateFieldValue } from '@u/fieldValidation'
   import Notification from '@m/Notification'
+  import ResourceService from '@s/ResourceService'
 
   export default {
     mixins: [AbstractField, Notification],
     computed: {
       // the drop-down of a field that suggests values: `options.suggest: 'adminPlugins'` lists the plugin pages this admin has
-      // (the built-in ones that run, and those of the project), so that a group is given them by picking, not by typing a name
+      // (the built-in ones that run, and those of the project), so that a group is given them by picking, not by typing a name.
+      // `'resources'` lists the resources of this CMS that the person can see, without the system ones (`_users`...)
       suggestions () {
-        if (_.get(this.schema, 'options.suggest') === 'adminPlugins') {
+        const suggest = _.get(this.schema, 'options.suggest')
+        if (suggest === 'adminPlugins') {
           return _.uniq(_.compact(_.map(window.plugins, 'displayname')))
+        }
+        if (suggest === 'resources') {
+          return _.sortBy(_.reject(_.map(ResourceService.schemas, 'title'), (name) => !name || _.startsWith(name, '_')))
         }
         return []
       }

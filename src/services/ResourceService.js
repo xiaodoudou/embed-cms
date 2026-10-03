@@ -12,6 +12,10 @@ class ResourceService {
     this.paragraphs = {}
   }
 
+  /**
+   * @param {string} resource
+   * @returns {Promise<Array<Object>>} its records, kept in the cache; a logged-out answer sends to the login page
+   */
   async cache (resource) {
     const data = await RequestService.get(`${window.location.pathname}../api/${resource}`)
     if (_.get(data, 'userLoggedOut', false)) {
@@ -29,10 +33,12 @@ class ResourceService {
     return menuIconMap(_.first(this.cacheMap._settings))
   }
 
+  /** @returns {Promise<Array<Object>>} the resources, their attachments listed */
   async getAll() {
     return await RequestService.get(`${window.location.pathname}resources?listAttachments=true`)
   }
 
+  /** Loads the paragraph schemas by title. */
   async getAllParagraphs() {
     const paragraphs = await RequestService.get(`${window.location.pathname}paragraphs`)
     _.each(paragraphs, (paragraph)=> {
@@ -40,6 +46,10 @@ class ResourceService {
     })
   }
 
+  /**
+   * @param {string} resource
+   * @returns {Array<Object>|undefined} the cached records
+   */
   get (resource) {
     const data = this.cacheMap[resource]
     if (_.isUndefined(data)) {
@@ -48,14 +58,23 @@ class ResourceService {
     return data
   }
 
+  /** @param {Array<Object>} schemas */
   setSchemas (schemas) {
     this.schemas = schemas
   }
 
+  /**
+   * @param {string} resource
+   * @returns {Object|undefined}
+   */
   getSchema (resource) {
     return _.find(this.schemas, { title: resource })
   }
 
+  /**
+   * @param {string} key
+   * @returns {Object|false}
+   */
   getParagraphSchema(key) {
     return _.get(this.paragraphs, key, false)
   }

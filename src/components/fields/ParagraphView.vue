@@ -122,20 +122,24 @@
       }
     },
     computed: {
+      /** @returns {boolean} options.dynamicLayout, or an item that carries slots */
       isDynamicLayoutContainer() {
         return this.schema && (
           _.get(this.schema, 'options.dynamicLayout', false) ||
           _.some(this.items, item => _.has(item, '_value.slots') || _.has(item, 'slots'))
         )
       },
+      /** @returns {number} the slots of a row: the model's, else the parent form's, else 12 */
       parentSlots() {
         return this.isDynamicLayoutContainer ? _.get(this.model, 'slots', _.get(this.vfg, 'model.slots', 12)) : 12
       },
+      /** @returns {boolean} whether options.mapping names a paragraph type for dropped files */
       hasFileOrImageTypes() {
         // Check if there's a mapping configuration for file types
         const mapping = _.get(this.schema, 'options.mapping', {})
         return _.has(mapping, 'default') || _.some(_.keys(mapping), key => key !== 'default')
       },
+      /** @returns {Object<string, Array<Object>>} the entries of options.mapping by file extension */
       fileImageTypesMap() {
         const map = {}
         const mapping = _.get(this.schema, 'options.mapping', {})
@@ -175,15 +179,26 @@
       FieldSelectorService.events.off('highlight-paragraph', this.onHighlightParagraph)
     },
     methods: {
+      /** @returns {number} the level of this view, 0 at the top */
       getParagraphLevel() {
         return Math.max(0, (this.paragraphLevel || 1) - 1)
       },
+      /**
+       * @param {Object} item
+       * @returns {string|false} label.enUS, else label
+       */
       getLabel(item) {
         return _.get(item, 'label.enUS', _.get(item, 'label', false))
       },
+      /** @returns {string|false} the display name of the paragraph type of mapping.default */
       getDefaultParagraph() {
         return _.get(ResourceService.getParagraphSchema(_.get(this.schema, 'mapping.default', false)), 'displayname', false)
       },
+      /**
+       * @param {number} idx
+       * @param {Object} item
+       * @returns {Array<string>} item, nested-level-<n>, and the highlight state
+       */
       getItemClasses(idx, item) {
         const classes = ['item', `nested-level-${this.paragraphLevel}`]
         if (this.isHighlighted(idx)) {
@@ -217,6 +232,10 @@
         }
         return slots || 2
       },
+      /**
+       * @param {Object} item
+       * @returns {Object} the width from its slots in a dynamic layout, else {}
+       */
       getItemStyles(item) {
         if (this.isDynamicLayoutContainer) {
           const slots = this.getItemSlots(item)
@@ -233,21 +252,32 @@
         }
         return {}
       },
+      /** @param {Object} item becomes the type chosen in its showConvert */
       convertParagraph(item) {
         item._type = item.showConvert
         delete item.showConvert
         this.getSchemaForItems()
       },
+      /** @returns {boolean} false when required and empty */
       validateField () {
         return this.schema.required && _.get(this.items, 'length', 0) === 0 ? false : true
       },
+      /**
+       * @param {number} level
+       * @param {number} index
+       */
       onHighlightParagraph(level, index) {
         this.highlight.level = level
         this.highlight.index = index
       },
+      /**
+       * @param {number} idx
+       * @returns {boolean}
+       */
       isHighlighted(idx) {
         return this.paragraphLevel === this.highlight.level && idx === this.highlight.index
       },
+      /** Caches the resources the fields of every paragraph type select from. */
       async getSubResources() {
         await pAll(_.map(this.types, type => {
           return async () => {
@@ -260,6 +290,7 @@
         }), {concurrency: 1})
         this.subResourcesLoaded = true
       },
+      /** Reads schema.types into this.types as group inputs; an unknown type is dropped. */
       getTypes() {
         this.types = _.compact(_.map(_.get(this, 'schema.types', []), (type)=> {
           const schema = ResourceService.getParagraphSchema(type)
@@ -273,6 +304,7 @@
           return schema
         }))
       },
+      /** Builds the form schema of every item from its type, localised when the field is. */
       getSchemaForItems() {
         this.items = _.compact(_.map(_.compact(this.items), (item)=> {
           if (!_.get(item, 'input', false) || !_.get(item, 'label', false)) {
@@ -300,12 +332,15 @@
         }))
         this.items = _.toArray(this.items)
       },
+      /** @returns {boolean} disabled, or maxCount reached */
       blockMoreItems() {
         return (this.disabled || this.schema.disabled) || (this.maxCount !== -1 && this.items.length >= this.maxCount)
       },
+      /** @param {Error} error logged */
       onError (error) {
         console.error('ParagraphView - error', error)
       },
+      /** @throws {Error} when a paragraph form has errors, kept in this.errors */
       validate () {
         _.each(this.$refs.vfg, vfg => {
           if (!vfg.validate()) {
@@ -315,6 +350,11 @@
         })
         return true
       },
+      /**
+       * @param {Object} item
+       * @param {number} index
+       * @returns {Array<Object>} the fields of the paragraph form, with the resource, the locales and the disabled state passed down
+       */
       getSchema (item, index) {
         let schemaItems = []
         const {resource, locale, userLocale, disabled} = this.schema
@@ -343,6 +383,10 @@
         })
         return schema
       },
+      /**
+       * @param {Object} schema
+       * @returns {Object} the schema with its fields placed on layout.lines; as it is without a layout
+       */
       formatSchemaLayout (schema) {
         if (!_.get(schema, 'layout.lines', false)) {
           return schema
@@ -375,10 +419,16 @@
         })
         return schema
       },
+      /**
+       * @param {string} fileItemId
+       * @param {string} [field] a path in the attachment
+       * @returns {Object|*} the attachment of the record with that fileItemId, or the field asked
+       */
       getAttachment (fileItemId, field) {
         const attach = _.find(this.model._attachments, {_fields: {fileItemId}})
         return field ? _.get(attach, field) : attach
       },
+      /** @param {string} type the title of a paragraph type; an unknown one is ignored with a warning */
       onChangeType (type) {
         const foundType = _.find(this.types, {title: type})
         if (_.isUndefined(foundType)) {
@@ -387,6 +437,7 @@
         }
         this.selectedType = foundType
       },
+      /** @param {Object} paragraph a type: caches the resource of each select or multiselect field with a string source */
       async requestResourcesForParagraph(paragraph) {
         // NOTE: Requests additional resources
         await pAll(_.map(paragraph.schema, (field)=> {
@@ -400,6 +451,7 @@
           }
         }), {concurrency: 5})
       },
+      /** Appends a clone of the selected type. */
       async onClickAddNewItem () {
         if (!this.selectedType) {
           return
@@ -409,6 +461,10 @@
         this.items.push(newItem)
         this.updateItems()
       },
+      /**
+       * @param {Object} obj
+       * @returns {Array<string>} every id in it, at any depth
+       */
       findIds (obj) {
         const ids = []
         _.each(obj, (value, key) => {
@@ -421,6 +477,7 @@
         })
         return ids
       },
+      /** @param {Object} item removed with the attachments of its files */
       onClickRemoveItem (item) {
         let attachments = _.get(this.model, '_attachments', [])
         if (_.includes(['image', 'file', 'group'], item.input)) {
@@ -433,10 +490,16 @@
         this.key = crypto.randomUUID()
         this.updateItems()
       },
+      /** Re-keys the list so the moved items render again, then writes the items back. */
       onEndDrag () {
         this.key = crypto.randomUUID()
         this.updateItems()
       },
+      /**
+       * @param {*} value a DOM event is ignored
+       * @param {string} model the field path
+       * @param {number} paragraphIndex
+       */
       onModelUpdated (value, model, paragraphIndex) {
         if (value instanceof Event) {
           return
@@ -444,6 +507,7 @@
         _.set(this.items, `[${paragraphIndex}].${model}`, value)
         this.updateItems()
       },
+      /** Writes the values of the items back to the field; an item without a title has no type and is dropped. */
       updateItems() {
         const items = _.compact(_.map(this.items, (item)=> {
           const obj = _.get(item, '_value', {})
@@ -459,36 +523,43 @@
       toggleMultipleDropZone() {
         this.showMultipleDropZone = !this.showMultipleDropZone
       },
+      /** @param {DragEvent} event */
       onDragEnter(event) {
         event.preventDefault()
         this.isDragOver = true
       },
+      /** @param {DragEvent} event */
       onDragOver(event) {
         event.preventDefault()
         this.isDragOver = true
       },
+      /** @param {DragEvent} event */
       onDragLeave(event) {
         event.preventDefault()
         this.isDragOver = false
       },
+      /** @param {DragEvent} event its files become paragraphs */
       onDropFiles(event) {
         event.preventDefault()
         this.isDragOver = false
         const files = Array.from(event.dataTransfer.files)
         this.processFiles(files)
       },
+      /** @param {Event} event from the file input, cleared so the same file can be chosen again */
       onSelectFiles(event) {
         const files = Array.from(event.target.files)
         this.processFiles(files)
         // Clear the input so the same file can be selected again
         event.target.value = ''
       },
+      /** @param {File[]} files one paragraph each, in order */
       async processFiles(files) {
         // one after the other: each file gets its own block, mounted before the next one is made
         for (const file of files) {
           await this.processSingleFile(file)
         }
       },
+      /** @param {File} file becomes a paragraph of the type mapped to its extension, mapping.default otherwise */
       async processSingleFile(file) {
         const extension = '.' + file.name.split('.').pop().toLowerCase()
         const matchingTypes = this.fileImageTypesMap[extension]
@@ -516,6 +587,11 @@
           this.$emit('notify', `No paragraph type supports files with extension: ${extension}`)
         }
       },
+      /**
+       * @param {Object} paragraphType
+       * @param {File} file
+       * @param {string} targetField the file field of the block that takes it
+       */
       async createParagraphWithFile(paragraphType, file, targetField) {
         const newItem = _.cloneDeep(paragraphType)
         // Only set title if we're NOT setting an image field (to avoid overwriting the image field)
@@ -542,37 +618,20 @@
       fieldKey (index, field) {
         return `${this.paragraphLevel > 1 ? this.schema.paragraphKey : this.schema.model}[${index}].${field}`
       },
-      getAllAcceptedTypes() {
-        const mapping = _.get(this.schema, 'options.mapping', {})
-        const extensions = []
-        _.each(mapping, (config, key) => {
-          if (key === 'default') {
-            return
-          }
-          // Handle comma-separated extensions
-          const keyExtensions = key.split(',').map(ext => {
-            const trimmed = ext.trim().toLowerCase()
-            return trimmed.startsWith('.') ? trimmed : '.' + trimmed
-          })
-          extensions.push(...keyExtensions)
-        })
-        return extensions.join(',')
+      /** @returns {Array<string>} the extensions of options.mapping (the default entry apart), lower case with their dot */
+      mappedExtensions () {
+        return _.flatMap(_.keys(_.omit(_.get(this.schema, 'options.mapping', {}), 'default')), (key) => key.split(',').map((ext) => {
+          const trimmed = ext.trim().toLowerCase()
+          return trimmed.startsWith('.') ? trimmed : '.' + trimmed
+        }))
       },
-      getSupportedExtensions() {
-        const mapping = _.get(this.schema, 'options.mapping', {})
-        const extensions = []
-        _.each(mapping, (config, key) => {
-          if (key === 'default') {
-            return
-          }
-          // Handle comma-separated extensions
-          const keyExtensions = key.split(',').map(ext => {
-            const trimmed = ext.trim().toLowerCase()
-            return trimmed.startsWith('.') ? trimmed : '.' + trimmed
-          })
-          extensions.push(...keyExtensions)
-        })
-        return extensions.join(', ')
+      /** @returns {string} the accept attribute of the file input */
+      getAllAcceptedTypes () {
+        return this.mappedExtensions().join(',')
+      },
+      /** @returns {string} the extensions, comma separated, for the hint */
+      getSupportedExtensions () {
+        return this.mappedExtensions().join(', ')
       }
     }
   }

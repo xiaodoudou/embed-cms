@@ -64,6 +64,7 @@
       window.removeEventListener('resize', this.measure)
     },
     methods: {
+      /** @param {{target: HTMLElement}} event */
       onScroll ({ target }) {
         this.scrolledToBottom = isScrolledToBottom(target)
       },
@@ -76,10 +77,12 @@
         this.scrollable = el.scrollHeight > el.clientHeight + 1
         this.scrolledToBottom = isScrolledToBottom(el)
       },
+      /** @param {Object} item */
       deselectItem (item) {
         this.$emit('changeMultiselectItems', _.filter(this.multiselectItems, i => i._id !== item._id))
       },
       onClickCancel () { this.$emit('cancel') },
+      /** Asks for confirmation, the first names listed. */
       async onClickDelete () {
         const names = _.map(_.take(this.multiselectItems, 3), (item) => getRecordLabel(this.resource, item, this.locale) || item._id)
         const more = _.size(this.multiselectItems) > 3 ? ` +${_.size(this.multiselectItems) - 3}` : ''
@@ -94,6 +97,7 @@
           callback: () => this.doDelete()
         })
       },
+      /** Deletes the selected records one by one and reports the count. */
       async doDelete () {
         this.$loading.start('onDeleteMultiselectedItems')
         let deleted = 0

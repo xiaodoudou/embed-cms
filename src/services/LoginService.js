@@ -11,6 +11,7 @@ class LoginService {
     this.logoutCallbackList = []
   }
 
+  /** Polls the login status. */
   init () {
     // log.debug('LoginService - init')
     setInterval(async () => {
@@ -18,11 +19,13 @@ class LoginService {
     }, 1000 * 15)
   }
 
+  /** @returns {Promise<Array<Object>>} the plugins of the group of the user */
   async getPlugins() {
     const groups = await RequestService.get(`${window.location.pathname}_groups`)
     return _.get(_.find(groups, {name: _.get(this.user, 'group', false)}), 'plugins', [])
   }
 
+  /** @returns {Promise<Object|null>} the logged-in user */
   async getStatus () {
     try {
       const data = await RequestService.get(`${window.location.pathname}login`)
@@ -52,6 +55,7 @@ class LoginService {
     }
   }
 
+  /** Loads the status; a logout or a change of user runs the logout callbacks. */
   async checkStatus () {
     let status
     const userBefore = _.cloneDeep(this.user)
@@ -65,6 +69,7 @@ class LoginService {
     }
   }
 
+  /** @returns {Promise<string|false>} the new theme, saved for the user */
   async changeTheme () {
     try {
       const newTheme = _.get(this.user, 'theme', 'dark') === 'dark' ? 'light' : 'dark'
@@ -79,6 +84,7 @@ class LoginService {
     }
   }
 
+  /** Clears the user, tells the server, runs the callbacks. */
   async logout () {
     this.user = null
     try {
@@ -92,10 +98,15 @@ class LoginService {
     })
   }
 
+  /** @param {Function} callback */
   onLogout (callback) {
     this.logoutCallbackList.push(callback)
   }
 
+  /**
+   * @param {string} module
+   * @returns {boolean} whether the group of the user has it
+   */
   checkPermission (module) {
     return _.includes(this.user.group.modules, module)
   }

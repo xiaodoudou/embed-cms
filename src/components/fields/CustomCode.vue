@@ -71,11 +71,13 @@
       this.isReady = true
     },
     methods: {
+      /** @returns {Object} height and width from the options (100% by default), merged with options.css */
       getStyle() {
         const height = _.get(this.schema, 'options.height', '100%')
         const width = _.get(this.schema, 'options.width', '100%')
         return _.merge({height, width}, _.get(this.schema, 'options.css', {}))
       },
+      /** @param {string} data written at the model path of the schema */
       onChangeData(data) {
         _.set(this.model, _.get(this.schema, 'model', false), data)
       }

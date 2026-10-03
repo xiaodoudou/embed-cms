@@ -13,10 +13,18 @@ import _ from 'lodash'
 // Empty rich text as produced by tiptap or missing altogether
 const EMPTY_RICH_TEXT = /^(?:\s|&nbsp;|<p(?:\s[^>]*)?>(?:\s|&nbsp;|<br(?:\s[^>]*)?\/?>)*<\/p>)*$/i
 
+/**
+ * @param {*} value
+ * @returns {boolean}
+ */
 export function isEmptyRichText (value) {
   return _.isString(value) && EMPTY_RICH_TEXT.test(value)
 }
 
+/**
+ * @param {*} value
+ * @returns {boolean} a File or a Blob
+ */
 function isFileLike (value) {
   return (typeof File !== 'undefined' && value instanceof File) || (typeof Blob !== 'undefined' && value instanceof Blob)
 }
@@ -63,14 +71,30 @@ export function createSnapshot (model) {
   return normalizeValue(_.omit(model, ['_id'])) || {}
 }
 
+/**
+ * @param {Object} snapshot
+ * @param {Object} model
+ * @returns {boolean}
+ */
 export function isDirty (snapshot, model) {
   return !_.isEqual(snapshot || {}, createSnapshot(model))
 }
 
+/**
+ * @param {Object} resource
+ * @param {Object} field
+ * @returns {boolean} the resource has locales and the field does not opt out
+ */
 export function isLocalisedField (resource, field) {
   return !!_.get(resource, 'locales.length', 0) && (!!field.localised || _.isUndefined(field.localised))
 }
 
+/**
+ * @param {Object} snapshot
+ * @param {Object} model
+ * @param {string} path
+ * @returns {boolean}
+ */
 function pathChanged (snapshot, model, path) {
   return !_.isEqual(_.get(snapshot, path), normalizeValue(_.get(model, path)))
 }

@@ -47,6 +47,7 @@
       customDatetimePickerOptions: { type: Object, default: () => ({}) }
     },
     computed: {
+      /** @returns {string} customDatetimePickerOptions.placeholder, else YYYY-MM-DD with a warning */
       placeholder() {
         const placeholder = _.get(this.schema, 'customDatetimePickerOptions.placeholder', false)
         if (!placeholder) {
@@ -71,18 +72,23 @@
         console.error(`Couldn't find field ${this.schema.originalModel} in resource schema, will show a date`, resourceSchema)
         return 'date'
       },
+      /** @returns {boolean} whether the field type names a time */
       enableTimePicker() {
         return this.fieldType.indexOf('time') !== -1
       },
+      /** @returns {boolean} whether the field type names a date */
       enableDatePicker() {
         return this.fieldType.indexOf('date') !== -1
       },
+      /** @returns {boolean} */
       isReadonly () {
         return !!this.schema.readonly
       },
+      /** @returns {boolean} the prop or the schema */
       isDisabled () {
         return !!(this.disabled || this.schema.disabled)
       },
+      /** @returns {boolean} readonly or disabled */
       isLocked () {
         return this.isReadonly || this.isDisabled
       },
@@ -111,15 +117,27 @@
       setNow () {
         this._value = Date.now()
       },
+      /**
+       * @param {string} toFind a token of a date format
+       * @returns {boolean} whether the format of the schema contains it
+       */
       isInFormat(toFind) {
         return this.schema.format.indexOf(toFind) !== -1
       },
+      /**
+       * @param {Date|string} date
+       * @returns {string} marked-cell for tomorrow, else empty
+       */
       getDayClass (date) {
         const tomorrow = Dayjs().startOf('day').add(1, 'day')
         if (Dayjs(date).isSame(tomorrow, 'day'))
           return 'marked-cell'
         return ''
       },
+      /**
+       * @param {Date|string} date
+       * @returns {string} in the format of the schema
+       */
       formatDateSelection (date) {
         return Dayjs(date).format(this.schema.format)
       }

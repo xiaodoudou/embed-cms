@@ -44,18 +44,23 @@
       helpers: { type: Object, default: () => ({}) }
     },
     computed: {
+      /** @returns {string} */
       kind () {
         return this.column.kind
       },
+      /** @returns {*} */
       value () {
         return _.get(this.record, this.column.model)
       },
+      /** @returns {string|false} */
       imageSrc () {
         return _.isFunction(this.helpers.imageUrl) ? this.helpers.imageUrl(this.record, this.column) : false
       },
+      /** @returns {string} */
       attachmentName () {
         return _.isFunction(this.helpers.fileName) ? this.helpers.fileName(this.record, this.column) : ''
       },
+      /** @returns {boolean} never for an image */
       empty () {
         if (this.kind === 'image') {
           return false
@@ -65,13 +70,16 @@
         }
         return isEmptyValue(this.value)
       },
+      /** @returns {string} "not translated" for a locale column */
       emptyLabel () {
         return TranslateService.get(this.column.locale ? 'TL_NOT_TRANSLATED' : 'TL_EMPTY_VALUE')
       },
+      /** @returns {Object} the first two labels and the count of the rest (chipsFor) */
       chips () {
         const label = (v) => (_.isFunction(this.helpers.optionLabel) ? this.helpers.optionLabel(this.column, v) : v)
         return chipsFor(_.map(_.castArray(this.value), label), 2)
       },
+      /** @returns {string} the value as text, by kind */
       text () {
         const value = this.value
         switch (this.kind) {

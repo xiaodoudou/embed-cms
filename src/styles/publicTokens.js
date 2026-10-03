@@ -121,4 +121,5 @@ export const PUBLIC_TOKENS = [
   }
 ]
 
+/** @returns {Array<string>} */
 export const publicTokenNames = () => PUBLIC_TOKENS.flatMap((group) => group.tokens.map(([name]) => name))

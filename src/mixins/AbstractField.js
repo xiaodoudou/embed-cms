@@ -3,6 +3,10 @@ import validators from '@u/validators'
 import FieldSelectorService from '@s/FieldSelectorService'
 import { validateFieldValue } from '@u/fieldValidation'
 
+/**
+ * @param {string|Function} validator a name in validators, or a function
+ * @returns {Function|undefined} a wrong name is logged
+ */
 function convertValidator (validator) {
   if (isString(validator)) {
     if (isFunction(validators[validator])) return validators[validator]
@@ -59,9 +63,11 @@ export default {
   computed: {
     _value: {
       cache: false,
+      /** @returns {*} the value of the field, through schema.get when there is one */
       get () {
         return isFunction(objGet(this.schema, 'get')) ? this.schema.get(this.model) : objGet(this.model, this.schema.model)
       },
+      /** @param {*} newValue */
       set (newValue) {
         const oldValue = this._value
         if (isFunction(newValue)) {
@@ -77,6 +83,7 @@ export default {
     this.$nextTick(this.keepPasswordManagersOut)
   },
   methods: {
+    /** Marks the inputs so password managers leave them alone. */
     keepPasswordManagersOut () {
       const root = this.$el
       if (!root || !root.querySelectorAll) {
@@ -97,21 +104,34 @@ export default {
     isLocked () {
       return !!(this.disabled || objGet(this.schema, 'disabled') || objGet(this.schema, 'readonly'))
     },
+    /** @returns {boolean} a hint and no error */
     showHint() {
       return objGet(this.schema, 'options.hint') && !this.errors.length
     },
+    /** @param {boolean} focused losing it clears the paragraph highlight */
     onFieldFocus(focused) {
       if (!focused) {
         return FieldSelectorService.highlightParagraph(-1, -1)
       }
       FieldSelectorService.highlightParagraph(this.paragraphLevel - 1, this.paragraphIndex)
     },
+    /**
+     * @param {string} key a path in the schema
+     * @param {*} defaultVal
+     * @returns {*}
+     */
     get (key, defaultVal = false) {
       return objGet(this.schema, key, defaultVal)
     },
+    /**
+     * @param {string} opt a key of schema.options
+     * @param {*} defaultVal
+     * @returns {*}
+     */
     getOpt (opt, defaultVal) {
       return objGet(this.schema, `options.${opt}`, defaultVal)
     },
+    /** @returns {string|undefined} the Vuetify variant named in the schema */
     getVariant () {
       const variant = []
       forEach(['underlined', 'outlined', 'filled', 'solo', 'solo-inverted', 'solo-filled', 'plain'], (key) => {
@@ -121,9 +141,14 @@ export default {
       })
       return join(variant, ' ')
     },
+    /** @param {*} data */
     onChangeData (data) {
       this._value = data
     },
+    /**
+     * @param {boolean} calledParent
+     * @returns {Promise<Array<string>>} the errors
+     */
     async validate (calledParent) {
       this.clearValidationErrors()
       const validateAsync = objGet(this.formOptions, 'validateAsync', false)
@@ -180,6 +205,10 @@ export default {
       }
       return Promise.all(results).then(handleErrors)
     },
+    /**
+     * @param {*} newValue
+     * @param {*} oldValue
+     */
     async updateModelValue (newValue, oldValue) {
       let changed = false
       if (isFunction(this.schema.set)) {
@@ -202,6 +231,7 @@ export default {
     clearValidationErrors () {
       this.errors.splice(0)
     },
+    /** @returns {{key: string, locale?: string}} the field name and the locale of the model path */
     getKeyLocale () {
       const options = {}
       const list = this.schema.model.split('.')
@@ -211,6 +241,7 @@ export default {
       options.key = list.join('.')
       return options
     },
+    /** @returns {Array<string>} schema.fieldClasses */
     getFieldClasses () {
       return objGet(this.schema, 'fieldClasses', [])
     }

@@ -25,6 +25,12 @@ const resources = {
   invalidTextContainSpec: 'Invalid text! Cannot contains special characters'
 }
 
+/**
+ * @param {*} value
+ * @param {boolean} required
+ * @param {Object} messages
+ * @returns {Array<string>|null} null when there is a value; else the required error, or nothing
+ */
 function checkEmpty (value, required, messages = resources) {
   if (!isNil(value) && value !== '') {
     return null
@@ -32,6 +38,10 @@ function checkEmpty (value, required, messages = resources) {
   return required ? [msg(messages.fieldIsRequired)] : []
 }
 
+/**
+ * @param {string} text with {0}, {1}... placeholders
+ * @returns {string}
+ */
 function msg (text) {
   if (!isNil(text) && arguments.length > 1) {
     for (let i = 1; i < arguments.length; i++) {
@@ -43,9 +53,23 @@ function msg (text) {
 
 const validators = {
   resources,
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   required (value, field, model, messages = resources) {
     return checkEmpty(value, field.required, messages)
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   number (value, field, model, messages = resources) {
     const res = checkEmpty(value, field.required, messages)
     if (res !== null) {
@@ -64,6 +88,13 @@ const validators = {
     }
     return err
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   integer (value, field, model, messages = resources) {
     const res = checkEmpty(value, field.required, messages)
     if (res !== null) {
@@ -75,6 +106,13 @@ const validators = {
     }
     return errs
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   double (value, field, model, messages = resources) {
     const res = checkEmpty(value, field.required, messages)
     if (res !== null) {
@@ -83,6 +121,13 @@ const validators = {
       return [msg(messages.invalidNumber)]
     }
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   string (value, field, model, messages = resources) {
     const res = checkEmpty(value, field.required, messages)
     if (res !== null) {
@@ -101,6 +146,13 @@ const validators = {
     }
     return err
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   array (value, field, model, messages = resources) {
     if (field.required) {
       if (!isArray(value)) {
@@ -117,6 +169,13 @@ const validators = {
       }
     }
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   date (value, field, model, messages = resources) {
     const res = checkEmpty(value, field.required, messages)
     if (res !== null) return res
@@ -139,6 +198,13 @@ const validators = {
     }
     return err
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   regexp (value, field, model, messages = resources) {
     const res = checkEmpty(value, field.required, messages)
     if (res !== null) {
@@ -150,6 +216,13 @@ const validators = {
       }
     }
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   email (value, field, model, messages = resources) {
     const res = checkEmpty(value, field.required, messages)
     if (res !== null) {
@@ -160,6 +233,13 @@ const validators = {
       return [msg(messages.invalidEmail)]
     }
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   url (value, field, model, messages = resources) {
     const res = checkEmpty(value, field.required, messages)
     if (res !== null) {
@@ -170,6 +250,13 @@ const validators = {
       return [msg(messages.invalidURL)]
     }
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   creditCard (value, field, model, messages = resources) {
     const res = checkEmpty(value, field.required, messages)
     if (res !== null) {
@@ -199,6 +286,13 @@ const validators = {
       return [msg(messages.invalidCardNumber)]
     }
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   alpha (value, field, model, messages = resources) {
     const res = checkEmpty(value, field.required, messages)
     if (res !== null) {
@@ -209,6 +303,13 @@ const validators = {
       return [msg(messages.invalidTextContainNumber)]
     }
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   alphaNumeric (value, field, model, messages = resources) {
     const res = checkEmpty(value, field.required, messages)
     if (res !== null) {

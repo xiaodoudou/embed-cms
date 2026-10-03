@@ -154,6 +154,10 @@
       }
     },
     methods: {
+      /**
+       * @param {{focused?: boolean, readonly?: boolean, disabled?: boolean}} state
+       * @returns {Object} the props of a sample field
+       */
       fieldProps (state) {
         return {
           variant: 'solo-filled', flat: true, rounded: true, density: 'compact', 'hide-details': 'auto',
@@ -161,13 +165,19 @@
           'error-messages': state.error ? ['This field is required'] : []
         }
       },
+      /**
+       * @param {Date|string|number} date
+       * @returns {string} YYYY-MM-DD
+       */
       formatDate (date) {
         return new Date(date).toISOString().slice(0, 10)
       },
+      /** @param {string} type success, info, warn or error */
       showToast (type) {
         const messages = { success: 'Region A saved', info: 'Import started...', warn: '2 fields need attention', error: 'Save failed: network error' }
         NotificationsService.send(messages[type], type, type === 'error' ? { actionLabel: 'Retry', action: () => {} } : { detail: 'mukx1234' })
       },
+      /** @param {string} type destructive, or anything else */
       openDialog (type) {
         window.DialogService.show({
           event: 'designSystem',

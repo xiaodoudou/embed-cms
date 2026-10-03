@@ -124,9 +124,11 @@
       this.customHeight = _.get(this.schema, 'crop.height', 500)
     },
     methods: {
+      /** @param {boolean} val */
       setLoadingError(val) {
         this.loadingError = val
       },
+      /** Opens the attachment in a new tab, its extension added to the url so the browser knows the type. */
       viewFile() {
         if (!this.attachment) { return }
         const filenameComponents = _.get(this.attachment, '_filename', '').split('.')
@@ -134,12 +136,21 @@
         const win = window.open(window.origin + _.get(this.attachment, 'url', '') + suffix, '_blank')
         if (win) { win.focus() }
       },
+      /**
+       * @param {string} key a crop option
+       * @returns {*} its value, false when unset
+       */
       hasOpt(key) {
         return _.get(this.schema, `crop.${key}`, false)
       },
+      /** @returns {string} the url of the attachment, or its data url before it is uploaded */
       imageUrl() {
         return _.get(this.attachment, 'url', _.get(this.attachment, 'data', ''))
       },
+      /**
+       * @param {{imageSize: Object, visibleArea: Object, coordinates: Object}} cropper
+       * @returns {{left: number, top: number}} the saved crop position of the attachment, else the crop centred in the visible area
+       */
       getDefaultCropPosition({ imageSize, visibleArea, coordinates }) {
         if (_.get(this.attachment, 'cropOptions', false)) {
           return {
@@ -153,18 +164,22 @@
           top: (visibleArea ? visibleArea.top : 0) + area.height / 2 - coordinates.height / 2
         }
       },
+      /** @returns {{width: number, height: number}} */
       getDefaultCropSize() {
         return {
           width: this.getCurrentWidth(),
           height: this.getCurrentHeight()
         }
       },
+      /** @returns {number} the crop width of the schema, else the custom one, else 500 */
       getCurrentWidth() {
         return _.get(this.schema, 'crop.width', this.customWidth || 500)
       },
+      /** @returns {number} the crop height of the schema, else the custom one, else 500 */
       getCurrentHeight() {
         return _.get(this.schema, 'crop.height', this.customHeight || 500)
       },
+      /** Refreshes the cropper on the next tick. */
       updateCropSize() {
         this.$nextTick(() => {
           if (this.$refs.cropper) {
@@ -172,6 +187,7 @@
           }
         })
       },
+      /** @param {Object} data the crop, kept until apply; the first change is the cropper settling and is ignored */
       onCropperChangeForAttachment(data) {
         this.cropData = data
         if (this.firstCropUpdate) {
@@ -187,6 +203,7 @@
           }
         }
       },
+      /** @param {{value: boolean}} isActive the active ref of the dialog, closed */
       apply(isActive) {
         isActive.value = false
         this.onCropperChange(this.cropData)

@@ -33,22 +33,32 @@
       return { opened: false }
     },
     computed: {
+      /** @returns {Object|undefined} the group of the resource */
       group () {
         return _.find(this.groupedList, (resourceGroup) => this.groupSelected(resourceGroup))
       }
     },
     methods: {
+      /**
+       * @param {Object} resource
+       * @returns {string}
+       */
       titleOf (resource) {
         if (!resource) {
           return ''
         }
         return getResourceLabel(resource)
       },
+      /** @param {Object} resource handed to the callback when it is another one */
       onSelect (resource) {
         if (resource !== this.resource && _.isFunction(this.selectCallback)) {
           this.selectCallback(resource)
         }
       },
+      /**
+       * @param {Object} resourceGroup
+       * @returns {boolean} whether the resource is in it
+       */
       groupSelected (resourceGroup) {
         if (!this.resource) {
           return false

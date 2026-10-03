@@ -32,6 +32,7 @@
     },
     emits: ['update:modelValue', 'clear'],
     computed: {
+      /** @returns {boolean} */
       hasValue () {
         return !_.isEmpty(this.modelValue)
       }
@@ -43,11 +44,13 @@
       blur () {
         _.invoke(this.$refs, 'input.blur')
       },
+      /** Emits an empty value and clear, and keeps the focus. */
       clear () {
         this.$emit('update:modelValue', '')
         this.$emit('clear')
         this.focus()
       },
+      /** @param {KeyboardEvent} event clears the field when it has a value, else goes on up */
       onEscape (event) {
         if (this.hasValue) {
           event.stopPropagation()

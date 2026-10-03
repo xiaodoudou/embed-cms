@@ -49,12 +49,21 @@
       _.each(this.timers, (timer) => clearTimeout(timer.handle))
     },
     methods: {
+      /**
+       * @param {{type: string}} toast
+       * @returns {boolean} errors and warnings
+       */
       isUrgent (toast) {
         return toast.type === 'error' || toast.type === 'warn'
       },
+      /**
+       * @param {{type: string}} toast
+       * @returns {string}
+       */
       iconFor (toast) {
         return { success: '$checkBold', error: '$alertBoxOutline', warn: '$alertOutline', info: '$informationOutline' }[toast.type] || '$informationOutline'
       },
+      /** @param {{type: string, message: string, detail?: string, action?: Function}} data an unknown type shows as info; the same message again replaces its toast */
       onNotification (data) {
         const type = _.includes(['success', 'error', 'warn', 'info'], data.type) ? data.type : 'info'
         // every toast fades by itself; errors and warnings take longer (hover pauses the timer)
@@ -74,10 +83,15 @@
       clearContextual () {
         _.each(_.filter(this.toasts, (toast) => this.isUrgent(toast)), (toast) => this.dismiss(toast.id))
       },
+      /**
+       * @param {Object} toast
+       * @param {number} ms until it is dismissed
+       */
       schedule (toast, ms) {
         clearTimeout(_.get(this.timers, [toast.id, 'handle']))
         this.timers[toast.id] = { handle: setTimeout(() => this.dismiss(toast.id), ms), started: Date.now(), remaining: ms }
       },
+      /** @param {Object} toast hover: keeps what remains of its timer */
       pause (toast) {
         const timer = this.timers[toast.id]
         if (!timer || toast.paused) {
@@ -87,6 +101,7 @@
         timer.remaining = Math.max(1000, timer.remaining - (Date.now() - timer.started))
         toast.paused = true
       },
+      /** @param {Object} toast */
       resume (toast) {
         if (!this.timers[toast.id] || !toast.paused) {
           return
@@ -94,17 +109,20 @@
         toast.paused = false
         this.schedule(toast, this.timers[toast.id].remaining)
       },
+      /** @param {string} id */
       dismiss (id) {
         clearTimeout(_.get(this.timers, [id, 'handle']))
         delete this.timers[id]
         this.toasts = _.reject(this.toasts, { id })
       },
+      /** @param {{action?: Function}} toast dismissed after its action */
       runAction (toast) {
         if (_.isFunction(toast.action)) {
           toast.action()
         }
         this.dismiss(toast.id)
       },
+      /** @param {{detail: string}} toast */
       async copyDetail (toast) {
         try {
           await navigator.clipboard.writeText(toast.detail)

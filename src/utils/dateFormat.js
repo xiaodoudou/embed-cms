@@ -4,6 +4,10 @@
  */
 const TOKENS = { YYYY: 'yyyy', YY: 'yy', DD: 'dd', D: 'd', A: 'a' }
 
+/**
+ * @param {string} format a dayjs format
+ * @returns {string} the date-fns one
+ */
 export function toDateFnsFormat (format) {
   return String(format || '').replace(/YYYY|YY|DD|D|A/g, (token) => TOKENS[token])
 }

@@ -93,9 +93,11 @@
           this.editor.commands.focus('end')
         }
       },
+      /** @returns {string} the HTML of the editor, empty before it exists */
       getVal() {
         return this.editor ? this.editor.getHTML() : ''
       },
+      /** @returns {true|string} true, or the message: required when empty */
       validateField () {
         const val = this.getVal()
         if (this.schema.required && (_.isNil(val) || val === '' || isEmptyRichText(val))) {
@@ -103,12 +105,15 @@
         }
         return ''
       },
+      /** @returns {Array} options.buttons */
       getButtons() {
         return _.get(this.schema, 'options.buttons', [])
       },
+      /** @returns {string} black in dark mode, white otherwise */
       getColorForToolbar () {
         return this.$vuetify.theme.dark ? 'black' : 'white'
       },
+      /** Takes the toolbar buttons out of the tab order. */
       onInit () {
         setTimeout(() => {
           const elems = _.get(this.$refs.wysiwygWrapper, 'children[1].children[0].children[0].children[0].children[0].children[0].children', [])
@@ -123,6 +128,10 @@
           })
         }, 10)
       },
+      /**
+       * Loads the value of the field into the editor.
+       * @returns {boolean} false when the schema has no model
+       */
       updateObj () {
         if (!_.get(this.schema, 'model', false)) {
           return false

@@ -40,14 +40,15 @@ describe('cms command options (unit)', () => {
   })
 
   it('writes a cms.json without the development options in a new project', async function () {
-    this.timeout(20000)
+    // the server is waited for as long as a slow disk needs (loading the package takes 25s on a WSL mount, 1s on a native disk)
+    this.timeout(90000)
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'embed-cms-cli-'))
     const port = String(20000 + Math.floor(Math.random() * 20000))
     const child = spawn(process.execPath, [path.join(ROOT, 'bin', 'cms.js')], { cwd: dir, env: { ...process.env, PORT: port, LOG_LEVEL: 'info' } })
     try {
       await new Promise((resolve, reject) => {
         let output = ''
-        const timer = setTimeout(() => reject(new Error(`no start: ${output}`)), 15000)
+        const timer = setTimeout(() => reject(new Error(`no start: ${output}`)), 80000)
         const onData = (data) => {
           output += data
           if (output.includes(`localhost:${port}/admin`)) {

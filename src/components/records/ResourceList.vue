@@ -54,6 +54,7 @@
   import ResourceService from '@s/ResourceService'
   import { groupSettingsName } from '@u/navModel'
   import { getResourceLabel } from '@u/recordLabel'
+  import { shortcutLabel } from '@u/platform'
 
   const STORAGE_KEY = 'embed-cms.nav.groups'
 
@@ -104,7 +105,7 @@
         return TranslateService.get(this.matchCount === 1 ? 'TL_N_RESOURCES_MATCH_ONE' : 'TL_N_RESOURCES_MATCH', { num: this.matchCount })
       },
       shortcutLabel () {
-        return /Mac|iPhone|iPad/.test(window.navigator.platform || '') ? '⌘ B' : 'Ctrl B'
+        return shortcutLabel('B')
       },
       matchCount () {
         return _.sum(_.map(this.visibleGroups, (group) => group.list.length))

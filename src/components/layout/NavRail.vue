@@ -66,6 +66,7 @@
   import { getResourceLabel } from '@u/recordLabel'
   import NotificationsService from '@s/NotificationsService'
   import ResourceService from '@s/ResourceService'
+  import { shortcutLabel } from '@u/platform'
   import {
     railSections, groupSettingsName, groupKey, groupHoldsItem, groupInitials, groupTint, orderResources, moveInList, flyoutPosition
   } from '@u/navModel'
@@ -110,7 +111,7 @@
         return this.openGroup ? orderResources(_.get(this.openGroup, 'list', []), this.resourceTitle) : []
       },
       shortcutLabel () {
-        return /Mac|iPhone|iPad/.test(window.navigator.platform || '') ? '⌘ B' : 'Ctrl B'
+        return shortcutLabel('B')
       }
     },
     mounted () {

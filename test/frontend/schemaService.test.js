@@ -269,7 +269,7 @@ describe('SchemaService (the form a resource schema becomes)', () => {
       const result = SchemaService.getNestedGroups(res(), flat('title', 'title'), 0)
       expect(result).toHaveLength(1)
       expect(warn).toHaveBeenCalledTimes(1)
-      expect(warn.mock.calls[0][0]).toContain("duplicated field 'title'")
+      expect(warn.mock.calls[0][0]).toContain('duplicated field \'title\'')
     })
 
     it('leaves out a prefix that is given', () => {

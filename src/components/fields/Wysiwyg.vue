@@ -36,6 +36,7 @@
   export default {
     components: { EditorContent, TiptapMenuBar},
     mixins: [AbstractField],
+    emits: ['change'],
     data () {
       return {
         loaded: false,

@@ -100,12 +100,12 @@ describe('CustomForm (draws the fields of a schema)', () => {
     it('says which type is missing, by the schema of the resource, and does not draw it', () => {
       const unknown = { model: 'a', originalModel: 'a', overrideType: undefined, type: false, resource: { schema: [{ field: 'a', input: 'weird' }] } }
       form({ schema: { fields: [unknown] } })
-      expect(console.error.mock.calls[0][0]).toContain("undefined field type 'weird'")
+      expect(console.error.mock.calls[0][0]).toContain('undefined field type \'weird\'')
     })
 
     it('says so for a component that is not registered', () => {
       form({ schema: { fields: [field('a', { overrideType: 'Nope' })] } })
-      expect(console.error.mock.calls[0][0]).toContain("isn't defined as a custom field type")
+      expect(console.error.mock.calls[0][0]).toContain('isn\'t defined as a custom field type')
     })
   })
 

@@ -120,7 +120,7 @@
     try {
       clearTimeout(timer.value)
       if (eventSource.value) {
-        console.warn('close SSE')
+        log.debug('close SSE')
         eventSource.value.close()
       }
     } catch { /* empty */ }
@@ -145,17 +145,13 @@
             }
           }
           system.value = JSON.parse(event.data)
-          const instance = getCurrentInstance()
-          if (instance && instance.proxy) {
-            instance.proxy.$forceUpdate()
-          }
         } catch (error) {
           console.error('Failed to parse system info:', error)
         }
       }
       eventSource.value.addEventListener('end', () => {
         eventSource.value.close()
-        console.warn('System info stream ended')
+        log.debug('System info stream ended')
         if (!destroyed.value) {
           connectToLogStream()
         }

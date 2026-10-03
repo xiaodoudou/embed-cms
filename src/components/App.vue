@@ -243,7 +243,7 @@
         const others = { name: 'TL_OTHERS' }
         const plugins = { name: 'TL_PLUGINS' }
         let groups = [others, plugins]
-        let list = _.union(this.resourceList, _.map(this.pluginList, (item) => _.extend(item, {type: 'plugin'})))
+        const list = _.union(this.resourceList, _.map(this.pluginList, (item) => _.extend(item, {type: 'plugin'})))
         _.each(list, (item) => {
           if (_.isEmpty(item.group)) {
             return
@@ -315,7 +315,7 @@
       },
       '$route': function (to, from) {
         NotificationsService.clearContextual()
-        if (this.$route.query.id != null) {
+        if (!_.isNil(this.$route.query.id)) {
           const current = _.get(this.selectedResource || this.selectedPlugin, 'title')
           if (current === this.$route.query.id) {
             // same resource: only the record changed (the browser's back and forward buttons)
@@ -386,7 +386,7 @@
           return _.isUndefined(resource.allowed) ||  _.includes(resource.allowed, this.user.group)
         })
         ResourceService.setSchemas(this.resourceList)
-        const routed = this.$route.query.id != null ? _.find(_.union(this.pluginList, this.resourceList), {title: this.$route.query.id}) : undefined
+        const routed = !_.isNil(this.$route.query.id) ? _.find(_.union(this.pluginList, this.resourceList), {title: this.$route.query.id}) : undefined
         if (routed) {
           this.selectResource(routed)
         } else if (!this.showDesignSystem) {
@@ -513,7 +513,7 @@
         this.selectRecord(null)
       },
       async reloadResource(id = false) {
-        console.warn(`Will reload resource:${this.selectedResource.name} - id: ${id}`)
+        log.debug(`Will reload resource:${this.selectedResource.name} - id: ${id}`)
         await this.selectResource(this.selectedResource, true)
         const record = id ? _.find(this.recordList, {_id: id}) : this.selectedRecord
         await this.selectRecord(record, true)
@@ -521,7 +521,6 @@
       async onLoading(isLoading) {
         await this.$nextTick()
         this.isLoading = isLoading
-        this.$forceUpdate()
       },
       getResourcesAndPlugins() {
         return _.union(this.pluginList, this.resourceList)
@@ -549,7 +548,6 @@
           if (_.isFunction(_.get(this.$vuetify, 'theme.change'))) {
             this.$vuetify.theme.change(themeName)
           }
-          this.$forceUpdate()
         } catch (error) {
           this.notify(_.get(error, 'response.data.message', error.message), 'error')
           throw error
@@ -573,7 +571,6 @@
       onGetNotification (data) {
         this.notification = data
         this.showSnackBar = true
-      // console.warn('received notification !', data)
       },
       getNotificationClass () {
         return `notification-${this.notification.type}`
@@ -811,7 +808,6 @@
           this.$vuetify.theme.change(theme)
         }
         LoginService.events.emit('changed-theme', theme)
-        this.$forceUpdate()
       },
       unsetSelectedRecord () {
         this.selectedRecord = null

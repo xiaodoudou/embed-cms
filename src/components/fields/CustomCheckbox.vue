@@ -26,6 +26,7 @@
 
   export default {
     mixins: [AbstractField],
+    emits: ['input'],
     computed: {
       isReadonly () {
         return !!this.schema.readonly

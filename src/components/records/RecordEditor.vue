@@ -64,6 +64,7 @@
   import { outlineEntries } from '@u/outline'
   import { getRecordLabel, recordMessage } from '@u/recordLabel'
   import { createSnapshot, changedParts, isDirty, missingRequired, absorbPaths, unsetSwitchesToFalse } from '@u/dirtyTracker'
+  import { isScrolledToBottom } from '@u/scroll'
 
   // Fields fill in their own defaults when they appear. For this long after a form (re)renders, and until the user
   // touches it, such changes are not edits (see settle() below).
@@ -80,6 +81,7 @@
       locale: { type: String, default: () => 'enUS' },
       userLocale: { type: String, default: () => 'enUS' }
     },
+    emits: ['back', 'update:locale', 'update:record', 'updateRecordList'],
     data () {
       return {
         canCreateUpdate: true,
@@ -300,8 +302,8 @@
         clearTimeout(element.jumpFlashTimer)
         element.jumpFlashTimer = setTimeout(() => element.classList.remove('jump-flash'), JUMP_FLASH_MS)
       },
-      onScroll ({ target: { scrollTop, clientHeight, scrollHeight } }) {
-        this.scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 50
+      onScroll ({ target }) {
+        this.scrolledToBottom = isScrolledToBottom(target)
       },
       toggleLocale () {
         this.selectLocale(_.find(this.resource.locales, (l) => l !== this.locale))
@@ -342,12 +344,12 @@
           if (this.resource.locales && (field.localised || _.isUndefined(field.localised))) {
             _.each(this.resource.locales, (locale) => {
               const fieldName = `${field.field}.${locale}`
-              let value = _.get(this.record, fieldName)
+              const value = _.get(this.record, fieldName)
               _.set(dummy, fieldName, this.cloneValue(field, value))
             })
           } else {
             const fieldName = field.field
-            let value = _.get(this.record, fieldName)
+            const value = _.get(this.record, fieldName)
             _.set(dummy, fieldName, this.cloneValue(field, value))
           }
         })
@@ -404,7 +406,7 @@
           _.find(document.querySelectorAll('.wysiwyg-wrapper[data-val="<p></p>"]'), (elem) => {
             if (elem.innerText && elem.innerText.length > 0) {
               const element = elem.parentElement.querySelector('.tiptap.ProseMirror')
-              console.warn('first invalid WYSIWYG field', element)
+              log.debug('first invalid WYSIWYG field', element)
               element.focus()
               formValid = false
               return true
@@ -434,7 +436,7 @@
         return value
       },
       getLocalisedFieldValue (originalData, data, field) {
-        let fieldValue = {}
+        const fieldValue = {}
         _.each(this.resource.locales, (locale) => {
           if (!this.formValid) {
             // return this.handleFormNotValid(`getLocalisedFieldValue - ${locale}`)
@@ -449,11 +451,10 @@
             }
             this.formValid = false
             this.canCreateUpdate = true
-            this.$forceUpdate()
             this.$nextTick(async () => {
               await this.checkFormValid()
             })
-            console.error('required field empty 1', locale, field, fieldName, fieldValue, value)
+            log.debug('required field empty', locale, field, fieldName, fieldValue, value)
             // this.notify(TranslateService.get('TL_REQUIRED_FIELD_EMPTY', 'error'))
             return
           }
@@ -483,11 +484,10 @@
           (_.isUndefined(value) || (field.input === 'string' && value.length === 0))) {
           this.formValid = false
           this.canCreateUpdate = true
-          this.$forceUpdate()
           this.$nextTick(async () => {
             await this.checkFormValid()
           })
-          console.error('required field empty 2', field, this.formValid)
+          log.debug('required field empty', field, this.formValid)
           return
         }
         return value
@@ -506,14 +506,14 @@
               let hasFoundAny = false
               _.each(fieldsRegExpressions, fieldsRegExpression => {
                 const regex = new RegExp(fieldsRegExpression, 'g')
-                let match = regex.exec(filePath)
+                const match = regex.exec(filePath)
                 if (match !== null) {
                   hasFoundAny = true
                   const pathToCleanIndex = match.length - 1
                   const pathToClean = _.get(match, pathToCleanIndex, '')
                   let _name = filePath.slice(0, -1 * pathToClean.length)
                   let _index
-                  let subPath = _.split(pathToClean, '.')
+                  const subPath = _.split(pathToClean, '.')
                   if (subPath.length === 3) {
                     _index = _.get(subPath, 2, 0)
                     const locale =  _.get(subPath, 1, false)
@@ -574,8 +574,8 @@
       },
       getDataToUpload(resource, originalRecord, record) {
         // log.debug(originalRecord)
-        let originalRecordAttachments = this.getAttachmentsOfRecord(resource, originalRecord)
-        let recordAttachments = this.getAttachmentsOfRecord(resource, record)
+        const originalRecordAttachments = this.getAttachmentsOfRecord(resource, originalRecord)
+        const recordAttachments = this.getAttachmentsOfRecord(resource, record)
         const uploadObject = _.cloneDeep(record)
         _.each(recordAttachments.attachmentsPaths, attachmentsPath => {
           _.unset(uploadObject, attachmentsPath)
@@ -710,7 +710,7 @@
       async createRecord (uploadObject, newAttachments) {
         this.$loading.start('create-record')
         try {
-          let data = await RequestService.post(`../api/${this.resource.title}`, uploadObject)
+          const data = await RequestService.post(`../api/${this.resource.title}`, uploadObject)
           await this.uploadAttachments(data._id, newAttachments)
           this.notify(recordMessage('CREATED', this.resource, { ...this.editingRecord, _id: data._id }, this.locale), 'success')
           host.emit('record:saved', { resource: this.resource.title, record: data, created: true })

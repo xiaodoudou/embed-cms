@@ -15,7 +15,7 @@ describe('validators', () => {
     })
     it.each(['number', 'integer', 'double', 'string', 'date', 'regexp', 'email', 'url', 'creditCard', 'alpha', 'alphaNumeric'])('%s treats an empty optional value as valid', (name) => {
       const result = run(name, '', {})
-      expect(result == null || result.length === 0).toBe(true)
+      expect(!result || result.length === 0).toBe(true)
     })
     it.each(['number', 'integer', 'double', 'string', 'date', 'regexp', 'email', 'url', 'creditCard', 'alpha', 'alphaNumeric'])('%s reports an empty required value', (name) => {
       expect(run(name, '', { required: true })).toEqual([validators.resources.fieldIsRequired])
@@ -51,7 +51,7 @@ describe('validators', () => {
 
   describe('double', () => {
     it('accepts numbers and rejects everything else', () => {
-      expect(run('double', 1.5) == null || run('double', 1.5).length === 0).toBe(true)
+      expect(!run('double', 1.5) || run('double', 1.5).length === 0).toBe(true)
       expect(run('double', 'x')).toEqual([validators.resources.invalidNumber])
       expect(run('double', NaN)).toEqual([validators.resources.invalidNumber])
     })

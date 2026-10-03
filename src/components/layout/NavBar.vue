@@ -37,6 +37,7 @@
   import Omnibar from '@c/layout/Omnibar.vue'
   import ResourceService from '@s/ResourceService'
   import NotificationsService from '@s/NotificationsService'
+  import { shortcutLabel } from '@u/platform'
 
   export default {
     components: { SystemInfo, BrandLogo, Omnibar },
@@ -57,7 +58,7 @@
     },
     computed: {
       shortcutLabel () {
-        return /Mac|iPhone|iPad/.test(window.navigator.platform || '') ? '⌘ K' : 'Ctrl K'
+        return shortcutLabel('K')
       },
       settingsTitle () {
         return _.get(this.settingsData, 'title', 'Embed CMS')

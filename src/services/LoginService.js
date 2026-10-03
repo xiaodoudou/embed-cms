@@ -28,11 +28,11 @@ class LoginService {
       const data = await RequestService.get(`${window.location.pathname}login`)
       if (_.get(this.user, '_updatedAt', false) && _.get(data, '_updatedAt', false)) {
         if (this.user._updatedAt !== data._updatedAt) {
-          console.warn('User data updated, will logout...')
+          log.debug('User data updated, will logout...')
           return await this.logout()
         }
       } else if (_.isEmpty(data) && !_.isEmpty(this.user)) {
-        console.warn('User not logged in, will logout...')
+        log.debug('User not logged in, will logout...')
         return await this.logout()
       }
       this.user = data
@@ -40,9 +40,9 @@ class LoginService {
       const localUptime = _.parseInt(VueCookies.get('uptime') || -1)
       if (localUptime <= -1) {
         VueCookies.set('uptime', `${remoteUptime}`)
-        console.warn('Server uptime saved:', VueCookies.get('uptime'))
+        log.debug('Server uptime saved:', VueCookies.get('uptime'))
       } else if (_.isNumber(localUptime) && remoteUptime > localUptime) {
-        console.warn('Will reload page for a new version...')
+        log.debug('Will reload page for a new version...')
         VueCookies.remove('uptime')
         window.location.reload(true)
       }

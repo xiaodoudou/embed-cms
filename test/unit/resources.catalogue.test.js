@@ -16,7 +16,7 @@ const load = (dir) => fs.readdirSync(dir)
 // The input types are the keys of typeMapper in the frontend (`group` is internal, not a schema input)
 const supportedInputs = () => {
   const source = fs.readFileSync(path.join(ROOT, 'src/services/FormService.js'), 'utf8')
-  const body = source.slice(source.indexOf('let typeMapper = {'), source.indexOf('_.each(typeMapper'))
+  const body = source.slice(source.indexOf('const typeMapper = {'), source.indexOf('_.each(typeMapper'))
   return [...body.matchAll(/^ {2}([a-z]+): \{/gm)].map((m) => m[1]).filter((name) => name !== 'group')
 }
 

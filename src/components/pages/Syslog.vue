@@ -47,6 +47,7 @@
   import stripAnsi from 'strip-ansi'
   import { readPreference, writePreference } from '@u/preferences'
   import { columnsFor, withRowHeights } from '@u/logWrap'
+  import { log } from '@u/log'
 
   // the page keeps this many lines; the server keeps its own backlog (syslog.max, 2000 by default)
   const MAX_LINES = 5000
@@ -198,7 +199,7 @@
           this.eventSource.addEventListener('end', () => {
             this.$loading.stop('_syslog')
             this.eventSource.close()
-            console.warn('Log stream ended')
+            log.debug('Log stream ended')
           })
           this.eventSource.onerror = (error) => {
             this.$loading.stop('_syslog')
@@ -208,7 +209,7 @@
             if (this.reconnectAttempts < this.maxReconnectAttempts) {
               this.reconnectAttempts++
               const reconnectDelay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000)
-              console.warn(`Attempting to reconnect in ${reconnectDelay}ms (attempt ${this.reconnectAttempts})`)
+              log.debug(`Attempting to reconnect in ${reconnectDelay}ms (attempt ${this.reconnectAttempts})`)
               this.timer = setTimeout(() => this.connectToLogStream(), reconnectDelay)
             } else {
               this.error = 'Failed to connect to syslog stream after multiple attempts.'
@@ -362,8 +363,8 @@
           const byLevel = _.groupBy(this.logLines, 'level')
           this.warningQty = _.get(byLevel, '[1].length', 0)
           this.errorQty = _.get(byLevel, '[2].length', 0)
-          let shouldPositionToTarget = this.targetLogIdAfterClear !== null
-          let targetLogId = this.targetLogIdAfterClear
+          const shouldPositionToTarget = this.targetLogIdAfterClear !== null
+          const targetLogId = this.targetLogIdAfterClear
           let selectedLogId = null
           if (shouldPositionToTarget && targetLogId !== null) {
             selectedLogId = targetLogId
@@ -377,7 +378,7 @@
           this.currentDisplayableLines = lines
           this.filterOutLines = _.get(this.logLines, 'length', 0) - _.get(this.currentDisplayableLines, 'length', 0)
           if (!this.$refs.virtualScroller) {
-            return this.$forceUpdate()
+            return
           }
           if (this.isHandlingGutterClick && !shouldPositionToTarget) {
             return
@@ -410,7 +411,6 @@
           if (!selectedLogId || !this.isHandlingGutterClick) {
             this.scrollToBottomIfEnabled()
           }
-          this.$forceUpdate()
         }, 300)
       }
     },

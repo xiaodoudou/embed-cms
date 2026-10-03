@@ -185,7 +185,6 @@
           if (!_.get(this.schema, 'crop.height', false)) {
             this.customHeight = Math.round(data.coordinates.height)
           }
-          this.$forceUpdate()
         }
       },
       apply(isActive) {

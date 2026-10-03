@@ -35,6 +35,7 @@
       selectedResource: { type: Object, default: () => {} },
       selectedRecord: { type: [Object, Boolean], default: () => {} }
     },
+    emits: ['reloadResource'],
     data() {
       return {
         debug: false,
@@ -68,7 +69,6 @@
       reloadResource() {
         this.$emit('reloadResource', _.get(this.receivedUpdate, 'data._id', false))
         this.receivedUpdate = false
-        this.$forceUpdate()
       },
       recordOrResource() {
         return this.isSameRecord() ? 'RECORD' : 'RESOURCE'
@@ -95,7 +95,6 @@
       },
       connectToWebsocketServer() {
         const url = `${window.location.origin.replace(/^(http)/, 'ws')}/_updates`
-        // console.warn(`Will connect to ${url}`)
         this.client = new WebSocket(url)
         _.each(['onopen', 'onclose', 'onmessage'], (key)=> this.client[key] = this[key])
       },

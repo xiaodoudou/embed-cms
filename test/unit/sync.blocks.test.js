@@ -188,3 +188,104 @@ describe('sync plugin: paragraph blocks (unit)', () => {
     })
   })
 })
+
+// the ids of records written in texts (a link in a rich text, an id in a JSON value) are told by the unique value of the record
+describe('sync plugin: record ids written in texts (unit)', () => {
+  let A, B
+
+  const api = (app, resource) => app.cms.api()(resource)
+  const page = async (app, slug) => (await api(app, 'pages').list()).find(item => item.slug === slug)
+  const tag = async (app, name) => (await api(app, 'tags').list()).find(item => item.name === name)
+  const clear = async (app) => {
+    for (const resource of ['pages', 'tags']) {
+      for (const item of await api(app, resource).list()) {
+        await api(app, resource).remove(item._id)
+      }
+    }
+  }
+
+  before(async () => {
+    const options = { resources: './test/fixtures/syncResources', sync: { resources: ['tags', 'pages'] }, disableJwtLogin: true }
+    A = await startApp(options)
+    B = await startApp(options)
+    for (const app of [A, B]) {
+      app.cms.$sync.runner.pollMs = 20
+    }
+    await A.cms.api()('_sync').create({ allows: ['read', 'write'], local: { token: 'token-a', url: A.url }, remote: { token: 'token-b', url: B.url } })
+    await B.cms.api()('_sync').create({ allows: ['read', 'write'], local: { token: 'token-b', url: B.url }, remote: { token: 'token-a', url: A.url } })
+  })
+  after(async () => {
+    await A.close()
+    await B.close()
+  })
+  beforeEach(async () => {
+    await clear(A)
+    await clear(B)
+    for (const name of ['red', 'green']) {
+      await api(A, 'tags').create({ name })
+    }
+    for (const name of ['green', 'red']) {
+      await api(B, 'tags').create({ name })
+    }
+  })
+
+  const push = async () => {
+    await A.cms.$sync.run('tags', 'push')
+    return A.cms.$sync.run('pages', 'push')
+  }
+
+  it('turns the ids in a rich text, a JSON value and a block into the ids of the same records on the other CMS', async () => {
+    const [red, green] = await Promise.all(['red', 'green'].map(name => tag(A, name)))
+    await api(A, 'pages').create({
+      slug: 'home',
+      body: `<p>See <a href="#/?id=tags&record=${red._id}">red</a> and <b>${green._id}</b>.</p>`,
+      data: { featured: red._id, related: [green._id, red._id], nested: { id: green._id }, count: 3 },
+      content: [{ _type: 'block_rel', note: `<a href="${green._id}">green</a>` }]
+    })
+    const result = await push()
+    expect(result).to.include({ status: 'done', created: 1 })
+    const [bRed, bGreen] = await Promise.all(['red', 'green'].map(name => tag(B, name)))
+    expect(bRed._id).to.not.equal(red._id)
+    const copied = await page(B, 'home')
+    expect(copied.body).to.equal(`<p>See <a href="#/?id=tags&record=${bRed._id}">red</a> and <b>${bGreen._id}</b>.</p>`)
+    expect(copied.data).to.deep.equal({ featured: bRed._id, related: [bGreen._id, bRed._id], nested: { id: bGreen._id }, count: 3 })
+    expect(copied.content[0].note).to.equal(`<a href="${bGreen._id}">green</a>`)
+  })
+
+  it('leaves a text with no record id, and an id that is not a record, as it is', async () => {
+    await api(A, 'pages').create({ slug: 'plain', body: '<p>nothing here, abcdefghijklmnopqrstuvwx is not one</p>', data: { a: 'musxxxxxxxxxxxxxxxxxxxxx' } })
+    await push()
+    const copied = await page(B, 'plain')
+    expect(copied.body).to.equal('<p>nothing here, abcdefghijklmnopqrstuvwx is not one</p>')
+    expect(copied.data).to.deep.equal({ a: 'musxxxxxxxxxxxxxxxxxxxxx' })
+  })
+
+  it('changes nothing the second time, and pulls the ids the other way', async () => {
+    const red = await tag(A, 'red')
+    await api(A, 'pages').create({ slug: 'home', body: `<i>${red._id}</i>` })
+    await push()
+    const again = await push()
+    expect(again).to.include({ status: 'done', created: 0, updated: 0, removed: 0 })
+    // the other way: B has a page of its own, pulled to A
+    const bGreen = await tag(B, 'green')
+    await api(B, 'pages').create({ slug: 'from-b', data: { tag: bGreen._id } })
+    await A.cms.$sync.run('tags', 'pull')
+    await A.cms.$sync.run('pages', 'pull')
+    expect((await page(A, 'from-b')).data).to.deep.equal({ tag: (await tag(A, 'green'))._id })
+  })
+
+  it('keeps the reference of a record the other CMS does not have yet, and resolves it when it comes', async () => {
+    const blue = await api(A, 'tags').create({ name: 'blue' })
+    await api(A, 'pages').create({ slug: 'late', body: `<i>${blue._id}</i>` })
+    // the tags are not synced first: blue is not on B
+    const first = await A.cms.$sync.run('pages', 'push')
+    expect(first).to.include({ status: 'done', created: 1 })
+    expect((await page(B, 'late')).body).to.equal('<i>cms-ref://tags/blue</i>')
+    await A.cms.$sync.run('tags', 'push')
+    const second = await A.cms.$sync.run('pages', 'push')
+    expect(second).to.include({ status: 'done', updated: 1 })
+    expect((await page(B, 'late')).body).to.equal(`<i>${(await tag(B, 'blue'))._id}</i>`)
+    const third = await A.cms.$sync.run('pages', 'push')
+    expect(third).to.include({ status: 'done', updated: 0 })
+  })
+})

@@ -20,7 +20,7 @@
 <script>
   import _ from 'lodash'
   import AbstractField from '@m/AbstractField'
-  import { validateFieldValue, toStoredNumber, NUMBER_INPUTS } from '@u/fieldValidation'
+  import { toStoredNumber, NUMBER_INPUTS } from '@u/fieldValidation'
 
   export default {
     mixins: [AbstractField],
@@ -31,9 +31,6 @@
       // number inputs store numbers, not the text that was typed
       onChangeData (data) {
         this._value = _.includes(NUMBER_INPUTS, this.schema.input) ? toStoredNumber(data) : data
-      },
-      validateField (val) {
-        return validateFieldValue(this.schema, val) || true
       }
     }
   }

@@ -12,7 +12,7 @@ class SchemaService {
   }
 
   getSchemaFields (schema, resource, locale, userLocale, disabled, extraSources, rootView) {
-    let fields = _.map(schema, (field) => {
+    const fields = _.map(schema, (field) => {
       const isLocalised = resource.locales && (field.localised || _.isUndefined(field.localised))
       const name = field.label && TranslateService.get(field.label)
       const label = `${name || field.field}${isLocalised ? ` (${TranslateService.get(`TL_${locale.toUpperCase()}`)})` : ''}`

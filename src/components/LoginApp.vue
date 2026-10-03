@@ -108,7 +108,6 @@
       async onLoading(isLoading) {
         await this.$nextTick()
         this.isLoading = isLoading
-        this.$forceUpdate()
       },
       async login () {
         if (this.loggingIn) {

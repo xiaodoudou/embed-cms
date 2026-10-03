@@ -36,7 +36,7 @@ describe('plugin pages added to the menu', () => {
     expect(pluginPages({}, { replication: true }).find((page) => page.displayname === 'Replicator').title).toBe('CmsReplicator')
     expect(names({})).not.toContain('Replicator')
     const main = fs.readFileSync(path.join(ROOT, 'src/main.js'), 'utf8')
-    expect(main).toContain(".component('CmsReplicator', CmsReplicator)")
+    expect(main).toContain('.component(\'CmsReplicator\', CmsReplicator)')
     expect(main).toContain('pluginPages(config, { replication })')
   })
 

@@ -26,12 +26,12 @@
 <script>
   import _ from 'lodash'
   import AbstractField from '@m/AbstractField'
-  import { validateFieldValue } from '@u/fieldValidation'
   import Notification from '@m/Notification'
   import ResourceService from '@s/ResourceService'
 
   export default {
     mixins: [AbstractField, Notification],
+    emits: ['input'],
     computed: {
       // the drop-down of a field that suggests values: `options.suggest: 'adminPlugins'` lists the plugin pages this admin has
       // (the built-in ones that run, and those of the project), so that a group is given them by picking, not by typing a name.
@@ -50,9 +50,6 @@
     methods: {
       getType () {
         return _.get(this.schema, 'inputFieldType', 'text')
-      },
-      validateField (val) {
-        return validateFieldValue(this.schema, val) || true
       },
       copyToClipboard(value) {
         navigator.clipboard.writeText(value)

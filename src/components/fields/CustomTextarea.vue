@@ -17,16 +17,12 @@
 <script>
   import _ from 'lodash'
   import AbstractField from '@m/AbstractField'
-  import { validateFieldValue } from '@u/fieldValidation'
-
+  
   export default {
     mixins: [AbstractField],
     methods: {
       getType () {
         return _.get(this.schema, 'inputFieldType', 'text')
-      },
-      validateField (val) {
-        return validateFieldValue(this.schema, val) || true
       }
     }
   }

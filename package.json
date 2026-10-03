@@ -74,6 +74,7 @@
   },
   "bin": {
     "cms": "bin/cms.js",
+    "cms-sync": "bin/cmsSync.js",
     "cms-import": "bin/cmsImport.js",
     "cms-import-remote": "bin/cmsImportRemote.js"
   },

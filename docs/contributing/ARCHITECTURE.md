@@ -121,7 +121,7 @@ If the resource has peers and a replication type, the replicator (`lib/plugins/r
 | Folder | Holds |
 |---|---|
 | `index.js` | The `CMS` class: options, plugin loading, the resources, the API, the lifecycle |
-| `bin/` | The commands: `cms.js` (`npm start` in a clone), `cmsImport.js`, `cmsImportRemote.js` |
+| `bin/` | The commands: `cms.js` (`npm start` in a clone), `cmsSync.js` ([`cms-sync`](../operations/SYNC.md#the-command)), `cmsImport.js`, `cmsImportRemote.js` |
 | `lib/` | The managers (`ExpressManager`, `SyslogManager`, `SystemManager`, `UpdatesManager`), `Resource.js`, `ResourceAPIWrapper.js`, `helpers.js`, `logger.js`, `cliOptions.js` |
 | `lib/db/` | `jsonStore.js` and `FileStore.js`, with the local engines in `local/` (`JsonDown`, `SqliteDown`, `leveldbDown`, `localEngines`, `Sync`) and the servers in `mongo/` and `postgres/` ([how it is organised](../operations/STORAGE.md#how-the-code-is-organised)) |
 | `lib/util/` | The driver (`driver/`), image handling, security utilities, uploads, the small shared functions |
@@ -142,5 +142,6 @@ The naming rules (PascalCase for a class, a component, a service or a mixin, cam
 | Image resizing and smart cropping | `lib/util/imageOptimization.js`, `lib/util/smartcrop.js` |
 | Security settings and their defaults | `lib/util/securityOptions.js`, [SECURITY.md](../../SECURITY.md) |
 | Sync, import, Excel, import from remote | `lib/plugins/sync`, `import`, `xlsx`, `importFromRemote`, `lib/importers/` |
-| The `cms`, `cms-import` and `cms-import-remote` commands | `bin/cms.js`, `bin/cmsImport.js`, `bin/cmsImportRemote.js` |
+| The `cms`, `cms-sync`, `cms-import` and `cms-import-remote` commands | `bin/cms.js`, `bin/cmsSync.js` (the work is in `lib/util/syncCli.js`), `bin/cmsImport.js`, `bin/cmsImportRemote.js` |
+| Running syncs of all the resources, and their schedule | `lib/plugins/sync/runner.js` (with `lib/util/cron.js` for the schedule), `src/components/pages/SyncRuns.vue` |
 | Type definitions for editors and TypeScript users | `index.d.ts`, `types/`, `lib/jsdocTypes.js` |

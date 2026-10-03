@@ -86,7 +86,7 @@ Run the first three locally before you push. `npm run knip` finds unused files, 
 ## Project layout and naming conventions
 
 ```
-bin/            the three commands: cms.js, cmsImport.js, cmsImportRemote.js (package.json "bin")
+bin/            the four commands: cms.js, cmsSync.js, cmsImport.js, cmsImportRemote.js (package.json "bin")
 index.js        the CMS class, what require('embed-cms') gives
 lib/            the backend: the managers, Resource.js, db/ (stores and engines), util/, plugins/, importers/
 src/            the admin app (Vue 3 + Vuetify): components/, services/, mixins/, utils/, filters/, assets/, styles/

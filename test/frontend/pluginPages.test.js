@@ -12,9 +12,11 @@ describe('plugin pages added to the menu', () => {
     expect(names({})).not.toContain('Cms Config')
   })
 
-  it('lists Syslog in the CMS group, with the pages that run the CMS, and the others in System', () => {
+  it('lists Syslog and Sync in the CMS group, with the pages that run the CMS, and the others in System', () => {
     expect(pluginPages({})[0]).toEqual({ title: 'Syslog', displayname: 'Syslog', label: 'TL_SYSLOG', group: 'CMS' })
     expect(pluginPages({ import: {} }).slice(1).every((page) => !page.group)).toBe(true)
+    expect(pluginPages({ sync: {} }).find((page) => page.displayname === 'Sync Resource')).toEqual({ title: 'SyncResource', displayname: 'Sync Resource', label: 'TL_SYNC_RESOURCE', group: 'CMS' })
+    expect(pluginPages({ import: {}, sync: {} }, { replication: true }).filter((page) => !page.group).map((page) => page.displayname)).toEqual(['Replicator', 'Cms Import'])
   })
 
   it('gives every page a translation key for its name, and keeps the display name the rights of a group refer to', () => {

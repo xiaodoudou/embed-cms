@@ -327,4 +327,51 @@ describe('App', () => {
       expect(wrapper.find('button.crumb.crumb-link').exists()).toBe(true)
     })
   })
+
+  describe('the sidebar shortcuts', () => {
+    const press = (init, target = document) => {
+      const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init })
+      target.dispatchEvent(event)
+      return event
+    }
+    const navMode = () => wrapper.get('.cms-nav-wrap').classes().find((name) => name.startsWith('mode-'))
+
+    it('Ctrl+B or Cmd+B switches the sidebar between the rail and the full column', async () => {
+      await mountApp('/')
+      expect(navMode()).toBe('mode-rail')
+      expect(press({ key: 'b', ctrlKey: true }).defaultPrevented).toBe(true)
+      await flushPromises()
+      expect(navMode()).toBe('mode-expanded')
+      press({ key: 'B', metaKey: true })
+      await flushPromises()
+      expect(navMode()).toBe('mode-rail')
+    })
+
+    it('leaves Ctrl+B to a text field, where it means bold', async () => {
+      await mountApp('/')
+      const field = document.createElement('input')
+      document.body.appendChild(field)
+      field.focus()
+      expect(press({ key: 'b', ctrlKey: true }, field).defaultPrevented).toBe(false)
+      await flushPromises()
+      expect(navMode()).toBe('mode-rail')
+    })
+
+    it('on a narrow screen, Ctrl+B opens the drawer and Escape closes it', async () => {
+      const matchMedia = window.matchMedia
+      window.matchMedia = (query) => ({ ...matchMedia(query), matches: query === '(max-width: 767.98px)' })
+      try {
+        await mountApp('/')
+        expect(navMode()).toBe('mode-drawer')
+        press({ key: 'b', ctrlKey: true })
+        await flushPromises()
+        expect(wrapper.get('.cms-inner-layout').classes()).toContain('nav-open')
+        expect(press({ key: 'Escape' }).defaultPrevented).toBe(true)
+        await flushPromises()
+        expect(wrapper.get('.cms-inner-layout').classes()).not.toContain('nav-open')
+      } finally {
+        window.matchMedia = matchMedia
+      }
+    })
+  })
 })

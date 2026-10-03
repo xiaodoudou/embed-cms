@@ -8,7 +8,7 @@
         @confirm="confirmDialog()" @cancel="cancelDialog()"
       />
       <upload-panel v-if="user" />
-      <div v-if="user" class="cms-layout">
+      <div v-if="user" v-shortkey="getShortcuts()" class="cms-layout" @shortkey="onShortkey">
         <a class="cms-skip-link" href="#cms-main" @click.prevent="focusMain">{{ $filters.translate('TL_SKIP_TO_CONTENT') }}</a>
         <updates-notifier v-if="selectedResource && config && config.wsRecordUpdates" :selected-resource="selectedResource" :selected-record="selectedRecord" @reload-resource="reloadResource" />
         <div class="cms-inner-layout" :class="{'nav-open': navOpen}">
@@ -340,8 +340,6 @@
       this.syncRouteRecord = _.debounce(this.writeRouteRecord, 60)
     },
     unmounted () {
-      document.removeEventListener('keydown', this.onDocumentKeydown)
-      document.removeEventListener('keydown', this.onGlobalKeydown)
       _.each([this.wideMedia, this.drawerMedia], (media) => media && media.removeEventListener('change', this.onMediaChange))
       LoadingService.events.off('has-loading', this.onLoading)
       ResourceService.events.off('cached', this.onSettingsCached)
@@ -357,7 +355,6 @@
       this.onMediaChange()
       this.wideMedia.addEventListener('change', this.onMediaChange)
       this.drawerMedia.addEventListener('change', this.onMediaChange)
-      document.addEventListener('keydown', this.onGlobalKeydown)
       LoadingService.events.on('has-loading', this.onLoading)
       this.$loading.start('init')
       LoginService.onLogout(() => {
@@ -424,19 +421,17 @@
         this.navPref = toggledPref(this.navMode)
         writePreference('nav.mode', this.navPref)
       },
-      onGlobalKeydown (event) {
-        if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && _.toLower(event.key) === 'b') {
-          const target = event.target
-          const tag = _.toLower(_.get(target, 'tagName', ''))
-          if (_.includes(['input', 'textarea', 'select'], tag) || _.get(target, 'isContentEditable', false)) {
-            return
-          }
-          event.preventDefault()
-          if (this.navMode === 'drawer') {
-            this.toggleNav()
-          } else {
-            this.toggleRail()
-          }
+      // Ctrl+B shows or hides the sidebar (not inside a text field, where it means bold); Escape closes the drawer
+      getShortcuts () {
+        return this.navOpen ? { nav: ['ctrl', 'b'], close: ['esc'] } : { nav: ['ctrl', 'b'] }
+      },
+      onShortkey (event) {
+        if (event.srcKey === 'close') {
+          this.closeNav()
+        } else if (this.navMode === 'drawer') {
+          this.toggleNav()
+        } else {
+          this.toggleRail()
         }
       },
       // Sidebar width: drag, arrow keys, double-click to reset. Remembered.
@@ -469,25 +464,15 @@
       toggleNav () {
         this.navOpen = !this.navOpen
         if (this.navOpen) {
-          document.addEventListener('keydown', this.onDocumentKeydown)
           this.$nextTick(() => {
             const first = document.querySelector('#cms-nav button')
             if (first) {
               first.focus()
             }
           })
-        } else {
-          document.removeEventListener('keydown', this.onDocumentKeydown)
-        }
-      },
-      onDocumentKeydown (event) {
-        if (event.key === 'Escape') {
-          document.removeEventListener('keydown', this.onDocumentKeydown)
-          this.closeNav()
         }
       },
       closeNav () {
-        document.removeEventListener('keydown', this.onDocumentKeydown)
         if (this.navOpen) {
           this.navOpen = false
           this.$nextTick(() => {
@@ -499,7 +484,6 @@
         }
       },
       async selectResourceAndCloseNav (resource, force = false) {
-        document.removeEventListener('keydown', this.onDocumentKeydown)
         this.navOpen = false
         return this.selectResource(resource, force)
       },

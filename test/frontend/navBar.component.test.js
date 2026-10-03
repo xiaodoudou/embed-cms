@@ -11,9 +11,8 @@ vi.mock('@s/ResourceService', async () => {
   return { default: { cache: vi.fn(), get: vi.fn(), menuIcons: vi.fn(() => ({})), events: new Emitter() } }
 })
 
-// the system menu is a component of its own (SystemInfo has its own tests); the shortcut directive is registered by the app
+// the system menu is a component of its own (SystemInfo has its own tests)
 const SystemInfo = { name: 'SystemInfo', props: ['config', 'settingsData'], template: '<div class="system-info-stub" />' }
-const shortkey = { mounted () {}, updated () {} }
 
 let wrapper
 let selectResource
@@ -22,7 +21,7 @@ const bar = async (props = {}, slots = {}) => {
   wrapper = mountComponent(NavBar, {
     props: { groupedList: groupedList(), selectedItem: {}, selectResourceCallback: selectResource, config: { version: '2.6.1' }, ...props },
     slots,
-    global: { components: { SystemInfo }, directives: { shortkey }, stubs: { SystemInfo } },
+    global: { components: { SystemInfo }, stubs: { SystemInfo } },
     attachTo: document.body
   })
   await flushPromises()

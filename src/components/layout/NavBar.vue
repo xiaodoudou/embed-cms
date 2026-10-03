@@ -67,25 +67,14 @@
     mounted () {
       this.getSettingsData()
       ResourceService.events.on('cached', this.onResourceCached)
-      document.addEventListener('keydown', this.onGlobalKeydown)
       NotificationsService.events.on('omnibar-open', this.openOmnibar)
     },
     beforeUnmount () {
       ResourceService.events.off('cached', this.onResourceCached)
-      document.removeEventListener('keydown', this.onGlobalKeydown)
       NotificationsService.events.off('omnibar-open', this.openOmnibar)
     },
     methods: {
-      // Ctrl/Cmd+K works everywhere, including inside form fields
-      onGlobalKeydown (event) {
-        if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && _.toLower(event.key) === 'k') {
-          event.preventDefault()
-          const omnibar = _.get(this.$refs, 'omnibar', false)
-          if (omnibar) {
-            omnibar.showHideOmnibar(!omnibar.showOmnibar)
-          }
-        }
-      },
+      // the keyboard shortcuts of the switcher (Ctrl+K, Ctrl+P) are its own
       openOmnibar () {
         const omnibar = _.get(this.$refs, 'omnibar', false)
         if (omnibar) {

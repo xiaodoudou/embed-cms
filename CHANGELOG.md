@@ -24,6 +24,7 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 - **A file dropped on a paragraph field** reaches the file field of its new block as data (the paragraph field queues it under the field's key, the field takes it when it mounts) instead of a search through the DOM, the labels and the private fields of the Vue instances with two fallbacks and a timer.
 - **Admin code:** no `$forceUpdate` after a reactive change, the events of every component declared, step-by-step messages through `log.debug` (shown with `?debug`), `prefer-const` and `eqeqeq` enforced on the admin and the backend alike, shared helpers for the shortcut labels, the scroll checks and the text validation.
 - **Backend code:** the driver context is a Node `EventEmitter` (the copy of Backbone.Events is gone), resized images are cached with `stream.pipeline`, the attachment-field patterns are built in the open and compiled once per request, the importers use the logger.
+- **Keyboard shortcuts are a directive of the admin** (`v-shortkey`, in `src/utils/shortkey.js`) instead of `vue3-shortkey`, whose npm release prints its debug output and which came as a tarball of a fork: nothing is fetched outside the npm registry, and npm 12 installs the package. The hand-written key handlers go through it too: Ctrl+K is the switcher's own, `/` and Ctrl+/ reach the search field of the list and the table, Ctrl+B and Escape move the sidebar. Ctrl+P, a second shortcut of the switcher that the library had added, is gone: the switcher is Ctrl+K.
 
 ### Fixed
 
@@ -33,6 +34,7 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 - **The abnormal files of a record are pinned by tests:** a file uploaded without a language on a field that is now localised, with a language on a field that no longer is, or past a lowered `maxCount`, stays visible and flagged in the admin.
 - A Vue 2 directive that could not run in Vue 3 (and was used nowhere) is gone; the leftovers of a `markets` resource in the sync are gone.
 - Two tests that load the whole package wait as long as a slow disk needs (a WSL mount loads it in 25 s, a native disk in 1 s).
+- Ctrl+/ reaches the search field from a keyboard where `/` needs Shift (a French one); Ctrl+A in a rich text or a drop-down selects in the field, not the records of a multiselect page.
 
 ## [3.0.3] - 2026-10-02
 

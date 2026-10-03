@@ -10,13 +10,14 @@ import TranslateService from '@s/TranslateService'
 import TranslateFilter from '@f/translate'
 import TruncateFilter from '@f/truncate'
 import FieldLabel from '@c/fields/FieldLabel.vue'
+import shortkey from '@u/shortkey'
 
 // The real English dictionary, so that tests read the words a person sees (and a renamed key fails them)
 TranslateService.dict.enUS = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../i18n/enUS.json'), 'utf8'))
 TranslateService.locale = 'enUS'
 
 /**
- * Mounts a component the way the app does: Vuetify, the $filters global and the globally registered field label.
+ * Mounts a component the way the app does: Vuetify, the $filters global, the field label and the shortcut directive.
  * `model` and `schema` are the props every field receives; other mounting options are passed through.
  */
 export function mountComponent (component, options = {}) {
@@ -29,6 +30,7 @@ export function mountComponent (component, options = {}) {
       // what a test adds (components, plugins, mocks like $loading) comes on top of the app's own environment
       plugins: [vuetify, ...(extra.plugins || [])],
       components: { FieldLabel, ...(extra.components || {}) },
+      directives: { shortkey, ...(extra.directives || {}) },
       config: { ...(extra.config || {}), globalProperties: { $filters: { translate: TranslateFilter, truncate: TruncateFilter }, ...(extra.config?.globalProperties || {}) } }
     }
   })

@@ -124,7 +124,7 @@ class CMS {
     this.isExiting = false
     this.requiredKeyLength = 16
     this.fieldFileTypes = ['file', 'img', 'image', 'imageView', 'attachmentView']
-    const configPath = path.resolve((options != null ? options.config : undefined) || './cms.json')
+    const configPath = path.resolve(_.get(options, 'config') || './cms.json')
     if (options) {
       delete options.config
     }
@@ -292,7 +292,7 @@ class CMS {
       }
       // resave and saveUninitialized default to what express-session does without them (true), said out loud: left out,
       // it prints a deprecation warning at every start
-      let sessionOptions = _.extend({ cookie: {}, resave: true, saveUninitialized: true }, this.options.session, { name: this.cookieNames.session })
+      const sessionOptions = _.extend({ cookie: {}, resave: true, saveUninitialized: true }, this.options.session, { name: this.cookieNames.session })
       // sameSite and secure follow the security settings, a cookie option written in the configuration still wins
       sessionOptions.cookie = _.pickBy({ sameSite: this.security.cookies.sameSite, secure: this.security.cookies.secure, httpOnly: this.security.cookies.httpOnly }, value => value !== false)
       _.extend(sessionOptions.cookie, _.get(this.options, 'session.cookie'))

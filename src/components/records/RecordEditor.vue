@@ -11,16 +11,17 @@
         </button>
       </div>
       <div class="buttons">
-        <v-menu v-if="outlineFields.length > 6" location="bottom end">
+        <v-menu v-if="outlineEntries.length > 0" location="bottom end">
           <template #activator="{ props }">
             <v-btn v-bind="props" elevation="0" variant="text" class="jump-to" :aria-label="$filters.translate('TL_JUMP_TO')" :title="$filters.translate('TL_JUMP_TO')">
               <v-icon icon="$formatListBulleted" />
             </v-btn>
           </template>
           <v-list density="compact" class="outline-list">
-            <v-list-item v-for="f in outlineFields" :key="f.model" :title="f.label" @click="jumpToField(f)">
-              <template v-if="isFieldMissing(f)" #append>
-                <v-icon size="small" color="error" icon="$alertBoxOutline" :aria-label="$filters.translate('TL_REQUIRED')" />
+            <v-list-item v-for="entry in outlineEntries" :key="entry.key" :title="entry.label" :class="{ 'outline-block': entry.block !== undefined && !entry.blockField, 'outline-field': !!entry.blockField }" @click="jumpToEntry(entry)">
+              <template v-if="entry.dirty || (entry.block === undefined && isFieldMissing(entry.field))" #append>
+                <span v-if="entry.dirty" class="outline-dirty" role="img" :aria-label="$filters.translate('TL_UNSAVED_CHANGES')" :title="$filters.translate('TL_UNSAVED_CHANGES')" />
+                <v-icon v-if="entry.block === undefined && isFieldMissing(entry.field)" size="small" color="error" icon="$alertBoxOutline" :aria-label="$filters.translate('TL_REQUIRED')" />
               </template>
             </v-list-item>
           </v-list>
@@ -59,12 +60,16 @@
   import TopBarLocaleList from '@c/layout/TopBarLocaleList.vue'
   import RequestService from '@s/RequestService'
   import { host } from '@s/HostService'
+  import ResourceService from '@s/ResourceService'
+  import { outlineEntries } from '@u/outline'
   import { getRecordLabel, recordMessage } from '@u/recordLabel'
   import { createSnapshot, changedParts, isDirty, missingRequired, absorbPaths, unsetSwitchesToFalse } from '@u/dirtyTracker'
 
   // Fields fill in their own defaults when they appear. For this long after a form (re)renders, and until the user
   // touches it, such changes are not edits (see settle() below).
   const SETTLE_MS = 700
+  // how long the place a "Jump to" row points at stays lit (the animation in base.scss lasts as long)
+  const JUMP_FLASH_MS = 1200
 
   export default {
     components: {TopBarLocaleList},
@@ -126,6 +131,15 @@
       },
       outlineFields () {
         return _.uniqBy(_.filter(_.get(this.schema, 'fields', []), (f) => f.label && f.originalModel), 'originalModel')
+      },
+      // the fields, and under each paragraph field a row for each of its blocks (from the record, so repeats are listed as they are)
+      outlineEntries () {
+        return outlineEntries(this.outlineFields, this.editingRecord, {
+          paragraphSchema: (type) => ResourceService.getParagraphSchema(type),
+          translate: (value) => TranslateService.get(value),
+          locale: this.locale,
+          snapshot: this.snapshot
+        })
       }
     },
     watch: {
@@ -251,12 +265,40 @@
         const name = field.originalModel
         return _.includes(this.missing.shared, name) || _.includes(_.get(this.missing.byLocale, this.locale, []), name)
       },
+      // a row of the menu: a field, or a block of a paragraph field
+      jumpToEntry (entry) {
+        if (entry.block === undefined) {
+          return this.jumpToField(entry.field)
+        }
+        const wrapper = this.$el.querySelector(`.field-wrapper[data-model="${entry.field.model}"]`)
+        // the blocks of the field itself (a block inside a block is one level deeper)
+        const block = wrapper && wrapper.querySelectorAll('.item.nested-level-1')[entry.block]
+        if (block) {
+          // the fields of a block are all named _value.<field>: the one of this block, not of a block inside it
+          const inner = entry.blockField && _.find(block.querySelectorAll(`.field-wrapper[data-model^="_value.${entry.blockField}"]`), (element) => element.closest('.item') === block)
+          // centred: the paragraph field keeps a bar of its own at the top, which would cover the top of a block
+          this.scrollAndFlash(inner || block, 'center')
+        } else {
+          this.jumpToField(entry.field)
+        }
+      },
       jumpToField (field) {
         const elem = this.$el.querySelector(`.field-wrapper[data-model="${field.model}"]`)
         if (elem) {
-          const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-          elem.scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' })
+          this.scrollAndFlash(elem, 'start')
         }
+      },
+      // scrolls to where a row of the menu points, and lights it up for a moment so the eye finds it
+      scrollAndFlash (element, block) {
+        const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        element.scrollIntoView({ block, behavior: reduced ? 'auto' : 'smooth' })
+        element.classList.remove('jump-flash')
+        // a second jump to the same place plays it again
+        void element.offsetWidth
+        element.classList.add('jump-flash')
+        // one timer for each place: an earlier jump to it must not end this one early
+        clearTimeout(element.jumpFlashTimer)
+        element.jumpFlashTimer = setTimeout(() => element.classList.remove('jump-flash'), JUMP_FLASH_MS)
       },
       onScroll ({ target: { scrollTop, clientHeight, scrollHeight } }) {
         this.scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 50

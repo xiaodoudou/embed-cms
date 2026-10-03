@@ -2,7 +2,7 @@
 
 # The embed-cms documentation
 
-This is the map: GitHub shows it when you open the `docs/` folder, so it's the one page that lists all the others. Start with the page that matches what you're doing. Every topic has one page that owns it; the others link there rather than repeat it, so if two pages ever disagree, the owner is right (and the other one is a bug worth reporting).
+This is the map: GitHub shows it when you open the `docs/` folder, so it's the one page that lists all the others. Start with the page that matches what you're doing. Every topic has one page that owns it; the others link there rather than repeat it, so if two pages ever disagree, the owner is right (and the other one is a bug worth reporting). What changed in each version, and what is on `main` and not yet released: [CHANGELOG.md](../CHANGELOG.md).
 
 ## Start (`start/`)
 

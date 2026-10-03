@@ -136,7 +136,7 @@ Security problems don't go in a public issue or pull request: see [SECURITY.md](
 
 ## Releasing
 
-A release is a tag. With the version of `package.json` bumped and committed on `main` (a commit named "Release 3.0.2"), tag it and push the tag:
+A release is a tag. Every change worth telling goes under **Unreleased** in `CHANGELOG.md` with the commit that makes it, in the words of the person who uses the CMS (what they can do now, what behaves differently, what was broken), not of the code. A release moves those entries under a heading with the version and the date, and adds the compare link at the bottom. With that, the version of `package.json` bumped, and both committed on `main` (a commit named "Release 3.0.2"), tag it and push the tag:
 
 ```sh
 git tag -a v3.0.2 -m "embed-cms 3.0.2"

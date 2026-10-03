@@ -56,7 +56,7 @@ Declared in `options`:
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `options.hint` | string \| `{ enUS, zhCN }` | none | Help text under the label (above the box for `paragraph`), hidden while an error is shown. One text per language is allowed: `hint: { enUS: 'Shown in the top bar', zhCN: '显示在顶部栏' }`; the text of the admin language is shown (the built-in Settings resource uses this). |
-| `options.readonly` | boolean | `false` | Not editable, with an eye icon after the label (a disabled field has a lock icon there). Honoured by `string`, `text`, `password`, `email`, `url`, `number`, `integer`, `double`, `checkbox`, `date`, `time`, `datetime`, `select`, `multiselect`, `transliterate`, `wysiwyg`, `color`, `image` and `file` (no uploads), `code` and `pillbox`. Ignored by `paragraph`, `object`, `json`. |
+| `options.readonly` | boolean | `false` | Not editable, with a lock icon after the label (a disabled field has no icon: it is greyed out with a dashed border). Honoured by `string`, `text`, `password`, `email`, `url`, `number`, `integer`, `double`, `checkbox`, `date`, `time`, `datetime`, `select`, `multiselect`, `transliterate`, `wysiwyg`, `color`, `image` and `file` (no uploads), `code` and `pillbox`. Ignored by `paragraph`, `object`, `json`. |
 | `options.disabled` | boolean | `false` | Greyed out and not focusable (also accepted as `disabled` next to `input`). Honoured like `readonly`; a disabled `image` or `file` shows only its label and previews, without the hint. Ignored by `object`, `json`. |
 | `options.min` / `options.max` | number | none | Length for `string`, `text`, `password`, `email`, `url`, `transliterate`; value for `number`, `integer`, `double`. Enforced by the admin. |
 | `options.regex` | `{ value, description }` or one per locale | none | Pattern for the text types (`'/pattern/flags'`). Enforced by the admin. |
@@ -107,4 +107,4 @@ The server stores what it receives, so if you write over REST, validate your own
 - Nested fields: `{ label: 'City', field: 'address.city', input: 'string' }` stores `{ address: { city: ... } }` and groups the fields under an `address` heading (`groups.address.label` in the resource sets its title).
 - Import and sync files reference records of a `select` / `multiselect` source by their first `unique` field.
 - The look of the form is in the [Design system](../extending/DESIGN_SYSTEM.md); blocks side by side in a paragraph field are in [Dynamic layout](DYNAMIC_LAYOUT.md).
-- A field label shows a small eye when the field is read-only and a lock when it's disabled.
+- A field label shows a small lock when the field is read-only. A disabled field has no icon: it is greyed out with a dashed border.

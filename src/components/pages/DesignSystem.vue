@@ -65,7 +65,7 @@
 
       <section class="cms-card ds-section" aria-labelledby="ds-forms">
         <h2 id="ds-forms">Form controls</h2>
-        <p class="ds-note">One state system for every control: editable (field surface, strong border, hover darkens it, focus adds the accent border and ring), read-only (tinted, no border, an eye after the label, still copyable), disabled (page colour, dashed border, muted text, a lock after the label), error (red border, icon and message).</p>
+        <p class="ds-note">One state system for every control: editable (field surface, strong border, hover darkens it, focus adds the accent border and ring), read-only (tinted, no border, a lock after the label, still copyable), disabled (page colour, dashed border, muted text, no icon), error (red border, icon and message).</p>
         <div class="ds-forms">
           <div v-for="state in formStates" :key="state.name" class="ds-form-col">
             <h3>{{ state.name }}<small>{{ state.hint }}</small></h3>
@@ -140,8 +140,8 @@
           { name: 'Editable', hint: 'hover darkens the border' },
           { name: 'Focus', hint: 'accent border and ring', focused: true },
           { name: 'Error', hint: 'red border, icon, message', error: true },
-          { name: 'Read-only', hint: 'tinted, eye, copyable', readonly: true },
-          { name: 'Disabled', hint: 'dashed, muted, lock', disabled: true }
+          { name: 'Read-only', hint: 'tinted, lock, copyable', readonly: true },
+          { name: 'Disabled', hint: 'dashed, muted, no icon', disabled: true }
         ],
         options: ['articles', 'authors', 'admin settings', 'config', 'groups'],
         variants: [

@@ -147,14 +147,14 @@ describe('CustomCode (a code editor)', () => {
     expect(wrapper.find('.CodeMirror').classes()).toContain('cm-s-cms')
   })
 
-  it('says it is read-only with an eye after the label, and disabled with a lock', async () => {
+  it('says it is read-only with a lock after the label, and disabled with no icon', async () => {
     await code({ script: 'a' }, { readonly: true })
     expect(wrapper.classes()).toContain('is-readonly')
     expect(wrapper.find('.field-label .cms-field-readonly').exists()).toBe(true)
     wrapper.unmount()
     await code({ script: 'a' }, { disabled: true })
     expect(wrapper.classes()).toContain('is-disabled')
-    expect(wrapper.find('.field-label .cms-field-lock').exists()).toBe(true)
+    expect(wrapper.find('.field-label .cms-field-readonly').exists()).toBe(false)
   })
 
   it('writes the edits into the model', async () => {

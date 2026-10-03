@@ -30,8 +30,8 @@ Catalogue: `resources/text_long.js`, fields `snippet` and `sizedSnippet`.
 | `options.styleSelectedText` | boolean | `true` | |
 | `options.showCursorWhenSelecting` | boolean | `true` | |
 | `options.line` | boolean | `true` | |
-| `options.readonly` | boolean | `false` | The editor is read-only (text can be selected and copied, not changed). CodeMirror `readOnly`; the field gets a tinted background, no border and the eye icon after its label (see `readOnlySnippet`). |
-| `options.disabled` | boolean | `false` | Read-only and without a cursor (CodeMirror `readOnly: 'nocursor'`). The field is dashed and muted, with the lock icon after its label (see `disabledSnippet`). |
+| `options.readonly` | boolean | `false` | The editor is read-only (text can be selected and copied, not changed). CodeMirror `readOnly`; the field gets a tinted background, no border and the lock icon after its label (see `readOnlySnippet`). |
+| `options.disabled` | boolean | `false` | Read-only and without a cursor (CodeMirror `readOnly: 'nocursor'`). The field is dashed and muted, with no icon (see `disabledSnippet`). |
 | `required` | boolean | `false` | Empty code refuses the save like the other types (`This field is required!`). See `requiredSnippet`. |
 
 ## Variations

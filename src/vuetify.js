@@ -88,10 +88,10 @@ const lightColors = {
   'surface-light': '#F4F5F9',
   'surface-variant': '#1E2330', // used by Vuetify for tooltips (inverse surface)
   'on-surface-variant': '#FFFFFF',
-  primary: '#3846C7',
-  'primary-darken-1': '#2D3AA8',
-  secondary: '#3846C7',
-  'secondary-darken-1': '#2D3AA8',
+  primary: '#4540a8',
+  'primary-darken-1': '#37338c',
+  secondary: '#4540a8',
+  'secondary-darken-1': '#37338c',
   error: '#A8362F',
   info: '#2C5DA3',
   success: '#2D6B52',
@@ -106,7 +106,7 @@ const lightColors = {
   'on-surface': '#161B26',
   'surface-2': '#F4F5F9',
   'primary-soft': '#EDEFFA',
-  'on-primary-soft': '#252F9A'
+  'on-primary-soft': '#2e2a8a'
 }
 
 const darkColors = {
@@ -116,10 +116,10 @@ const darkColors = {
   'surface-light': '#1F232C',
   'surface-variant': '#E3E6F6',
   'on-surface-variant': '#161A2E',
-  primary: '#9AA6FF',
-  'primary-darken-1': '#B3BCFF',
-  secondary: '#9AA6FF',
-  'secondary-darken-1': '#B3BCFF',
+  primary: '#a9a4ff',
+  'primary-darken-1': '#c0bcff',
+  secondary: '#a9a4ff',
+  'secondary-darken-1': '#c0bcff',
   error: '#F09A93',
   info: '#8DB4F0',
   success: '#7BCBA5',

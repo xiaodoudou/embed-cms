@@ -401,10 +401,9 @@ button.cms-list-item:hover {
   font-size: var(--cms-fs-sm);
   font-weight: var(--cms-fw-semibold);
 
-  // the eye (read-only) and the lock (disabled) after a label, like the admin's own fields; the icon is a mask, so it
-  // follows the colour
-  &[data-state='readonly']::after,
-  &[data-state='disabled']::after {
+  // the lock after the label of a read-only field, like the admin's own fields; the icon is a mask, so it follows the colour. A disabled
+  // field has no icon: it is greyed out with a dashed border
+  &[data-state='readonly']::after {
     content: '';
     display: inline-block;
     width: 14px;
@@ -416,10 +415,6 @@ button.cms-list-item:hover {
   }
 
   &[data-state='readonly'] {
-    --label-icon: url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M12%2C9A3%2C3%200%200%2C1%2015%2C12A3%2C3%200%200%2C1%2012%2C15A3%2C3%200%200%2C1%209%2C12A3%2C3%200%200%2C1%2012%2C9M12%2C4.5C17%2C4.5%2021.27%2C7.61%2023%2C12C21.27%2C16.39%2017%2C19.5%2012%2C19.5C7%2C19.5%202.73%2C16.39%201%2C12C2.73%2C7.61%207%2C4.5%2012%2C4.5M3.18%2C12C4.83%2C15.36%208.24%2C17.5%2012%2C17.5C15.76%2C17.5%2019.17%2C15.36%2020.82%2C12C19.17%2C8.64%2015.76%2C6.5%2012%2C6.5C8.24%2C6.5%204.83%2C8.64%203.18%2C12Z%22%2F%3E%3C%2Fsvg%3E');
-  }
-
-  &[data-state='disabled'] {
     --label-icon: url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M12%2C17C10.89%2C17%2010%2C16.1%2010%2C15C10%2C13.89%2010.89%2C13%2012%2C13A2%2C2%200%200%2C1%2014%2C15A2%2C2%200%200%2C1%2012%2C17M18%2C20V10H6V20H18M18%2C8A2%2C2%200%200%2C1%2020%2C10V20A2%2C2%200%200%2C1%2018%2C22H6C4.89%2C22%204%2C21.1%204%2C20V10C4%2C8.89%204.89%2C8%206%2C8H7V6A5%2C5%200%200%2C1%2012%2C1A5%2C5%200%200%2C1%2017%2C6V8H18M12%2C3A3%2C3%200%200%2C0%209%2C6V8H15V6A3%2C3%200%200%2C0%2012%2C3Z%22%2F%3E%3C%2Fsvg%3E');
   }
 }

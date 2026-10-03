@@ -534,8 +534,8 @@ a {
   cursor: default;
 }
 
-/* lock icon at the right of a read-only control */
-.cms-field-lock {
+/* the lock icon after the label of a read-only field */
+.cms-field-readonly {
   display: inline-flex;
   align-items: center;
   color: var(--cms-text-muted);
@@ -841,6 +841,7 @@ a {
    which cut the list's rounded border and doubled its shadow) */
 .v-overlay-container .v-menu > .v-overlay__content,
 .v-overlay-container .v-select__content,
+.v-overlay-container .v-combobox__content,
 .v-overlay-container .v-autocomplete__content {
   border-radius: var(--cms-radius-md);
   box-shadow: var(--cms-shadow-2);
@@ -848,6 +849,7 @@ a {
 
 .v-menu > .v-overlay__content > .v-list,
 .v-select__content .v-list,
+.v-combobox__content .v-list,
 .v-autocomplete__content .v-list {
   /* items run edge to edge: no padding, the list itself clips them to its rounded corners */
   padding: 0;
@@ -861,18 +863,28 @@ a {
 
 .v-menu .v-list-item,
 .v-select__content .v-list-item,
+.v-combobox__content .v-list-item,
 .v-autocomplete__content .v-list-item {
-  min-height: 40px;
-  /* room above and below: a one-line item stays 40px, a two-line one (name over id) breathes */
-  padding: var(--cms-space-2) var(--cms-space-3);
+  min-height: 32px;
+  /* compact: a one-line item is 32px, a two-line one (name over id) grows with its second line */
+  padding: var(--cms-space-1) var(--cms-space-3);
   border-radius: 0;
   color: var(--cms-text);
   font-size: var(--cms-fs-base);
   background: transparent;
 }
 
+/* a hairline between the items, so that a run of selected (tinted) items still reads as separate rows */
+.v-menu .v-list-item + .v-list-item,
+.v-select__content .v-list-item + .v-list-item,
+.v-combobox__content .v-list-item + .v-list-item,
+.v-autocomplete__content .v-list-item + .v-list-item {
+  border-top: 1px solid color-mix(in srgb, var(--cms-text) 28%, transparent);
+}
+
 .v-menu .v-list-item:hover,
 .v-select__content .v-list-item:hover,
+.v-combobox__content .v-list-item:hover,
 .v-autocomplete__content .v-list-item:hover {
   background: var(--cms-surface-2);
 }
@@ -880,6 +892,7 @@ a {
 .v-menu .v-list-item--highlighted,
 .v-menu .v-list-item:focus-visible,
 .v-select__content .v-list-item--highlighted,
+.v-combobox__content .v-list-item--highlighted,
 .v-autocomplete__content .v-list-item--highlighted {
   background: var(--cms-primary-soft);
   box-shadow: inset 3px 0 0 var(--cms-primary);
@@ -887,6 +900,7 @@ a {
 
 .v-menu .v-list-item--active,
 .v-select__content .v-list-item--active,
+.v-combobox__content .v-list-item--active,
 .v-autocomplete__content .v-list-item--active {
   background: var(--cms-primary-soft);
   color: var(--cms-on-primary-soft);
@@ -894,6 +908,7 @@ a {
 }
 
 .v-select__content .v-list-item--active::after,
+.v-combobox__content .v-list-item--active::after,
 .v-autocomplete__content .v-list-item--active::after {
   content: '\2713';
   margin-left: auto;
@@ -909,6 +924,7 @@ a {
 /* title and subtitle: the base size over a smaller muted line, */
 .v-menu .v-list-item-title,
 .v-select__content .v-list-item-title,
+.v-combobox__content .v-list-item-title,
 .v-autocomplete__content .v-list-item-title {
   font-size: var(--cms-fs-base);
   line-height: var(--cms-lh-base);
@@ -916,6 +932,7 @@ a {
 
 .v-menu .v-list-item .v-list-item-subtitle,
 .v-select__content .v-list-item-subtitle,
+.v-combobox__content .v-list-item-subtitle,
 .v-autocomplete__content .v-list-item-subtitle {
   margin-top: 2px;
   color: var(--cms-text-muted);
@@ -925,6 +942,7 @@ a {
 }
 
 .v-autocomplete__content .v-list-item-title mark,
+.v-combobox__content .v-list-item-title mark,
 .v-select__content .v-list-item-title mark {
   background: transparent;
   color: inherit;
@@ -935,6 +953,7 @@ a {
 @media (pointer: coarse) {
   .v-menu .v-list-item,
   .v-select__content .v-list-item,
+  .v-combobox__content .v-list-item,
   .v-autocomplete__content .v-list-item {
     min-height: var(--cms-touch-target);
   }

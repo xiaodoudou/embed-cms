@@ -60,7 +60,8 @@
       max-height: 60vh !important;
       min-width: 240px;
       > .v-list {
-        padding: var(--cms-space-2);
+        // no inset: a highlighted row fills the width of the menu
+        padding: 0;
       }
     }
     &.resources-menu.sidebar {
@@ -69,10 +70,6 @@
     &.resources-menu.full-width > .v-list {
       width: min(560px, calc(100vw - 32px));
     }
-  }
-
-  .v-menu__content.v-autocomplete__content .v-list {
-    padding: var(--cms-space-1);
   }
 }
 

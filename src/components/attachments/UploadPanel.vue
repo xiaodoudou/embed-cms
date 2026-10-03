@@ -176,7 +176,7 @@
   right: var(--cms-space-4);
   bottom: var(--cms-space-4);
   z-index: var(--cms-z-toast);
-  width: min(360px, calc(100vw - 32px));
+  width: var(--cms-toast-width);
   // never taller than this: the list inside scrolls
   max-height: min(50vh, 420px);
   display: flex;

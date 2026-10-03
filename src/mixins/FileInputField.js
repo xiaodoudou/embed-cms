@@ -20,6 +20,7 @@ export default {
     }
   },
   methods: {
+    /** Renumbers the order of the attachments. */
     onEndDrag () {
       const attachments = _.map(this.getAttachments(), (item, i) => {
         if (item.order !== i + 1) {
@@ -30,10 +31,18 @@ export default {
       })
       this._value = attachments
     },
+    /**
+     * @param {Object|false} attachment the first one by default
+     * @returns {string} its data url before upload, else its preview url
+     */
     getImageSrc (attachment = false) {
       const a = attachment || this.attachment()
       return a.data ? a.data : this.getPreviewUrl(a)
     },
+    /**
+     * @param {Object|false} attachment the first one by default
+     * @returns {boolean} by the extension of the filename, else by the content type
+     */
     isImage (attachment = false) {
       const a = attachment || this.attachment()
       const attachmentFilename = this.getAttachmentFilename(a)
@@ -50,6 +59,10 @@ export default {
       // no extension and no type: an image field holds images
       return _.isFunction(this.unknownIsImage) && this.unknownIsImage()
     },
+    /**
+     * @param {Object|false} attachment the first one by default
+     * @returns {string} its url, resized unless it is an svg
+     */
     getPreviewUrl (attachment = false) {
       const a = attachment || this.attachment()
       const contentType = _.get(a, '_contentType', false)
@@ -58,19 +71,30 @@ export default {
       }
       return `${a.url}?resize=autox100`
     },
+    /** @returns {Object|undefined} the first */
     attachment () {
       return _.first(this.attachments)
     },
+    /** @returns {Array<Object>} the value of the field, else the prop */
     getAttachments () {
       return this._value || this.attachments
     },
+    /**
+     * @param {Object|false} attachment the first one by default
+     * @returns {string} human readable
+     */
     imageSize (attachment = false) {
       const a = attachment || this.attachment()
       return this.bytesToSize(_.get(a, '_size', _.get(a, 'file.size', false)))
     },
+    /**
+     * @param {number} bytes
+     * @returns {string} jedec units
+     */
     bytesToSize (bytes) {
       return filesize(bytes, {standard: 'jedec'})
     },
+    /** @returns {boolean} false when the schema fixes a width and a height, else whether more than one is allowed */
     isForMultipleImages () {
       if (this.schema.width && this.schema.height) {
         return false
@@ -78,6 +102,7 @@ export default {
       const maxCount = this.getMaxCount()
       return maxCount === -1 ? true : maxCount > 1
     },
+    /** @returns {boolean} locked, or full */
     isFieldDisabled () {
       if (this.isLocked()) {
         return true
@@ -85,9 +110,11 @@ export default {
       const maxCount = this.getMaxCount()
       return maxCount !== -1 && this.getAttachments().length >= maxCount
     },
+    /** @returns {'IMAGE'|'FILE'} */
     getFieldType () {
       return _.toUpper(_.get(this.schema, 'type', 'ImageView') === 'ImageView' ? 'image' : 'file')
     },
+    /** @returns {Array<Function>} the Vuetify rules: required, count, size */
     getRules () {
       const rules = []
       if (this.schema.required) {
@@ -179,15 +206,25 @@ export default {
       }
       return rules
     },
+    /** @returns {string} */
     getPlaceholder () {
       return TranslateService.get(`TL_CLICK_OR_DRAG_AND_DROP_TO_ADD_${this.getFieldType()}${this.isForMultipleImages() ? 'S' : ''}`)
     },
+    /** @returns {number} -1 when unlimited */
     getMaxCount () {
       return _.get(this.schema, 'options.maxCount', -1)
     },
+    /**
+     * @param {Object} attachment
+     * @returns {string|false} _filename, else _fields._filename
+     */
     getAttachmentFilename(attachment) {
       return _.get(attachment, '_filename', false) || _.get(attachment, '_fields._filename', false)
     },
+    /**
+     * @param {Object} attachment
+     * @param {number} index removed from the list
+     */
     removeImage (attachment, index) {
       _.remove(this.attachments, (val, i)=> i === index)
       this._value = this.attachments
@@ -196,6 +233,7 @@ export default {
       this.schema.label = null
       this.schema.label = dummy
     },
+    /** @param {DragEvent} event its files, cut to the max count */
     onDrop (event) {
       this.dragover = false
       const maxCount = this.getMaxCount()
@@ -208,6 +246,7 @@ export default {
       }
       this.onUploadChanged(files)
     },
+    /** @param {FileList|Array<File>} files from the input; read and added as attachments */
     async onUploadChanged (files) {
       let maxCount = this.getMaxCount()
       if (_.get(event, 'target.files.length', 0) !== 0) {
@@ -248,12 +287,17 @@ export default {
       this.attachments = await this.readAllFiles(files)
       this._value = this.attachments
     },
+    /** @returns {string} the paragraph key with the locale, else the model */
     getFieldKey() {
       if (this.schema.paragraphKey && this.schema.localised) {
         return `${this.schema.paragraphKey}.${this.schema.locale}`
       }
       return this.schema.paragraphKey || this.schema.model
     },
+    /**
+     * @param {File} file
+     * @param {Object} element the file read, with its data url
+     */
     addAttachment (file, element) {
       const { locale } = this.getKeyLocale()
       const newAttachment = {
@@ -280,6 +324,10 @@ export default {
         }
       })
     },
+    /**
+     * @param {FileList} files
+     * @returns {Promise<Array<Object>>} each one read as a data url
+     */
     async readAllFiles (files) {
       let nbFilesToRead = _.get(files, 'length', 1)
       return new Promise((resolve) => {

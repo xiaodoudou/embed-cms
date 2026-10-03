@@ -23,6 +23,7 @@ class UploadService {
     return _.map(this.items, (item) => _.pick(item, ['id', 'name', 'size', 'status', 'progress', 'indeterminate', 'error']))
   }
 
+  /** Emits change with a snapshot of the queue. */
   emitChange () {
     this.events.emit('change', this.snapshot())
   }
@@ -52,6 +53,10 @@ class UploadService {
     return this.run(item)
   }
 
+  /**
+   * @param {Object} item an upload: sent, its status and progress updated
+   * @returns {Promise}
+   */
   async run (item) {
     item.status = 'uploading'
     item.progress = 0
@@ -79,6 +84,10 @@ class UploadService {
     }
   }
 
+  /**
+   * @param {Object} item
+   * @returns {Promise} an XHR with progress; the xhr stays on the item for cancel
+   */
   send (item) {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest()
@@ -115,6 +124,10 @@ class UploadService {
     })
   }
 
+  /**
+   * @param {string} id
+   * @returns {Promise<boolean>} false when not found or still uploading
+   */
   async retry (id) {
     const item = _.find(this.items, { id })
     if (!item || item.status === 'uploading') {
@@ -127,6 +140,7 @@ class UploadService {
     return ok
   }
 
+  /** @param {string} id its xhr is aborted */
   cancel (id) {
     const item = _.find(this.items, { id })
     if (item && item.status === 'uploading' && item.xhr) {
@@ -134,11 +148,13 @@ class UploadService {
     }
   }
 
+  /** @param {string} id not while uploading */
   dismiss (id) {
     this.items = _.filter(this.items, (item) => item.id !== id || item.status === 'uploading')
     this.emitChange()
   }
 
+  /** Keeps the uploads going on and the failed ones. */
   clearFinished () {
     this.items = _.filter(this.items, (item) => item.status === 'uploading' || item.status === 'error')
     this.emitChange()

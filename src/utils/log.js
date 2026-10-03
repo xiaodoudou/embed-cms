@@ -7,6 +7,7 @@
  */
 const KEY = 'embed-cms.debug'
 
+/** @returns {Storage|null} */
 function defaultStorage () {
   try {
     return typeof window !== 'undefined' ? window.localStorage : null
@@ -15,6 +16,7 @@ function defaultStorage () {
   }
 }
 
+/** @returns {string} the query and the hash of the page */
 function defaultSearch () {
   try {
     return typeof window !== 'undefined' ? `${window.location.search}${window.location.hash}` : ''
@@ -23,6 +25,11 @@ function defaultSearch () {
   }
 }
 
+/**
+ * @param {Storage|null} storage
+ * @param {string} search
+ * @returns {boolean} the key in storage, or ?debug in the url
+ */
 export function debugEnabled (storage = defaultStorage(), search = defaultSearch()) {
   try {
     return (storage && storage.getItem(KEY) === '1') || /[?&]debug(=1|=true|&|$)/.test(search)
@@ -32,6 +39,7 @@ export function debugEnabled (storage = defaultStorage(), search = defaultSearch
 }
 
 export const log = {
+  /** @param {...*} args logged only when debug is on */
   debug (...args) {
     if (debugEnabled()) {
       console.debug('[embed-cms]', ...args)

@@ -63,10 +63,18 @@ export function matches (event, shortcut) {
   return !shortcut.shift && key.length === 1 && !/[a-z]/.test(key)
 }
 
+/**
+ * @param {EventTarget} target
+ * @returns {boolean} an input, a textarea, a select or a contenteditable
+ */
 function inTextField (target) {
   return _.includes(TEXT_FIELDS, _.toLower(_.get(target, 'tagName', ''))) || _.get(target, 'isContentEditable', false) === true
 }
 
+/**
+ * @param {Object} state of the directive
+ * @param {Object} binding its value, the shortcuts; the anywhere modifier
+ */
 function read (state, binding) {
   state.shortcuts = parseShortcuts(binding.value)
   state.anywhere = binding.modifiers.anywhere === true

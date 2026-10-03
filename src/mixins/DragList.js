@@ -14,6 +14,10 @@ export default {
     }
   },
   methods: {
+    /**
+     * @param {Object} elem an attachment
+     * @returns {string} a key for v-for
+     */
     getKey (elem) {
       return `${elem._filename}-${elem._id || elem._createdAt || elem._md5sum || elem._size}`
     }

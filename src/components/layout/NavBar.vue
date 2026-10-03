@@ -57,9 +57,11 @@
       }
     },
     computed: {
+      /** @returns {string} the switcher shortcut as the platform writes it */
       shortcutLabel () {
         return shortcutLabel('K')
       },
+      /** @returns {string} the title of the settings, "Embed CMS" by default */
       settingsTitle () {
         return _.get(this.settingsData, 'title', 'Embed CMS')
       }
@@ -81,9 +83,11 @@
           omnibar.showHideOmnibar(true)
         }
       },
+      /** @returns {string|false} the url of the logo of the settings */
       getLogo () {
         return _.get(this.settingsData, 'logo[0].url', false)
       },
+      /** @returns {boolean} */
       hasLogoOrTitle () {
         return this.getLogo() || _.get(this.settingsData, 'title', false)
       },
@@ -93,6 +97,7 @@
           this.settingsData = _.first(ResourceService.get('_settings'))
         }
       },
+      /** Loads the _settings record. */
       async getSettingsData () {
         try {
           this.settingsData = _.first(await ResourceService.cache('_settings'))
@@ -100,6 +105,7 @@
           console.error('Failed to get settings data:', error)
         }
       },
+      /** @returns {string|false} the label of the resource, or the name of the plugin */
       getSelectedItemName () {
         const displayname = _.get(this.selectedItem, 'displayname', false)
         return displayname ? getResourceLabel(this.selectedItem) : _.get(this.selectedItem, 'name', false)

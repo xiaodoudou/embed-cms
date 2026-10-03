@@ -55,6 +55,7 @@
         this.color = value
         this.onChangeData(value)
       },
+      /** @returns {string} the value of the field, opaque black when unset */
       getColor () {
         return _.get(this.model, `${this.schema.model}`, '#000000FF')
       }

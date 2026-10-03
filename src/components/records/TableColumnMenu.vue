@@ -61,20 +61,31 @@
       return { opened: false }
     },
     computed: {
+      /** @returns {Array<Object>} */
       ordered () {
         return orderedColumns(this.columns, this.prefs)
       },
+      /** @returns {number} */
       visibleCount () {
         return _.size(_.reject(this.ordered, (column) => this.isHidden(column)))
       },
+      /** @returns {boolean} whether hidden columns or an order were saved */
       customised () {
         return _.has(this.prefs, 'hidden') || _.has(this.prefs, 'order')
       }
     },
     methods: {
+      /**
+       * @param {Object} column
+       * @returns {boolean}
+       */
       isHidden (column) {
         return isColumnHidden(this.columns, this.prefs, column.key)
       },
+      /**
+       * @param {string} locale
+       * @returns {string}
+       */
       localeLabel (locale) {
         return TranslateService.get(`TL_${_.toUpper(locale)}`)
       }

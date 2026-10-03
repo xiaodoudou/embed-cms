@@ -4,10 +4,20 @@ import Mustache from 'mustache'
 
 export default {
   methods: {
+    /**
+     * @param {Object} item
+     * @returns {string} its display name, else its id
+     */
     getName (item) {
       const name = this.getValue(item, _.first(this.resource.schema), this.resource.displayItem)
       return !_.isString(name) ? _.get(item, '_id', false) : name
     },
+    /**
+     * @param {Object} item
+     * @param {Object} field the first of the schema
+     * @param {string} [template] the displayItem Mustache template
+     * @returns {string}
+     */
     getValue (item, field, template) {
       let displayname = ''
       if (field) {
@@ -71,6 +81,7 @@ export default {
       }
       return displayname
     },
+    /** @returns {Object} the extra sources of the resource and of its first field */
     getExtraResources () {
       return _.extend(_.get(this.resource, 'extraSources', {}), _.get(this.resource, 'schema[0].options.extraSources'))
     }

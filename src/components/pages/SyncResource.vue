@@ -136,6 +136,7 @@
       hasAttachments () {
         return this.attachmentCount('local') > 0 || this.attachmentCount('remote') > 0
       },
+      /** @returns {boolean} */
       isSyncing () {
         return !!_.find(this.syncStatus, { status: 'syncing' })
       },
@@ -143,6 +144,7 @@
       canPush () {
         return _.includes(_.get(this.syncStatus, 'remote.allows'), 'write')
       },
+      /** @returns {boolean} whether this CMS allows writes */
       canPull () {
         return _.includes(_.get(this.syncStatus, 'local.allows'), 'write')
       }
@@ -203,9 +205,14 @@
       }, 5 * 1000)
     },
     methods: {
+      /**
+       * @param {'local'|'remote'} env
+       * @returns {string}
+       */
       environmentName (env) {
         return env === 'local' ? 'This CMS' : 'The other CMS'
       },
+      /** Drops the last report and loads the new resource. */
       onChangeResource () {
         this.lastReport = null
         this.update()
@@ -247,6 +254,10 @@
         const files = _.isNumber(report.attachmentsAdded) ? `, attachments added ${report.attachmentsAdded || 0}, removed ${report.attachmentsRemoved || 0}` : ''
         return `created ${report.created || 0}, updated ${report.updated || 0}, removed ${report.removed || 0}${files}`
       },
+      /**
+       * @param {'local'|'remote'} env
+       * @returns {number} the attachments of its records
+       */
       attachmentCount (env) {
         return _.sumBy(_.get(this.recordData, env), item => _.size(item._attachments))
       },
@@ -289,6 +300,10 @@
         })
         return { add, remove }
       },
+      /**
+       * @param {{startedAt?: number, finishedAt?: number}} report
+       * @returns {string} the duration, empty without both times
+       */
       tookText (report) {
         if (!report.startedAt || !report.finishedAt) {
           return ''
@@ -301,6 +316,7 @@
           this.update()
         }
       },
+      /** Loads the records of both sides for the selected resource. */
       async update () {
         this.$loading.start('loading-resource')
         try {
@@ -349,6 +365,10 @@
         }
         this.$loading.stop('loading-resource')
       },
+      /**
+       * @param {'local'|'remote'} from
+       * @param {'local'|'remote'} to
+       */
       async onClickDeploy (from, to) {
         this.error = null
         this.$loading.start('deploy-resource')

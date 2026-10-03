@@ -24,6 +24,7 @@
       }
     },
     methods: {
+      /** @returns {string} schema.hint */
       getHint () {
         return _.get(this.schema, 'hint', '')
       }

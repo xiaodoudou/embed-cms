@@ -84,6 +84,7 @@
       return { running: false, last: null, schedule: { push: null, pull: null }, timeZone: undefined, starting: false, timer: null }
     },
     computed: {
+      /** @returns {boolean} a run goes on, or one is starting */
       busy () {
         return !!this.running || this.starting
       },
@@ -91,6 +92,7 @@
       shown () {
         return this.running || this.last
       },
+      /** @returns {Array<Object>} the push and pull schedules that have a cron */
       scheduled () {
         return _.filter(_.map(['push', 'pull'], (direction) => ({ direction, ...this.schedule[direction] })), 'cron')
       }
@@ -118,9 +120,17 @@
         }
         return _.includes(this.running.resources, name) ? 'pending' : 'idle'
       },
+      /**
+       * @param {string} name a resource
+       * @returns {string} the tooltip of its chip, by state
+       */
       chipTitle (name) {
         return { idle: '', pending: 'Waiting', running: 'Syncing now', done: 'Done', error: 'Failed' }[this.chipState(name)]
       },
+      /**
+       * @param {string} trigger
+       * @returns {string} its label, else itself
+       */
       triggerText (trigger) {
         return TRIGGERS[trigger] || trigger
       },
@@ -128,14 +138,23 @@
       when (time, timeZone) {
         return new Date(time).toLocaleString(undefined, timeZone ? { timeZone } : undefined)
       },
+      /**
+       * @param {{startedAt: number, finishedAt: number}} run
+       * @returns {string} with one decimal, "2.5s"
+       */
       seconds (run) {
         const taken = Math.max(0, Math.round((run.finishedAt - run.startedAt) / 100) / 10)
         return `${taken}s`
       },
+      /**
+       * @param {Object} result of a run
+       * @returns {string} created, updated, removed, and the attachments when they were counted
+       */
       counts (result) {
         const files = _.isNumber(result.attachmentsAdded) ? `, attachments added ${result.attachmentsAdded || 0}, removed ${result.attachmentsRemoved || 0}` : ''
         return `created ${result.created || 0}, updated ${result.updated || 0}, removed ${result.removed || 0}${files}`
       },
+      /** Loads the state of the runs; the end of the run that was going on is notified. */
       async refresh () {
         try {
           const state = await RequestService.get('../sync/runs')
@@ -151,6 +170,7 @@
           console.error(error)
         }
       },
+      /** @param {'push'|'pull'} direction asked for confirmation first */
       async start (direction) {
         const confirmed = await window.DialogService.ask({
           title: `${_.upperFirst(direction)} all the resources?`,

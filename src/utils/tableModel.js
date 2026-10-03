@@ -67,10 +67,19 @@ export function attachmentOf (record, column) {
   })
 }
 
+/**
+ * @param {string} input
+ * @returns {string} text by default
+ */
 export function fieldKind (input) {
   return KIND_BY_INPUT[input] || 'text'
 }
 
+/**
+ * @param {string} kind
+ * @param {string} [rawAlign] wins
+ * @returns {string}
+ */
 export function columnAlign (kind, rawAlign) {
   if (rawAlign) {
     return rawAlign
@@ -152,6 +161,11 @@ export function defaultHiddenKeys (columns, visibleCount = 8) {
 
 const PREF_PREFIX = 'embed-cms.table.columns.'
 
+/**
+ * @param {Storage} storage
+ * @param {string} resourceName
+ * @returns {Object}
+ */
 export function loadPrefs (storage, resourceName) {
   try {
     const parsed = JSON.parse(storage.getItem(PREF_PREFIX + resourceName))
@@ -161,6 +175,12 @@ export function loadPrefs (storage, resourceName) {
   }
 }
 
+/**
+ * @param {Storage} storage
+ * @param {string} resourceName
+ * @param {Object} prefs hidden, order, showAllLocales, sortBy
+ * @returns {boolean}
+ */
 export function savePrefs (storage, resourceName, prefs) {
   try {
     storage.setItem(PREF_PREFIX + resourceName, JSON.stringify(_.pick(prefs, ['hidden', 'order', 'showAllLocales', 'sortBy'])))
@@ -170,6 +190,10 @@ export function savePrefs (storage, resourceName, prefs) {
   }
 }
 
+/**
+ * @param {Storage} storage
+ * @param {string} resourceName
+ */
 export function clearPrefs (storage, resourceName) {
   try {
     storage.removeItem(PREF_PREFIX + resourceName)
@@ -198,6 +222,12 @@ export function orderedColumns (columns, prefs = {}) {
   })
 }
 
+/**
+ * @param {Array<Object>} columns
+ * @param {Object} prefs
+ * @param {string} key
+ * @returns {boolean} by the saved hidden keys, else the default hidden ones
+ */
 export function isColumnHidden (columns, prefs, key) {
   const hidden = _.has(prefs, 'hidden') ? prefs.hidden : defaultHiddenKeys(columns)
   return _.includes(hidden, key)
@@ -205,6 +235,10 @@ export function isColumnHidden (columns, prefs, key) {
 
 const collator = typeof Intl !== 'undefined' ? new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' }) : null
 
+/**
+ * @param {*} value
+ * @returns {*} a value for sorting; undefined for empty
+ */
 function comparable (value) {
   if (_.isNil(value) || value === '') {
     return undefined
@@ -322,6 +356,11 @@ export function selectionState (selected, ids) {
   return count === 0 ? 'none' : count === ids.length ? 'all' : 'some'
 }
 
+/**
+ * @param {Array<string>} selected
+ * @param {string} id
+ * @returns {Array<string>}
+ */
 export function toggleId (selected, id) {
   return _.includes(selected, id) ? _.without(selected, id) : [...selected, id]
 }
@@ -422,6 +461,10 @@ export function formatDateValue (value, kind = 'date') {
   return parsed.format(kind === 'datetime' ? 'YYYY-MM-DD HH:mm' : kind === 'time' ? 'HH:mm' : 'YYYY-MM-DD')
 }
 
+/**
+ * @param {*} value
+ * @returns {string} as it is when not a number
+ */
 export function formatNumberValue (value) {
   if (isEmptyValue(value) || !_.isFinite(Number(value))) {
     return _.toString(value)

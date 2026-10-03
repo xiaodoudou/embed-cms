@@ -2,6 +2,11 @@ import _ from 'lodash'
 import { retryOnNetworkError } from '@u/retry'
 
 class RequestService {
+  /**
+   * @param {string} url
+   * @param {Object} options fetch options, plus returnJson
+   * @returns {Promise<*>} the JSON, or the response
+   */
   async handleRequest (url, options) {
     const returnJson = _.get(options, 'returnJson', false)
     if (returnJson) {
@@ -39,14 +44,32 @@ class RequestService {
     return await retryOnNetworkError(() => this.handleRequest(url, {method: 'GET', returnJson}))
   }
 
+  /**
+   * @param {string} url
+   * @param {Object} body
+   * @param {boolean} returnJson
+   * @returns {Promise<*>}
+   */
   async post (url, body = {}, returnJson = true) {
     return await this.handleRequest(url, {method: 'POST', body, returnJson})
   }
 
+  /**
+   * @param {string} url
+   * @param {Object} body
+   * @param {boolean} returnJson
+   * @returns {Promise<*>}
+   */
   async put (url, body = {}, returnJson = true) {
     return await this.handleRequest(url, {method: 'PUT', body, returnJson})
   }
 
+  /**
+   * @param {string} url
+   * @param {Object} body
+   * @param {boolean} returnJson
+   * @returns {Promise<*>}
+   */
   async delete (url, body = {}, returnJson = true) {
     return await this.handleRequest(url, {method: 'DELETE', body, returnJson})
   }

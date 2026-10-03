@@ -36,6 +36,7 @@
       onCropperChange: { type: Function, default: () => {} }
     },
     methods: {
+      /** @returns {string} the translation key of the dirty reason of the attachment, TL_DIRTY without a specific one */
       getDirtyReason() {
         const key = _.get(this.attachment, 'dirty', false) ? `${_.replace(_.toUpper(this.attachment.dirty), /-/g, '_')}` : 'DIRTY'
         return `TL_${key}`
@@ -44,12 +45,21 @@
         navigator.clipboard.writeText(this.getAttachmentFilename(this.attachment))
         this.notify('Filename has been copied.')
       },
+      /**
+       * @param {Object} attachment
+       * @returns {string} _filename, else _fields._filename
+       */
       getAttachmentFilename(attachment) {
         return _.get(attachment, '_filename', _.get(attachment, '_fields._filename', ''))
       },
+      /**
+       * @param {Object} elem an attachment
+       * @returns {string} a key for v-for: the filename and the id (else the creation date, else the index)
+       */
       getKey(elem) {
         return `${_.get(elem, '_filename', '')}-${_.get(elem, '_id', _.get(elem, '_createdAt', this.index))}`
       },
+      /** @param {{coordinates: Object}} data from the cropper; only the coordinates go up */
       onCropperChangeForAttachment(data) {
         this.onCropperChange(this.index, _.pick(data, ['coordinates']))
       }

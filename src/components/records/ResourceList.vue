@@ -83,9 +83,11 @@
       }
     },
     computed: {
+      /** @returns {Array<Object>} the groups with their lists ordered */
       sortedGroups () {
         return _.map(this.groupedList, (group) => ({ ...group, list: this.orderedList(_.get(group, 'list', [])) }))
       },
+      /** @returns {Array<Object>} the groups with the resources matching the filter */
       visibleGroups () {
         const query = _.toLower(_.trim(this.filter))
         const groups = _.compact(_.map(this.sortedGroups, (group) => {
@@ -98,21 +100,26 @@
         // Resources without a group are collected in "Others", a regular group that always comes last
         return _.sortBy(groups, (group) => (this.isOthers(group) ? 1 : 0))
       },
+      /** @returns {string} */
       matchMessage () {
         if (this.matchCount === 0) {
           return TranslateService.get('TL_NO_MATCHING_RESOURCES')
         }
         return TranslateService.get(this.matchCount === 1 ? 'TL_N_RESOURCES_MATCH_ONE' : 'TL_N_RESOURCES_MATCH', { num: this.matchCount })
       },
+      /** @returns {string} */
       shortcutLabel () {
         return shortcutLabel('B')
       },
+      /** @returns {number} */
       matchCount () {
         return _.sum(_.map(this.visibleGroups, (group) => group.list.length))
       },
+      /** @returns {Array<Object>} */
       collapsibleGroups () {
         return this.groupedList
       },
+      /** @returns {boolean} */
       allOpen () {
         return _.every(this.collapsibleGroups, (group) => this.isGroupOpen(group))
       }
@@ -144,9 +151,14 @@
       }
     },
     methods: {
+      /** Flags whether the list is scrolled, for the shadow. */
       onScroll () {
         this.scrolled = this.scroller.scrollTop > 0
       },
+      /**
+       * @param {Object} group
+       * @returns {boolean}
+       */
       isOthers (group) {
         return _.get(group, 'name', '') === 'TL_OTHERS'
       },
@@ -164,6 +176,7 @@
         clearTimeout(this.pulseTimer)
         this.pulseTimer = setTimeout(() => { this.pulse = false }, 1800)
       },
+      /** Opens the group of the current page when it is closed. */
       openCurrentGroup () {
         const group = _.find(this.groupedList, (g) => this.groupSelected(g))
         if (group && !this.isGroupOpen(group)) {
@@ -171,12 +184,20 @@
           this.saveToggled()
         }
       },
+      /**
+       * @param {Object} resource a resource, or a plugin (compared by component)
+       * @returns {boolean}
+       */
       isSelected (resource) {
         if (_.get(resource, 'type', false) === 'plugin') {
           return _.get(resource, 'pluginComponent', false) === _.get(this.selectedItem, 'pluginComponent', false)
         }
         return this.selectedItem === resource
       },
+      /**
+       * @param {Object} resource
+       * @returns {string}
+       */
       getResourceTitle (resource) {
         return getResourceLabel(resource)
       },
@@ -197,6 +218,10 @@
           { text: text.slice(index + query.length), match: false }
         ], (part) => part.text.length > 0)
       },
+      /**
+       * @param {Array<Object>} list
+       * @returns {Array<Object>} ordered by title, accents ignored
+       */
       orderedList (list) {
         const collator = new Intl.Collator('en', {
           sensitivity: 'base',
@@ -207,6 +232,7 @@
         })
         return [...list].sort((a, b) => collator.compare(this.getResourceTitle(a), this.getResourceTitle(b)))
       },
+      /** @returns {Object<string, boolean>} the open state by group key, from localStorage */
       loadToggled () {
         try {
           return JSON.parse(window.localStorage.getItem(STORAGE_KEY)) || {}
@@ -221,10 +247,18 @@
           // storage unavailable (private mode): the state simply is not remembered
         }
       },
+      /**
+       * @param {Object} resourceGroup
+       * @returns {string} kebab-case of its English name
+       */
       groupKey (resourceGroup) {
         const name = _.get(resourceGroup, 'name.enUS', resourceGroup.name)
         return _.kebabCase(_.isString(name) ? name : JSON.stringify(name))
       },
+      /**
+       * @param {Object} resourceGroup
+       * @returns {boolean} always while filtering
+       */
       isGroupOpen (resourceGroup) {
         if (this.filter) {
           return true
@@ -236,10 +270,12 @@
         // Small menus stay fully expanded, big ones only open the active group.
         return this.groupedList.length <= 3 || this.groupSelected(resourceGroup)
       },
+      /** @param {Object} resourceGroup */
       toggleGroup (resourceGroup) {
         this.toggled = { ...this.toggled, [this.groupKey(resourceGroup)]: !this.isGroupOpen(resourceGroup) }
         this.saveToggled()
       },
+      /** Opens every group, or closes every one when all are open. */
       toggleAll () {
         const open = !this.allOpen
         const next = { ...this.toggled }
@@ -269,17 +305,26 @@
       iconUrl (resourceGroup) {
         return this.menuIcons[groupSettingsName(resourceGroup)]
       },
+      /** @param {string} resource the settings saved: the menu icons follow */
       onResourceCached (resource) {
         if (resource === '_settings') {
           this.menuIcons = ResourceService.menuIcons()
         }
       },
+      /**
+       * @param {Object} resourceGroup
+       * @returns {boolean} whether it is being pointed at (crumb hint or pulse)
+       */
       isLocatingGroup (resourceGroup) {
         if (!(this.crumbHint || this.pulse) || !this.groupSelected(resourceGroup)) {
           return false
         }
         return this.crumbHint === 'group' || this.pulse || !this.isGroupOpen(resourceGroup)
       },
+      /**
+       * @param {Object} resourceGroup
+       * @returns {boolean} whether the selected item is in it
+       */
       groupSelected (resourceGroup) {
         if (!this.selectedItem) { return false }
         const selectedItemGroup = _.get(this.selectedItem, 'group.enUS', _.get(this.selectedItem, 'group', false))

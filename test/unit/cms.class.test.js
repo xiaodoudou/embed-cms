@@ -94,7 +94,9 @@ describe('CMS class (unit)', () => {
       expect(plugins()).to.deep.equal([])
       expect(plugins({ disableREST: false })).to.deep.equal(['rest'])
     })
-    it('maps every flag to its plugin', () => {
+    it('maps every flag to its plugin', function () {
+      // every plugin is loaded: slow on a WSL mount (the xlsx plugin alone takes 8s there), instant on a native disk
+      this.timeout(60000)
       const all = plugins({ disableREST: false, disableAdmin: false, disableReplication: false, importFromRemote: true, import: {}, sync: {}, xlsx: true, anonymousRead: ['x'] })
       expect(all).to.have.members(['rest', 'import', 'importFromRemote', 'admin', 'replicator', 'sync', 'xlsx', 'anonymousRead'])
     })

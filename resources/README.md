@@ -21,6 +21,8 @@ real project: copy the field you need into your own resource.
 | Media | `media_files` | file |
 | Structured | `structured_data` | json, object |
 | Structured | `structured_blocks` | paragraph |
+| Structured | `structured_layout` | fields side by side in the record form, with `layout.lines` (see [FORM_LAYOUT.md](../docs/reference/FORM_LAYOUT.md)) |
+| Structured | `structured_grid` | paragraph blocks side by side: 2 by 2, 3 by 3, mixed (see [DYNAMIC_LAYOUT.md](../docs/reference/DYNAMIC_LAYOUT.md)) |
 | Table | `table_view` | the table view (`view: 'table'`): one column per field |
 | Reference data | `reference_items` | target of the `source` examples |
 

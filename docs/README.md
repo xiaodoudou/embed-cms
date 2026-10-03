@@ -14,6 +14,7 @@ This is the map: GitHub shows it when you open the `docs/` folder, so it's the o
 
 - [**Field types**](reference/FIELDS.md): the 24 input types, the options they share, localisation, and what is checked where. Each type has its own page in [`fields/`](reference/fields/), with every variation and a screenshot.
 - [**Field catalogue**](../resources/README.md): the example resources in `resources/`, one per family of fields, ready to copy from.
+- [**Form layout**](reference/FORM_LAYOUT.md): fields side by side on a line of the record form.
 - [**Dynamic layout**](reference/DYNAMIC_LAYOUT.md): paragraph blocks side by side in the editor.
 - [**Configuration**](reference/CONFIG.md): every option of `cms.json`, authentication, logs, storage engines.
 - [**API**](reference/API.md): the REST routes, querying and paging, attachments and image resizing, the JavaScript API and hooks.

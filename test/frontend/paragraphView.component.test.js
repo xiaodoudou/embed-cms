@@ -251,19 +251,16 @@ describe('ParagraphView (blocks)', () => {
       expect(source).not.toMatch(/\[style\*=/)
     })
 
-    it('badges each block with its slots over the row\'s, explained to a screen reader', async () => {
-      await paragraph({ options: { dynamicLayout: true } }, { blocks: [{ _type: 'block_text', slots: 3 }, { _type: 'block_text' }, { _type: 'block_media', slots: 3 }] })
-      const badges = cards().map((card) => card.find('.slots-badge'))
-      expect(badges.map((badge) => badge.text())).toEqual(['3/12', '2/12', '3/12'])
-      expect(badges[0].attributes('title')).toBe('Width: 3 of 12 slots')
-      expect(badges[0].attributes('aria-label')).toBe('Width: 3 of 12 slots')
+    it('shows no width badge on the blocks: the arrangement is the information', async () => {
+      await paragraph({ options: { dynamicLayout: true } }, { blocks: [{ _type: 'block_text', slots: 3 }, { _type: 'block_text' }] })
+      expect(wrapper.find('.slots-badge').exists()).toBe(false)
+      expect(wrapper.text()).not.toMatch(/\d+\/\d+/)
       expect(cards()[0].attributes('data-index')).toBeUndefined()
     })
 
     it('is a plain list otherwise', async () => {
       await paragraph({}, { blocks: [{ _type: 'block_text' }] })
       expect(wrapper.vm.isDynamicLayoutContainer).toBe(false)
-      expect(cards()[0].find('.slots-badge').exists()).toBe(false)
       expect(wrapper.vm.getItemStyles({ slots: 6 })).toEqual({})
     })
   })

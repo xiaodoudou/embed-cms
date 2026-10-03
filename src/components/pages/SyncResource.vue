@@ -1,9 +1,12 @@
 <template>
   <div class="sync-resources main">
     <h1>Sync Resources</h1>
-    <div v-if="config">
+    <div v-if="resources">
+      <p v-if="resources.length === 0" class="no-resources" role="status">
+        No resource is chosen to sync yet. Choose them in <a class="cms-link" href="#/?id=_sync">Sync settings</a>.
+      </p>
       <v-select
-        v-model="selectedResource" :items="config.sync.resources" item-text="name" item-value="name" :ripple="false"
+        v-model="selectedResource" :items="resources" item-text="name" item-value="name" :ripple="false"
         menu-icon="$chevronDown"
         flat rounded density="compact"
         hide-details variant="solo-filled" @update:model-value="onChangeResource"
@@ -71,7 +74,8 @@
       return {
         statusInterval: null,
         error: null,
-        config: null,
+        // the resources this CMS may sync (the choice of the Sync settings, else the list of cms.json)
+        resources: null,
         selectedResource: null,
         recordData: {},
         reportData: {},
@@ -97,7 +101,7 @@
           this.uniqueKeyMap[resource.title] = uniqueKeyField.field
         }
       })
-      this.config = await RequestService.get(`../config`)
+      this.resources = await RequestService.get(`../sync/resources`)
       if (this.selectedResource) {
         this.update()
       }

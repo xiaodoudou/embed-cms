@@ -39,7 +39,7 @@ beforeEach(() => {
   sent = vi.spyOn(NotificationsService, 'send').mockImplementation(() => {})
   vi.spyOn(console, 'error').mockImplementation(() => {})
   answers = {
-    '../config': { sync: { resources: ['products', 'pages'] } },
+    '../sync/resources': ['products', 'pages'],
     '../sync/local/products': [record('a', { n: 1 }), record('b'), record('c')],
     '../sync/remote/products': [record('a', { n: 2 }), record('b'), record('d')],
     '../sync/local/products/status': { status: 'idle', allows: ['write'] },
@@ -64,11 +64,24 @@ afterEach(() => {
 })
 
 describe('SyncResource (the page that compares two servers)', () => {
-  it('shows a list of the resources the configuration allows to sync', async () => {
+  it('shows a list of the resources this CMS may sync', async () => {
     await page()
     expect(wrapper.get('h1').text()).toBe('Sync Resources')
     expect(wrapper.findComponent({ name: 'VSelect' }).props('items')).toEqual(['products', 'pages'])
-    expect(RequestService.get).toHaveBeenCalledWith('../config')
+    expect(RequestService.get).toHaveBeenCalledWith('../sync/resources')
+  })
+
+  it('says where to choose the resources when none is chosen yet', async () => {
+    answers['../sync/resources'] = []
+    await page()
+    const hint = wrapper.get('.no-resources')
+    expect(hint.text()).toContain('No resource is chosen to sync yet')
+    expect(hint.get('a').attributes('href')).toBe('#/?id=_sync')
+  })
+
+  it('has no such hint when there are resources', async () => {
+    await page()
+    expect(wrapper.find('.no-resources').exists()).toBe(false)
   })
 
   it('shows nothing about records before a resource is chosen', async () => {

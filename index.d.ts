@@ -190,6 +190,7 @@ declare module 'embed-cms' {
 
     /** `sync`: see docs/operations/SYNC.md */
     interface SyncOptions {
+      /** The resources that may be synced until some are chosen in the Sync settings of the admin, which then take over */
       resources?: string[]
       [setting: string]: any
     }

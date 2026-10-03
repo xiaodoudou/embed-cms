@@ -431,6 +431,10 @@ class CMS {
     logger.warn('<!> All embed-cms databases are now closed. <!>')
   }
 
+  /**
+   * @param {string} signal
+   * @returns {function(Error=): void} the handler: logs, closes the databases, exits once
+   */
   shutdown (signal) {
     return (err) => {
       logger.warn(`${ signal }...`)
@@ -448,6 +452,7 @@ class CMS {
     }
   }
 
+  /** Records, per resource, the file and image fields with their path patterns (`_attachmentFields`), the ones of the blocks included. */
   _processAttachmentFields = () => {
     _.each(this._resources, (resource, resourceKey) => {
       const schema = _.get(resource, 'options.schema', [])
@@ -464,6 +469,12 @@ class CMS {
       })
     })
   }
+  /**
+   * Records the file fields of the blocks of a paragraph field (blocks inside blocks followed).
+   * @param {object} fieldItem the paragraph field
+   * @param {string} resourceKey
+   * @param {string} rootPath the path of the field, with `{{*}}` for the index of a block
+   */
   _processAttachmentFieldsParagraph = (fieldItem, resourceKey, rootPath) => {
     const paragraphTypes = _.get(fieldItem, 'options.types', [])
     _.each(paragraphTypes, paragraphType => {
@@ -481,9 +492,14 @@ class CMS {
       })
     })
   }
+  /**
+   * @param {object} field
+   * @returns {boolean} a select or a multiselect pointing at a resource that exists
+   */
   isValidRelation = (field) => {
     return _.includes(['select', 'multiselect'], field.input) && _.includes(this._resourceNames, field.source)
   }
+  /** Records, per resource, the relations with their path patterns (`_relations`), the ones of the blocks included. */
   _processSourceFields = () => {
     _.each(this._resources, (resource, resourceKey) => {
       const schema = _.get(resource, 'options.schema', [])
@@ -500,6 +516,12 @@ class CMS {
       })
     })
   }
+  /**
+   * Records the relations of the blocks of a paragraph field (blocks inside blocks followed).
+   * @param {object} fieldItem the paragraph field
+   * @param {string} resourceKey
+   * @param {string} rootPath the path of the field, with `{{*}}` for the index of a block
+   */
   _processSourceFieldsParagraph = (fieldItem, resourceKey, rootPath) => {
     const paragraphTypes = _.get(fieldItem, 'options.types', [])
     _.each(paragraphTypes, paragraphType => {
@@ -517,10 +539,22 @@ class CMS {
       })
     })
   }
+  /**
+   * @param {string} name a resource or a block type
+   * @param {string} key schema, locales, and so on
+   * @param {boolean} [forParagraph=false]
+   * @returns {string} the path of the key in the map: `[name]options.schema` for a resource, `[name].schema` for a block type
+   */
   getKeyFor = (name, key, forParagraph = false) => {
     return `[${name}]${!forParagraph ? 'options' : ''}.${key}`
   }
 
+  /**
+   * Prepares a schema in place: `localised` defaulted from the locales, the list of its attachment fields (`_attachments`).
+   * @param {object} resourcesList the map of resources, or of block types
+   * @param {string} name
+   * @param {boolean} [forParagraph=false]
+   */
   formatSchema = (resourcesList, name, forParagraph = false) => {
     const schemaKey = this.getKeyFor(name, 'schema', forParagraph)
     const schema = _.get(resourcesList, schemaKey, [])
@@ -538,6 +572,7 @@ class CMS {
     _.set(resourcesList, attachmentsKey, attachmentFields)
   }
 
+  /** @param {object} msg sent to the connected admins over the websocket, when `wsRecordUpdates` is on */
   broadcast = (msg) => {
     if (_.get(this.options, 'wsRecordUpdates', false)) {
       UpdatesManager.broadcast(msg, this)
@@ -555,6 +590,13 @@ class CMS {
     }
   }
 
+  /**
+   * Declares a resource, or gives a declared one; with `resolves`, a copy whose API resolves the relations to those resources (docs/reference/API.md).
+   * @param {string} name
+   * @param {object} [config] the declaration
+   * @param {string[]} [resolves]
+   * @returns {Resource}
+   */
   resource = (name, config, resolves) => {
     resolves = _.intersection(resolves, this._resourceNames)
     if (_.isEmpty(resolves)) {

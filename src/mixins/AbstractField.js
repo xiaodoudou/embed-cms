@@ -1,27 +1,17 @@
 import { get as objGet, set as objSet, join, forEach, isFunction, isString, isArray, uniq as arrayUniq, includes } from 'lodash'
 import validators from '@u/validators'
 import FieldSelectorService from '@s/FieldSelectorService'
+import { validateFieldValue } from '@u/fieldValidation'
 
 function convertValidator (validator) {
   if (isString(validator)) {
-    if (validators[validator] != null) return validators[validator]
+    if (isFunction(validators[validator])) return validators[validator]
     else {
       console.warn(`'${validator}' is not a validator function!`)
       return null // caller need to handle null
     }
   }
   return validator
-}
-
-function attributesDirective (el, binding, vnode) {
-  let attrs = objGet(vnode.context, 'schema.attributes', {})
-  let container = binding.value || 'input'
-  if (isString(container)) {
-    attrs = objGet(attrs, container) || attrs
-  }
-  forEach(attrs, (val, key) => {
-    el.setAttribute(key, val)
-  })
 }
 
 // What password managers look at to decide that a field is a credential to fill or save. The fields of a record are
@@ -41,17 +31,11 @@ function autocompleteToken (input) {
 }
 
 export default {
+  emits: ['input', 'validated'],
   props: ['model', 'schema', 'formOptions', 'disabled', 'focused', 'paragraphLevel', 'paragraphIndex', 'theme'],
   data () {
     return {
       errors: []
-    }
-  },
-  directives: {
-    attributes: {
-      bind: attributesDirective,
-      updated: attributesDirective,
-      componentUpdated: attributesDirective
     }
   },
   watch: {
@@ -79,7 +63,7 @@ export default {
         return isFunction(objGet(this.schema, 'get')) ? this.schema.get(this.model) : objGet(this.model, this.schema.model)
       },
       set (newValue) {
-        let oldValue = this._value
+        const oldValue = this._value
         if (isFunction(newValue)) {
           newValue(newValue, oldValue)
         } else {
@@ -105,6 +89,10 @@ export default {
         })
       })
     },
+    // the rules of a text input: what the field's validation says, or true
+    validateField (val) {
+      return validateFieldValue(this.schema, val) || true
+    },
     // disabled or read-only: shown, not editable
     isLocked () {
       return !!(this.disabled || objGet(this.schema, 'disabled') || objGet(this.schema, 'readonly'))
@@ -125,7 +113,7 @@ export default {
       return objGet(this.schema, `options.${opt}`, defaultVal)
     },
     getVariant () {
-      let variant = []
+      const variant = []
       forEach(['underlined', 'outlined', 'filled', 'solo', 'solo-inverted', 'solo-filled', 'plain'], (key) => {
         if (this.get(key)) {
           variant.push(key)
@@ -138,10 +126,10 @@ export default {
     },
     async validate (calledParent) {
       this.clearValidationErrors()
-      let validateAsync = objGet(this.formOptions, 'validateAsync', false)
+      const validateAsync = objGet(this.formOptions, 'validateAsync', false)
       let results = []
       if (this.schema.validator && this.schema.readonly !== true && this.disabled !== true) {
-        let validators = []
+        const validators = []
         if (!isArray(this.schema.validator)) {
           validators.push(convertValidator(this.schema.validator).bind(this))
         } else {
@@ -159,7 +147,7 @@ export default {
                 if (err) {
                   this.errors = this.errors.concat(err)
                 }
-                let isValid = this.errors.length === 0
+                const isValid = this.errors.length === 0
                 this.$emit('validated', isValid, this.errors, this)
               })
             } else if (result) {
@@ -180,7 +168,7 @@ export default {
         if (isFunction(this.schema.onValidated)) {
           this.schema.onValidated.call(this, this.model, fieldErrors, this.schema)
         }
-        let isValid = fieldErrors.length === 0
+        const isValid = fieldErrors.length === 0
         if (!calledParent) {
           this.$emit('validated', isValid, fieldErrors, this)
         }

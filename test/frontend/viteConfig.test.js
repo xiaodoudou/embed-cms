@@ -52,6 +52,6 @@ describe('vite build as a dependency', () => {
   it('points the @p alias at the folder the symlink step settled on', () => {
     const config = fs.readFileSync(path.join(ROOT, 'vite.config.js'), 'utf8')
     expect(config).toMatch(/'@p': viteUtils\.plugins\.source,/)
-    expect(config).not.toContain("'../../embed-cms/plugins'")
+    expect(config).not.toContain('\'../../embed-cms/plugins\'')
   })
 })

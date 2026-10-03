@@ -153,9 +153,9 @@
       }
     },
     async mounted () {
-      let data = await ResourceService.getAll()
+      const data = await ResourceService.getAll()
       _.each(data, resource => {
-        let uniqueKeyField = _.find(resource.schema, {unique: true})
+        const uniqueKeyField = _.find(resource.schema, {unique: true})
         if (uniqueKeyField) {
           this.uniqueKeyMap[resource.title] = uniqueKeyField.field
         }
@@ -328,8 +328,8 @@
           // by value: the unique field of a record can be one text per language
           let updateKeys = _.intersectionWith(fromKeys, toKeys, _.isEqual)
           updateKeys = _.filter(updateKeys, key => {
-            let fromItem = _.find(fromData, item => _.isEqual(item[uniqueKey], key))
-            let toItem = _.find(toData, item => _.isEqual(item[uniqueKey], key))
+            const fromItem = _.find(fromData, item => _.isEqual(item[uniqueKey], key))
+            const toItem = _.find(toData, item => _.isEqual(item[uniqueKey], key))
             fromItem._attachments = _.map(fromItem._attachments, item => _.omit(item, ['url']))
             toItem._attachments = _.map(toItem._attachments, item => _.omit(item, ['url']))
             return !_.isEqual(fromItem, toItem)

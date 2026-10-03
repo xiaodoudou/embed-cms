@@ -148,6 +148,7 @@
       multiselect: { type: Boolean, default: false },
       multiselectItems: { type: [Array, Boolean], default: () => [] }
     },
+    emits: ['changeMultiselectItems', 'selectMultiselect', 'selectItem'],
     data () {
       return {
         get: _.get,
@@ -221,7 +222,7 @@
           for (const queryKey in this.query) {
             const queryValue = this.query[queryKey]
             qItems = qItems + 1
-            let value = _.get(item, queryKey)
+            const value = _.get(item, queryKey)
             if (_.isUndefined(value) === false && (_.isArray(value) && _.includes(value, queryValue)) || (!_.isArray(value) && value === queryValue)) {
               qValues = qValues + 1
             }
@@ -426,7 +427,7 @@
         return TranslateService.get(`TL_ERROR_ON_RECORD_${_.toUpper(type)}`)
       },
       manageError (error, type, record) {
-        let typePrefix = this.getTypePrefix(type)
+        const typePrefix = this.getTypePrefix(type)
         let errorMessage = typePrefix
         if (_.get(error, 'code', 500) === 400) {
           errorMessage = `${typePrefix}: ${_.get(error, 'message', TranslateService.get('TL_UNKNOWN_ERROR'))}`
@@ -460,10 +461,10 @@
         this.$emit('changeMultiselectItems', this.localMultiselectItems)
       },
       dive (currentKey, into, target) {
-        for (let i in into) {
+        for (const i in into) {
           if (i in into) {
             let newKey = i
-            let newVal = into[i]
+            const newVal = into[i]
             if (currentKey.length > 0) {
               newKey = currentKey + '.' + i
             }
@@ -476,7 +477,7 @@
         }
       },
       flatten (arr) {
-        let newObj = {}
+        const newObj = {}
         this.dive('', arr, newObj)
         return newObj
       },

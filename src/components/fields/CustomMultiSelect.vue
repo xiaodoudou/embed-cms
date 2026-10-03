@@ -55,6 +55,7 @@
 
   export default {
     mixins: [AbstractField, Notification],
+    emits: ['input'],
     data () {
       return {
         searchText: '',
@@ -92,7 +93,7 @@
         return this.schema.selectOptions || {}
       },
       options () {
-        let values = this.schema.values
+        const values = this.schema.values
         if (_.isFunction(values)) {
           return values.apply(this, [this.model, this.schema])
         }

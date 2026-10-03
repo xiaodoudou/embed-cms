@@ -26,6 +26,7 @@
       groupOptions: { type: Object, default: () => ({}) },
       paragraphLevel: { type: Number, default: 0 }
     },
+    emits: ['input'],
     data () {
       return {
         errors: null

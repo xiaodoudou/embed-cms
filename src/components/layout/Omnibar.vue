@@ -37,6 +37,7 @@
   import { buildEntries, searchEntries, moveHighlight } from '@u/switcherModel'
   import { getResourceLabel } from '@u/recordLabel'
   import Notification from '@m/Notification'
+  import { isScrolledToBottom } from '@u/scroll'
 
   export default {
     mixins: [Notification],
@@ -82,8 +83,8 @@
       getShortcuts () {
         return this.showOmnibar ? {} : this.shortcutsWhenClosed
       },
-      onScroll ({ target: { scrollTop, clientHeight, scrollHeight } }) {
-        this.scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 50
+      onScroll ({ target }) {
+        this.scrolledToBottom = isScrolledToBottom(target)
       },
       getIcon (type) {
         return type === 'plugin' ? '$cogOutline' : '$package'

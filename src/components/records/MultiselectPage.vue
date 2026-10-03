@@ -32,6 +32,7 @@
   import Notification from '@m/Notification'
   import RequestService from '@s/RequestService'
   import { getRecordLabel } from '@u/recordLabel'
+  import { isScrolledToBottom } from '@u/scroll'
 
   export default {
     mixins: [RecordName, AbstractEditorView, Notification],
@@ -41,6 +42,7 @@
       multiselectItems: { type: Array, default: () => [] },
       recordList: { type: Array, default: () => [] }
     },
+    emits: ['changeMultiselectItems', 'cancel', 'updateRecordList'],
     data () {
       return {
         scrolledToBottom: false,
@@ -62,8 +64,8 @@
       window.removeEventListener('resize', this.measure)
     },
     methods: {
-      onScroll ({ target: { scrollTop, clientHeight, scrollHeight } }) {
-        this.scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 50
+      onScroll ({ target }) {
+        this.scrolledToBottom = isScrolledToBottom(target)
       },
       // the fade that hints at more records below only shows when there are more records below
       measure () {
@@ -72,7 +74,7 @@
           return
         }
         this.scrollable = el.scrollHeight > el.clientHeight + 1
-        this.scrolledToBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 50
+        this.scrolledToBottom = isScrolledToBottom(el)
       },
       deselectItem (item) {
         this.$emit('changeMultiselectItems', _.filter(this.multiselectItems, i => i._id !== item._id))

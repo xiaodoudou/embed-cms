@@ -41,6 +41,7 @@
       paragraphIndex: { type: Number, default: 0 },
       paragraphLevel: { type: Number, default: 0 }
     },
+    emits: ['input'],
     created () {
       // the template shows nothing for a null schema: so must this
       _.each(_.get(this.schema, 'fields'), (field) => {

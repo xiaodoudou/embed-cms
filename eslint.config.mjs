@@ -115,6 +115,8 @@ export default [
       'no-case-declarations': 'off',
       'no-return-await': 'off',
       'no-return-assign': 'off',
+      'prefer-const': 'error',
+      'eqeqeq': 'error',
       'no-empty': ['error', { 'allowEmptyCatch': true }],
       'no-unused-vars': ['error', {
         'argsIgnorePattern': '^_',
@@ -171,7 +173,9 @@ export default [
       'vue/require-prop-types': 'off',
       'vue/no-v-model-argument': 'off',
       'vue/require-default-prop': 'off',
-      'vue/require-explicit-emits': 'off',
+      'vue/require-explicit-emits': 'error',
+      'prefer-const': 'error',
+      'eqeqeq': 'error',
       'vue/max-attributes-per-line': [
         'error',
         {

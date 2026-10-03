@@ -146,7 +146,7 @@ const customValidators = {
   }
 }
 
-let typeMapper = {
+const typeMapper = {
   string: {
     type: 'input',
     overrideType: 'CustomInput',

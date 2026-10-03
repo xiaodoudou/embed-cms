@@ -23,7 +23,7 @@ Catalogue: `resources/text_strings.js` (group **Text**, resource **Strings**).
 | `unique` | boolean | `false` | Checked by the server (see below). |
 | `localised` | boolean | `true` when the resource declares `locales` | `false` stores one value shared by every locale. |
 | `options.hint` | string | none | Help text under the input (hidden while an error is shown). |
-| `options.readonly` | boolean | `false` | Visible and copyable, not editable. Shows an eye icon after the label and skips validation. |
+| `options.readonly` | boolean | `false` | Visible and copyable, not editable. Shows a lock icon after the label and skips validation. |
 | `options.disabled` | boolean | `false` | Greyed out with a dashed border, not focusable. Skips validation. |
 | `options.min` / `options.max` | number | none | Minimum / maximum **length** in characters. Errors: `The text is too short! Length: 2, minimum: 3` / `The text is too long! Length: 26, maximum: 12`. |
 | `options.regex` | `{ value, description }` or `{ enUS: { value, description }, ... }` | none | Pattern written as `'/pattern/flags'` (a bare pattern also works). The per-locale form applies the rule of the locale being edited. Error: `Invalid format! (description)`. |

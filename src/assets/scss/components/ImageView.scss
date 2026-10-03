@@ -163,9 +163,10 @@
       border-color: var(--cms-primary);
     }
 
+    // one outline, not a ring around a dashed border: the border turns solid and takes the accent
     &:focus-within {
-      outline: 2px solid var(--cms-focus-ring);
-      outline-offset: 2px;
+      border-color: var(--cms-primary);
+      border-style: solid;
     }
 
     &.drag-and-drop {

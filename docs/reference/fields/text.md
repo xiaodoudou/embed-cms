@@ -19,7 +19,7 @@ Catalogue: `resources/text_long.js` (group **Text**, resource **Long text**).
 | `field`, `input`, `label`, `unique`, `localised` | | | As for [string](string.md). |
 | `required` | boolean | `false` | Empty text shows `This field is required!`. In a localised field every locale must be filled. |
 | `options.hint` | string | none | Help text under the field. |
-| `options.readonly` | boolean | `false` | Not editable, an eye icon after the label, no validation. |
+| `options.readonly` | boolean | `false` | Not editable, a lock icon after the label, no validation. |
 | `options.disabled` | boolean | `false` | Greyed out with a dashed border, not focusable. |
 | `options.min` / `options.max` | number | none | Minimum / maximum length in characters (`The text is too short! ...` / `The text is too long! Length: 200, maximum: 140`). |
 | `options.regex` | object | none | Same format as [string](string.md#regex): `Invalid format! (description)`. |

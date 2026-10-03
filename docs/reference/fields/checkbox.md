@@ -19,7 +19,7 @@ Catalogue: `resources/choice_boolean.js` (group **Choice**, resource **Booleans*
 | `field`, `input`, `label`, `localised`, `unique` | | | As for [string](string.md). |
 | `required` | boolean | `false` | Adds `*` to the label. A switch that was never touched refuses the save (`This field is required!`); a switch turned off counts as answered. |
 | `options.hint` | string | none | Help text under the switch. |
-| `options.readonly` | boolean | `false` | The switch cannot be toggled; an eye icon is shown after the label, no border. |
+| `options.readonly` | boolean | `false` | The switch cannot be toggled; a lock icon is shown after the label, no border. |
 | `options.disabled` | boolean | `false` | The switch cannot be toggled and is removed from the tab order; dashed border, muted colours. |
 
 The labels are always the translated `No` / `Yes`; there is no `textOn` / `textOff` option (older docs mention them, the component does not read them).

@@ -124,7 +124,7 @@
   right: var(--cms-space-4);
   bottom: calc(var(--cms-space-4) + var(--cms-upload-panel-h, 0px));
   z-index: var(--cms-z-toast);
-  width: min(400px, calc(100vw - 32px));
+  width: var(--cms-toast-width);
   pointer-events: none;
   transition: bottom var(--cms-motion-base) var(--cms-ease);
 }

@@ -26,7 +26,7 @@ Catalogue: `resources/choice_select.js` (group **Choice**, resource **Selects**)
 | `options.subtitle` | Mustache template | the record id, for a resource `source` | Second line under each choice in the open list, rendered over the option, e.g. `'{{code}}'`. |
 | `options.groupBy` | field name | none | Groups the choices of a resource `source` under headings taken from that field of each record. |
 | `options.hint` | string | none | Help text under the field. |
-| `options.readonly` | boolean | `false` | The list does not open; an eye icon after the label. |
+| `options.readonly` | boolean | `false` | The list does not open; a lock icon after the label. |
 | `options.disabled` | boolean | `false` | Greyed out with a dashed border. |
 
 The placeholder is the field label. A field that is not `required` (and not read-only or disabled) has a clear button that empties it; a required one has none, so pick another value to change it.

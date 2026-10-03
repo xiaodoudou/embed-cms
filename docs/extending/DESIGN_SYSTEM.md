@@ -35,14 +35,14 @@ Three surface levels: page (`--cms-bg`) below panels (`--cms-list-bg`, `--cms-ba
 
 | Role | Light | Dark |
 | --- | --- | --- |
-| Primary | `#3846C7` | `#9AA6FF` |
-| Primary hover / soft / text on soft | `#2D3AA8` / `#E7EAFB` / `#252F9A` | `#B3BCFF` / `#262D5E` / `#D6DBFF` |
+| Primary | `#4540A8` | `#A9A4FF` |
+| Primary hover / soft / text on soft | `#37338C` / `#E7EAFB` / `#2E2A8A` | `#C0BCFF` / `#262D5E` / `#D6DBFF` |
 | Text / muted (logo near-black, logo slate) | `#161B26` / `#4A5468` | `#E8EAF6` / `#A7ADCB` |
 | Page / list column / action bar / breadcrumb band | `#E8EBF6` / `#F1F3FB` / `#E9ECFA` / `#DCE0F3` | `#0D0F1D` / `#111428` / `#1E2447` / `#141833` |
 | Card and field surface / surface 2 / surface 3 | `#FFFFFF` / `#EDEFFA` / `#DDE1F3` | `#171B33` / `#202650` / `#2B3266` |
 | Border / strong (controls) | `#C5CBE6` / `#6B7290` | `#2E3568` / `#7F87B5` |
 | Chrome (app bar, sidebar) / text / muted / hover | `#1B2052` / `#F1F3FF` / `#C3C9F2` / `#2A3175` | `#070914` / `#E8EAF6` / `#A7ADCB` / `#171B3A` |
-| Selected nav item | `#3846C7` + accent bar `#B4BCFF` | `#3846C7` + accent bar `#9AA6FF` |
+| Selected nav item | `#4540A8` + accent bar `#B4BCFF` | `#4540A8` + accent bar `#A9A4FF` |
 | Error / warning / success / info | `#A8362F` / `#85560A` / `#2D6B52` / `#2C5DA3` | `#F09A93` / `#E6B565` / `#7BCBA5` / `#8DB4F0` |
 
 Contrast ratios (WCAG 2.x relative luminance; required 4.5:1 for text, 3:1 for UI boundaries):
@@ -53,12 +53,12 @@ Contrast ratios (WCAG 2.x relative luminance; required 4.5:1 for text, 3:1 for U
 | Muted on page / card / list column / action bar / breadcrumb | 6.40 / 7.61 / 6.87 / 6.47 / 5.80 | 8.60 / 7.64 / 8.21 / 6.78 / 7.85 |
 | Muted on surface 3 | 5.85 | 5.42 |
 | Strong border on card / list column / action bar (3:1) | 4.74 / 4.27 / 4.02 | 4.86 / 5.23 / 4.32 |
-| On-primary on primary (buttons) | 7.32 | 8.16 |
-| Primary on card / list column / action bar | 7.32 / 6.61 / 6.22 | 7.47 / 8.03 / 6.63 |
-| Text on soft (selected rows) | 9.00 | 9.53 |
+| On-primary on primary (buttons) | 8.23 | 8.31 |
+| Primary on card / list column / action bar | 8.23 / 7.43 / 6.99 | 7.61 / 8.18 / 6.75 |
+| Text on soft (selected rows) | 10.10 | 10.62 |
 | Chrome text / muted on chrome | 13.82 / 9.42 | 16.57 / 8.96 |
 | Chrome text / muted on chrome hover | 10.59 / 7.22 | 13.98 / 7.56 |
-| White on selected nav item | 7.32 | 7.32 |
+| White on selected nav item | 8.23 | 8.23 |
 | Chrome badge text on badge / muted on badge | 8.68 / 6.55 | 9.64 / 6.66 |
 | Error on card / soft / action bar | 6.49 / 5.70 / 5.52 | 7.86 / 6.95 / 6.97 |
 | Warning on soft | 5.63 | 7.68 |
@@ -125,8 +125,8 @@ One state system for every control (`base.scss`, tokens `--cms-field-*`), shown 
 | State | Surface | Border | Text | Icon | Cursor | Focus | Contrast |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Editable | `--cms-field-bg` (surface) | 1px `--cms-border-strong`, hover `--cms-text-muted` | `--cms-text`, placeholder `--cms-text-muted` | none | text | accent border plus 3px ring `--cms-field-ring` | border 4.7:1 (light) / 5.0:1 (dark) on surface, text 17.2:1 / 14.2:1 |
-| Read-only | `--cms-field-readonly-bg` (surface 2) | none (transparent) | `--cms-text`, selectable and copyable | eye icon after the label, `aria-readonly` | default | accent border and ring when focused | text 15.8:1 (light), 12.8:1 (dark) |
-| Disabled | `--cms-field-disabled-bg` (page) | 1px dashed `--cms-border-strong` | `--cms-text-muted` | lock icon after the label | not-allowed | not focusable | text 6.7:1 (light), 8.2:1 (dark) |
+| Read-only | `--cms-field-readonly-bg` (surface 2) | none (transparent) | `--cms-text`, selectable and copyable | lock icon after the label, `aria-readonly` | default | accent border and ring when focused | text 15.8:1 (light), 12.8:1 (dark) |
+| Disabled | `--cms-field-disabled-bg` (page) | 1px dashed `--cms-border-strong` | `--cms-text-muted` | no icon | not-allowed | not focusable | text 6.7:1 (light), 8.2:1 (dark) |
 | Error | as editable | 1px `--cms-error` | inline message in `--cms-error` with a "!" icon | "!" before the message, `*` on the label when required | text | accent ring | error 6.5:1 / 8.1:1 on surface |
 | Loading or computed | skeleton or spinner in the field | as editable | muted | spinner | progress | n/a | n/a |
 
@@ -183,7 +183,7 @@ WCAG AA text contrast, visible `:focus-visible` rings everywhere, forced-colors 
 ## Design choices
 
 - The dropdown type-ahead is the field's own input: there is no separate search box inside the menu.
-- Every field type has a read-only look (a tinted surface, no border, the eye after the label) and a disabled look (dashed and muted, the lock after the label). The input, select, date, switch, JSON, code, rich text and colour controls draw them from the same tokens.
+- Every field type has a read-only look (a tinted surface, no border, the lock after the label) and a disabled look (dashed and muted, no icon). The input, select, date, switch, JSON, code, rich text and colour controls draw them from the same tokens.
 - The syslog filter keeps its terminal styling, with its own clear button and Escape handling.
 - `Ctrl/Cmd+B` doesn't toggle the sidebar inside a text field, on purpose: there it means bold.
 

@@ -1,8 +1,7 @@
 <template>
   <div class="field-label">
     <span v-if="schema.required" class="required-mark" aria-hidden="true">* </span>{{ schema.label }}<span v-if="schema.required" class="cms-visually-hidden"> ({{ $filters.translate('TL_REQUIRED') }})</span>
-    <v-icon v-if="state === 'disabled'" class="cms-field-lock" size="14" icon="$lockOutline" :title="$filters.translate('TL_DISABLED')" />
-    <v-icon v-else-if="state === 'readonly'" class="cms-field-readonly" size="14" icon="$eyeOutline" :title="$filters.translate('TL_READ_ONLY')" />
+    <v-icon v-if="state === 'readonly'" class="cms-field-readonly" size="14" icon="$lockOutline" :title="$filters.translate('TL_READ_ONLY')" />
   </div>
 </template>
 
@@ -16,7 +15,7 @@
       disabled: { type: Boolean, default: false },
     },
     computed: {
-      // disabled: greyed out, lock icon. Read-only: shown and copyable, eye icon
+      // read-only: shown and copyable, lock icon after the label. Disabled: greyed out with a dashed border, no icon (it wins over read-only)
       state () {
         if (this.disabled || this.schema.disabled) {
           return 'disabled'
@@ -45,7 +44,6 @@
     color: var(--cms-error);
     font-weight: var(--cms-fw-bold);
   }
-  .cms-field-lock,
   .cms-field-readonly {
     margin-left: var(--cms-space-1);
     vertical-align: -2px;

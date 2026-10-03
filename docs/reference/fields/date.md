@@ -19,7 +19,7 @@ Catalogue: `resources/dates.js` (group **Date and time**, resource **Dates and t
 | `field`, `input`, `label`, `localised`, `unique` | | | As for [string](string.md). |
 | `required` | boolean | `false` | Adds `*` to the label. An empty value refuses the save: red outline and `This field is required!` under the field. |
 | `options.hint` | string | none | Help text under the field. |
-| `options.readonly` | boolean | `false` | Not editable, no clear button, an eye icon after the label. |
+| `options.readonly` | boolean | `false` | Not editable, no clear button, a lock icon after the label. |
 | `options.disabled` | boolean | `false` | Greyed out with a dashed border, not focusable. |
 | `options.format` | string | `'YYYY-MM-DD'` | Display and typing format (dayjs tokens). |
 | `options.customDatetimePickerOptions.placeholder` | string | `'YYYY-MM-DD'` | Placeholder text. |

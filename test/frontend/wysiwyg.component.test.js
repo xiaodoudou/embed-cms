@@ -24,14 +24,14 @@ afterEach(() => {
 })
 
 describe('Wysiwyg (rich text)', () => {
-  it('looks read-only or disabled like the other fields, with the eye or the lock after the label', async () => {
+  it('looks read-only or disabled like the other fields: a lock after the label for read-only, no icon for disabled', async () => {
     await editor({ body: '<p>x</p>' }, { readonly: true })
     expect(wrapper.classes()).toContain('is-readonly')
     expect(wrapper.find('.field-label .cms-field-readonly').exists()).toBe(true)
     wrapper.unmount()
     await editor({ body: '<p>x</p>' }, { disabled: true })
     expect(wrapper.classes()).toContain('is-disabled')
-    expect(wrapper.find('.field-label .cms-field-lock').exists()).toBe(true)
+    expect(wrapper.find('.field-label .cms-field-readonly').exists()).toBe(false)
   })
 
   describe('the text', () => {

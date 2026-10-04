@@ -98,7 +98,7 @@
         dirtyInfo: { locales: [], shared: [], paths: [] },
         attempted: false,
         invalidSummary: '',
-        fileInputTypes: ['file', 'img', 'image', 'imageView', 'attachmentView'],
+        fileInputTypes: ['file', 'img', 'image', 'cropimage', 'imageView', 'attachmentView'],
         cachedMap: {},
         editingRecord: {},
         originalFieldList: [],

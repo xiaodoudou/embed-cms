@@ -73,7 +73,17 @@ import {
   mdiChevronDoubleLeft,
   mdiChevronDoubleRight,
   mdiCheck,
-  mdiChevronUp
+  mdiChevronUp,
+  mdiRotateLeft,
+  mdiRotateRight,
+  mdiFlipHorizontal,
+  mdiFlipVertical,
+  mdiMagnifyPlusOutline,
+  mdiMagnifyMinusOutline,
+  mdiAutoFix,
+  mdiRestore,
+  mdiCircleOutline,
+  mdiSquareOutline
 } from '@mdi/js'
 import { createVuetify } from 'vuetify'
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
@@ -261,7 +271,17 @@ const vuetify = createVuetify({
       chevronDoubleLeft: mdiChevronDoubleLeft,
       chevronDoubleRight: mdiChevronDoubleRight,
       check: mdiCheck,
-      chevronUp: mdiChevronUp
+      chevronUp: mdiChevronUp,
+      rotateLeft: mdiRotateLeft,
+      rotateRight: mdiRotateRight,
+      flipHorizontal: mdiFlipHorizontal,
+      flipVertical: mdiFlipVertical,
+      magnifyPlusOutline: mdiMagnifyPlusOutline,
+      magnifyMinusOutline: mdiMagnifyMinusOutline,
+      autoFix: mdiAutoFix,
+      restore: mdiRestore,
+      circleOutline: mdiCircleOutline,
+      squareOutline: mdiSquareOutline
     },
     sets: {
       mdi

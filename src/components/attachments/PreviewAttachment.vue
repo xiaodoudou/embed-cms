@@ -1,5 +1,5 @@
 <template>
-  <v-card v-if="attachment" :key="getKey(attachment)" :theme="theme" elevation="0" class="preview-attachment" :class="{odd: index % 2 !== 0, 'can-crop': schema.crop}">
+  <v-card v-if="attachment" :key="getKey(attachment)" :theme="theme" elevation="0" class="preview-attachment" :class="{odd: index % 2 !== 0}">
     <!-- the top row is for putting the files in order: with one file there is nothing to put in order, and no row -->
     <div v-if="count > 1" class="preview-top">
       <!-- the only place that starts a drag (shown when there is something to put in order); the compact mode swaps it for the buttons that move the file one place -->
@@ -14,7 +14,7 @@
       <show-attachment
         class-name="row-handle"
         :theme="theme" :attachment="attachment" :image-size="imageSize" :get-image-src="getImageSrc"
-        :remove-image="removeImage" :is-image="isImage" :schema="schema" :on-cropper-change="onCropperChangeForAttachment"
+        :remove-image="removeImage" :is-image="isImage" :schema="schema" :on-crop="onCropAt"
       />
       <!-- on a picture: a bin in its corner, so that a file alone (no grip, no position) has no empty row above it -->
       <v-btn v-if="!locked && isImage(attachment)" class="preview-remove" variant="text" icon size="x-small" :aria-label="$filters.translate('TL_REMOVE')" :title="$filters.translate('TL_REMOVE')" @click="removeImage(attachment, index)">
@@ -60,7 +60,7 @@
       count: { type: Number, default: 0 },
       moveAttachment: { type: Function, default: () => {} },
       isImage: { type: Function, default: () => {} },
-      onCropperChange: { type: Function, default: () => {} }
+      onCrop: { type: Function, default: () => {} }
     },
     methods: {
       /** @returns {string} the translation key of the dirty reason of the attachment, TL_DIRTY without a specific one */
@@ -86,9 +86,12 @@
       getKey(elem) {
         return `${_.get(elem, '_filename', '')}-${_.get(elem, '_id', _.get(elem, '_createdAt', this.index))}`
       },
-      /** @param {{coordinates: Object}} data from the cropper; only the coordinates go up */
-      onCropperChangeForAttachment(data) {
-        this.onCropperChange(this.index, _.pick(data, ['coordinates']))
+      /**
+       * @param {Object} cropOptions the crop made in the tool
+       * @param {string} preview a small picture of the result
+       */
+      onCropAt(cropOptions, preview) {
+        this.onCrop(this.index, cropOptions, preview)
       }
     }
   }

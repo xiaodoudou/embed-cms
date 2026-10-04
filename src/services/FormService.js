@@ -396,6 +396,11 @@ const typeMapper = {
     type: 'ImageView',
     validator: customValidators.image
   },
+  // an image field with the crop tool (see utils/cropRecipe.js): the same component, which shows the tool when the input is cropimage
+  cropimage: {
+    type: 'ImageView',
+    validator: customValidators.image
+  },
   file: {
     type: 'AttachmentView',
     validator: customValidators.file

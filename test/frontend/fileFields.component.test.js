@@ -431,13 +431,60 @@ describe('what only the image field does', () => {
     expect(wrapper.vm.isImage({ _filename: 'blob' })).toBe(false)
   })
 
-  it('keeps the crop made on a picture, by its position', async () => {
-    const model = { photo: [SAVED, { ...SAVED, _id: 'a2' }] }
-    field(ImageView, { crop: { width: 100, height: 100 } }, model)
-    await flushPromises()
-    wrapper.vm.onCropperChange(1, { coordinates: { left: 5, top: 6, width: 100, height: 100 } })
-    expect(model.photo[1].cropOptions).toEqual({ data: { coordinates: { left: 5, top: 6, width: 100, height: 100 } }, updated: true })
-    expect(model.photo[0].cropOptions).toBeUndefined()
+  describe('the crop tool', () => {
+    const RECIPE = { left: 5, top: 6, width: 100, height: 80, rotate: 90, updated: true }
+
+    it('keeps the crop made on a picture, by its position, with the small picture of the result', async () => {
+      const model = { photo: [{ ...SAVED }, { ...SAVED, _id: 'a2' }] }
+      field(ImageView, { input: 'cropimage' }, model)
+      await flushPromises()
+      wrapper.vm.onCrop(1, RECIPE, 'data:image/jpeg;base64,DD')
+      expect(model.photo[1].cropOptions).toEqual(RECIPE)
+      expect(model.photo[1].cropPreview).toBe('data:image/jpeg;base64,DD')
+      expect(model.photo[0].cropOptions).toBeUndefined()
+    })
+
+    it('ignores a crop for a picture that is not there', async () => {
+      const model = { photo: [{ ...SAVED }] }
+      field(ImageView, { input: 'cropimage' }, model)
+      await flushPromises()
+      expect(() => wrapper.vm.onCrop(5, RECIPE, '')).not.toThrow()
+      expect(model.photo[0].cropOptions).toBeUndefined()
+    })
+
+    it('shows a crop that is not saved yet as the tool made it', async () => {
+      field(ImageView, { input: 'cropimage' }, { photo: [{ ...SAVED }] })
+      await flushPromises()
+      wrapper.vm.onCrop(0, RECIPE, 'data:image/jpeg;base64,DD')
+      expect(wrapper.vm.getImageSrc(wrapper.vm.getAttachments()[0])).toBe('data:image/jpeg;base64,DD')
+    })
+
+    it('shows a saved crop from the cut of the API, at an address of its own for each crop', async () => {
+      const cropped = (cropOptions) => wrapper.vm.getImageSrc({ ...SAVED, cropOptions })
+      field(ImageView, { input: 'cropimage' }, { photo: [{ ...SAVED }] })
+      await flushPromises()
+      const first = cropped({ left: 1, top: 2, width: 3, height: 4 })
+      expect(first).toMatch(/^\/api\/products\/1\/attachments\/a1\/cropped\?resize=autox200&v=[0-9a-z]+$/)
+      expect(cropped({ left: 1, top: 2, width: 3, height: 5 })).not.toBe(first)
+      // the flag that makes the editor send it is not part of the crop
+      expect(cropped({ left: 1, top: 2, width: 3, height: 4, updated: true })).toBe(first)
+    })
+
+    it('shows the picture itself when the crop cuts nothing, or the field has no crop tool', async () => {
+      field(ImageView, { input: 'cropimage' }, { photo: [{ ...SAVED }] })
+      await flushPromises()
+      expect(wrapper.vm.getImageSrc({ ...SAVED, cropOptions: { updated: true } })).toBe('/api/products/1/attachments/a1?resize=autox100')
+      wrapper.unmount()
+      field(ImageView, {}, { photo: [{ ...SAVED }] })
+      await flushPromises()
+      expect(wrapper.vm.getImageSrc({ ...SAVED, cropOptions: { left: 1, top: 2, width: 3, height: 4 } })).toBe('/api/products/1/attachments/a1?resize=autox100')
+    })
+
+    it('hands the tool to the preview of each picture', async () => {
+      field(ImageView, { input: 'cropimage' }, { photo: [{ ...SAVED }] })
+      await flushPromises()
+      expect(wrapper.findComponent({ name: 'PreviewMultiple' }).props('onCrop')).toBe(wrapper.vm.onCrop)
+    })
   })
 })
 

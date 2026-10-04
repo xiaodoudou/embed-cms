@@ -81,13 +81,6 @@
     img {
       max-height: 113px;
     }
-    &.can-crop {
-      min-width: initial;
-      max-width: initial;
-      img {
-        max-height: initial;
-      }
-    }
     // &.odd {
     //   background-color: rgba($color: #000000, $alpha: 0.2);
     // }
@@ -135,6 +128,19 @@
         object-fit: cover;
         object-position: center;
       }
+    }
+    // a picture with a crop has the shape of the crop, whole: it is as high as its width says (the card's fixed shape would cut it again), and round for a circle
+    &.is-cropped {
+      max-height: none;
+      min-height: 0;
+      .v-img {
+        max-height: none;
+      }
+    }
+    &.is-round,
+    &.is-round .v-img,
+    &.is-round img {
+      border-radius: 50%;
     }
   }
   &.full-width {

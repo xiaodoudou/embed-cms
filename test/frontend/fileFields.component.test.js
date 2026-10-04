@@ -107,7 +107,7 @@ describe.each([
       field(component, { disabled: true }, { photo: [SAVED] })
       await flushPromises()
       expect(previews()).toHaveLength(1)
-      expect(wrapper.findComponent({ name: 'VChip' }).props('closable')).toBe(false)
+      expect(wrapper.find('.preview-remove').exists()).toBe(false)
     })
   })
 
@@ -183,7 +183,94 @@ describe.each([
       field(component, {}, model)
       wrapper.vm.onDrop({ dataTransfer: { files: [png('a.png'), png('b.png')] } })
       await vi.waitFor(() => expect(model.photo).toHaveLength(2))
-      expect(wrapper.vm.dragover).toBe(false)
+    })
+  })
+
+  describe('the drop area after files are chosen or dropped', () => {
+    it('keeps its hint: the files do not stay in the box (they are in the previews), and a box with a file in it shows no placeholder', async () => {
+      field(component, {}, {})
+      expect(wrapper.get('.file-input-card input[placeholder]').attributes('placeholder')).toContain('drag & drop')
+      await choose([png('a.png')])
+      await vi.waitFor(() => expect(wrapper.vm.getAttachments()).toHaveLength(1))
+      expect(wrapper.find('.file-input-card input[placeholder]').exists()).toBe(true)
+      expect(wrapper.get('.file-input-card input[placeholder]').attributes('placeholder')).toContain('drag & drop')
+    })
+
+    it('draws no drop look of its own: the field of Vuetify knows when a file is over it and when it is gone, ours was never switched off after a drop', async () => {
+      field(component, {}, {})
+      const card = wrapper.get('.file-input-card')
+      await card.trigger('dragenter')
+      await card.trigger('dragover')
+      expect(card.classes()).not.toContain('drag-and-drop')
+      expect(wrapper.vm.dragover).toBeUndefined()
+    })
+  })
+
+  describe('dropping and choosing files', () => {
+    const prevented = async (type) => {
+      const event = new Event(type, { bubbles: true, cancelable: true })
+      wrapper.get('.file-input-card').element.dispatchEvent(event)
+      await wrapper.vm.$nextTick()
+      return event.defaultPrevented
+    }
+
+    it('lets a file be dropped on the card (a drag over it is accepted), so the browser does not open the file instead', async () => {
+      field(component, {}, {})
+      expect(await prevented('dragenter')).toBe(true)
+      expect(await prevented('dragover')).toBe(true)
+      expect(await prevented('drop')).toBe(true)
+    })
+
+    it('takes the files dropped on the card itself, as it takes the ones chosen in the box', async () => {
+      const model = {}
+      field(component, {}, model)
+      const drop = new Event('drop', { bubbles: true, cancelable: true })
+      drop.dataTransfer = { files: [png('dropped.png')] }
+      wrapper.get('.file-input-card').element.dispatchEvent(drop)
+      await vi.waitFor(() => expect(model.photo).toHaveLength(1))
+      expect(model.photo[0]._filename).toBe('dropped.png')
+    })
+
+    it('empties the box once it has taken the files, so that it holds none and its hint stays', async () => {
+      field(component, {}, {})
+      await choose([png('a.png')])
+      await vi.waitFor(() => expect(wrapper.vm.getAttachments()).toHaveLength(1))
+      expect(wrapper.vm.boxFiles).toEqual([])
+    })
+
+    it('takes the same file twice in a row (the box must not still hold it, or the second choice would fire nothing)', async () => {
+      const model = {}
+      field(component, {}, model)
+      await choose([png('same.png')])
+      await vi.waitFor(() => expect(model.photo).toHaveLength(1))
+      await choose([png('same.png')])
+      await vi.waitFor(() => expect(model.photo).toHaveLength(2))
+      expect(model.photo.map((item) => item._filename)).toEqual(['same.png', 'same.png'])
+      expect(wrapper.vm.boxFiles).toEqual([])
+    })
+
+    it('has nothing to move with a single file, or none', async () => {
+      const model = { photo: [{ ...SAVED, order: 1 }] }
+      field(component, {}, model)
+      await flushPromises()
+      wrapper.vm.moveAttachment(0, 1)
+      wrapper.vm.moveAttachment(0, -1)
+      expect(model.photo.map((item) => item._id)).toEqual(['a1'])
+      expect(model.photo[0].orderUpdated).toBeUndefined()
+      wrapper.unmount()
+      field(component, {}, {})
+      expect(() => wrapper.vm.moveAttachment(0, 1)).not.toThrow()
+    })
+
+    it('numbers the files in the order they have when new ones are added after saved ones', async () => {
+      const model = { photo: [{ ...SAVED, order: 1 }, { ...SAVED, _id: 'a2', order: 2 }] }
+      field(component, {}, model)
+      await flushPromises()
+      await upload([png('new.png')])
+      await vi.waitFor(() => expect(model.photo).toHaveLength(3))
+      expect(model.photo.map((item) => item.order)).toEqual([1, 2, 3])
+      expect(model.photo[2].orderUpdated).toBe(true)
+      expect(model.photo[0].orderUpdated).toBeUndefined()
     })
   })
 

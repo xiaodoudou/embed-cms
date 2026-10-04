@@ -5,12 +5,12 @@
       <v-card
         v-if="!isFieldDisabled()"
         :theme="theme"
-        class="file-input-card" elevation="0" :class="{ 'drag-and-drop': dragover }"
-        @drop.prevent="onDrop($event)" @dragover.prevent="dragover = true" @dragenter.prevent="dragover = true" @dragleave.prevent="dragover = false"
+        class="file-input-card" elevation="0"
+        @drop.prevent="onDrop($event)" @dragover.prevent @dragenter.prevent
       >
         <v-file-input
-          :id="inputId" ref="input" :name="schema.model"
-          :theme="theme" flat :rules="getRules()" prepend-icon="" prepend-inner-icon="$upload" :placeholder="getPlaceholder()" :clearable="false" hide-details="auto"
+          :id="inputId" ref="input" v-model="boxFiles"
+          :name="schema.model" :theme="theme" flat :rules="getRules()" prepend-icon="" prepend-inner-icon="$upload" :placeholder="getPlaceholder()" :clearable="false" hide-details="auto"
           density="compact" :variant="getVariant()" rounded persistent-placeholder single-line :multiple="isForMultipleImages()" :accept="schema.accept"
           @change="onUploadChanged" @update:focused="onFieldFocus"
         >

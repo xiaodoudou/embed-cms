@@ -7,8 +7,9 @@ import { takeFiles } from '@u/pendingFiles'
 export default {
   data () {
     return {
-      dragover: false,
-      attachments: []
+      attachments: [],
+      // what the box holds for a moment after files are chosen or dropped in it: taken out at once (see emptyBox)
+      boxFiles: []
     }
   },
   mounted () {
@@ -20,6 +21,13 @@ export default {
     }
   },
   methods: {
+    /**
+     * Empties the box once its files are taken: with a file left in it the box shows no hint, and a file chosen twice in a row fires no
+     * event the second time. (Vuetify clears the native input when the model is emptied.)
+     */
+    emptyBox () {
+      this.boxFiles = []
+    },
     /**
      * Moves the attachment at an index one place, as dragging it there does.
      * @param {number} index
@@ -249,7 +257,6 @@ export default {
     },
     /** @param {DragEvent} event its files, cut to the max count */
     onDrop (event) {
-      this.dragover = false
       const maxCount = this.getMaxCount()
       let files = _.get(event, 'dataTransfer.files', [])
       if (maxCount !== -1 && maxCount <= 1 && files.length > 1) {
@@ -280,6 +287,8 @@ export default {
       if (!_.isArray(files)) {
         files = [files]
       }
+      // the files are in the array now: the box is emptied, so that its hint stays and the same file can be chosen again
+      this.emptyBox()
       if (!files.length) {
         return
       }

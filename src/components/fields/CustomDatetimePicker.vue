@@ -22,7 +22,8 @@
           @focus="onFieldFocus(true)" @blur="onFieldFocus(false)"
         />
       </div>
-      <v-btn v-if="enableTimePicker && !isLocked" class="date-now" variant="outlined" size="small" @click="setNow">{{ $filters.translate('TL_NOW') }}</v-btn>
+      <!-- Now on a field with a time, Today on a date-only one -->
+      <v-btn v-if="!isLocked" class="date-now" variant="outlined" size="small" @click="setNow">{{ $filters.translate(enableTimePicker ? 'TL_NOW' : 'TL_TODAY') }}</v-btn>
     </div>
     <div v-if="showHint()" class="help-block">
       <v-icon size="small" icon="$information" />
@@ -114,8 +115,9 @@
       this.schema.format = _.get(this.schema, 'format', 'YYYY/MM/DD h:i:s')
     },
     methods: {
+      /** The current moment; on a date-only field, the start of today (what picking the day in the calendar gives). */
       setNow () {
-        this._value = Date.now()
+        this._value = this.enableTimePicker ? Date.now() : Dayjs().startOf('day').valueOf()
       },
       /**
        * @param {string} toFind a token of a date format

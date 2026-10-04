@@ -14,6 +14,7 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 - **Jump to menu on every record form.** It lists the fields, the blocks of a paragraph field and their fields, marks what changed, and lights up where it jumps to.
 - **Layout examples** in the field catalogue: tiles in a grid, and fields on lines of a form.
 - **Groups:** the Plugins field is a drop-down of the plugin pages; admins get Replicator only when replication runs.
+- **A Today button on date fields,** next to the Now button of the fields with a time; it sets the start of the day, as picking the day in the calendar does.
 - **Docs:** the Sync page screenshot and a walkthrough of a sync on one machine; resolving relations, `bulk` and the attachments of a sync in the API and Sync pages; this changelog.
 
 ### Changed

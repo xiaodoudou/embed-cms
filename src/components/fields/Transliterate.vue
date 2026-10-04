@@ -1,7 +1,7 @@
 <template>
   <div class="transliterate-field">
     <v-text-field
-      ref="input" :id="inputId"
+      :id="inputId" ref="input"
       :theme="theme"
       :class="[schema.labelClasses]"
       :model-value="_value"

@@ -299,6 +299,7 @@
     "TL_RECORDS_DELETED": "已删除 {{ num }} 条记录",
     "TL_RECORDS_DELETE_FAILED": "{{ num }} 条记录删除失败",
     "TL_NOW": "现在",
+    "TL_TODAY": "今天",
     "TL_COMPACT_ROWS": "紧凑行",
     "TL_ID_COPIED": "已复制 ID",
     "TL_RECORDS": "记录",

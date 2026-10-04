@@ -24,6 +24,10 @@
   <span v-else-if="kind === 'file'" class="cell-file"><v-icon size="14" icon="$paperclip" /><span class="cell-text" @mouseenter="titleIfClipped">{{ text }}</span></span>
   <span v-else-if="kind === 'number'" class="cell-text cell-number">{{ text }}</span>
   <span v-else-if="kind === 'duration'" class="cell-text cell-number" :title="text">{{ text }}</span>
+  <template v-else-if="kind === 'phone'">
+    <a v-if="phoneHref" class="cell-link cell-number" :href="phoneHref" :title="text" tabindex="-1" @click.stop>{{ text }}</a>
+    <span v-else class="cell-text cell-number">{{ text }}</span>
+  </template>
   <span v-else-if="kind === 'money'" class="cell-text cell-number" :title="text">{{ text }}</span>
   <span v-else-if="kind === 'rating'" class="cell-rating" :title="text"><v-icon :icon="ratingIcon" size="14" /><span class="cell-text">{{ text }}</span></span>
   <span v-else-if="kind === 'date' || kind === 'datetime' || kind === 'time'" class="cell-text cell-date">{{ text }}</span>
@@ -37,6 +41,7 @@
   import { ICONS, ratingOptions, ratingText } from '@u/rating'
   import { durationOptions, formatDuration } from '@u/duration'
   import { formatMoney } from '@u/money'
+  import { formatPhone, splitE164 } from '@u/phone'
   import { localeTag } from '@u/locale'
 
   /**
@@ -96,6 +101,7 @@
         switch (this.kind) {
           case 'number': return formatNumberValue(value)
           case 'duration': return formatDuration(value, durationOptions(this.column.field).units, localeTag(TranslateService.locale))
+          case 'phone': return formatPhone(value)
           case 'money': return formatMoney(value, localeTag(TranslateService.locale))
           case 'rating': return ratingText(value, ratingOptions(this.column.field).max)
           case 'date':
@@ -108,6 +114,10 @@
           case 'paragraph': return `${_.size(value)}`
           default: return _.isObject(value) ? JSON.stringify(value) : _.toString(value)
         }
+      },
+      /** @returns {string|false} a telephone number is a link that calls it (only an international number is) */
+      phoneHref () {
+        return splitE164(this.value) ? `tel:${this.value}` : false
       },
       // Only http(s) and mailto links are rendered as links; anything else stays plain text (no javascript: urls)
       href () {

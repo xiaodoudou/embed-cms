@@ -70,7 +70,7 @@ declare namespace EmbedCMS {
   type FieldInput =
     | 'string' | 'transliterate' | 'text' | 'password' | 'email' | 'url'
     | 'number' | 'integer' | 'double'
-    | 'checkbox' | 'color' | 'rating' | 'duration' | 'money'
+    | 'checkbox' | 'color' | 'rating' | 'duration' | 'money' | 'phone'
     | 'date' | 'time' | 'datetime'
     | 'pillbox' | 'select' | 'multiselect'
     | 'json' | 'object' | 'code' | 'wysiwyg'
@@ -125,6 +125,9 @@ declare namespace EmbedCMS {
     currency?: string
     /** `money`: the currencies it offers, when there is more than one (the common ones by default) */
     currencies?: string[]
+    /** `phone`: the countries it takes, ISO 3166 codes (every one by default); `country` is the one it starts with */
+    countries?: string[]
+    country?: string
     /** `imagemap`: the resources a record link can be from, by name or `{ resource, label, title }` (`label` is a Mustache template that names a record, `title` what the kind of record is called) */
     references?: Array<string | { resource: string, label?: string, title?: Translatable }>
     /** `imagemap`: what an area can link to: an address, a record (needs `references`), a value the person types */

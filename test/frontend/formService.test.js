@@ -33,7 +33,7 @@ describe('FormService (how each input type is built and checked)', () => {
     it('knows every input type the documentation lists', () => {
       expect(Object.keys(mapper).sort()).toEqual([
         'checkbox', 'code', 'color', 'cropimage', 'date', 'datetime', 'double', 'duration', 'email', 'file', 'group', 'image', 'imagemap', 'integer', 'json', 'money', 'multiselect',
-        'number', 'object', 'paragraph', 'password', 'pillbox', 'rating', 'select', 'string', 'text', 'time', 'transliterate', 'url', 'wysiwyg'
+        'number', 'object', 'paragraph', 'password', 'phone', 'pillbox', 'rating', 'select', 'string', 'text', 'time', 'transliterate', 'url', 'wysiwyg'
       ])
     })
 
@@ -194,6 +194,24 @@ describe('FormService (how each input type is built and checked)', () => {
       expect(check('url', 'https://example.com/a?b=1')).toBe(true)
       expect(check('url', 'example.com')).toBe(false)
       expect(check('url', '')).toBe(false)
+    })
+  })
+
+  describe('phone', () => {
+    it('is built by its own component', () => {
+      expect(mapper.phone.type).toBe('PhoneField')
+    })
+
+    it('says when a required number is missing', () => {
+      expect(check('phone', undefined, { required: true })).toBe(REQUIRED())
+      expect(check('phone', undefined, {})).toBe(true)
+    })
+
+    it('takes an international number of a country of the field', () => {
+      expect(check('phone', '+442071838750', {})).toBe(true)
+      expect(check('phone', '+442071838750', { options: { countries: ['GB', 'FR'] } })).toBe(true)
+      expect(check('phone', '+442071838750', { options: { countries: ['FR'] } })).toBe(TranslateService.get('TL_PHONE_COUNTRY'))
+      expect(check('phone', '0207 183 8750', {})).toBe(TranslateService.get('TL_INVALID_PHONE'))
     })
   })
 

@@ -53,6 +53,7 @@ describe('buildColumns (locale derivation)', () => {
     expect(fieldKind('rating')).toBe('rating')
     expect(fieldKind('duration')).toBe('duration')
     expect(fieldKind('money')).toBe('money')
+    expect(fieldKind('phone')).toBe('phone')
     const [column] = buildColumns([{ originalModel: 'avatar', model: 'avatar', localised: false }], { locales: [], schema: [{ field: 'avatar', input: 'cropimage' }] })
     expect(column).toMatchObject({ kind: 'image', input: 'cropimage', sortable: false })
   })

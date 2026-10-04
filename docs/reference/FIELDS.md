@@ -9,6 +9,7 @@ Every field in a resource's schema has an `input` type, and it's the input that 
 | `string` | `CustomInput` | string | [string](fields/string.md) |
 | `transliterate` | `Transliterate` | string (slug of another field) | [transliterate](fields/transliterate.md) |
 | `text` | `CustomTextarea` | string | [text](fields/text.md) |
+| `phone` | `PhoneField` | international number, `+442071838750` | [phone](fields/phone.md) |
 | `password` | `CustomInput` | string, not hashed | [password](fields/password.md) |
 | `email` | `CustomInput` | string | [email](fields/email.md) |
 | `url` | `CustomInput` | string | [url](fields/url.md) |

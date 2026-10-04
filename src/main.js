@@ -41,6 +41,7 @@ import ColorPicker from '@c/fields/ColorPicker.vue'
 import RatingField from '@c/fields/RatingField.vue'
 import DurationField from '@c/fields/DurationField.vue'
 import MoneyField from '@c/fields/MoneyField.vue'
+import PhoneField from '@c/fields/PhoneField.vue'
 import JsonEditor from '@c/fields/JsonEditor.vue'
 import WysiwygField from '@c/fields/Wysiwyg.vue'
 import ParagraphView from '@c/fields/ParagraphView.vue'
@@ -107,6 +108,7 @@ app.use(router)
   .component('RatingField', RatingField)
   .component('DurationField', DurationField)
   .component('MoneyField', MoneyField)
+  .component('PhoneField', PhoneField)
   .component('JsonEditor', JsonEditor)
   .component('WysiwygField', WysiwygField)
   .component('CustomDatetimePicker', CustomDatetimePicker)

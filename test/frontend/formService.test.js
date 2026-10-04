@@ -32,7 +32,7 @@ describe('FormService (how each input type is built and checked)', () => {
   describe('the input types', () => {
     it('knows every input type the documentation lists', () => {
       expect(Object.keys(mapper).sort()).toEqual([
-        'checkbox', 'code', 'color', 'cropimage', 'date', 'datetime', 'double', 'duration', 'email', 'file', 'group', 'image', 'imagemap', 'integer', 'json', 'multiselect',
+        'checkbox', 'code', 'color', 'cropimage', 'date', 'datetime', 'double', 'duration', 'email', 'file', 'group', 'image', 'imagemap', 'integer', 'json', 'money', 'multiselect',
         'number', 'object', 'paragraph', 'password', 'pillbox', 'rating', 'select', 'string', 'text', 'time', 'transliterate', 'url', 'wysiwyg'
       ])
     })
@@ -194,6 +194,26 @@ describe('FormService (how each input type is built and checked)', () => {
       expect(check('url', 'https://example.com/a?b=1')).toBe(true)
       expect(check('url', 'example.com')).toBe(false)
       expect(check('url', '')).toBe(false)
+    })
+  })
+
+  describe('money', () => {
+    it('is built by its own component', () => {
+      expect(mapper.money.type).toBe('MoneyField')
+    })
+
+    it('says when a required amount is missing, and takes zero as an amount', () => {
+      expect(check('money', undefined, { required: true })).toBe(REQUIRED())
+      expect(check('money', { amount: 0, currency: 'USD' }, { required: true })).toBe(true)
+      expect(check('money', undefined, {})).toBe(true)
+    })
+
+    it('takes an amount in a currency of the field within its least and most', () => {
+      expect(check('money', { amount: 10, currency: 'USD' }, { min: 5, max: 20 })).toBe(true)
+      expect(check('money', { amount: 1, currency: 'USD' }, { min: 5 })).toBe(TranslateService.get('TL_MONEY_TOO_LOW', { min: '$5.00' }))
+      expect(check('money', { amount: 30, currency: 'USD' }, { max: 20 })).toBe(TranslateService.get('TL_MONEY_TOO_HIGH', { max: '$20.00' }))
+      expect(check('money', { amount: 1, currency: 'GBP' }, { currency: 'EUR' })).toBe(TranslateService.get('TL_INVALID_CURRENCY', { currency: 'EUR' }))
+      expect(check('money', 12, {})).toBe(TranslateService.get('TL_INVALID_MONEY'))
     })
   })
 

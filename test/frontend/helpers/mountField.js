@@ -4,9 +4,9 @@ import { mount } from '@vue/test-utils'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
-import { mdiChevronDown, mdiCloseCircleOutline, mdiDragVertical, mdiArrowLeft, mdiArrowRight, mdiSwapVertical, mdiArrowUp, mdiArrowDown, mdiTrashCanOutline, mdiStar, mdiStarOutline, mdiHeart, mdiHeartOutline, mdiThumbUp, mdiThumbUpOutline, mdiFire, mdiFlash, mdiFlashOutline, mdiCircle, mdiCircleOutline } from '@mdi/js'
+import { mdi } from 'vuetify/iconsets/mdi-svg'
 import TranslateService from '@s/TranslateService'
+import { iconAliases } from '@u/iconAliases'
 import TranslateFilter from '@f/translate'
 import TruncateFilter from '@f/truncate'
 import FieldLabel from '@c/fields/FieldLabel.vue'
@@ -21,7 +21,7 @@ TranslateService.locale = 'enUS'
  * `model` and `schema` are the props every field receives; other mounting options are passed through.
  */
 export function mountComponent (component, options = {}) {
-  const vuetify = createVuetify({ components, directives, icons: { defaultSet: 'mdi', aliases: { ...aliases, chevronDown: mdiChevronDown, closeCircleOutline: mdiCloseCircleOutline, dragVertical: mdiDragVertical, arrowLeft: mdiArrowLeft, arrowRight: mdiArrowRight, swapVertical: mdiSwapVertical, arrowUp: mdiArrowUp, arrowDown: mdiArrowDown, trashCanOutline: mdiTrashCanOutline, star: mdiStar, starOutline: mdiStarOutline, heart: mdiHeart, heartOutline: mdiHeartOutline, thumbUp: mdiThumbUp, thumbUpOutline: mdiThumbUpOutline, fire: mdiFire, flash: mdiFlash, flashOutline: mdiFlashOutline, circle: mdiCircle, circleOutline: mdiCircleOutline }, sets: { mdi } } })
+  const vuetify = createVuetify({ components, directives, icons: { defaultSet: 'mdi', aliases: iconAliases, sets: { mdi } } })
   const extra = options.global || {}
   return mount(component, {
     ...options,
@@ -37,7 +37,8 @@ export function mountComponent (component, options = {}) {
 }
 
 export function mountField (component, { model = {}, schema = {}, ...rest } = {}) {
-  return mountComponent(component, { ...rest, props: { model, schema: { model: 'value', label: 'Label', ...schema }, ...(rest.props || {}) } })
+  // a field is given the look every type of field has in the app (FormService)
+  return mountComponent(component, { ...rest, props: { model, schema: { model: 'value', label: 'Label', density: 'compact', rounded: true, flat: true, 'solo-filled': true, ...schema }, ...(rest.props || {}) } })
 }
 
 export { TranslateService }

@@ -4,7 +4,7 @@
       :key="`${schema.model}-${key}`"
       :list="attachments" :group="`${schema.model}-${key}`" :item-key="getKey"
       draggable=".preview-attachment" handle=".row-handle" ghost-class="ghost"
-      v-bind="dragOptions" :class="{disabled}" class="preview-multiple" @end="onEndDrag"
+      v-bind="dragOptions" :class="{disabled}" class="preview-multiple" @choose="onDragChoose" @unchoose="onDragUnchoose" @start="onDragStart" @end="onEndDrag"
     >
       <preview-attachment
         v-for="(a, i) in attachments"

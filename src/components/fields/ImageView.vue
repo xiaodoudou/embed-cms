@@ -1,7 +1,7 @@
 <template>
   <div class="image-view" :class="{'full-width': !(schema.width && schema.height)}">
     <form enctype="multipart/form-data">
-      <field-label :schema="schema" :disabled="disabled" :input-id="inputId" />
+      <field-label :schema="schema" :disabled="disabled" :input-id="isFieldDisabled() ? '' : inputId" />
       <v-card
         v-if="!isFieldDisabled()"
         :theme="theme"

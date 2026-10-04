@@ -334,3 +334,21 @@
     margin: var(--cms-space-2);
   }
 }
+
+// While a block, an image or a file is dragged (DragList sets the class): the drag selects no text on its way, and the hand stays
+// closed whatever is under the pointer; the copy that follows the pointer is only to be seen
+body.cms-dragging {
+  user-select: none;
+  -webkit-user-select: none;
+
+  &,
+  * {
+    cursor: grabbing;
+  }
+}
+
+.sortable-fallback {
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}

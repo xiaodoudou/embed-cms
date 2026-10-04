@@ -17,7 +17,7 @@ vi.mock('@s/SchemaService', () => ({
 }))
 
 const draggable = { props: ['list'], template: '<div class="draggable"><slot /></div>' }
-const customForm = { props: ['schema', 'model', 'paragraphIndex', 'paragraphLevel'], template: '<div class="form-stub" />' }
+const customForm = { props: ['schema', 'model', 'paragraphIndex', 'paragraphLevel', 'formId'], template: '<div class="form-stub" />' }
 const jsonViewer = { props: ['value'], template: '<pre class="json-viewer-stub" />' }
 
 const PARAGRAPHS = {
@@ -61,6 +61,16 @@ describe('ParagraphView (blocks)', () => {
       await paragraph({ options: { hint: 'Mix text and media' } })
       expect(wrapper.find('.paragraph-label').text()).toContain('Blocks')
       expect(wrapper.find('.paragraph-hint').text()).toBe('Mix text and media')
+    })
+
+    it('gives the form of every block an id of its own, so the fields of two blocks (or of two paragraph fields) never share one', async () => {
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }] })
+      const ids = wrapper.findAllComponents(customForm).map((form) => form.props('formId'))
+      expect(ids).toHaveLength(2)
+      expect(new Set(ids).size).toBe(2)
+      wrapper.unmount()
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'c' }] })
+      expect(ids).not.toContain(wrapper.findComponent(customForm).props('formId'))
     })
 
     it('marks a required field with a star', async () => {

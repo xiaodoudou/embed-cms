@@ -2,6 +2,7 @@ import { get as objGet, set as objSet, join, forEach, isFunction, isString, isAr
 import validators from '@u/validators'
 import FieldSelectorService from '@s/FieldSelectorService'
 import { validateFieldValue } from '@u/fieldValidation'
+import { nameUnnamedInputs } from '@u/formAttrs'
 
 /**
  * @param {string|Function} validator a name in validators, or a function
@@ -85,8 +86,17 @@ export default {
   mounted () {
     // Vuetify puts data-* attributes on the wrapper, not on the input: set them on the inputs themselves
     this.$nextTick(this.keepPasswordManagersOut)
+    this.$nextTick(this.nameInputs)
+  },
+  updated () {
+    // a widget draws its inputs when it likes (a code editor once it is ready, a file box when the field is unlocked)
+    this.nameInputs()
   },
   methods: {
+    /** Names the inputs of the widgets inside the field that have no id nor name (see formAttrs). */
+    nameInputs () {
+      nameUnnamedInputs(this.$el, this.schema && this.schema.model)
+    },
     /** Marks the inputs so password managers leave them alone. */
     keepPasswordManagersOut () {
       const root = this.$el

@@ -1,7 +1,7 @@
 <template>
   <div class="attachment-view">
     <form enctype="multipart/form-data">
-      <field-label :schema="schema" :disabled="disabled" :input-id="inputId" />
+      <field-label :schema="schema" :disabled="disabled" :input-id="isFieldDisabled() ? '' : inputId" />
       <v-card
         v-if="!isFieldDisabled()"
         :theme="theme"

@@ -33,7 +33,7 @@
   export default {
     mixins: [FieldTheme],
     props: {
-      formId: { type: Number, default: 0 },
+      formId: { type: [Number, String], default: 0 },
       schema: { type: Object, default: () => ({}) },
       model: { type: Object, default: () => ({}) },
       formOptions: { type: Object, default: () => ({}) },

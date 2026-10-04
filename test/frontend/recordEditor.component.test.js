@@ -70,6 +70,15 @@ afterEach(() => {
 })
 
 describe('RecordEditor', () => {
+  describe('the fields that take files', () => {
+    const withFiles = { ...resource, schema: [...resource.schema, { field: 'photo', input: 'image', label: 'Photo', localised: false }, { field: 'avatar', input: 'cropimage', label: 'Avatar', localised: false }, { field: 'doc', input: 'file', label: 'Doc', localised: false }] }
+
+    it('are the file, the image and the crop image field', async () => {
+      await editor({ _local: true }, { resource: withFiles })
+      expect(['photo', 'avatar', 'doc', 'name', 'price'].map(model => wrapper.vm.isAttachmentField(model))).toEqual([true, true, true, false, false])
+    })
+  })
+
   describe('what a save sends for the files of a field', () => {
     const gallery = { title: 'products', locales: ['enUS'], _attachmentFields: { '^photo(\\.\\d+)$': true }, schema: [] }
     const file = (id, name, order, extra = {}) => ({ _isAttachment: true, _id: id, _filename: name, _name: 'photo', order, ...extra })

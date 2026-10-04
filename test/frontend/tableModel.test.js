@@ -47,6 +47,11 @@ describe('buildColumns (locale derivation)', () => {
     expect(cover).toMatchObject({ kind: 'image', sortable: false })
     expect(fieldKind('unknown')).toBe('text')
   })
+  it('shows a crop image like an image: the picture of its first file, and no sorting', () => {
+    expect(fieldKind('cropimage')).toBe('image')
+    const [column] = buildColumns([{ originalModel: 'avatar', model: 'avatar', localised: false }], { locales: [], schema: [{ field: 'avatar', input: 'cropimage' }] })
+    expect(column).toMatchObject({ kind: 'image', input: 'cropimage', sortable: false })
+  })
   it('ignores groups and fields without a model', () => {
     expect(buildColumns([{ type: 'group' }, { model: 'x' }], resource)).toEqual([])
   })

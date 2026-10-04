@@ -4,6 +4,7 @@ import TranslateServiceLib from '@s/TranslateService'
 import FormService from '@s/FormService'
 import ResourceService from './ResourceService'
 import { isMultiSource, sourceItems } from '@u/sources'
+import { parseMask } from '@u/mask'
 
 const TranslateService = window.TranslateService || TranslateServiceLib
 
@@ -53,6 +54,10 @@ class SchemaService {
       }
       if (field.input === 'paragraph') {
         schema.key = field.key
+      }
+      // a text with a template (`options.mask`) is typed in a box that keeps it (see utils/mask.js)
+      if (field.input === 'string' && parseMask(_.get(field, 'options.mask'))) {
+        schema.overrideType = 'MaskedField'
       }
       if (_.get(field, 'paragraphKey', false)) {
         schema.paragraphKey = field.paragraphKey

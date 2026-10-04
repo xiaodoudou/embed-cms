@@ -17,7 +17,8 @@
 <script>
   import _ from 'lodash'
   import AbstractField from '@m/AbstractField'
-  import { durationMask, durationOptions, maskCaret, maskDigits, maskSeconds, maskText, maskType, parseDuration, validateDuration } from '@u/duration'
+  import { durationMask, durationOptions, maskDigits, maskSeconds, parseDuration, validateDuration } from '@u/duration'
+  import { maskCaret, maskText, maskType } from '@u/mask'
 
   /**
    * A length of time typed in a box that keeps its template, `__:__`: the digits fill the slots from the left, `:` or a space ends the part (`1` and `:` make
@@ -42,7 +43,7 @@
       },
       /** @returns {Object} the slots of the box */
       mask () {
-        return durationMask(this.options.units, this.options.max, this.shown)
+        return durationMask(this.options.units, this.options.max, this.shown, this.options.template)
       },
       /** @returns {string} the box: the mask, filled as far as the digits go */
       display () {
@@ -119,7 +120,7 @@
             this.setDigits(maskDigits(seconds, this.mask))
           }
         } else if (/^insert/.test(type)) {
-          this.setDigits(_.reduce(_.toString(event.data), (digits, key) => maskType(digits, this.mask, key), all ? '' : this.digits))
+          this.setDigits(_.reduce(_.toString(event.data), (digits, key) => maskType(digits, this.mask, key, { pad: true }), all ? '' : this.digits))
         } else if (/^delete/.test(type)) {
           this.setDigits(all ? '' : this.digits.slice(0, -1))
         }

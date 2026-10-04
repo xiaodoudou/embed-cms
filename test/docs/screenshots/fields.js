@@ -54,6 +54,13 @@ add('string-pattern-per-locale-zhCN-error', 'text_strings', async (c) => {
   await c.locale('zhCN')
   return typed(c, 'patternPerLocale.zhCN', 'hello')
 })
+add('string-mask', 'text_strings', (c) => [c.field('maskPhone'), c.field('maskPlate')])
+add('string-mask-filled', 'text_strings', async (c) => {
+  await c.type('maskPhone', '5551234567')
+  await c.type('maskPlate', 'ab12')
+  await c.blur()
+  return [c.field('maskPhone'), c.field('maskPlate')]
+})
 add('string-readonly', 'text_strings', (c) => c.field('readOnly'))
 add('string-disabled', 'text_strings', (c) => c.field('disabled'))
 
@@ -217,7 +224,6 @@ add('checkbox-required', 'choice_boolean', (c) => c.field('requiredFlag'))
 add('checkbox-localised', 'choice_boolean', (c) => c.field('localisedFlag.enUS'))
 add('checkbox-readonly', 'choice_boolean', (c) => c.field('readOnlyFlag'))
 add('checkbox-disabled', 'choice_boolean', (c) => c.field('disabledFlag'))
-
 
 // ---------------------------------------------------------------- color
 const canvas = (c, model) => c.field(model).locator('.v-color-picker-canvas')
@@ -411,7 +417,6 @@ add('locale-tab-badges', 'text_long', async (c) => {
   return c.page.locator('.record-editor .top-bar').first()
 }, { crop: { width: 0, height: 72, pad: { t: 0, b: 0, l: 0, r: 0 }, clipWidth: 676 }, scroll: 'none' })
 
-
 // ---------------------------------------------------------------- file and image
 /** Gives `names` (fixture files) to the file field `model`, as a choice in the file dialog would, and waits for the previews */
 const attach = async (c, model, names) => {
@@ -603,7 +608,6 @@ add('json-localised', 'structured_data', (c) => c.field('localisedJson.enUS'))
 add('json-value', 'structured_data', (c) => c.field('json'), saved('structured_data', 'json'))
 add('json-localised-zhCN', 'structured_data', (c) => c.field('localisedJson.zhCN'), { ...saved('structured_data', 'json'), locale: 'zhCN' })
 
-
 // ---------------------------------------------------------------- object
 /** Sets a value of a json-editor form (`name` is the name of its input, `root[title]`) */
 const setValue = async (c, model, name, value) => {
@@ -692,5 +696,12 @@ add('paragraph-required-error', 'structured_blocks', async (c) => {
   return refuse(c, 'requiredBlocks')
 })
 add('paragraph-localised', 'structured_blocks', (c) => c.field('localisedBlocks.enUS'))
+
+// ---------------------------------------------------------------- duration
+add('duration-template', 'numbers_quantities', async (c) => {
+  await c.type('templateDuration', '13005')
+  await c.blur()
+  return [c.field('templateDuration'), c.field('daysDuration')]
+})
 
 module.exports = { specs }

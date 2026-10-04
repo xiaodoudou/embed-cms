@@ -40,6 +40,7 @@ import CustomCode from '@c/fields/CustomCode.vue'
 import ColorPicker from '@c/fields/ColorPicker.vue'
 import RatingField from '@c/fields/RatingField.vue'
 import DurationField from '@c/fields/DurationField.vue'
+import MarkdownField from '@c/fields/MarkdownField.vue'
 import MaskedField from '@c/fields/MaskedField.vue'
 import MoneyField from '@c/fields/MoneyField.vue'
 import PhoneField from '@c/fields/PhoneField.vue'
@@ -108,6 +109,7 @@ app.use(router)
   .component('ColorPicker', ColorPicker)
   .component('RatingField', RatingField)
   .component('DurationField', DurationField)
+  .component('MarkdownField', MarkdownField)
   .component('MaskedField', MaskedField)
   .component('MoneyField', MoneyField)
   .component('PhoneField', PhoneField)

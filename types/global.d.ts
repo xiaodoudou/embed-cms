@@ -70,7 +70,7 @@ declare namespace EmbedCMS {
   type FieldInput =
     | 'string' | 'transliterate' | 'text' | 'password' | 'email' | 'url'
     | 'number' | 'integer' | 'double'
-    | 'checkbox' | 'color' | 'rating' | 'duration' | 'money' | 'phone'
+    | 'checkbox' | 'color' | 'rating' | 'duration' | 'money' | 'phone' | 'markdown'
     | 'date' | 'time' | 'datetime'
     | 'pillbox' | 'select' | 'multiselect'
     | 'json' | 'object' | 'code' | 'wysiwyg'
@@ -125,6 +125,13 @@ declare namespace EmbedCMS {
     currency?: string
     /** `money`: the currencies it offers, when there is more than one (the common ones by default) */
     currencies?: string[]
+    /** `markdown`: the buttons of the toolbar, in the order of the toolbar (`'bold'`, `'italic'`, `'strike'`, `'heading'`, `'quote'`, `'ul'`, `'ol'`, `'code'`, `'link'`); `false` for none, all by default */
+    toolbar?: boolean | Array<'bold' | 'italic' | 'strike' | 'heading' | 'quote' | 'ul' | 'ol' | 'code' | 'link'>
+    /** `markdown`: where the preview is: in a tab (by default), beside the box, or `false` for none */
+    preview?: 'tabs' | 'split' | false
+    /** `markdown`: the height of the box in lines (8 by default), and how many it grows to before it scrolls */
+    rows?: number
+    maxRows?: number
     /** `string`: a template the box keeps while it is typed in: `_` or `#` a digit, `A` a letter, `*` a letter or a digit, a backslash makes the next character itself, the rest is written for you (`'(___) ___-____'`, `'F__-AAAA'`) */
     mask?: string
     /** `duration`: the template of the box, written like a mask with digits only (`'__:__'`, `'_h __m'`, `'___ days'`); its parts give the units */

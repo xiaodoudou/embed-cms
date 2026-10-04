@@ -9,7 +9,7 @@ import TranslateService from '@s/TranslateService'
  * `regex` ({ value, description } or one of those per locale) and the input type.
  */
 
-export const TEXT_INPUTS = ['string', 'text', 'password', 'transliterate', 'email', 'url']
+export const TEXT_INPUTS = ['string', 'text', 'markdown', 'password', 'transliterate', 'email', 'url']
 export const NUMBER_INPUTS = ['number', 'integer', 'double']
 
 const EMAIL = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/

@@ -54,6 +54,7 @@ describe('buildColumns (locale derivation)', () => {
     expect(fieldKind('duration')).toBe('duration')
     expect(fieldKind('money')).toBe('money')
     expect(fieldKind('phone')).toBe('phone')
+    expect(fieldKind('markdown')).toBe('markdown')
     const [column] = buildColumns([{ originalModel: 'avatar', model: 'avatar', localised: false }], { locales: [], schema: [{ field: 'avatar', input: 'cropimage' }] })
     expect(column).toMatchObject({ kind: 'image', input: 'cropimage', sortable: false })
   })
@@ -130,6 +131,15 @@ describe('sorting', () => {
     expect(state).toEqual([{ key: 'a', order: 'asc' }, { key: 'b', order: 'asc' }])
     expect(nextSort(state, 'b', true)).toEqual([{ key: 'a', order: 'asc' }, { key: 'b', order: 'desc' }])
     expect(nextSort(nextSort(state, 'b', true), 'b', true)).toEqual([{ key: 'a', order: 'asc' }])
+  })
+})
+
+describe('sorting markdown', () => {
+  it('sorts by what the text says, not by its signs', () => {
+    const rows = [{ body: '**banana**' }, { body: '# apple' }, { body: '[cherry](https://x.co)' }, {}]
+    const column = { model: 'body', kind: 'markdown' }
+    const get = (row) => sortValue(row, column)
+    expect(sortRows(rows, [{ key: 'body', order: 'asc' }], get).map((r) => r.body)).toEqual(['# apple', '**banana**', '[cherry](https://x.co)', undefined])
   })
 })
 

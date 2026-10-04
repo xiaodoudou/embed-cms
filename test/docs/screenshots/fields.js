@@ -802,4 +802,52 @@ add('phone-error', 'text_formats', (c) => dial(c, 'phone', 'call me'))
 add('phone-states', 'text_formats', (c) => [c.field('readOnlyPhone'), c.field('disabledPhone')])
 
 
+// ---------------------------------------------------------------- markdown
+const NOTES = [
+  '# Release notes',
+  '',
+  'A **bold** claim, some _emphasis_ and a [link](https://example.com).',
+  '',
+  '- first',
+  '- second',
+  '',
+  '> A quote',
+  '',
+  '```js',
+  'const a = 1',
+  '```'
+].join('\n')
+const write = async (c, model, text) => {
+  await c.input(model).click()
+  await c.input(model).fill(text)
+}
+const showPreview = async (c, model) => {
+  await c.field(model).getByRole('tab', { name: 'Preview' }).click()
+  await c.page.mouse.move(5, 5)
+}
+add('markdown-default', 'text_long', async (c) => {
+  await write(c, 'markdown.enUS', NOTES)
+  return c.field('markdown.enUS')
+})
+add('markdown-preview', 'text_long', async (c) => {
+  await write(c, 'markdown.enUS', NOTES)
+  await showPreview(c, 'markdown.enUS')
+  return c.field('markdown.enUS')
+})
+add('markdown-split', 'text_long', async (c) => {
+  await write(c, 'splitMarkdown', NOTES)
+  return c.field('splitMarkdown')
+})
+add('markdown-mini', 'text_long', async (c) => {
+  await write(c, 'miniMarkdown', 'Only **bold**, _italic_ and [links](https://example.com).')
+  return c.field('miniMarkdown')
+})
+add('markdown-plain', 'text_long', (c) => c.field('plainMarkdown'))
+add('markdown-limited-error', 'text_long', (c) => typed(c, 'limitedMarkdown', '**' + 'x'.repeat(220) + '**'))
+add('markdown-required-error', 'text_long', async (c) => {
+  await c.type('title', 'Name')
+  return refuse(c, 'requiredMarkdown.enUS')
+})
+add('markdown-states', 'text_long', (c) => [c.field('readOnlyMarkdown'), c.field('disabledMarkdown')])
+
 module.exports = { specs }

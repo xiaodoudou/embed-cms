@@ -32,7 +32,7 @@ describe('FormService (how each input type is built and checked)', () => {
   describe('the input types', () => {
     it('knows every input type the documentation lists', () => {
       expect(Object.keys(mapper).sort()).toEqual([
-        'checkbox', 'code', 'color', 'cropimage', 'date', 'datetime', 'double', 'duration', 'email', 'file', 'group', 'image', 'imagemap', 'integer', 'json', 'money', 'multiselect',
+        'checkbox', 'code', 'color', 'cropimage', 'date', 'datetime', 'double', 'duration', 'email', 'file', 'group', 'image', 'imagemap', 'integer', 'json', 'markdown', 'money', 'multiselect',
         'number', 'object', 'paragraph', 'password', 'phone', 'pillbox', 'rating', 'select', 'string', 'text', 'time', 'transliterate', 'url', 'wysiwyg'
       ])
     })
@@ -194,6 +194,19 @@ describe('FormService (how each input type is built and checked)', () => {
       expect(check('url', 'https://example.com/a?b=1')).toBe(true)
       expect(check('url', 'example.com')).toBe(false)
       expect(check('url', '')).toBe(false)
+    })
+  })
+
+  describe('markdown', () => {
+    it('is built by its own component', () => {
+      expect(mapper.markdown.type).toBe('MarkdownField')
+    })
+
+    it('says when a required text is missing, and keeps the text within its limits', () => {
+      expect(check('markdown', '', { required: true })).toBe(REQUIRED())
+      expect(check('markdown', undefined, { required: true })).toBe(REQUIRED())
+      expect(check('markdown', '# Title', { required: true })).toBe(true)
+      expect(check('markdown', '', {})).toBe(true)
     })
   })
 

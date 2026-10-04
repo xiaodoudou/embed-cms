@@ -42,6 +42,7 @@
   import { durationOptions, formatDuration } from '@u/duration'
   import { formatMoney } from '@u/money'
   import { formatPhone, splitE164 } from '@u/phone'
+  import { markdownToPlain } from '@u/markdown'
   import { localeTag } from '@u/locale'
 
   /**
@@ -102,6 +103,7 @@
           case 'number': return formatNumberValue(value)
           case 'duration': return formatDuration(value, durationOptions(this.column.field).units, localeTag(TranslateService.locale))
           case 'phone': return formatPhone(value)
+          case 'markdown': return markdownToPlain(value)
           case 'money': return formatMoney(value, localeTag(TranslateService.locale))
           case 'rating': return ratingText(value, ratingOptions(this.column.field).max)
           case 'date':

@@ -20,6 +20,13 @@ describe('TableCell', () => {
     expect(cell('rating', { value: 2.5 }, { field: {} }).text()).toBe('2.5 / 5')
   })
 
+  it('shows markdown as what it says, without the signs', () => {
+    const wrapper = cell('markdown', { value: '# Title\n\nSome **bold** and [a link](https://x.co).' }, { field: {} })
+    expect(wrapper.text()).toBe('Title Some bold and a link.')
+    expect(wrapper.find('a').exists()).toBe(false)
+    expect(cell('markdown', {}, { field: {} }).find('.cell-empty').exists()).toBe(true)
+  })
+
   it('shows a phone number in groups, as a link that calls it', () => {
     const wrapper = cell('phone', { value: '+442071838750' }, { field: {} })
     expect(wrapper.get('a').text()).toBe('+44 207 183 8750')

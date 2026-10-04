@@ -38,7 +38,7 @@
       <div class="paragraph-content">
         <draggable
           v-if="schema && subResourcesLoaded" :key="`${schema.model}-${key}`" :list="items" :class="{disabled, 'dynamic-layout-container': isDynamicLayoutContainer}" draggable=".item" v-bind="dragOptions" handle=".handle" :group="`${schema.model}-${key}`" ghost-class="ghost" :force-fallback="true"
-          @end="onEndDrag"
+          @choose="onDragChoose" @unchoose="onDragUnchoose" @start="onDragStart" @end="onEndDrag"
         >
           <v-card v-for="(item, idx) in items" :key="`paragraph-item-${idx}`" :theme="theme" elevation="0" :class="getItemClasses(idx, item)" :style="getItemStyles(item)">
             <v-card-title class="handle paragraph-header">
@@ -68,7 +68,7 @@
                     </div>
                   </template>
                 </div>
-                <custom-form v-else :schema="getSchema(item, idx)" :model="item" :paragraph-index="idx" :paragraph-level="blockMoreItems() ? paragraphLevel : paragraphLevel + 1" @error="onError" @input="onModelUpdated" />
+                <custom-form v-else :schema="getSchema(item, idx)" :model="item" :form-id="`${inputId}-${idx}`" :paragraph-index="idx" :paragraph-level="blockMoreItems() ? paragraphLevel : paragraphLevel + 1" @error="onError" @input="onModelUpdated" />
               </div>
             </div>
           </v-card>
@@ -741,7 +741,10 @@
   overflow: visible;
 
   .handle, .file-item-handle {
-    cursor: pointer;
+    cursor: grab;
+    &:active {
+      cursor: grabbing;
+    }
   }
   .handle {
     border-radius: 6px 6px 0 0 !important; /* follows the rounded border of the card (8px less its 2px border) */

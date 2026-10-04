@@ -1,3 +1,6 @@
+// the class of the page while one of the lists is being dragged: no text is selected by the drag, and the hand stays closed
+const DRAGGING_CLASS = 'cms-dragging'
+
 export default {
   data () {
     return {
@@ -16,6 +19,9 @@ export default {
       }
     }
   },
+  beforeUnmount () {
+    this.onDragUnchoose()
+  },
   methods: {
     /**
      * @param {Object} elem an attachment
@@ -23,6 +29,24 @@ export default {
      */
     getKey (elem) {
       return `${elem._filename}-${elem._id || elem._createdAt || elem._md5sum || elem._size}`
+    },
+    /** The handle is pressed: the page stops selecting text for as long as the drag lasts. */
+    onDragChoose () {
+      document.body.classList.add(DRAGGING_CLASS)
+    },
+    /** The handle is let go (a click that never became a drag included). */
+    onDragUnchoose () {
+      document.body.classList.remove(DRAGGING_CLASS)
+    },
+    /**
+     * The drag begins: the copy of the block that follows the pointer is a clone of its DOM, ids included, so the page would hold
+     * every id of the block twice until the drop. The clone is only to be seen: it keeps none.
+     */
+    onDragStart () {
+      const strip = () => document.querySelectorAll('.sortable-fallback [id]').forEach((el) => el.removeAttribute('id'))
+      strip()
+      // the copy is added to the page a moment after the event on some versions of the library
+      requestAnimationFrame(strip)
     }
   }
 }

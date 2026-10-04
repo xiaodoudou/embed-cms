@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import DragList from '../../src/mixins/DragList.js'
 
 describe('the options shared by the sortable lists (blocks, images, files)', () => {
@@ -20,5 +20,34 @@ describe('the options shared by the sortable lists (blocks, images, files)', () 
   it('lists are disabled for nobody by default, and animate', () => {
     expect(options.disabled).toBe(false)
     expect(options.animation).toBeGreaterThan(0)
+  })
+
+  describe('what a drag does to the page', () => {
+    const { methods } = DragList
+    afterEach(() => {
+      document.body.className = ''
+      document.body.innerHTML = ''
+    })
+
+    it('stops the page from selecting text from the press on the handle until it is let go', () => {
+      methods.onDragChoose()
+      expect(document.body.classList.contains('cms-dragging')).toBe(true)
+      methods.onDragUnchoose()
+      expect(document.body.classList.contains('cms-dragging')).toBe(false)
+    })
+
+    it('lets a list that goes away in the middle of a drag give the page back', () => {
+      methods.onDragChoose()
+      DragList.beforeUnmount.call(methods)
+      expect(document.body.classList.contains('cms-dragging')).toBe(false)
+    })
+
+    it('takes the ids off the copy of a block that follows the pointer, so the page does not hold them twice, and leaves the real block alone', () => {
+      document.body.innerHTML = '<div class="item"><input id="cms-field-1"></div><div class="sortable-fallback"><input id="cms-field-1"><label id="a"></label></div>'
+      methods.onDragStart()
+      expect(document.querySelectorAll('.sortable-fallback [id]')).toHaveLength(0)
+      expect(document.querySelectorAll('[id="cms-field-1"]')).toHaveLength(1)
+      expect(document.querySelector('.item input').id).toBe('cms-field-1')
+    })
   })
 })

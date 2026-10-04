@@ -4,8 +4,9 @@
       <div id="omnibar-backdrop" :class="{displayed: showOmnibar}" @click="showHideOmnibar(false)" />
       <v-card v-show="showOmnibar" elevation="0" role="dialog" aria-modal="true" :aria-label="$filters.translate('TL_SEARCH_RESOURCES')">
         <v-card-title class="search">
+          <label id="omnibar-search-label" for="omnibar-search" class="cms-visually-hidden">{{ $filters.translate('TL_INSERT_KEYWORDS') }}</label>
           <v-text-field
-            ref="search"
+            id="omnibar-search" ref="search"
             :model-value="search" clearable clear-icon="$close" class="search-bar"
             flat variant="solo-filled" hide-details prepend-inner-icon="$magnify" density="comfortable" :placeholder="$filters.translate('TL_INSERT_KEYWORDS')" :aria-label="$filters.translate('TL_INSERT_KEYWORDS')" type="text" autocomplete="off" name="search"
             role="combobox" aria-expanded="true" aria-controls="omnibar-results" :aria-activedescendant="results.length > 0 ? 'result-' + highlightedItem : undefined" @update:model-value="search = $event || ''" @keydown="onSearchKeydown"

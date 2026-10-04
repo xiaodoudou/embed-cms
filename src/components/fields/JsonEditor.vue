@@ -68,7 +68,9 @@
       const options = {
         schema: this.schema.jsonEditorOptions,
         theme: 'cms',
-        iconlib: 'foundation3'
+        iconlib: 'foundation3',
+        // the ids and the names of the form are built from the root: one of its own per field, or two editors in a page share ids
+        form_name_root: this.inputId
       }
       if (this.disabled) {
         options.disable_array_delete = true
@@ -466,7 +468,7 @@
           return []
         }
         return _.uniq(_.map(this.editor.validate(), (error) => {
-          const path = String(error.path || '').replace(/^root\.?/, '')
+          const path = String(error.path || '').replace(new RegExp(`^${_.escapeRegExp(this.inputId)}\\.?`), '')
           return path ? `${path}: ${error.message}` : error.message
         }))
       },

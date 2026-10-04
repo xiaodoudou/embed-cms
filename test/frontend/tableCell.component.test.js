@@ -20,6 +20,16 @@ describe('TableCell', () => {
     expect(cell('rating', { value: 2.5 }, { field: {} }).text()).toBe('2.5 / 5')
   })
 
+  it('shows a phone number in groups, as a link that calls it', () => {
+    const wrapper = cell('phone', { value: '+442071838750' }, { field: {} })
+    expect(wrapper.get('a').text()).toBe('+44 207 183 8750')
+    expect(wrapper.get('a').attributes('href')).toBe('tel:+442071838750')
+    expect(wrapper.get('a').classes()).toContain('cell-number')
+    expect(cell('phone', { value: '0207 183' }, { field: {} }).find('a').exists()).toBe(false)
+    expect(cell('phone', { value: '0207 183' }, { field: {} }).text()).toBe('0207 183')
+    expect(cell('phone', {}, { field: {} }).find('.cell-empty').exists()).toBe(true)
+  })
+
   it('shows money with its currency in the language, right aligned like a number', () => {
     const wrapper = cell('money', { value: { amount: 19.99, currency: 'USD' } }, { field: {} })
     expect(wrapper.get('.cell-number').text()).toBe('$19.99')

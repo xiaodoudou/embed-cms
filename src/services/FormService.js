@@ -4,6 +4,7 @@ import TranslateServiceLib from '@s/TranslateService'
 import { ratingOptions, normaliseRating } from '@u/rating'
 import { validateDuration } from '@u/duration'
 import { validateMoney } from '@u/money'
+import { validatePhone } from '@u/phone'
 
 const TranslateService = window.TranslateService || TranslateServiceLib
 /**
@@ -130,6 +131,12 @@ const customValidators = {
    * @returns {true|string}
    */
   money: (value, field) => validateMoney(field, value) || true,
+  /**
+   * @param {*} value an international number, +442071838750
+   * @param {Object} field
+   * @returns {true|string}
+   */
+  phone: (value, field) => validatePhone(field, value) || true,
   /**
    * @param {*} value
    * @param {Object} field
@@ -451,6 +458,11 @@ const typeMapper = {
   duration: {
     type: 'DurationField',
     validator: customValidators.duration
+  },
+  // a telephone number: a country and the national number, kept in the international form (see utils/phone.js)
+  phone: {
+    type: 'PhoneField',
+    validator: customValidators.phone
   },
   // an amount in a currency, kept as { amount, currency } (see utils/money.js)
   money: {

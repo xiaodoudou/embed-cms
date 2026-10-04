@@ -32,7 +32,8 @@ const KIND_BY_INPUT = {
   color: 'color',
   rating: 'rating',
   duration: 'duration',
-  money: 'money'
+  money: 'money',
+  phone: 'phone'
 }
 
 // Fixed or flexible widths per kind (px). Flexible text columns have a min and a max and truncate.
@@ -47,6 +48,7 @@ const WIDTHS = {
   rating: { width: 116 },
   duration: { width: 116 },
   money: { width: 132 },
+  phone: { width: 168 },
   select: { min: 140, max: 240 },
   multi: { min: 160, max: 280 },
   link: { min: 160, max: 280 },

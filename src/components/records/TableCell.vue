@@ -23,6 +23,7 @@
   <span v-else-if="kind === 'color'" class="cell-color"><span class="swatch" :style="{background: value}" /><span class="cell-text">{{ text }}</span></span>
   <span v-else-if="kind === 'file'" class="cell-file"><v-icon size="14" icon="$paperclip" /><span class="cell-text" @mouseenter="titleIfClipped">{{ text }}</span></span>
   <span v-else-if="kind === 'number'" class="cell-text cell-number">{{ text }}</span>
+  <span v-else-if="kind === 'rating'" class="cell-rating" :title="text"><v-icon :icon="ratingIcon" size="14" /><span class="cell-text">{{ text }}</span></span>
   <span v-else-if="kind === 'date' || kind === 'datetime' || kind === 'time'" class="cell-text cell-date">{{ text }}</span>
   <span v-else class="cell-text" @mouseenter="titleIfClipped">{{ text }}</span>
 </template>
@@ -31,6 +32,7 @@
   import _ from 'lodash'
   import TranslateService from '@s/TranslateService'
   import { chipsFor, formatDateValue, formatNumberValue, isEmptyValue, richTextToPlain } from '@u/tableModel'
+  import { ICONS, ratingOptions, ratingText } from '@u/rating'
 
   /**
    * One table cell, rendered by column kind: check or dash for booleans, chips with "+n" for selects, thumbnails,
@@ -79,11 +81,16 @@
         const label = (v) => (_.isFunction(this.helpers.optionLabel) ? this.helpers.optionLabel(this.column, v) : v)
         return chipsFor(_.map(_.castArray(this.value), label), 2)
       },
+      /** @returns {string} the icon a rating is made of, filled */
+      ratingIcon () {
+        return ICONS[ratingOptions(this.column.field).icon].full
+      },
       /** @returns {string} the value as text, by kind */
       text () {
         const value = this.value
         switch (this.kind) {
           case 'number': return formatNumberValue(value)
+          case 'rating': return ratingText(value, ratingOptions(this.column.field).max)
           case 'date':
           case 'datetime':
           case 'time': return formatDateValue(value, this.kind)

@@ -12,6 +12,18 @@ describe('TableCell', () => {
     expect(cell('boolean', { value: false }).get('[role=img]').attributes('aria-label')).toBe('No')
   })
 
+  it('shows a rating as its icon and "3 / 5", with the icon and the most of the field', () => {
+    const field = { options: { max: 10, icon: 'heart' } }
+    const wrapper = cell('rating', { value: 7 }, { field })
+    expect(wrapper.get('.cell-rating').text()).toBe('7 / 10')
+    expect(wrapper.get('.cell-rating').attributes('title')).toBe('7 / 10')
+    expect(cell('rating', { value: 2.5 }, { field: {} }).text()).toBe('2.5 / 5')
+  })
+
+  it('draws an empty rating as a dash', () => {
+    expect(cell('rating', {}, { field: {} }).find('.cell-empty').exists()).toBe(true)
+  })
+
   it('draws an empty value as a dash', () => {
     expect(cell('text', { value: '' }).find('.cell-empty').exists()).toBe(true)
   })

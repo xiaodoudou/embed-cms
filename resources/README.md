@@ -12,6 +12,7 @@ real project: copy the field you need into your own resource.
 | Text | `text_formats` | email, url, password |
 | Text | `languages` | text, rich text, tags, selects, image and switch in four languages (English, Chinese, French, Thai) |
 | Numbers | `numbers` | number, integer, double |
+| Numbers | `numbers_quantities` | rating |
 | Date and time | `dates` | date, time, datetime |
 | Choice | `choice_boolean` | checkbox |
 | Choice | `choice_select` | select (static, labelled, resource) |

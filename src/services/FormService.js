@@ -1,6 +1,7 @@
 
 import _ from 'lodash'
 import TranslateServiceLib from '@s/TranslateService'
+import { ratingOptions, normaliseRating } from '@u/rating'
 
 const TranslateService = window.TranslateService || TranslateServiceLib
 /**
@@ -115,6 +116,18 @@ const customLabel = (item, labelProp) => {
 }
 
 const customValidators = {
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @returns {true|string} a rating is a number from 1 (0.5 with half steps) to the most the field says, or nothing
+   */
+  rating: (value, field) => {
+    if (_.isNil(value) || value === '') {
+      return _.get(field, 'required', false) ? fieldIsRequired() : true
+    }
+    const { max, half } = ratingOptions(field)
+    return _.isFinite(value) && normaliseRating(value, max, half) === value ? true : TranslateService.get('TL_INVALID_RATING', { max })
+  },
   /**
    * @param {*} a
    * @returns {boolean}
@@ -419,6 +432,11 @@ const typeMapper = {
   },
   object: {
     type: 'JsonEditor'
+  },
+  // a number of icons filled up to the value (see utils/rating.js)
+  rating: {
+    type: 'RatingField',
+    validator: customValidators.rating
   },
   color: {
     type: 'ColorPicker',

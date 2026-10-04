@@ -24,6 +24,8 @@ module.exports = {
     { field: 'preciseDuration', input: 'duration', label: 'Precise duration', localised: false, options: { units: ['hours', 'minutes', 'seconds'], hint: 'Hours, minutes and seconds: __:__:__' } },
     { field: 'longDuration', input: 'duration', label: 'Long duration', localised: false, options: { units: ['days', 'hours'], hint: 'Days and hours: ___d __h' } },
     { field: 'minutesOnly', input: 'duration', label: 'Minutes only', localised: false, options: { units: ['minutes'], min: 5 * 60, max: 8 * 3600, hint: 'Minutes only, from 5 minutes to 8 hours' } },
+    { field: 'templateDuration', input: 'duration', label: 'Duration with a template', localised: false, options: { template: '_h __m __s', hint: 'Its own template, _h __m __s: the parts are hours, minutes and seconds' } },
+    { field: 'daysDuration', input: 'duration', label: 'Duration in days', localised: false, options: { template: '___ days', hint: 'Its own template, ___ days: a part of days alone (the letter after the digits says the unit)' } },
     { field: 'requiredDuration', input: 'duration', label: 'Required duration', localised: false, required: true, options: { hint: 'Required. A length of zero is a length' } },
     { field: 'localisedDuration', input: 'duration', label: 'Duration per locale', options: { hint: 'One duration per locale' } },
     { field: 'readOnlyDuration', input: 'duration', label: 'Read-only duration', localised: false, options: { readonly: true, hint: 'Read-only: visible, not editable' } },

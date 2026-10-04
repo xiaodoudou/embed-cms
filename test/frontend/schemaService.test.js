@@ -142,6 +142,13 @@ describe('SchemaService (the form a resource schema becomes)', () => {
       expect(one({ field: 'owner', input: 'select', source: 'authors' }).multiSource).toBeUndefined()
     })
 
+    it('types a text with a template in a box that keeps it, and any other text in the usual one', () => {
+      expect(one({ field: 'phone', input: 'string', options: { mask: '(___) ___-____' } }).overrideType).toBe('MaskedField')
+      expect(one({ field: 'phone', input: 'string', options: { mask: 'no slot here' } }).overrideType).toBe('CustomInput')
+      expect(one({ field: 'phone', input: 'string' }).overrideType).toBe('CustomInput')
+      expect(one({ field: 'phone', input: 'email', options: { mask: '__' } }).overrideType).toBe('CustomInput')
+    })
+
     it('gives a select and a pillbox the words of the multiselect', () => {
       for (const input of ['select', 'pillbox']) {
         const options = one({ field: 'x', input }).selectOptions

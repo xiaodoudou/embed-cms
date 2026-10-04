@@ -20,6 +20,7 @@ Catalogue: `resources/numbers_quantities.js` (group **Numbers**, resource **Quan
 | `required` | boolean | `false` | Adds `*` to the label; a save with an empty box is refused (`This field is required!`). A length of zero is a length. |
 | `options.units` | array | `['hours', 'minutes']` | The units of the field, from `'days'`, `'hours'`, `'minutes'` and `'seconds'`, always largest first whatever the order you list them in. At least one: a list with no unit it knows gives the default. They decide the template of the box (see below) and the unit a pasted bare number is in: the smallest. A length is rounded to the smallest unit (with `['hours', 'minutes']` a length of 5430 seconds is 01:31). |
 | `min`, `max` | number | none | The shortest and the longest length it takes, **in seconds** (also accepted in `options`). A length outside is refused with `At least 15m` or `At most 2h`, written in the units of the field. |
+| `options.template` | string | the usual one for the units | The template of the box, `__:__`, `_h __m`, `___ days` (see [Your own template](#your-own-template)). Its parts give the units. |
 | `options.hint` | string | none | Help text under the box. |
 | `options.readonly` | boolean | `false` | Shows the length, changes nothing, with the lock icon after the label. |
 | `options.disabled` | boolean | `false` | Greyed out and not focusable. |
@@ -35,6 +36,24 @@ One box that keeps its template, with a slot for each digit: `__:__` for hours a
 - When the box is left what is typed is carried up (`00:90` becomes `01:30`), and a part that was not finished counts as typed (`1` is `01:00`).
 - An empty box (every slot an underscore) holds nothing. `00:00` is a length of zero.
 - The message of the rules is shown under the box when you leave it, and when the record is saved.
+
+## Your own template
+
+`options.template` gives the box a template of its own, written the way a [string mask](string.md#mask) is: `_` is a digit, and the characters in between are written for you. Every place must be a digit, and there are from one to four parts.
+
+```js
+{ field: 'cookingTime', input: 'duration', label: 'Cooking time', localised: false, options: { template: '_h __m __s' } }
+{ field: 'holiday', input: 'duration', label: 'Holiday', localised: false, options: { template: '___ days' } }
+```
+
+`resources/numbers_quantities.js`, fields `templateDuration` and `daysDuration`.
+
+- The units come from the template: the letter that follows each part says its unit (`d`, `h`, `m` or `s`, in any case, with or without a space before it), so `_h __m __s` is hours, minutes and seconds and `___ days` is days alone. Without letters (`__-__`) the units are the ones of `options.units` when there are as many, else the usual ones for that many parts: one is minutes, two hours and minutes, three hours, minutes and seconds, four days to seconds. The parts go from the largest unit to the smallest.
+- A part keeps the width the template gives it, and the box holds as many digits as the template has places. The first part is widened when `max`, or the length shown, needs more digits (a value of 120 hours shows `___h __m` rather than losing a digit).
+- A template that is not a template for a length (a letter or a digit-or-letter place, no place at all, more than four parts, parts in the wrong order) is ignored: the box has the usual template for the units of the field.
+- What is typed, pasted and carried up when the box is left works as described above, whatever the template.
+
+![Template](img/duration-template.png)
 
 ## Stored value
 

@@ -10,7 +10,7 @@ const source = (name) => fs.readFileSync(path.join(DIR, `${name}.vue`), 'utf8')
 
 const FIELD_COMPONENTS = [
   'AttachmentView', 'ColorPicker', 'CustomCheckbox', 'CustomCode', 'CustomDatetimePicker', 'CustomInput', 'CustomInputTag',
-  'CustomMultiSelect', 'CustomTextarea', 'CustomTreeView', 'DurationField', 'ImageView', 'JsonEditor', 'MoneyField', 'ParagraphView', 'PhoneField', 'RatingField', 'Transliterate', 'Wysiwyg'
+  'CustomMultiSelect', 'CustomTextarea', 'CustomTreeView', 'DurationField', 'ImageView', 'JsonEditor', 'MaskedField', 'MoneyField', 'ParagraphView', 'PhoneField', 'RatingField', 'Transliterate', 'Wysiwyg'
 ]
 // Building blocks that are not inputs themselves
 const HELPERS = ['FieldLabel', 'Group', 'TiptapMenuBar', 'TiptapMenuItem']

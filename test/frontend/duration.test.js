@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { UNITS, DEFAULT_UNITS, durationOptions, splitDuration, parseDuration, durationMask, maskText, maskCaret, maskSeconds, maskDigits, maskType, formatDuration, validateDuration } from '@u/duration'
+import { UNITS, DEFAULT_UNITS, durationOptions, splitDuration, parseDuration, readTemplate, durationMask, maskSeconds, maskDigits, formatDuration, validateDuration } from '@u/duration'
+import { maskText, maskCaret, maskType as typeIn } from '@u/mask'
 import { TranslateService } from './helpers/mountField.js'
 
 // The arithmetic and the words of the duration field.
@@ -7,6 +8,8 @@ import { TranslateService } from './helpers/mountField.js'
 const units = (...names) => UNITS.filter(unit => names.includes(unit.name))
 const HM = units('hours', 'minutes')
 const DHMS = units('days', 'hours', 'minutes', 'seconds')
+// a digit typed, or anything else, which ends a part and fills it with zeros
+const maskType = (digits, mask, key) => typeIn(digits, mask, key, { pad: true })
 const MS = units('minutes', 'seconds')
 const HMS = units('hours', 'minutes', 'seconds')
 
@@ -129,6 +132,63 @@ describe('durationMask and maskText', () => {
     expect(maskCaret('1', mask)).toBe(1)
     expect(maskCaret('13', mask)).toBe(3)
     expect(maskCaret('1345', mask)).toBe(5)
+  })
+})
+
+describe('a template of the field', () => {
+  const names = (found) => found && found.units.map(unit => unit.name)
+
+  it('reads the parts of a template, whatever it writes between them', () => {
+    expect(names(readTemplate('__:__'))).toEqual(['hours', 'minutes'])
+    expect(names(readTemplate('__:__:__'))).toEqual(['hours', 'minutes', 'seconds'])
+    expect(names(readTemplate('___'))).toEqual(['minutes'])
+    expect(names(readTemplate('_._._._'))).toEqual(['days', 'hours', 'minutes', 'seconds'])
+  })
+
+  it('takes the unit of a part from the letter that follows it', () => {
+    expect(names(readTemplate('__h __m'))).toEqual(['hours', 'minutes'])
+    expect(names(readTemplate('__ d __ h'))).toEqual(['days', 'hours'])
+    expect(names(readTemplate('__m __s'))).toEqual(['minutes', 'seconds'])
+    expect(names(readTemplate('___ min'))).toEqual(['minutes'])
+    expect(names(readTemplate('__h __s'))).toEqual(['hours', 'seconds'])
+  })
+
+  it('takes the units the field names when there are as many as the parts, before the letters', () => {
+    expect(names(readTemplate('__-__', ['minutes', 'seconds']))).toEqual(['minutes', 'seconds'])
+    expect(names(readTemplate('__h __m', ['days', 'hours']))).toEqual(['days', 'hours'])
+  })
+
+  it('is no template for a length when it has no digit, a letter or a digit-or-letter slot, more than four parts, or parts in the wrong order', () => {
+    for (const bad of [undefined, null, 5, '', 'hh:mm', '__:AA', '**:__', '_:_:_:_:_', '__m __h']) {
+      expect(readTemplate(bad), String(bad)).toBeNull()
+    }
+  })
+
+  it('makes the mask of the field of it: the digits of each part are the ones it has', () => {
+    const mask = durationMask(units('hours', 'minutes'), 0, 0, '_h __m')
+    expect(maskText('', mask)).toBe('_h __m')
+    expect(maskText('130', mask)).toBe('1h 30m')
+    expect(mask.widths).toEqual([1, 2])
+    expect(maskSeconds('130', mask)).toBe(5400)
+    expect(maskDigits(5400, mask)).toBe('130')
+  })
+
+  it('widens its first part when the most of the field, or the length shown, needs more digits', () => {
+    expect(maskText('', durationMask(HM, 0, 100 * 3600, '__:__'))).toBe('___:__')
+    expect(maskText('', durationMask(HM, 200 * 3600, 0, '_h __m'))).toBe('___h __m')
+    expect(maskText('', durationMask(HM, 0, 3600, '__:__'))).toBe('__:__')
+  })
+
+  it('is given by the options of the field, which take its units from it', () => {
+    const found = durationOptions({ options: { template: '__d __h' } })
+    expect(found.units.map(unit => unit.name)).toEqual(['days', 'hours'])
+    expect(found.template).toBe('__d __h')
+    expect(durationOptions({ template: '__h __s' }).units.map(unit => unit.name)).toEqual(['hours', 'seconds'])
+  })
+
+  it('is left out when it is not a template for a length, the units of the field being the ones it names', () => {
+    expect(durationOptions({ options: { template: 'hh:mm', units: ['minutes'] } })).toMatchObject({ template: undefined })
+    expect(durationOptions({ options: { template: 'hh:mm', units: ['minutes'] } }).units.map(unit => unit.name)).toEqual(['minutes'])
   })
 })
 

@@ -240,6 +240,7 @@
     "TL_COUNTRY": "国家或地区",
     "TL_INVALID_PHONE": "请输入电话号码，如 +86 10 1234 5678",
     "TL_PHONE_COUNTRY": "此字段不接受该国家或地区的号码",
+    "TL_MASK_INCOMPLETE": "请填写完整：{{ template }}",
     "TL_CURRENCY": "货币",
     "TL_INVALID_MONEY": "请输入金额，如 19.99",
     "TL_INVALID_CURRENCY": "货币须为 {{ currency }} 之一",

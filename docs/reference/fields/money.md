@@ -33,6 +33,44 @@ Catalogue: `resources/numbers_quantities.js` (group **Numbers**, resource **Quan
 - A currency chosen with no amount is no value: the field holds nothing, so `required` is not met.
 - A box that is not an amount (`abc`) holds nothing and says `An amount, like 19.99` under the boxes. The message of the rules is shown there too, when you leave the box and when the record is saved.
 
+## Variations
+
+### A list of currencies, and one currency
+
+`resources/numbers_quantities.js`, fields `price` (the common currencies) and `euroPrice` (`currency: 'EUR'`: the code is written beside the amount). The amount is written with the decimals of the currency when the box is left.
+
+![Price and price in euros](img/money-default.png)
+
+### Currencies with their names
+
+Field `mixedPrice` (`currencies: ['USD', 'JPY', 'KWD']`): the list shows the code and the name in the language of the admin.
+
+![Currencies](img/money-currency-open.png)
+
+### Decimals follow the currency
+
+Typing `1999.5` and choosing `KWD` gives `1999.500` (dinars have three decimals; yen have none, dollars two).
+
+![Decimals](img/money-decimals.png)
+
+### Limits
+
+Field `limitedPrice` (`currency: 'USD'`, `min: 5`, `max: 500`): the message is written in the currency.
+
+![Under the least](img/money-limited-error.png)
+
+### Required
+
+Field `requiredPrice`: an amount of zero is an amount, an empty box is refused when the record is saved.
+
+![Required price refused](img/money-required-error.png)
+
+### Read-only and disabled
+
+Fields `readOnlyPrice` and `disabledPrice`.
+
+![Read-only and disabled](img/money-states.png)
+
 ## Stored value
 
 An object with the amount, a number in the major unit of the currency, and the code of the currency; the key is absent when there is no amount. A localised field holds one per locale.

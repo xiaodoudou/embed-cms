@@ -34,6 +34,30 @@ Catalogue: `resources/text_formats.js` (group **Text**, resource **Formatted str
 - A box that is not a number (`call me`) holds nothing and says `A phone number, like +44 20 7183 8750` under the boxes. The message of the rules is shown there too, when you leave the box and when the record is saved.
 - The countries of the North American plan are told apart by their area codes: `+1 242` is the Bahamas, `+1 416` is Canada, the rest of `+1` is the United States.
 
+## Variations
+
+### A number with its country
+
+`resources/text_formats.js`, field `phone`. Typed or pasted as `+44 20 7183 8750`, the number sets the country (here the United Kingdom) and the box keeps the national number in groups.
+
+![Phone](img/phone-default.png)
+
+### A list of countries
+
+Field `europePhone` (`countries: ['FR', 'DE', 'GB', 'ES', 'IT', 'NL', 'BE']`): the list shows the flag, the name and the calling code, in the order the field gives, and can be searched by name, code or calling code.
+
+![Countries](img/phone-country-open.png)
+
+### Not a number
+
+![Refused](img/phone-error.png)
+
+### Read-only and disabled
+
+Fields `readOnlyPhone` and `disabledPhone`.
+
+![Read-only and disabled](img/phone-states.png)
+
 ## Stored value
 
 A string: `+`, the calling code and the national number, with no space, from 7 to 15 digits (E.164). The key is absent when there is no number. A localised field holds one per locale.

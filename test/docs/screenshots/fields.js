@@ -303,6 +303,14 @@ add('select-filled-custom-label', 'choice_select', async (c) => {
   await pick(c, 'itemWithLabel', 'Gamma')
   return c.field('itemWithLabel')
 })
+add('select-sources-open', 'choice_select', async (c) => {
+  await openList(c, 'linked')
+  return c.field('linked')
+}, { crop: { height: 380 }, scroll: 'start' })
+add('select-sources-filled', 'choice_select', async (c) => {
+  await pick(c, 'linked', 'Ann')
+  return c.field('linked')
+})
 add('select-localised', 'choice_select', (c) => c.field('localisedChoice.enUS'))
 add('select-readonly', 'choice_select', (c) => c.field('readOnlySelect'))
 add('select-disabled', 'choice_select', (c) => c.field('disabledSelect'))
@@ -337,6 +345,14 @@ add('multiselect-filled-labels', 'choice_multi', async (c) => {
   await pickMany(c, 'channels', ['Website', 'Print'])
   await pickMany(c, 'items', ['Alpha', 'Gamma'])
   return [c.field('channels'), c.field('items')]
+})
+add('multiselect-sources-open', 'choice_multi', async (c) => {
+  await openList(c, 'linkedMany')
+  return c.field('linkedMany')
+}, { crop: { height: 380 }, scroll: 'start' })
+add('multiselect-sources-filled', 'choice_multi', async (c) => {
+  await pickMany(c, 'linkedMany', ['Alpha', 'Ann', 'Gamma'])
+  return c.field('linkedMany')
 })
 add('multiselect-localised-enUS', 'choice_multi', async (c) => {
   await pickMany(c, 'localisedItems.enUS', ['Beta'])
@@ -703,5 +719,87 @@ add('duration-template', 'numbers_quantities', async (c) => {
   await c.blur()
   return [c.field('templateDuration'), c.field('daysDuration')]
 })
+
+// ---------------------------------------------------------------- rating
+const rate = async (c, model, step) => {
+  await c.field(model).locator('.rating-step').nth(step).click()
+  await c.page.mouse.move(5, 5)
+}
+add('rating-default', 'numbers_quantities', async (c) => {
+  await rate(c, 'stars', 3)
+  // the left half of the third heart: two and a half
+  await rate(c, 'hearts', 4)
+  return [c.field('stars'), c.field('hearts')]
+})
+add('rating-scale', 'numbers_quantities', async (c) => {
+  await rate(c, 'scale', 6)
+  await rate(c, 'flames', 1)
+  return [c.field('scale'), c.field('flames')]
+})
+add('rating-required-error', 'numbers_quantities', async (c) => {
+  await named(c)
+  return refuse(c, 'requiredRating')
+})
+add('rating-states', 'numbers_quantities', (c) => [c.field('readOnlyRating'), c.field('disabledRating')])
+
+// ---------------------------------------------------------------- duration (the box keeps its template)
+add('duration-default', 'numbers_quantities', async (c) => {
+  await c.type('duration', '0130')
+  await c.type('preciseDuration', '013005')
+  await c.type('longDuration', '2:3')
+  await c.blur()
+  return [c.field('duration'), c.field('preciseDuration'), c.field('longDuration')]
+})
+add('duration-empty', 'numbers_quantities', (c) => [c.field('duration'), c.field('minutesOnly')])
+add('duration-limits-error', 'numbers_quantities', (c) => typed(c, 'minutesOnly', '2'))
+add('duration-states', 'numbers_quantities', (c) => [c.field('readOnlyDuration'), c.field('disabledDuration')])
+
+// ---------------------------------------------------------------- money
+const amount = async (c, model, text) => {
+  await c.field(model).locator('input[id$="-amount"]').fill(text)
+}
+add('money-default', 'numbers_quantities', async (c) => {
+  await amount(c, 'price', '1.234,5')
+  await c.type('euroPrice', '7')
+  await c.blur()
+  return [c.field('price'), c.field('euroPrice')]
+})
+add('money-currency-open', 'numbers_quantities', async (c) => {
+  await openList(c, 'mixedPrice')
+  return c.field('mixedPrice')
+}, { crop: { height: 300 }, scroll: 'start' })
+add('money-decimals', 'numbers_quantities', async (c) => {
+  await amount(c, 'mixedPrice', '1999.5')
+  await c.blur()
+  await pick(c, 'mixedPrice', 'KWD')
+  return c.field('mixedPrice')
+})
+add('money-limited-error', 'numbers_quantities', (c) => typed(c, 'limitedPrice', '4'))
+add('money-required-error', 'numbers_quantities', async (c) => {
+  await named(c)
+  return refuse(c, 'requiredPrice')
+})
+add('money-states', 'numbers_quantities', (c) => [c.field('readOnlyPrice'), c.field('disabledPrice')])
+
+// ---------------------------------------------------------------- phone
+const number = (c, model) => c.field(model).locator('input[id$="-number"]')
+const dial = async (c, model, text) => {
+  await number(c, model).click()
+  await number(c, model).fill(text)
+  await c.blur()
+  return c.field(model)
+}
+add('phone-default', 'text_formats', async (c) => {
+  // a number written with its country says which country it is
+  await dial(c, 'phone', '+44 20 7183 8750')
+  return c.field('phone')
+})
+add('phone-country-open', 'text_formats', async (c) => {
+  await openList(c, 'europePhone')
+  return c.field('europePhone')
+}, { crop: { height: 330 }, scroll: 'start' })
+add('phone-error', 'text_formats', (c) => dial(c, 'phone', 'call me'))
+add('phone-states', 'text_formats', (c) => [c.field('readOnlyPhone'), c.field('disabledPhone')])
+
 
 module.exports = { specs }

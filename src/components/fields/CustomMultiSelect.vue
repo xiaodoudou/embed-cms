@@ -1,9 +1,9 @@
 <template>
   <div class="multiselect-wrapper">
     <v-autocomplete
-      :id="selectOptions.id || inputId"
-      ref="input"
+      :id="selectOptions.id || inputId" ref="input"
       v-model:search="searchText"
+      :name="schema.model"
       :theme="theme"
       :chips="getSelectOpt('chips')"
       :menu-props="menuProps"

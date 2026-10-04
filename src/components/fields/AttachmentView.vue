@@ -1,7 +1,7 @@
 <template>
   <div class="attachment-view">
     <form enctype="multipart/form-data">
-      <field-label :schema="schema" :disabled="disabled" />
+      <field-label :schema="schema" :disabled="disabled" :input-id="inputId" />
       <v-card
         v-if="!isFieldDisabled()"
         :theme="theme"
@@ -9,7 +9,7 @@
         @drop.prevent="onDrop($event)" @dragover.prevent="dragover = true" @dragenter.prevent="dragover = true" @dragleave.prevent="dragover = false"
       >
         <v-file-input
-          ref="input"
+          :id="inputId" ref="input" :name="schema.model"
           :theme="theme" flat :rules="getRules()" prepend-icon="" prepend-inner-icon="$upload" :placeholder="getPlaceholder()" :clearable="false" hide-details="auto"
           density="compact" :variant="getVariant()" rounded persistent-placeholder single-line :multiple="isForMultipleImages()" :accept="schema.accept"
           @change="onUploadChanged" @update:focused="onFieldFocus"

@@ -1,7 +1,7 @@
 <template>
   <div class="custom-input">
     <v-text-field
-      ref="input" :id="inputId"
+      :id="inputId" ref="input"
       :theme="theme" :class="[schema.labelClasses]" :type="getType()" :model-value="_value"
       :max-length="schema.max" :min-length="schema.min" autocomplete="off" validate-on="blur" :rules="[validateField]"
       :variant="getVariant()" :flat="get('flat')" :rounded="get('rounded')" :density="get('density')" :disabled="disabled" :readonly="get('readonly')" :aria-readonly="get('readonly') ? 'true' : undefined"

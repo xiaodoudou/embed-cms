@@ -74,7 +74,7 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
       expect(inner().props('timePicker')).toBe(false)
       expect(inner().props('timeConfig')).toMatchObject({ enableTimePicker: false, timePickerInline: false })
       expect(wrapper.vm.enableDatePicker).toBe(true)
-      expect(wrapper.find('.date-now').exists()).toBe(false)
+      expect(wrapper.get('.date-now').text()).toBe('Today')
     })
 
     it('a time field picks a time, without a calendar', () => {
@@ -197,6 +197,17 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
       picker('datetime', model)
       await wrapper.get('.date-now').trigger('click')
       expect(model.when).toBe(LOCAL)
+    })
+
+    it('is Today on a date field, and sets the start of the day, as picking the day in the calendar does', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(LOCAL)
+      const model = {}
+      picker('date', model)
+      expect(wrapper.get('.date-now').text()).toBe('Today')
+      await wrapper.get('.date-now').trigger('click')
+      expect(model.when).toBe(new Date(new Date(LOCAL).setHours(0, 0, 0, 0)).getTime())
+      expect(new Date(model.when).getHours()).toBe(0)
     })
 
     it('is not offered on a locked field', () => {

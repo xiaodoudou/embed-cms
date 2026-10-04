@@ -310,6 +310,7 @@
     "TL_RECORDS_DELETED": "{{ num }} records deleted",
     "TL_RECORDS_DELETE_FAILED": "{{ num }} records could not be deleted",
     "TL_NOW": "Now",
+    "TL_TODAY": "Today",
     "TL_COMPACT_ROWS": "Compact rows",
     "TL_ID_COPIED": "Id copied",
     "TL_RECORDS": "Records",

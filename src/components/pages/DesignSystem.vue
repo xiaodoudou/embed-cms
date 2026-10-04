@@ -73,11 +73,10 @@
             <v-text-field
               v-bind="fieldProps(state)" persistent-placeholder aria-label="Text"
               :placeholder="state.name === 'Editable' ? 'Placeholder' : ''" :model-value="state.empty ? '' : 'Nordic oak chair'"
-            >
-            </v-text-field>
-            <v-textarea v-bind="fieldProps(state)" :rows="2" no-resize model-value="A sturdy chair with a solid oak frame." aria-label="Text area"></v-textarea>
-            <v-autocomplete v-bind="fieldProps(state)" :items="['Chairs', 'Tables']" model-value="Chairs" menu-icon="$chevronDown" aria-label="Select"></v-autocomplete>
-            <v-autocomplete v-bind="fieldProps(state)" :items="['new', 'sale', 'oak']" :model-value="['new', 'oak']" multiple chips closable-chips menu-icon="$chevronDown" aria-label="Multiple select"></v-autocomplete>
+            />
+            <v-textarea v-bind="fieldProps(state)" :rows="2" no-resize model-value="A sturdy chair with a solid oak frame." aria-label="Text area" />
+            <v-autocomplete v-bind="fieldProps(state)" :items="['Chairs', 'Tables']" model-value="Chairs" menu-icon="$chevronDown" aria-label="Select" />
+            <v-autocomplete v-bind="fieldProps(state)" :items="['new', 'sale', 'oak']" :model-value="['new', 'oak']" multiple chips closable-chips menu-icon="$chevronDown" aria-label="Multiple select" />
             <div class="date-picker-wrapper" :class="{'is-readonly': state.readonly, 'is-disabled': state.disabled}">
               <div class="date-row">
                 <div class="date-control">

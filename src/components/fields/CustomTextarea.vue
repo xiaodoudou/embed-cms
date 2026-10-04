@@ -1,7 +1,8 @@
 <template>
   <div class="custom-textarea">
     <v-textarea
-      ref="input" :id="inputId" :class="[schema.labelClasses]" :type="getType()" :model-value="_value" :max-length="schema.max" :min-length="schema.min" auto-grow :density="get('density')" :flat="get('flat')" :disabled="schema.disabled"
+      :id="inputId" ref="input" :class="[schema.labelClasses]" :type="getType()" :model-value="_value" :max-length="schema.max" :min-length="schema.min" auto-grow :density="get('density')" :flat="get('flat')"
+      :disabled="schema.disabled"
       :readonly="schema.readonly" :aria-readonly="schema.readonly ? 'true' : undefined" :rules="[validateField]" hide-details="auto" validate-on="blur" :aria-label="schema.label" :variant="getVariant()" :rounded="get('rounded')" @update:model-value="onChangeData" @update:focused="onFieldFocus"
     >
       <template #prepend><field-label :schema="schema" :disabled="disabled" :input-id="inputId" /></template>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { UNITS, DEFAULT_UNITS, durationOptions, splitDuration, parseDuration, formatDurationInput, durationTemplate, formatDuration, validateDuration, validateDurationText } from '@u/duration'
+import { UNITS, DEFAULT_UNITS, durationOptions, splitDuration, parseDuration, durationMask, maskText, maskCaret, maskSeconds, maskDigits, maskType, formatDuration, validateDuration } from '@u/duration'
 import { TranslateService } from './helpers/mountField.js'
 
 // The arithmetic and the words of the duration field.
@@ -91,56 +91,107 @@ describe('parseDuration', () => {
   })
 })
 
-describe('formatDurationInput and durationTemplate', () => {
-  it('writes hours and minutes as a clock, the first part as it is and the others in two digits', () => {
-    expect(formatDurationInput(5400, HM)).toBe('1:30')
-    expect(formatDurationInput(3600, HM)).toBe('1:00')
-    expect(formatDurationInput(300, HM)).toBe('0:05')
-    expect(formatDurationInput(100 * 3600, HM)).toBe('100:00')
-    expect(formatDurationInput(0, HM)).toBe('0:00')
-    expect(formatDurationInput(5405, HMS)).toBe('1:30:05')
-    expect(formatDurationInput(90, MS)).toBe('1:30')
+describe('durationMask and maskText', () => {
+  it('has a slot for each digit: two for each part of a clock', () => {
+    expect(maskText('', durationMask(HM))).toBe('__:__')
+    expect(maskText('', durationMask(HMS))).toBe('__:__:__')
+    expect(maskText('', durationMask(MS))).toBe('__:__')
   })
 
-  it('writes days, or one unit, with letters, leaving out what is zero', () => {
-    expect(formatDurationInput(183600, DHMS)).toBe('2d 3h')
-    expect(formatDurationInput(90061, DHMS)).toBe('1d 1h 1m 1s')
-    expect(formatDurationInput(5400, units('minutes'))).toBe('90m')
-    expect(formatDurationInput(7200, units('days', 'hours'))).toBe('2h')
-    expect(formatDurationInput(0, units('days', 'hours'))).toBe('0h')
-    expect(formatDurationInput(5400, units('hours', 'seconds'))).toBe('1h 1800s')
+  it('writes days and a single unit with their letters, with room for more digits', () => {
+    expect(maskText('', durationMask(DHMS))).toBe('___d __h __m __s')
+    expect(maskText('', durationMask(units('days', 'hours')))).toBe('___d __h')
+    expect(maskText('', durationMask(units('minutes')))).toBe('___m')
+    expect(maskText('', durationMask(units('seconds')))).toBe('____s')
+    expect(maskText('', durationMask(units('hours', 'seconds')))).toBe('__h ____s')
   })
 
-  it('writes what it reads back to the same length', () => {
-    for (const [seconds, which] of [[5400, HM], [5405, HMS], [90, MS], [183600, DHMS], [5400, units('minutes')], [7200, units('days', 'hours')], [0, HM], [0, DHMS]]) {
-      expect(parseDuration(formatDurationInput(seconds, which), which), `${seconds} ${which.map(u => u.name)}`).toBe(seconds)
-    }
+  it('fills the slots from the left as far as the digits go', () => {
+    const mask = durationMask(HM)
+    expect(maskText('1', mask)).toBe('1_:__')
+    expect(maskText('13', mask)).toBe('13:__')
+    expect(maskText('130', mask)).toBe('13:0_')
+    expect(maskText('1345', mask)).toBe('13:45')
+    expect(maskText('0130', durationMask(DHMS))).toBe('013d 0_h __m __s')
   })
 
-  it('shows how to write a length, as a clock or with letters', () => {
-    expect(durationTemplate(HM)).toBe('h:mm')
-    expect(durationTemplate(HMS)).toBe('h:mm:ss')
-    expect(durationTemplate(MS)).toBe('m:ss')
-    expect(durationTemplate(DHMS)).toBe('0d 0h 0m 0s')
-    expect(durationTemplate(units('minutes'))).toBe('0m')
-    expect(durationTemplate(units('days', 'hours'))).toBe('0d 0h')
+  it('makes the first part as wide as the most of the field, or the length shown, needs', () => {
+    expect(maskText('', durationMask(HM, 200 * 3600))).toBe('___:__')
+    expect(maskText('', durationMask(HM, 0, 100 * 3600))).toBe('___:__')
+    expect(maskText('', durationMask(HM, 8 * 3600))).toBe('__:__')
+    expect(maskText('', durationMask(units('minutes'), 8 * 3600))).toBe('___m')
+    expect(maskText('', durationMask(units('seconds'), 100000))).toBe('______s')
+  })
+
+  it('says where the next digit goes', () => {
+    const mask = durationMask(HM)
+    expect(maskCaret('', mask)).toBe(0)
+    expect(maskCaret('1', mask)).toBe(1)
+    expect(maskCaret('13', mask)).toBe(3)
+    expect(maskCaret('1345', mask)).toBe(5)
   })
 })
 
-describe('validateDurationText', () => {
-  const message = (key, params) => TranslateService.get(key, params)
-
-  it('reads the box and checks the length', () => {
-    expect(validateDurationText({ min: 900, max: 7200 }, '1:30')).toBe(null)
-    expect(validateDurationText({ min: 900, max: 7200 }, '10m')).toBe(message('TL_DURATION_TOO_SHORT', { min: '15m' }))
-    expect(validateDurationText({ min: 900, max: 7200 }, '3h')).toBe(message('TL_DURATION_TOO_LONG', { max: '2h' }))
+describe('maskSeconds and maskDigits', () => {
+  it('reads the digits as a length, a part with no digit yet counting as zero', () => {
+    const mask = durationMask(HM)
+    expect(maskSeconds('0130', mask)).toBe(5400)
+    expect(maskSeconds('13', mask)).toBe(13 * 3600)
+    expect(maskSeconds('1', mask)).toBe(3600)
+    expect(maskSeconds('0', mask)).toBe(0)
+    expect(maskSeconds('0099', mask)).toBe(99 * 60)
+    expect(maskSeconds('010530', durationMask(HMS))).toBe(3930)
+    expect(maskSeconds('100', durationMask(DHMS))).toBe(100 * 86400)
   })
 
-  it('refuses what is not a length, and an empty box when required', () => {
-    expect(validateDurationText({}, 'soon')).toBe(message('TL_INVALID_DURATION'))
-    expect(validateDurationText({ required: true }, '')).toBe(message('TL_FIELD_IS_REQUIRED'))
-    expect(validateDurationText({}, '')).toBe(null)
-    expect(validateDurationText({ required: true }, '0:00')).toBe(null)
+  it('has no length for no digit', () => {
+    expect(maskSeconds('', durationMask(HM))).toBeUndefined()
+  })
+
+  it('writes a length as the digits of the slots, carried up', () => {
+    const mask = durationMask(HM)
+    expect(maskDigits(5400, mask)).toBe('0130')
+    expect(maskDigits(0, mask)).toBe('0000')
+    expect(maskDigits(99 * 60, mask)).toBe('0139')
+    expect(maskDigits(100 * 3600, durationMask(HM, 0, 100 * 3600))).toBe('10000')
+    expect(maskDigits(5430, durationMask(HMS))).toBe('013030')
+    expect(maskDigits(5400, durationMask(units('minutes')))).toBe('090')
+    expect(maskDigits(183600, durationMask(units('days', 'hours')))).toBe('00203')
+  })
+
+  it('writes what it reads back to the same length', () => {
+    for (const [seconds, which] of [[5400, HM], [5430, HMS], [90, MS], [183600, DHMS], [5400, units('minutes')], [7200, units('days', 'hours')], [0, HM], [3700, units('hours', 'seconds')]]) {
+      const mask = durationMask(which, 0, seconds)
+      expect(maskSeconds(maskDigits(seconds, mask), mask), `${seconds} ${which.map(u => u.name)}`).toBe(seconds)
+    }
+  })
+})
+
+describe('maskType', () => {
+  const mask = durationMask(HM)
+
+  it('puts a digit in the next slot, and nothing when the mask is full', () => {
+    expect(maskType('', mask, '1')).toBe('1')
+    expect(maskType('13', mask, '4')).toBe('134')
+    expect(maskType('1345', mask, '6')).toBe('1345')
+  })
+
+  it('ends the part being typed with anything that is not a digit, filling it from the left with zeros', () => {
+    expect(maskType('1', mask, ':')).toBe('01')
+    expect(maskType('1', mask, ' ')).toBe('01')
+    expect(maskType('1', mask, 'h')).toBe('01')
+    expect(maskType('013', mask, ':')).toBe('0103')
+    expect(maskType('0130', mask, ':')).toBe('0130')
+  })
+
+  it('does nothing for a part that has no digit yet or is full', () => {
+    expect(maskType('', mask, ':')).toBe('')
+    expect(maskType('01', mask, ':')).toBe('01')
+  })
+
+  it('fills a part of three digits from the left too', () => {
+    expect(maskType('1', durationMask(units('minutes')), 'm')).toBe('001')
+    expect(maskType('12', durationMask(DHMS), ' ')).toBe('012')
   })
 })
 

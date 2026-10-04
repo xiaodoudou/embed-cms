@@ -3,6 +3,7 @@ import _ from 'lodash'
 import { filesize } from 'filesize'
 import TranslateService from '@s/TranslateService'
 import { takeFiles } from '@u/pendingFiles'
+import { canCrop, cropVersion, hasCrop } from '@u/cropRecipe'
 
 export default {
   data () {
@@ -42,6 +43,24 @@ export default {
       list.splice(to, 0, list.splice(index, 1)[0])
       this.onEndDrag()
     },
+    /**
+     * Keeps the crop made in the crop tool with the picture, flagged so that the record editor sends it (with a new file it goes with the
+     * upload, with a saved one it is an update of the attachment).
+     * @param {number} index of the attachment
+     * @param {Object} cropOptions the recipe (see utils/cropRecipe.js)
+     * @param {string} preview a small picture of the result, shown until the picture is saved
+     */
+    onCrop (index, cropOptions, preview) {
+      const attachments = this.getAttachments()
+      const attachment = attachments[index]
+      if (!attachment) {
+        return
+      }
+      attachment.cropOptions = cropOptions
+      attachment.cropPreview = preview
+      this.attachments = attachments
+      this._value = attachments
+    },
     /** Renumbers the order of the attachments. */
     onEndDrag () {
       const attachments = _.map(this.getAttachments(), (item, i) => {
@@ -59,6 +78,10 @@ export default {
      */
     getImageSrc (attachment = false) {
       const a = attachment || this.attachment()
+      // a crop that is not saved yet shows as the tool made it; the picture itself is the original
+      if (a.cropPreview && _.get(a, 'cropOptions.updated')) {
+        return a.cropPreview
+      }
       return a.data ? a.data : this.getPreviewUrl(a)
     },
     /**
@@ -90,6 +113,10 @@ export default {
       const contentType = _.get(a, '_contentType', false)
       if (_.isString(contentType) && contentType.indexOf('svg') !== -1) {
         return a.url
+      }
+      // a picture with a crop shows its cut, an address of its own for each crop so that a browser does not keep showing the last one
+      if (a.url && canCrop(this.schema) && hasCrop(a.cropOptions)) {
+        return `${a.url}/cropped?resize=autox200&v=${cropVersion(a.cropOptions)}`
       }
       return `${a.url}?resize=autox100`
     },

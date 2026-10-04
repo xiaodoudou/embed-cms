@@ -109,6 +109,7 @@
   let sequence = 0
   import pAll from 'p-all'
   import { queueFiles, takeFiles } from '@u/pendingFiles'
+  import { isAttachmentInput } from '@u/inputTypes'
 
   export default {
     mixins: [DragList],
@@ -125,7 +126,7 @@
       return {
         items: _.cloneDeep(_.get(this.model, this.schema.model, [])),
         types: [],
-        fileInputTypes: ['file', 'img', 'image', 'imageView', 'attachmentView'],
+        fileInputTypes: ['file', 'img', 'image', 'cropimage', 'imageView', 'attachmentView'],
         selectedType: false,
         subResourcesLoaded: false,
         key: crypto.randomUUID(),
@@ -515,7 +516,7 @@
       /** @param {Object} item removed with the attachments of its files */
       onClickRemoveItem (item) {
         let attachments = _.get(this.model, '_attachments', [])
-        if (_.includes(['image', 'file', 'group'], item.input)) {
+        if (isAttachmentInput(item.input) || item.input === 'group') {
           _.each(this.findIds(item), fileItemId => {
             attachments = _.reject(attachments, {_fields: {fileItemId}})
           })

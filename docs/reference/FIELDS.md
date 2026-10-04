@@ -26,6 +26,7 @@ Every field in a resource's schema has an `input` type, and it's the input that 
 | `code` | `CustomCode` | string | [code](fields/code.md) |
 | `wysiwyg` | `Wysiwyg` | HTML string | [wysiwyg](fields/wysiwyg.md) |
 | `image` | `ImageView` | array of attachment descriptors | [image](fields/image.md) |
+| `cropimage` | `ImageView` | array of attachment descriptors, with a crop | [cropimage](fields/cropimage.md) |
 | `file` | `AttachmentView` | array of attachment descriptors | [file](fields/file.md) |
 | `paragraph` | `ParagraphView` | array of blocks (`_type` + fields) | [paragraph](fields/paragraph.md) |
 | `object` | `JsonEditor` | JSON built from a JSON schema | [object](fields/object.md) |

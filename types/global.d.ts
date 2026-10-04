@@ -74,7 +74,7 @@ declare namespace EmbedCMS {
     | 'date' | 'time' | 'datetime'
     | 'pillbox' | 'select' | 'multiselect'
     | 'json' | 'object' | 'code' | 'wysiwyg'
-    | 'image' | 'file' | 'paragraph'
+    | 'image' | 'cropimage' | 'file' | 'paragraph'
 
   /** A pattern for the text types */
   interface FieldRegex {
@@ -111,6 +111,17 @@ declare namespace EmbedCMS {
     maxCount?: number
     /** `image` and `file`: the largest file, in bytes */
     limit?: number
+    /** `cropimage`: the one ratio the crop may have, `1.5`, `'3:2'` or `'16/9'` */
+    aspectRatio?: number | string
+    /** `cropimage`: the shapes to choose from, ratios (`1.5`, `'3:2'`, `[3, 2]`, `{ ratio: '4:5', label: 'Portrait' }`) and `'free'` and `'original'` */
+    aspectRatios?: Array<number | string | [number, number] | { ratio: number | string, label?: string } | 'free' | 'original'>
+    /** `cropimage`: `'circle'` leaves the corners of the result transparent; fixes the shape, with no choice for the person */
+    shape?: 'rect' | 'circle'
+    /** `cropimage`: what the result starts with, changeable in the tool unless `width` and `height` fix the size */
+    output?: { maxWidth?: number, maxHeight?: number, format?: 'jpeg' | 'png' | 'webp', quality?: number }
+    /** `cropimage` and `image`: with `height`, the size of the result (`cropimage`), or the size the picture is resized to on upload (`image`) */
+    width?: number
+    height?: number
     /** `wysiwyg`: the buttons of the toolbar */
     buttons?: string[]
     /** `code`: the CodeMirror mode, e.g. `'text/javascript'`, `'htmlmixed'`, `'css'` */

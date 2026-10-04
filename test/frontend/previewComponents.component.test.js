@@ -4,10 +4,10 @@ import FileInputErrors from '@c/attachments/FileInputErrors.vue'
 import ShowAttachment from '@c/attachments/ShowAttachment.vue'
 import PreviewAttachment from '@c/attachments/PreviewAttachment.vue'
 import PreviewMultiple from '@c/attachments/PreviewMultiple.vue'
+import CropDialog from '@c/attachments/CropDialog.vue'
+import RequestService from '@s/RequestService'
 import { mountComponent } from './helpers/mountField.js'
 
-// The cropper is a library of its own and needs a real canvas: a stand-in keeps these tests on what the components do around it.
-const Cropper = { name: 'Cropper', props: ['src', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight', 'defaultSize', 'imageRestriction'], methods: { refresh () {} }, template: '<div class="cropper-stub" />' }
 const draggable = { props: ['list'], template: '<div class="draggable"><slot /></div>' }
 
 const IMAGE = { _id: 'a1', _filename: 'lamp.jpg', url: '/api/products/1/attachments/a1', _contentType: 'image/jpeg' }
@@ -88,12 +88,21 @@ describe('FileInputErrors (what a file field requires)', () => {
 })
 
 describe('ShowAttachment (one file in the preview)', () => {
-  const show = (attachment, extra = {}) => mount(ShowAttachment, { attachment, isImage, getImageSrc, schema: {}, ...extra }, { global: { components: { Cropper }, stubs: { Cropper } } })
+  // the crop tool has its own tests (cropDialog.component.test.js): a stand-in keeps these on what the preview does around it
+  const show = (attachment, extra = {}) => mount(ShowAttachment, { attachment, isImage, getImageSrc, schema: {}, ...extra }, { global: { stubs: { CropDialog: true } } })
 
   it('shows an image as a picture, from the address the field gives', () => {
     show(IMAGE)
     expect(wrapper.find('.image-wrapper').exists()).toBe(true)
     expect(wrapper.findComponent({ name: 'VImg' }).props('src')).toBe('/api/products/1/attachments/a1?resize=autox100')
+  })
+
+  it('has no View button under a picture, whatever the field can do with it (the picture opens with a click)', () => {
+    for (const schema of [{}, { input: 'cropimage', label: 'Cover' }]) {
+      show(IMAGE, { schema })
+      expect(wrapper.findAll('button').map((button) => button.text())).not.toContain('View')
+      wrapper.unmount()
+    }
   })
 
   it('shows a file that is not an image as a View button', () => {
@@ -148,70 +157,183 @@ describe('ShowAttachment (one file in the preview)', () => {
   })
 
   describe('cropping', () => {
-    const crop = { width: 400, height: 300 }
+    const CROP_IMAGE = { label: 'Cover', input: 'cropimage', resource: { title: 'products' } }
+    const dialog = () => wrapper.findComponent(CropDialog)
 
-    it('offers to edit the crop only when the field has one', () => {
+    it('offers the crop tool only to a field that has it, and for a picture it can cut', () => {
       show(IMAGE)
       expect(wrapper.find('.edit-crop').exists()).toBe(false)
+      expect(dialog().exists()).toBe(false)
       wrapper.unmount()
-      show(IMAGE, { schema: { label: 'Cover', crop } })
+      // a crop image field, and an image field with the crop option of the first crop tool
+      show(IMAGE, { schema: CROP_IMAGE })
       expect(wrapper.find('.edit-crop').exists()).toBe(true)
-    })
-
-    it('uses the fixed size of the crop, or the size typed when it is not fixed', () => {
-      show(IMAGE, { schema: { crop } })
-      expect(wrapper.vm.getCurrentWidth()).toBe(400)
-      expect(wrapper.vm.getCurrentHeight()).toBe(300)
       wrapper.unmount()
-      show(IMAGE, { schema: { crop: {} } })
-      expect(wrapper.vm.getCurrentWidth()).toBe(500)
-      wrapper.vm.customWidth = 640
-      expect(wrapper.vm.getCurrentWidth()).toBe(640)
+      show(IMAGE, { schema: { label: 'Cover', crop: { width: 400, height: 300 } } })
+      expect(wrapper.find('.edit-crop').exists()).toBe(true)
+      wrapper.unmount()
+      // a drawing is not cut, and a file that is not a picture has no tool
+      show({ ...IMAGE, _filename: 'logo.svg', _contentType: 'image/svg+xml' }, { schema: CROP_IMAGE })
+      expect(wrapper.find('.edit-crop').exists()).toBe(false)
+      wrapper.unmount()
+      show(PDF, { schema: CROP_IMAGE })
+      expect(wrapper.find('.edit-crop').exists()).toBe(false)
     })
 
-    it('starts from the size the schema asks for, in the middle of the picture', () => {
-      show(IMAGE, { schema: { crop } })
-      expect(wrapper.vm.getDefaultCropSize()).toEqual({ width: 400, height: 300 })
-      const position = wrapper.vm.getDefaultCropPosition({ imageSize: { width: 1000, height: 800 }, visibleArea: null, coordinates: { width: 400, height: 300 } })
-      expect(position).toEqual({ left: 300, top: 250 })
+    it('puts the button outside the picture, whose box cuts what overflows it', () => {
+      show(IMAGE, { schema: CROP_IMAGE })
+      expect(wrapper.find('.image-wrapper .edit-crop').exists()).toBe(false)
+      expect(wrapper.find('.row-handle > .edit-crop').exists()).toBe(true)
     })
 
-    it('starts from the crop that was saved with the picture', () => {
-      show({ ...IMAGE, cropOptions: { left: 12, top: 34 } }, { schema: { crop } })
-      expect(wrapper.vm.getDefaultCropPosition({ imageSize: { width: 1000, height: 800 }, coordinates: { width: 1, height: 1 } })).toEqual({ left: 12, top: 34 })
+    it('opens the tool with a click on the button, and not before', async () => {
+      show(IMAGE, { schema: CROP_IMAGE })
+      expect(dialog().props('modelValue')).toBe(false)
+      await wrapper.get('.edit-crop').trigger('click')
+      expect(dialog().props('modelValue')).toBe(true)
+      dialog().vm.$emit('update:modelValue', false)
+      await flushPromises()
+      expect(dialog().props('modelValue')).toBe(false)
     })
 
-    it('takes the first move of the cropper as its starting point, and then follows the size when it is free', () => {
-      show(IMAGE, { schema: { crop: {} } })
-      wrapper.vm.onCropperChangeForAttachment({ coordinates: { width: 111.4, height: 99.6 } })
-      expect(wrapper.vm.customWidth).toBe(500)
-      wrapper.vm.onCropperChangeForAttachment({ coordinates: { width: 111.4, height: 99.6 } })
-      expect(wrapper.vm.customWidth).toBe(111)
-      expect(wrapper.vm.customHeight).toBe(100)
+    it('gives the tool the picture, the field, its title and the crop kept with the picture', () => {
+      const cropOptions = { left: 12, top: 34, width: 56, height: 78 }
+      show({ ...IMAGE, cropOptions }, { schema: CROP_IMAGE })
+      expect(dialog().props()).toMatchObject({ src: IMAGE.url, title: 'Cover', cropOptions })
+      expect(dialog().props('schema')).toBe(wrapper.props('schema'))
     })
 
-    it('keeps a fixed width or height whatever the cropper says', () => {
-      show(IMAGE, { schema: { crop: { width: 400 } } })
-      wrapper.vm.onCropperChangeForAttachment({ coordinates: { width: 1, height: 1 } })
-      wrapper.vm.onCropperChangeForAttachment({ coordinates: { width: 50, height: 60 } })
-      expect(wrapper.vm.customWidth).toBe(400)
-      expect(wrapper.vm.customHeight).toBe(60)
+    it('gives the tool the data of a picture that is not uploaded yet', () => {
+      show(NEW_IMAGE, { schema: CROP_IMAGE })
+      expect(dialog().props('src')).toBe(NEW_IMAGE.data)
     })
 
-    it('hands the crop to the field when it is applied, and closes', () => {
-      const onCropperChange = vi.fn()
-      show(IMAGE, { schema: { crop }, onCropperChange })
-      wrapper.vm.cropData = { coordinates: { left: 1, top: 2, width: 3, height: 4 } }
-      const isActive = { value: true }
-      wrapper.vm.apply(isActive)
-      expect(isActive.value).toBe(false)
-      expect(onCropperChange).toHaveBeenCalledWith({ coordinates: { left: 1, top: 2, width: 3, height: 4 } })
+    it('hands the crop to the field when it is applied, with the small picture of the result', () => {
+      const onCrop = vi.fn()
+      show(IMAGE, { schema: CROP_IMAGE, onCrop })
+      dialog().vm.$emit('apply', { left: 1, top: 2, width: 3, height: 4, updated: true }, 'data:image/jpeg;base64,BBBB')
+      expect(onCrop).toHaveBeenCalledWith({ left: 1, top: 2, width: 3, height: 4, updated: true }, 'data:image/jpeg;base64,BBBB')
     })
 
-    it('reads the options of the crop (move and resize the picture)', () => {
-      show(IMAGE, { schema: { crop: { ...crop, moveImage: true } } })
-      expect(wrapper.vm.hasOpt('moveImage')).toBe(true)
-      expect(wrapper.vm.hasOpt('resizeImage')).toBe(false)
+    describe('opening a picture that has a crop', () => {
+      const CROP = { left: 1, top: 2, width: 3, height: 4 }
+      const click = () => wrapper.findComponent({ name: 'VImg' }).vm.$emit('click')
+
+      it('opens the cut the API makes, not the original', () => {
+        const open = vi.spyOn(window, 'open').mockReturnValue(null)
+        show({ ...IMAGE, cropOptions: CROP }, { schema: CROP_IMAGE })
+        click()
+        expect(open).toHaveBeenCalledWith(`${window.origin}/api/products/1/attachments/a1/cropped`, '_blank')
+      })
+
+      it('opens the original when the crop cuts nothing, or the field has no crop tool', () => {
+        const open = vi.spyOn(window, 'open').mockReturnValue(null)
+        show({ ...IMAGE, cropOptions: { updated: true } }, { schema: CROP_IMAGE })
+        click()
+        wrapper.unmount()
+        show({ ...IMAGE, cropOptions: CROP })
+        click()
+        expect(open.mock.calls.map(([address]) => address)).toEqual([`${window.origin}/api/products/1/attachments/a1.jpg`, `${window.origin}/api/products/1/attachments/a1.jpg`])
+      })
+
+      it('opens the small picture of a crop that is not saved yet', async () => {
+        const open = vi.spyOn(window, 'open').mockReturnValue(null)
+        vi.stubGlobal('fetch', vi.fn(async () => ({ blob: async () => new Blob(['small']) })))
+        URL.createObjectURL = vi.fn(() => 'blob:small')
+        URL.revokeObjectURL = vi.fn()
+        show({ ...IMAGE, cropOptions: { ...CROP, updated: true }, cropPreview: 'data:image/jpeg;base64,PP' }, { schema: CROP_IMAGE })
+        click()
+        await flushPromises()
+        expect(fetch).toHaveBeenCalledWith('data:image/jpeg;base64,PP')
+        expect(open).toHaveBeenCalledWith('blob:small', '_blank')
+        vi.unstubAllGlobals()
+      })
+
+      it('opens a new picture that was just cropped, which has no address yet, and nothing before it is', async () => {
+        const open = vi.spyOn(window, 'open').mockReturnValue(null)
+        vi.stubGlobal('fetch', vi.fn(async () => ({ blob: async () => new Blob(['small']) })))
+        URL.createObjectURL = vi.fn(() => 'blob:small')
+        URL.revokeObjectURL = vi.fn()
+        show(NEW_IMAGE, { schema: CROP_IMAGE })
+        expect(wrapper.findComponent({ name: 'VImg' }).classes()).not.toContain('clickable')
+        click()
+        await flushPromises()
+        expect(open).not.toHaveBeenCalled()
+        await wrapper.setProps({ attachment: { ...NEW_IMAGE, cropOptions: { ...CROP, updated: true }, cropPreview: 'data:image/jpeg;base64,PP' } })
+        expect(wrapper.findComponent({ name: 'VImg' }).classes()).toContain('clickable')
+        click()
+        await flushPromises()
+        expect(open).toHaveBeenCalledWith('blob:small', '_blank')
+        vi.unstubAllGlobals()
+      })
+
+      it('can be clicked when it is saved', () => {
+        show(IMAGE, { schema: CROP_IMAGE })
+        expect(wrapper.findComponent({ name: 'VImg' }).classes()).toContain('clickable')
+      })
+    })
+
+    describe('the preview of a picture that has a crop', () => {
+      it('has the shape of the crop, whole, and its card is as wide as the shape says', () => {
+        show({ ...IMAGE, cropOptions: { left: 0, top: 0, width: 300, height: 300 } }, { schema: CROP_IMAGE })
+        expect(wrapper.get('.image-wrapper').classes()).toContain('is-cropped')
+        expect(wrapper.findComponent({ name: 'VImg' }).props('aspectRatio')).toBe(1)
+        wrapper.unmount()
+        show({ ...IMAGE, cropOptions: { left: 0, top: 0, width: 600, height: 200 } }, { schema: CROP_IMAGE })
+        expect(wrapper.findComponent({ name: 'VImg' }).props('aspectRatio')).toBe(3)
+        expect(wrapper.get('.image-wrapper').attributes('style')).toContain('max-width: 660px')
+      })
+
+      it('has the size of the output when the crop gives one', () => {
+        show({ ...IMAGE, cropOptions: { left: 0, top: 0, width: 900, height: 900, output: { width: 200, height: 100 } } }, { schema: CROP_IMAGE })
+        expect(wrapper.findComponent({ name: 'VImg' }).props('aspectRatio')).toBe(2)
+      })
+
+      it('is round when the crop is a circle', () => {
+        show({ ...IMAGE, cropOptions: { left: 0, top: 0, width: 300, height: 300, shape: 'circle' } }, { schema: CROP_IMAGE })
+        expect(wrapper.get('.image-wrapper').classes()).toContain('is-round')
+      })
+
+      it('keeps the shape of the card for a picture with no crop, and for a field with no crop tool', () => {
+        show(IMAGE, { schema: CROP_IMAGE })
+        expect(wrapper.get('.image-wrapper').classes()).not.toContain('is-cropped')
+        expect(wrapper.findComponent({ name: 'VImg' }).props('aspectRatio')).toBe(16 / 10)
+        wrapper.unmount()
+        show({ ...IMAGE, cropOptions: { left: 0, top: 0, width: 300, height: 300 } })
+        expect(wrapper.get('.image-wrapper').classes()).not.toContain('is-cropped')
+      })
+    })
+
+    describe('asking the server where to crop', () => {
+      it('is offered for a picture that is saved, and for a file the browser can send, not for another', () => {
+        show(IMAGE, { schema: CROP_IMAGE })
+        expect(dialog().props('suggest')).toBeTypeOf('function')
+        wrapper.unmount()
+        show({ ...NEW_IMAGE, file: new File(['x'], 'new.png', { type: 'image/png' }) }, { schema: CROP_IMAGE })
+        expect(dialog().props('suggest')).toBeTypeOf('function')
+        wrapper.unmount()
+        show(NEW_IMAGE, { schema: CROP_IMAGE })
+        expect(dialog().props('suggest')).toBeUndefined()
+      })
+
+      it('asks for a saved picture through its address, with the shape and how it is turned', async () => {
+        const get = vi.spyOn(RequestService, 'get').mockResolvedValue({ left: 1, top: 2, width: 3, height: 4 })
+        show(IMAGE, { schema: CROP_IMAGE })
+        const area = await dialog().props('suggest')(1.5, { rotate: 90, flipX: true, flipY: false })
+        expect(area).toEqual({ left: 1, top: 2, width: 3, height: 4 })
+        expect(get).toHaveBeenCalledWith('/api/products/1/attachments/a1/crop-suggestion?aspect=1.5&rotate=90&flipX=true&flipY=false')
+      })
+
+      it('sends a picture that is not saved with the question, to the resource of the field', async () => {
+        const post = vi.spyOn(RequestService, 'post').mockResolvedValue({ left: 0, top: 0, width: 10, height: 10 })
+        const file = new File(['x'], 'new.png', { type: 'image/png' })
+        show({ ...NEW_IMAGE, file }, { schema: CROP_IMAGE })
+        await dialog().props('suggest')(1, {})
+        const [url, body] = post.mock.calls[0]
+        expect(url).toBe('../api/products/attachments/crop-suggestion?aspect=1&rotate=0&flipX=false&flipY=false')
+        expect(body).toBeInstanceOf(FormData)
+        expect(body.get('image').name).toBe('new.png')
+      })
     })
   })
 })
@@ -293,11 +415,6 @@ describe('PreviewAttachment (one file with its name)', () => {
     expect(wrapper.classes()).not.toContain('odd')
   })
 
-  it('marks a field that can crop', () => {
-    preview(IMAGE, { schema: { crop: { width: 1, height: 1 } } })
-    expect(wrapper.classes()).toContain('can-crop')
-  })
-
   it('names a file for the list by its name and its id, or its position when it has none yet', () => {
     preview(IMAGE)
     expect(wrapper.vm.getKey(IMAGE)).toBe('lamp.jpg-a1')
@@ -320,10 +437,10 @@ describe('PreviewAttachment (one file with its name)', () => {
   })
 
   it('tells the field which file was cropped, by its position', () => {
-    const onCropperChange = vi.fn()
-    preview(IMAGE, { index: 3, onCropperChange })
-    wrapper.vm.onCropperChangeForAttachment({ coordinates: { left: 1 }, zoom: 2 })
-    expect(onCropperChange).toHaveBeenCalledWith(3, { coordinates: { left: 1 } })
+    const onCrop = vi.fn()
+    preview(IMAGE, { index: 3, onCrop })
+    wrapper.vm.onCropAt({ left: 1, updated: true }, 'data:image/jpeg;base64,CC')
+    expect(onCrop).toHaveBeenCalledWith(3, { left: 1, updated: true }, 'data:image/jpeg;base64,CC')
   })
 })
 

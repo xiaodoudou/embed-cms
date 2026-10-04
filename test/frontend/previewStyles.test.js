@@ -34,6 +34,21 @@ describe('the stylesheet of the upload previews', () => {
     expect(scss).not.toMatch(/\.drag-and-drop/)
   })
 
+  it('lets a picture with a crop have the shape of its crop, instead of the fixed shape of the card that would cut it again', () => {
+    const cropped = rule('&.is-cropped')
+    expect(cropped).toMatch(/max-height:\s*none/)
+    expect(cropped).toMatch(/min-height:\s*0/)
+    expect(cropped).toMatch(/\.v-img[\s\S]*max-height:\s*none/)
+  })
+
+  it('rounds a picture whose crop is a circle, the box and the picture both', () => {
+    const round = rule('&.is-round,')
+    expect(scss).toMatch(/&\.is-round \.v-img/)
+    expect(scss).toMatch(/&\.is-round img/)
+    expect(scss).toMatch(/border-radius:\s*50%/)
+    expect(round).toBeTruthy()
+  })
+
   it('cuts the name of a file with an ellipsis on its own line, so a long name cannot push anything out of the card', () => {
     const name = rule('.filename-text')
     expect(name).toMatch(/text-overflow:\s*ellipsis/)

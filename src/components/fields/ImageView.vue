@@ -22,14 +22,13 @@
     </form>
     <preview-multiple
       :attachments="getAttachments()" :move-attachment="moveAttachment" :schema="schema" :theme="theme" :is-image="isImage" :disabled="isLocked()" :on-end-drag="onEndDrag" :image-size="imageSize" :get-image-src="getImageSrc"
-      :remove-image="removeImage" :on-cropper-change="onCropperChange"
+      :remove-image="removeImage" :on-crop="onCrop"
     />
     <file-input-errors file-type="image" :schema="schema" :is-for-multiple-images="isForMultipleImages" :get-max-count="getMaxCount" />
   </div>
 </template>
 
 <script>
-  import _ from 'lodash'
   import AbstractField from '@m/AbstractField'
   import FileInputField from '@m/FileInputField'
   import PreviewMultiple from '@c/attachments/PreviewMultiple.vue'
@@ -42,16 +41,6 @@
       // a file of an image field that says nothing about its type (no extension, no stored type) is shown as an image
       unknownIsImage () {
         return true
-      },
-      /**
-       * @param {number} index of the attachment
-       * @param {{coordinates: Object}} data the crop, stored in its cropOptions and flagged updated
-       */
-      onCropperChange (index, data) {
-        const attachments = this.getAttachments()
-        _.set(attachments, `[${index}].cropOptions`, {data: {coordinates: data.coordinates}, updated: true})
-        this.attachments = attachments
-        this._value = attachments
       }
     }
   }

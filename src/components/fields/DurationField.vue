@@ -2,11 +2,10 @@
   <div class="duration-field" :class="{ 'is-readonly': isReadonly, 'is-disabled': isDisabled }">
     <field-label :schema="schema" :disabled="disabled" :input-id="inputId" />
     <v-text-field
-      :id="inputId" ref="input" :model-value="text" :name="schema.model" type="text" autocomplete="off" spellcheck="false"
-      :placeholder="template" persistent-placeholder hide-details="auto" class="duration-input"
-      :variant="getVariant()" :flat="get('flat')" :rounded="get('rounded')" :density="get('density')" :rules="[rule]" validate-on="blur"
+      :id="inputId" ref="input" :model-value="display" :name="schema.model" type="text" autocomplete="off" spellcheck="false" inputmode="numeric"
+      hide-details="auto" class="duration-input" :variant="getVariant()" :flat="get('flat')" :rounded="get('rounded')" :density="get('density')" :rules="[rule]" validate-on="blur"
       :disabled="isDisabled" :readonly="isReadonly" :aria-readonly="isReadonly ? 'true' : undefined" :aria-required="schema.required ? 'true' : undefined"
-      @update:model-value="onInput" @focus="selectAll" @blur="onBlur" @update:focused="onFieldFocus"
+      @beforeinput="onBeforeInput" @focus="onFocus" @click="placeCaret" @blur="onBlur" @update:focused="onFieldFocus"
     />
     <div v-if="showHint()" class="help-block">
       <v-icon size="small" icon="$information" />
@@ -18,20 +17,22 @@
 <script>
   import _ from 'lodash'
   import AbstractField from '@m/AbstractField'
-  import { durationOptions, durationTemplate, formatDurationInput, parseDuration, validateDurationText } from '@u/duration'
+  import { durationMask, durationOptions, maskCaret, maskDigits, maskSeconds, maskText, maskType, parseDuration, validateDuration } from '@u/duration'
 
   /**
-   * A length of time typed in one box, the way people write it: `1:30`, `1h 30m`, `90` (minutes), `1.5h`. It is kept as a number of seconds, or
-   * nothing when the box is empty, and written back in the form of the field when the box is left (a clock, `1:30`, for hours and minutes; letters,
-   * `2d 3h`, for days or a single unit). The box shows how to write it before anything is typed.
+   * A length of time typed in a box that keeps its template, `__:__`: the digits fill the slots from the left, `:` or a space ends the part (`1` and `:` make
+   * `01`), Backspace takes the last digit away, and a length pasted in any way of writing it (`1h 30m`, `90`) fills the slots. It is kept as a number of
+   * seconds, or nothing when no digit is typed. When the box is left what is typed is carried up (`00:90` becomes `01:30`).
    */
   export default {
     mixins: [AbstractField],
     emits: ['input'],
     data () {
       return {
-        // what is typed in the box (text, so that what is half typed stays as typed)
-        text: ''
+        // the digits typed, in the order of the slots of the mask (the colon and the letters are not in it)
+        digits: '',
+        // the length that was shown last, which the first part of the mask must be wide enough for (100 hours need three digits)
+        shown: 0
       }
     },
     computed: {
@@ -39,9 +40,13 @@
       options () {
         return durationOptions(this.schema)
       },
-      /** @returns {string} how to write a length, shown while the box is empty */
-      template () {
-        return durationTemplate(this.options.units)
+      /** @returns {Object} the slots of the box */
+      mask () {
+        return durationMask(this.options.units, this.options.max, this.shown)
+      },
+      /** @returns {string} the box: the mask, filled as far as the digits go */
+      display () {
+        return maskText(this.digits, this.mask)
       },
       /** @returns {*} the value of the record: the seconds */
       current () {
@@ -59,8 +64,8 @@
     watch: {
       // another value from outside (a record loaded, a discard): the box shows it. What is being typed is left alone.
       current (value) {
-        const typed = parseDuration(this.text, this.options.units)
-        if (!(typed === value || (_.isUndefined(typed) && _.isNil(value)) || _.isNaN(typed))) {
+        const typed = maskSeconds(this.digits, this.mask)
+        if (!(typed === value || (_.isUndefined(typed) && _.isNil(value)))) {
           this.showValue()
         }
       }
@@ -71,29 +76,66 @@
     methods: {
       /** Fills the box from the value. */
       showValue () {
-        this.text = _.isFinite(this.current) && this.current >= 0 ? formatDurationInput(this.current, this.options.units) : ''
+        const known = _.isFinite(this.current) && this.current >= 0
+        this.shown = known ? this.current : 0
+        this.digits = known ? maskDigits(this.current, this.mask) : ''
       },
-      /** @param {string|null} text what was typed: what is not a length holds nothing, and the rule says so */
-      onInput (text) {
+      /** @returns {HTMLInputElement|null} */
+      inputElement () {
+        return this.$el && this.$el.querySelector ? this.$el.querySelector('input') : null
+      },
+      /** Puts the caret where the next digit goes (the box is typed from the left, whatever is clicked). */
+      placeCaret () {
+        const input = this.inputElement()
+        if (input && input === document.activeElement && input.selectionStart === input.selectionEnd) {
+          const at = maskCaret(this.digits, this.mask)
+          input.setSelectionRange(at, at)
+        }
+      },
+      /** @param {string} digits what is typed now: it is written to the record and shown */
+      setDigits (digits) {
+        this.digits = digits
+        this._value = maskSeconds(digits, this.mask)
+        this.$emit('input', this._value, this.schema.model)
+        this.$nextTick(this.placeCaret)
+      },
+      /**
+       * Every change of the box comes here (and is stopped), whatever makes it: a key, a mobile keyboard, a paste, a cut.
+       * @param {InputEvent} event
+       */
+      onBeforeInput (event) {
+        event.preventDefault()
         if (this.isLocked()) {
           return
         }
-        this.text = _.isNil(text) ? '' : String(text)
-        const seconds = parseDuration(this.text, this.options.units)
-        this._value = _.isNaN(seconds) ? undefined : seconds
-        this.$emit('input', this._value, this.schema.model)
+        const input = event.target
+        // everything selected (the box was entered): what comes replaces it
+        const all = input.value.length > 0 && input.selectionStart === 0 && input.selectionEnd === input.value.length
+        const type = event.inputType || ''
+        if (/^insertFrom(Paste|Drop)/.test(type)) {
+          const seconds = parseDuration(event.data || _.invoke(event, 'dataTransfer.getData', 'text') || '', this.options.units)
+          if (_.isFinite(seconds)) {
+            this.shown = seconds
+            this.setDigits(maskDigits(seconds, this.mask))
+          }
+        } else if (/^insert/.test(type)) {
+          this.setDigits(_.reduce(_.toString(event.data), (digits, key) => maskType(digits, this.mask, key), all ? '' : this.digits))
+        } else if (/^delete/.test(type)) {
+          this.setDigits(all ? '' : this.digits.slice(0, -1))
+        }
       },
       /** @param {FocusEvent} event a box that is entered has its text selected, so that typing replaces it */
-      selectAll (event) {
+      onFocus (event) {
         if (event.target && event.target.select) {
           event.target.select()
         }
       },
-      /** Leaving the box: a length is written in the form of the field (90 is 1:30). */
+      /** Leaving the box: what is typed is carried up (00:90 is 01:30), and a part that was not finished counts as typed. */
       onBlur () {
-        const seconds = parseDuration(this.text, this.options.units)
+        const seconds = maskSeconds(this.digits, this.mask)
         if (_.isFinite(seconds)) {
-          this.text = formatDurationInput(seconds, this.options.units)
+          this.shown = seconds
+          this.digits = maskDigits(seconds, this.mask)
         }
       },
       /**
@@ -101,7 +143,7 @@
        * @returns {true|string}
        */
       rule () {
-        return validateDurationText(this.schema, this.text) || true
+        return validateDuration(this.schema, maskSeconds(this.digits, this.mask)) || true
       }
     }
   }
@@ -113,6 +155,7 @@
     max-width: 240px;
     input {
       font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
     }
   }
 }

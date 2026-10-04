@@ -91,36 +91,106 @@ const LETTERS = { days: 'd', hours: 'h', minutes: 'm', seconds: 's' }
 
 /**
  * @param {Array<{name: string}>} units
- * @returns {boolean} the units follow each other (hours, minutes; minutes, seconds; hours, minutes, seconds) and have no days: they are written as a clock, 1:30
+ * @returns {boolean} the units follow each other (hours, minutes; minutes, seconds; hours, minutes, seconds) and have no days: they are written as a clock, 01:30
  */
 function isClock (units) {
   const names = _.map(units, 'name')
   return units.length >= 2 && !_.includes(names, 'days') && _.every(names, (name, index) => index === 0 || UNITS[_.findIndex(UNITS, { name }) - 1].name === names[index - 1])
 }
 
+// how many digits the first part has when nothing says more: a clock has two (__:__), a unit alone or days a few more (___m, ___d __h)
+const FIRST_WIDTH = { days: 3, hours: 3, minutes: 3, seconds: 4 }
+const MAX_WIDTH = 6
+
 /**
- * @param {number} seconds
+ * The mask of the box, `__:__`: a slot for each digit of each unit. The units after the first have the digits their size needs (two for minutes
+ * after hours, four for seconds after hours); the first has as many as the field's most, or the length shown, needs, and at least what is usual.
  * @param {Array<{name: string, seconds: number}>} units
- * @returns {string} the length as the box shows it: a clock (`1:30`, `1:30:05`, `5:00`) for hours, minutes and seconds, letters (`2d 3h`, `90m`) for the rest
+ * @param {number} [max] the most the field takes, in seconds
+ * @param {number} [shown] the length shown, in seconds, which the first part must be wide enough for
+ * @returns {{units: Array<Object>, clock: boolean, widths: number[], letters: string[], size: number}} the units, how they are written, the digits of each and of all
  */
-export function formatDurationInput (seconds, units) {
-  const parts = splitDuration(seconds, units)
-  if (isClock(units)) {
-    return _.map(units, (unit, index) => index === 0 ? String(parts[unit.name]) : _.padStart(parts[unit.name], 2, '0')).join(':')
-  }
-  const shown = _.filter(units, unit => parts[unit.name] > 0)
-  return _.isEmpty(shown) ? `0${LETTERS[_.last(units).name]}` : _.map(shown, unit => `${parts[unit.name]}${LETTERS[unit.name]}`).join(' ')
+export function durationMask (units, max = 0, shown = 0) {
+  const clock = isClock(units)
+  const first = units[0]
+  const wanted = String(Math.floor(Math.max(max || 0, shown || 0) / first.seconds)).length
+  const usual = clock || (units.length > 1 && first.name !== 'days') ? 2 : FIRST_WIDTH[first.name]
+  const widths = _.map(units, (unit, index) => index === 0 ? Math.min(MAX_WIDTH, Math.max(usual, wanted)) : String(Math.floor(units[index - 1].seconds / unit.seconds) - 1).length)
+  return { units, clock, widths, letters: _.map(units, unit => LETTERS[unit.name]), size: _.sum(widths) }
 }
 
 /**
- * @param {Array<{name: string}>} units
- * @returns {string} what the empty box shows to say how to write a length: `h:mm`, `h:mm:ss`, `m:ss`, `0d 0h`
+ * @param {string} digits the digits typed, in the order of the slots
+ * @param {Object} mask
+ * @returns {string} the mask filled as far as the digits go: `13:__`, `__d __h`
  */
-export function durationTemplate (units) {
-  if (isClock(units)) {
-    return _.map(units, (unit, index) => index === 0 ? LETTERS[unit.name] : _.repeat(LETTERS[unit.name], 2)).join(':')
+export function maskText (digits, mask) {
+  let at = 0
+  const parts = _.map(mask.widths, (width) => {
+    const part = _.padEnd(digits.slice(at, at + width), width, '_')
+    at += width
+    return part
+  })
+  return mask.clock ? parts.join(':') : _.map(parts, (part, index) => part + mask.letters[index]).join(' ')
+}
+
+/**
+ * @param {string} digits
+ * @param {Object} mask
+ * @returns {number} where the next digit goes in the text of the mask: the first empty slot, or the end
+ */
+export function maskCaret (digits, mask) {
+  const index = maskText(digits, mask).indexOf('_')
+  return index === -1 ? maskText(digits, mask).length : index
+}
+
+/**
+ * @param {string} digits
+ * @param {Object} mask
+ * @returns {number|undefined} what the digits are worth in seconds, a part with no digit yet counting as zero; nothing for no digit
+ */
+export function maskSeconds (digits, mask) {
+  if (digits === '') {
+    return undefined
   }
-  return _.map(units, unit => `0${LETTERS[unit.name]}`).join(' ')
+  let at = 0
+  return _.sum(_.map(mask.units, (unit, index) => {
+    const part = digits.slice(at, at + mask.widths[index])
+    at += mask.widths[index]
+    return part === '' ? 0 : Number(part) * unit.seconds
+  }))
+}
+
+/**
+ * @param {number} seconds
+ * @param {Object} mask made for this length
+ * @returns {string} the digits of the length, every slot filled (5400 is `0130`), carried up: 99 minutes are `0139`
+ */
+export function maskDigits (seconds, mask) {
+  const parts = splitDuration(seconds, mask.units)
+  return _.map(mask.units, (unit, index) => _.padStart(String(parts[unit.name]), mask.widths[index], '0')).join('')
+}
+
+/**
+ * @param {string} digits
+ * @param {Object} mask
+ * @param {string} key what was typed: a digit goes into the next slot (when there is one), anything else (`:`, a space, a letter) ends the part that is being typed, which is
+ *   filled from the left with zeros (`1` and `:` make `01`)
+ * @returns {string} the digits after it
+ */
+export function maskType (digits, mask, key) {
+  if (/^\d$/.test(key)) {
+    return digits.length < mask.size ? digits + key : digits
+  }
+  let at = 0
+  for (const width of mask.widths) {
+    if (digits.length < at + width) {
+      const typed = digits.length - at
+      return typed > 0 ? digits.slice(0, at) + _.repeat('0', width - typed) + digits.slice(at) : digits
+    }
+    at += width
+  }
+  return digits
 }
 
 /**
@@ -165,14 +235,4 @@ export function validateDuration (schema, value) {
     return t('TL_DURATION_TOO_LONG', { max: formatDuration(max, units, localeTag(TranslateService.locale)) })
   }
   return null
-}
-
-/**
- * @param {Object} schema the field
- * @param {string} text what is typed in the box
- * @returns {string|null} what is wrong with the box (not a length, outside the limits, missing when required); null when it is fine
- */
-export function validateDurationText (schema, text) {
-  const seconds = parseDuration(text, durationOptions(schema).units)
-  return _.isNaN(seconds) ? TranslateService.get('TL_INVALID_DURATION') : validateDuration(schema, seconds)
 }

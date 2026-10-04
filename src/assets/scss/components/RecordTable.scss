@@ -468,7 +468,8 @@
   }
 
   .cell-color,
-  .cell-file {
+  .cell-file,
+  .cell-rating {
     display: flex;
     align-items: center;
     gap: var(--cms-space-2);
@@ -483,6 +484,7 @@
     border-radius: var(--cms-radius-xs);
   }
 
+  .cell-rating .v-icon,
   .cell-file .v-icon {
     flex: 0 0 auto;
     color: var(--cms-text-muted);

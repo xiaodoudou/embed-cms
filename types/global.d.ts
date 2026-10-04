@@ -70,7 +70,7 @@ declare namespace EmbedCMS {
   type FieldInput =
     | 'string' | 'transliterate' | 'text' | 'password' | 'email' | 'url'
     | 'number' | 'integer' | 'double'
-    | 'checkbox' | 'color'
+    | 'checkbox' | 'color' | 'rating'
     | 'date' | 'time' | 'datetime'
     | 'pillbox' | 'select' | 'multiselect'
     | 'json' | 'object' | 'code' | 'wysiwyg'
@@ -92,7 +92,7 @@ declare namespace EmbedCMS {
     readonly?: boolean
     /** Greyed out and not focusable */
     disabled?: boolean
-    /** Length of a text, value of a number */
+    /** Length of a text, value of a number, how many icons of a `rating` (1 to 10, 5 by default) */
     min?: number
     max?: number
     /** Pattern for the text types, or one per locale */
@@ -111,6 +111,14 @@ declare namespace EmbedCMS {
     maxCount?: number
     /** `image` and `file`: the largest file, in bytes */
     limit?: number
+    /** `rating`: what it is made of, star by default */
+    icon?: 'star' | 'heart' | 'thumb' | 'flame' | 'bolt' | 'circle'
+    /** `rating`: the colour of the filled icons, a colour of the theme */
+    color?: 'primary' | 'info' | 'success' | 'warning' | 'error'
+    /** `rating`: half steps */
+    half?: boolean
+    /** `rating`: whether the rating can be taken away (true by default) */
+    clearable?: boolean
     /** `imagemap`: the resources a record link can be from, by name or `{ resource, label, title }` (`label` is a Mustache template that names a record, `title` what the kind of record is called) */
     references?: Array<string | { resource: string, label?: string, title?: Translatable }>
     /** `imagemap`: what an area can link to: an address, a record (needs `references`), a value the person types */

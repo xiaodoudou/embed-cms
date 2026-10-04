@@ -33,7 +33,7 @@ describe('FormService (how each input type is built and checked)', () => {
     it('knows every input type the documentation lists', () => {
       expect(Object.keys(mapper).sort()).toEqual([
         'checkbox', 'code', 'color', 'cropimage', 'date', 'datetime', 'double', 'email', 'file', 'group', 'image', 'imagemap', 'integer', 'json', 'multiselect',
-        'number', 'object', 'paragraph', 'password', 'pillbox', 'select', 'string', 'text', 'time', 'transliterate', 'url', 'wysiwyg'
+        'number', 'object', 'paragraph', 'password', 'pillbox', 'rating', 'select', 'string', 'text', 'time', 'transliterate', 'url', 'wysiwyg'
       ])
     })
 
@@ -194,6 +194,45 @@ describe('FormService (how each input type is built and checked)', () => {
       expect(check('url', 'https://example.com/a?b=1')).toBe(true)
       expect(check('url', 'example.com')).toBe(false)
       expect(check('url', '')).toBe(false)
+    })
+  })
+
+  describe('rating', () => {
+    const MESSAGE = (max) => TranslateService.get('TL_INVALID_RATING', { max })
+
+    it('is built by its own component', () => {
+      expect(mapper.rating.type).toBe('RatingField')
+    })
+
+    it('says when a required rating is missing, and lets an optional one be empty', () => {
+      expect(check('rating', undefined, { required: true })).toBe(REQUIRED())
+      expect(check('rating', null, { required: true })).toBe(REQUIRED())
+      expect(check('rating', '', { required: true })).toBe(REQUIRED())
+      expect(check('rating', undefined, {})).toBe(true)
+      expect(check('rating', null, {})).toBe(true)
+    })
+
+    it('takes a number from 1 to the most the field says', () => {
+      for (const value of [1, 2, 3, 4, 5]) {
+        expect(check('rating', value, { required: true }), String(value)).toBe(true)
+      }
+      expect(check('rating', 6, {})).toBe(MESSAGE(5))
+      expect(check('rating', 0, {})).toBe(MESSAGE(5))
+      expect(check('rating', -1, {})).toBe(MESSAGE(5))
+      expect(check('rating', 7, { options: { max: 10 } })).toBe(true)
+      expect(check('rating', 11, { options: { max: 10 } })).toBe(MESSAGE(10))
+    })
+
+    it('takes a half only when the field has half steps', () => {
+      expect(check('rating', 2.5, {})).toBe(MESSAGE(5))
+      expect(check('rating', 2.5, { options: { half: true } })).toBe(true)
+      expect(check('rating', 2.3, { options: { half: true } })).toBe(MESSAGE(5))
+    })
+
+    it('refuses what is not a number', () => {
+      expect(check('rating', 'good', {})).toBe(MESSAGE(5))
+      expect(check('rating', NaN, {})).toBe(MESSAGE(5))
+      expect(check('rating', '3', {})).toBe(MESSAGE(5))
     })
   })
 

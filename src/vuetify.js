@@ -87,7 +87,17 @@ import {
   mdiPlus,
   mdiCursorDefaultOutline,
   mdiVectorPolygon,
-  mdiVectorSquare
+  mdiVectorSquare,
+  mdiStar,
+  mdiStarOutline,
+  mdiHeart,
+  mdiHeartOutline,
+  mdiThumbUp,
+  mdiThumbUpOutline,
+  mdiFire,
+  mdiFlash,
+  mdiFlashOutline,
+  mdiCircle
 } from '@mdi/js'
 import { createVuetify } from 'vuetify'
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
@@ -289,7 +299,17 @@ const vuetify = createVuetify({
       plus: mdiPlus,
       cursorDefaultOutline: mdiCursorDefaultOutline,
       vectorPolygon: mdiVectorPolygon,
-      vectorSquare: mdiVectorSquare
+      vectorSquare: mdiVectorSquare,
+      star: mdiStar,
+      starOutline: mdiStarOutline,
+      heart: mdiHeart,
+      heartOutline: mdiHeartOutline,
+      thumbUp: mdiThumbUp,
+      thumbUpOutline: mdiThumbUpOutline,
+      fire: mdiFire,
+      flash: mdiFlash,
+      flashOutline: mdiFlashOutline,
+      circle: mdiCircle
     },
     sets: {
       mdi

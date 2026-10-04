@@ -6,7 +6,7 @@
       <v-icon size="small" icon="$information" />
       <span>{{ schema.options.hint }}</span>
     </div>
-    <div class="paragraph-view" :class="{'can-add-more': !blockMoreItems()}" :style="{ '--paragraph-level': getParagraphLevel() }">
+    <div class="paragraph-view" :class="{'can-add-more': !blockMoreItems(), 'is-reordering': reordering, 'is-dragging': dragging}" :style="{ '--paragraph-level': getParagraphLevel() }">
       <div v-if="!blockMoreItems()" class="paragraph-header-bar">
         <label :id="`${inputId}-type-label`" :for="`${inputId}-type`" class="cms-visually-hidden">{{ $filters.translate('TL_PARAGRAPH_TYPE') }}</label>
         <v-autocomplete
@@ -36,14 +36,31 @@
         </div>
       </div>
       <div class="paragraph-content">
+        <!-- a compact list of the blocks, one line each, to move them with the buttons (or the keyboard) instead of dragging them across the form -->
+        <div v-if="items.length > 1 && !(disabled || schema.disabled)" class="paragraph-reorder-bar">
+          <v-btn class="reorder-toggle" variant="text" size="small" :aria-pressed="reordering ? 'true' : 'false'" @click="toggleReordering">
+            <v-icon start icon="$swapVertical" />{{ $filters.translate(reordering ? 'TL_DONE_REORDERING' : 'TL_REORDER') }}
+          </v-btn>
+        </div>
+        <div class="cms-visually-hidden" role="status" aria-live="polite">{{ announcement }}</div>
         <draggable
-          v-if="schema && subResourcesLoaded" :key="`${schema.model}-${key}`" :list="items" :class="{disabled, 'dynamic-layout-container': isDynamicLayoutContainer}" draggable=".item" v-bind="dragOptions" handle=".handle" :group="`${schema.model}-${key}`" ghost-class="ghost" :force-fallback="true"
-          @choose="onDragChoose" @unchoose="onDragUnchoose" @start="onDragStart" @end="onEndDrag"
+          v-if="schema && subResourcesLoaded" :key="`${schema.model}-${key}`" :list="items" :class="{disabled, 'dynamic-layout-container': isDynamicLayoutContainer}" draggable=".item" v-bind="dragOptions" handle=".drag-grip" :group="`${schema.model}-${key}`" ghost-class="ghost" :force-fallback="true"
+          @choose="onDragChoose" @unchoose="onDragUnchoose" @start="onBlockDragStart" @end="onEndDrag"
         >
-          <v-card v-for="(item, idx) in items" :key="`paragraph-item-${idx}`" :theme="theme" elevation="0" :class="getItemClasses(idx, item)" :style="getItemStyles(item)">
+          <v-card v-for="(item, idx) in items" :key="`paragraph-item-${idx}`" :data-block-index="idx" :theme="theme" elevation="0" :class="getItemClasses(idx, item)" :style="getItemStyles(item)">
             <v-card-title class="handle paragraph-header">
+              <span v-if="!(disabled || schema.disabled)" class="drag-grip" :title="$filters.translate('TL_DRAG_TO_REORDER')"><v-icon icon="$dragVertical" size="small" /></span>
               <div class="paragraph-title">{{ getLabel(item) }}</div>
+              <div v-if="summaryOf(item)" class="paragraph-summary">{{ summaryOf(item) }}</div>
               <div class="add-btn-wrapper">
+                <template v-if="reordering">
+                  <v-btn class="move-up" :disabled="idx === 0" variant="text" icon rounded size="small" :aria-label="`${$filters.translate('TL_MOVE_UP')}: ${getLabel(item)} ${idx + 1}`" @click="moveItem(idx, -1)">
+                    <v-icon icon="$arrowUp" />
+                  </v-btn>
+                  <v-btn class="move-down" :disabled="idx === items.length - 1" variant="text" icon rounded size="small" :aria-label="`${$filters.translate('TL_MOVE_DOWN')}: ${getLabel(item)} ${idx + 1}`" @click="moveItem(idx, 1)">
+                    <v-icon icon="$arrowDown" />
+                  </v-btn>
+                </template>
                 <v-btn class="remove-item" :disabled="disabled || schema.disabled" variant="text" icon rounded size="small" @click="onClickRemoveItem(item)">
                   <v-icon icon="$trashCanOutline" />
                 </v-btn>
@@ -107,6 +124,11 @@
         selectedType: false,
         subResourcesLoaded: false,
         key: crypto.randomUUID(),
+        // the compact list with the move buttons, and the drag in progress (the other blocks fold while a block is carried)
+        reordering: false,
+        dragging: false,
+        // what a screen reader is told after a block is moved
+        announcement: '',
         maxCount: _.get(this.schema, 'options.maxCount', -1),
         menuProps: {
           contentProps: {
@@ -494,10 +516,114 @@
         this.key = crypto.randomUUID()
         this.updateItems()
       },
-      /** Re-keys the list so the moved items render again, then writes the items back. */
-      onEndDrag () {
+      /** @returns {HTMLElement|null} the list of blocks of this field (not the one of a block inside it) */
+      ownContent () {
+        return this.$el.querySelector(':scope > .paragraph-view > .paragraph-content')
+      },
+      /** @returns {HTMLElement|null} what scrolls the form this field is in */
+      scroller () {
+        return this.$el.closest('.scroll-wrapper') || document.scrollingElement
+      },
+      /**
+       * A block is lifted: the others fold to their title bars, and the copy that follows the pointer too (see DragList.onDragStart).
+       * The folded list is much shorter, so the lifted block would jump up and leave the pointer far below the blocks. The list keeps
+       * the height it had, and gets as much space above as the blocks above the lifted one lost: it stays under the pointer, with
+       * the blocks it can be dropped on right around it.
+       * @param {{item?: HTMLElement}} evt the drag event of the library
+       */
+      onBlockDragStart (evt) {
+        const item = evt && evt.item
+        const content = this.ownContent()
+        const before = item ? item.getBoundingClientRect().top : 0
+        if (content) {
+          content.style.minHeight = `${content.offsetHeight}px`
+        }
+        this.dragging = true
+        // now, not at the next render: the measure below is of the folded list
+        const view = this.$el.querySelector(':scope > .paragraph-view')
+        if (view) {
+          view.classList.add('is-dragging')
+        }
+        if (item && content) {
+          const lost = before - item.getBoundingClientRect().top
+          content.style.paddingTop = lost > 0 ? `${lost}px` : ''
+        }
+        this.onDragStart()
+      },
+      /**
+       * A block is dropped: the list is drawn again with its forms, and the page scrolls to keep the block where it was dropped.
+       * Re-keys the list so the moved items render again, then writes the items back.
+       * @param {{item?: HTMLElement, newIndex?: number}} evt the drag event of the library
+       */
+      onEndDrag (evt) {
+        const item = evt && evt.item
+        const scroller = this.scroller()
+        const before = item && item.isConnected ? item.getBoundingClientRect().top : null
+        const index = evt && evt.newIndex
+        this.dragging = false
+        const content = this.ownContent()
+        if (content) {
+          content.style.minHeight = ''
+          content.style.paddingTop = ''
+        }
+        this.key = crypto.randomUUID()
+        this.$nextTick(() => {
+          const dropped = _.find(this.$el.querySelectorAll(`[data-block-index="${index}"]`), (el) => el.closest('.paragraph-field') === this.$el)
+          if (before !== null && scroller && dropped) {
+            scroller.scrollTop += dropped.getBoundingClientRect().top - before
+          }
+        })
+        this.updateItems()
+      },
+      /** Shows the blocks as one line each, with the buttons to move them, or back as forms. */
+      toggleReordering () {
+        this.reordering = !this.reordering
+      },
+      /**
+       * @param {Object} item a block
+       * @returns {string} the start of its first text (a heading, a title...), to tell the blocks of a compact list apart
+       */
+      summaryOf (item) {
+        const values = _.get(item, '_value', {})
+        for (const key of _.keys(values)) {
+          let value = values[key]
+          if (_.startsWith(key, '_')) {
+            continue
+          }
+          if (_.isPlainObject(value)) {
+            value = _.get(value, this.schema.locale, _.first(_.values(value)))
+          }
+          const text = _.isString(value) ? value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : ''
+          if (text) {
+            return _.truncate(text, { length: 60 })
+          }
+        }
+        return ''
+      },
+      /**
+       * Moves a block one place, writes the items back, and tells a screen reader where it went.
+       * @param {number} idx the block
+       * @param {number} delta -1 up, 1 down; nothing past the ends
+       */
+      moveItem (idx, delta) {
+        const to = idx + delta
+        if (to < 0 || to >= this.items.length) {
+          return
+        }
+        const items = [...this.items]
+        items.splice(to, 0, items.splice(idx, 1)[0])
+        this.items = items
         this.key = crypto.randomUUID()
         this.updateItems()
+        this.announcement = TranslateService.get('TL_MOVED_TO_POSITION', { name: `${this.getLabel(items[to])} ${this.summaryOf(items[to])}`.trim(), pos: to + 1, total: items.length })
+        // the list is drawn again: the focus goes back to the button that was pressed, now on the block's new line
+        this.$nextTick(() => {
+          const line = _.find(this.$el.querySelectorAll(`[data-block-index="${to}"]`), (el) => el.closest('.paragraph-field') === this.$el)
+          const button = line && line.querySelector(delta < 0 ? '.move-up:not([disabled])' : '.move-down:not([disabled])') || (line && line.querySelector('.move-up:not([disabled]), .move-down:not([disabled])'))
+          if (button) {
+            button.focus()
+          }
+        })
       },
       /**
        * @param {*} value a DOM event is ignored
@@ -740,7 +866,7 @@
   /* Ensure nested paragraph sticky headers work */
   overflow: visible;
 
-  .handle, .file-item-handle {
+  .file-item-handle {
     cursor: grab;
     &:active {
       cursor: grabbing;
@@ -839,6 +965,8 @@
   border-radius: 6px 6px 0 0;
 }
 .paragraph-header {
+  // a press on the bar (to move the pointer to a button, or for nothing) must not select the text around it
+  user-select: none;
   background-color: $paragraph-top-bar-background;
   color: $paragraph-top-bar-color !important;
   display: flex;
@@ -848,13 +976,66 @@
   height: 34px;
   gap: var(--cms-space-1);
   padding-right: 0;
-  padding-left: 16px;
+  padding-left: 4px;
   // the top corners follow the rounded border of the block card (8px less its 2px border)
   border-radius: 6px 6px 0 0;
   .paragraph-title {
     height: 100%;
+    flex: 0 0 auto;
     @include subtext;
   }
+  // the start of the first text of the block, to tell the blocks of a compact list apart
+  .paragraph-summary {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--cms-text-muted);
+    font-weight: normal;
+    @include subtext;
+    &::before {
+      content: "—";
+      margin-right: var(--cms-space-2);
+    }
+  }
+}
+
+// The only place that starts a drag: a small grip, so a press anywhere else on the bar selects text or scrolls as usual
+.drag-grip {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  padding: 0 var(--cms-space-1);
+  color: var(--cms-text-muted);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  border-radius: var(--cms-radius-sm, 4px);
+  &:hover {
+    color: var(--cms-text);
+    background: var(--cms-surface-3);
+  }
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.paragraph-reorder-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--cms-space-1) var(--cms-space-2);
+}
+
+// A block carried (the others fold to their title bars, which also brings every place within reach), the compact list, and the
+// copy that follows the pointer: no forms, only the bars
+.paragraph-view.is-dragging .item-main-wrapper,
+.paragraph-view.is-reordering .item-main-wrapper,
+.sortable-fallback .item-main-wrapper {
+  display: none;
+}
+.sortable-fallback {
+  height: auto;
 }
 
 .item {

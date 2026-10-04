@@ -126,6 +126,103 @@ describe('ParagraphView (blocks)', () => {
       expect(lastEmitted()[0].map((item) => item._type)).toEqual(['block_media'])
     })
 
+    it('starts a drag from the grip alone, not from the whole title bar', async () => {
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'one' }, { _type: 'block_media' }] })
+      expect(cards()[0].find('.drag-grip').exists()).toBe(true)
+      expect(wrapper.findComponent(draggable).attributes('handle')).toBe('.drag-grip')
+    })
+
+    it('has no grip, and no way to reorder, on a field that is locked', async () => {
+      await paragraph({ disabled: true }, { blocks: [{ _type: 'block_text', heading: 'one' }, { _type: 'block_text', heading: 'two' }] })
+      expect(wrapper.find('.drag-grip').exists()).toBe(false)
+      expect(wrapper.find('.reorder-toggle').exists()).toBe(false)
+    })
+
+    describe('the compact list to reorder', () => {
+      const three = [{ _type: 'block_text', heading: 'one' }, { _type: 'block_text', heading: 'two' }, { _type: 'block_text', heading: 'three' }]
+
+      it('is offered with two blocks or more, and folds every block to its title bar, with the start of its first text', async () => {
+        await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'only' }] })
+        expect(wrapper.find('.reorder-toggle').exists()).toBe(false)
+        wrapper.unmount()
+        await paragraph({}, { blocks: three })
+        expect(wrapper.find('.paragraph-view').classes()).not.toContain('is-reordering')
+        expect(wrapper.find('.move-up').exists()).toBe(false)
+        await wrapper.get('.reorder-toggle').trigger('click')
+        expect(wrapper.find('.paragraph-view').classes()).toContain('is-reordering')
+        expect(wrapper.get('.reorder-toggle').attributes('aria-pressed')).toBe('true')
+        expect(wrapper.findAll('.paragraph-summary').map((el) => el.text())).toEqual(['one', 'two', 'three'])
+        await wrapper.get('.reorder-toggle').trigger('click')
+        expect(wrapper.find('.paragraph-view').classes()).not.toContain('is-reordering')
+      })
+
+      it('writes the start of the first text as it is, markup and runs of spaces apart', async () => {
+        await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'First' }, { _type: 'block_text', heading: '<b>Second</b>   block\n of  text' }, { _type: 'block_text', heading: 'x'.repeat(100) }] })
+        await wrapper.get('.reorder-toggle').trigger('click')
+        const summaries = wrapper.findAll('.paragraph-summary').map((el) => el.text())
+        expect(summaries[0]).toBe('First')
+        expect(summaries[1]).toBe('Second block of text')
+        expect(summaries[2]).toHaveLength(60)
+      })
+
+      it('moves a block down and up with the buttons, reports the new order, and cannot go past the ends', async () => {
+        await paragraph({}, { blocks: three })
+        await wrapper.get('.reorder-toggle').trigger('click')
+        expect(cards()[0].get('.move-up').attributes('disabled')).toBeDefined()
+        expect(cards()[2].get('.move-down').attributes('disabled')).toBeDefined()
+        await cards()[0].get('.move-down').trigger('click')
+        await flushPromises()
+        expect(lastEmitted()[0].map((item) => item.heading)).toEqual(['two', 'one', 'three'])
+        expect(lastEmitted()[1]).toBe('blocks')
+        await cards()[2].get('.move-up').trigger('click')
+        await flushPromises()
+        expect(lastEmitted()[0].map((item) => item.heading)).toEqual(['two', 'three', 'one'])
+        wrapper.vm.moveItem(0, -1)
+        wrapper.vm.moveItem(2, 1)
+        expect(lastEmitted()[0].map((item) => item.heading)).toEqual(['two', 'three', 'one'])
+      })
+
+      it('tells a screen reader where the block went', async () => {
+        await paragraph({}, { blocks: three })
+        await wrapper.get('.reorder-toggle').trigger('click')
+        await cards()[0].get('.move-down').trigger('click')
+        await flushPromises()
+        expect(wrapper.get('[role=status]').text()).toBe('Text block one moved to position 2 of 3')
+      })
+
+      it('keeps the list as long as it was, and gives it the space the blocks above the lifted one lose, so the lifted block stays under the pointer', async () => {
+        await paragraph({}, { blocks: three })
+        // a layout engine measures: the lifted block is at 500 px before the others fold, and at 100 after
+        const tops = [500, 100]
+        const item = { getBoundingClientRect: () => ({ top: tops.length > 1 ? tops.shift() : tops[0] }) }
+        const content = wrapper.find('.paragraph-content').element
+        wrapper.vm.onBlockDragStart({ item })
+        expect(content.style.minHeight).not.toBe('')
+        expect(content.style.paddingTop).toBe('400px')
+        expect(wrapper.find('.paragraph-view').classes()).toContain('is-dragging')
+        wrapper.vm.onEndDrag({ item: { isConnected: false }, newIndex: 1 })
+        expect(content.style.minHeight).toBe('')
+        expect(content.style.paddingTop).toBe('')
+      })
+
+      it('adds no space when the blocks above lose nothing (the first block is lifted)', async () => {
+        await paragraph({}, { blocks: three })
+        const item = { getBoundingClientRect: () => ({ top: 300 }) }
+        wrapper.vm.onBlockDragStart({ item })
+        expect(wrapper.find('.paragraph-content').element.style.paddingTop).toBe('')
+      })
+
+      it('folds the other blocks while one is carried, and unfolds them when it is dropped', async () => {
+        await paragraph({}, { blocks: three })
+        wrapper.vm.onBlockDragStart()
+        await wrapper.vm.$nextTick()
+        expect(wrapper.find('.paragraph-view').classes()).toContain('is-dragging')
+        wrapper.vm.onEndDrag()
+        await wrapper.vm.$nextTick()
+        expect(wrapper.find('.paragraph-view').classes()).not.toContain('is-dragging')
+      })
+    })
+
     it('drops the files of a removed media block from the record', async () => {
       const model = {
         blocks: [{ _type: 'block_media', id: 'f1' }],

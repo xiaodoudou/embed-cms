@@ -17,6 +17,7 @@ const KIND_BY_INPUT = {
   time: 'time',
   image: 'image',
   cropimage: 'image',
+  imagemap: 'image',
   file: 'file',
   select: 'select',
   multiselect: 'multi',

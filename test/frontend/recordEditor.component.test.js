@@ -71,11 +71,11 @@ afterEach(() => {
 
 describe('RecordEditor', () => {
   describe('the fields that take files', () => {
-    const withFiles = { ...resource, schema: [...resource.schema, { field: 'photo', input: 'image', label: 'Photo', localised: false }, { field: 'avatar', input: 'cropimage', label: 'Avatar', localised: false }, { field: 'doc', input: 'file', label: 'Doc', localised: false }] }
+    const withFiles = { ...resource, schema: [...resource.schema, { field: 'photo', input: 'image', label: 'Photo', localised: false }, { field: 'avatar', input: 'cropimage', label: 'Avatar', localised: false }, { field: 'plan', input: 'imagemap', label: 'Plan', localised: false }, { field: 'doc', input: 'file', label: 'Doc', localised: false }] }
 
-    it('are the file, the image and the crop image field', async () => {
+    it('are the file, the image, the crop image and the image map field', async () => {
       await editor({ _local: true }, { resource: withFiles })
-      expect(['photo', 'avatar', 'doc', 'name', 'price'].map(model => wrapper.vm.isAttachmentField(model))).toEqual([true, true, true, false, false])
+      expect(['photo', 'avatar', 'plan', 'doc', 'name', 'price'].map(model => wrapper.vm.isAttachmentField(model))).toEqual([true, true, true, true, false, false])
     })
   })
 
@@ -127,6 +127,9 @@ describe('RecordEditor', () => {
       expect(wrapper.vm.attachmentWasUpdated(saved, { ...saved })).toBe(false)
       expect(wrapper.vm.attachmentWasUpdated(saved, { ...saved, order: 2 })).toBe(true)
       expect(wrapper.vm.attachmentWasUpdated(saved, { ...saved, cropOptions: { updated: true } })).toBe(true)
+      // the areas of an image map too: only when they were just made in the tool
+      expect(wrapper.vm.attachmentWasUpdated(saved, { ...saved, imageMap: { areas: [{ id: 'a' }], updated: true } })).toBe(true)
+      expect(wrapper.vm.attachmentWasUpdated(saved, { ...saved, imageMap: { areas: [{ id: 'a' }] } })).toBe(false)
       expect(wrapper.vm.attachmentWasUpdated(saved, { ...saved, _name: 'cover' })).toBe(true)
       // a file that never had an order gets one on the first drag: sent too
       expect(wrapper.vm.attachmentWasUpdated({ _id: 'a1', _name: 'photo' }, { _id: 'a1', _name: 'photo', order: 1, orderUpdated: true })).toBe(true)

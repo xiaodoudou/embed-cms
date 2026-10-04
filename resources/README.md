@@ -19,6 +19,7 @@ real project: copy the field you need into your own resource.
 | Choice | `choice_color` | color |
 | Media | `media_images` | image |
 | Media | `media_crop` | cropimage (the crop tool: free or fixed shapes, a fixed size, a circle, several pictures) |
+| Media | `media_map` | imagemap (areas on a picture, with an address or a record to link to) |
 | Media | `media_files` | file |
 | Structured | `structured_data` | json, object |
 | Structured | `structured_blocks` | paragraph |

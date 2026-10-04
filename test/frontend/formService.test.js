@@ -32,7 +32,7 @@ describe('FormService (how each input type is built and checked)', () => {
   describe('the input types', () => {
     it('knows every input type the documentation lists', () => {
       expect(Object.keys(mapper).sort()).toEqual([
-        'checkbox', 'code', 'color', 'cropimage', 'date', 'datetime', 'double', 'email', 'file', 'group', 'image', 'integer', 'json', 'multiselect',
+        'checkbox', 'code', 'color', 'cropimage', 'date', 'datetime', 'double', 'email', 'file', 'group', 'image', 'imagemap', 'integer', 'json', 'multiselect',
         'number', 'object', 'paragraph', 'password', 'pillbox', 'select', 'string', 'text', 'time', 'transliterate', 'url', 'wysiwyg'
       ])
     })

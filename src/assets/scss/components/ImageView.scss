@@ -98,6 +98,7 @@
   }
   // the picture fills the width of the card, cropped to a fixed shape (cover), at most 140px high, and sits in the middle
   .image-wrapper {
+    position: relative;
     width: 100%;
     max-height: 140px;
     min-height: 100px;

@@ -98,7 +98,7 @@
         dirtyInfo: { locales: [], shared: [], paths: [] },
         attempted: false,
         invalidSummary: '',
-        fileInputTypes: ['file', 'img', 'image', 'cropimage', 'imageView', 'attachmentView'],
+        fileInputTypes: ['file', 'img', 'image', 'cropimage', 'imagemap', 'imageView', 'attachmentView'],
         cachedMap: {},
         editingRecord: {},
         originalFieldList: [],
@@ -632,7 +632,8 @@
         if (_.get(newA, '_name', '?') !== _.get(oldA, '_name', '?') ||
           _.get(newA, '_payload.index', 0) !== _.get(oldA, '_payload.index', 0) ||
           _.get(newA, 'order') !== _.get(oldA, 'order') ||
-          _.get(newA, 'cropOptions.updated', false)) {
+          _.get(newA, 'cropOptions.updated', false) ||
+          _.get(newA, 'imageMap.updated', false)) {
           return true
         }
         return false

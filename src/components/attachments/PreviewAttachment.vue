@@ -14,7 +14,7 @@
       <show-attachment
         class-name="row-handle"
         :theme="theme" :attachment="attachment" :image-size="imageSize" :get-image-src="getImageSrc"
-        :remove-image="removeImage" :is-image="isImage" :schema="schema" :on-crop="onCropAt"
+        :remove-image="removeImage" :is-image="isImage" :schema="schema" :on-crop="onCropAt" :on-map="onMapAt"
       />
       <!-- on a picture: a bin in its corner, so that a file alone (no grip, no position) has no empty row above it -->
       <v-btn v-if="!locked && isImage(attachment)" class="preview-remove" variant="text" icon size="x-small" :aria-label="$filters.translate('TL_REMOVE')" :title="$filters.translate('TL_REMOVE')" @click="removeImage(attachment, index)">
@@ -60,7 +60,8 @@
       count: { type: Number, default: 0 },
       moveAttachment: { type: Function, default: () => {} },
       isImage: { type: Function, default: () => {} },
-      onCrop: { type: Function, default: () => {} }
+      onCrop: { type: Function, default: () => {} },
+      onMap: { type: Function, default: () => {} }
     },
     methods: {
       /** @returns {string} the translation key of the dirty reason of the attachment, TL_DIRTY without a specific one */
@@ -92,6 +93,10 @@
        */
       onCropAt(cropOptions, preview) {
         this.onCrop(this.index, cropOptions, preview)
+      },
+      /** @param {Object} imageMap the map made in the tool */
+      onMapAt(imageMap) {
+        this.onMap(this.index, imageMap)
       }
     }
   }

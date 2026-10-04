@@ -83,7 +83,11 @@ import {
   mdiAutoFix,
   mdiRestore,
   mdiCircleOutline,
-  mdiSquareOutline
+  mdiSquareOutline,
+  mdiPlus,
+  mdiCursorDefaultOutline,
+  mdiVectorPolygon,
+  mdiVectorSquare
 } from '@mdi/js'
 import { createVuetify } from 'vuetify'
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
@@ -281,7 +285,11 @@ const vuetify = createVuetify({
       autoFix: mdiAutoFix,
       restore: mdiRestore,
       circleOutline: mdiCircleOutline,
-      squareOutline: mdiSquareOutline
+      squareOutline: mdiSquareOutline,
+      plus: mdiPlus,
+      cursorDefaultOutline: mdiCursorDefaultOutline,
+      vectorPolygon: mdiVectorPolygon,
+      vectorSquare: mdiVectorSquare
     },
     sets: {
       mdi

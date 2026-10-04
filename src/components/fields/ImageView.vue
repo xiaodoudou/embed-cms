@@ -22,7 +22,7 @@
     </form>
     <preview-multiple
       :attachments="getAttachments()" :move-attachment="moveAttachment" :schema="schema" :theme="theme" :is-image="isImage" :disabled="isLocked()" :on-end-drag="onEndDrag" :image-size="imageSize" :get-image-src="getImageSrc"
-      :remove-image="removeImage" :on-crop="onCrop"
+      :remove-image="removeImage" :on-crop="onCrop" :on-map="onMap"
     />
     <file-input-errors file-type="image" :schema="schema" :is-for-multiple-images="isForMultipleImages" :get-max-count="getMaxCount" />
   </div>

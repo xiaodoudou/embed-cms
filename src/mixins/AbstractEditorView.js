@@ -35,6 +35,9 @@ export default {
               log.debug('detected cropOptions, will add it to the request')
               data.append('cropOptions', JSON.stringify(attachment.cropOptions))
             }
+            if (_.get(attachment, 'imageMap', false)) {
+              data.append('imageMap', JSON.stringify(attachment.imageMap))
+            }
             if (_.get(attachment, 'orderUpdated', false) && _.get(attachment, 'order', false)) {
               log.debug('detected orderUpdated, will add it to the request')
               data.append('order', attachment.order)
@@ -63,7 +66,7 @@ export default {
      * @param {Array<string>} fieldsToKeep
      * @returns {Array<Object>}
      */
-    formatAttachments(attachments, fieldsToKeep = ['_id', 'cropOptions', 'order', '_name']) {
+    formatAttachments(attachments, fieldsToKeep = ['_id', 'cropOptions', 'imageMap', 'order', '_name']) {
       return _.map(attachments, (attachment)=> _.pick(attachment, fieldsToKeep))
     },
     /**

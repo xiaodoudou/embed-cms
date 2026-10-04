@@ -401,6 +401,11 @@ const typeMapper = {
     type: 'ImageView',
     validator: customValidators.image
   },
+  // an image field with an image map: the areas laid over the picture, each with a title and a link (see utils/imageMap.js)
+  imagemap: {
+    type: 'ImageView',
+    validator: customValidators.image
+  },
   file: {
     type: 'AttachmentView',
     validator: customValidators.file

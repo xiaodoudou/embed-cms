@@ -35,6 +35,7 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 - **The abnormal files of a record are pinned by tests:** a file uploaded without a language on a field that is now localised, with a language on a field that no longer is, or past a lowered `maxCount`, stays visible and flagged in the admin.
 - A Vue 2 directive that could not run in Vue 3 (and was used nowhere) is gone; the leftovers of a `markets` resource in the sync are gone.
 - Two tests that load the whole package wait as long as a slow disk needs (a WSL mount loads it in 25 s, a native disk in 1 s). The catalogue test reads the input types from `const typeMapper` (it looked for `let`, gone with `prefer-const`, and saw no type at all).
+- **Dragging a saved image or file to another place is saved:** the editor only sent an attachment again when its name, position or crop had changed, never its order, so a reorder was lost at the next load. The order change counts as an update now (the server already took it).
 - **No 404 in the console at every admin load:** the admin asked `/replicator/resources` to learn whether replication runs (404 meant off). `/admin/config` now carries `disableReplication`, and the Replicator page is listed from it.
 - Ctrl+/ reaches the search field from a keyboard where `/` needs Shift (a French one); Ctrl+A in a rich text or a drop-down selects in the field, not the records of a multiselect page.
 

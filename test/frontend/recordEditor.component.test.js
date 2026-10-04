@@ -70,6 +70,19 @@ afterEach(() => {
 })
 
 describe('RecordEditor', () => {
+  describe('the attachments a save sends', () => {
+    it('counts a file dragged to another place (its order changed) as an update, as a rename or a crop is', async () => {
+      await editor()
+      const saved = { _id: 'a1', _name: 'photo', order: 1 }
+      expect(wrapper.vm.attachmentWasUpdated(saved, { ...saved })).toBe(false)
+      expect(wrapper.vm.attachmentWasUpdated(saved, { ...saved, order: 2 })).toBe(true)
+      expect(wrapper.vm.attachmentWasUpdated(saved, { ...saved, cropOptions: { updated: true } })).toBe(true)
+      expect(wrapper.vm.attachmentWasUpdated(saved, { ...saved, _name: 'cover' })).toBe(true)
+      // a file that never had an order gets one on the first drag: sent too
+      expect(wrapper.vm.attachmentWasUpdated({ _id: 'a1', _name: 'photo' }, { _id: 'a1', _name: 'photo', order: 1, orderUpdated: true })).toBe(true)
+    })
+  })
+
   describe('a new record', () => {
     it('offers Create, no delete and no unsaved marker', async () => {
       await editor()

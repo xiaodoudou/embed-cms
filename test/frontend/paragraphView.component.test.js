@@ -362,6 +362,19 @@ describe('ParagraphView (blocks)', () => {
       expect(model._attachments.map((attachment) => attachment._id)).toEqual(['a2'])
     })
 
+    it('drops the files of a removed crop image field from the record, as it does for an image', async () => {
+      for (const input of ['image', 'cropimage', 'file']) {
+        const model = {
+          blocks: [{ _type: 'block_media', id: 'f1' }],
+          _attachments: [{ _id: 'a1', _fields: { fileItemId: 'f1' } }, { _id: 'a2', _fields: { fileItemId: 'f2' } }]
+        }
+        await paragraph({}, model)
+        wrapper.vm.onClickRemoveItem({ ...wrapper.vm.items[0], input, id: 'f1' })
+        expect(model._attachments.map((attachment) => attachment._id), input).toEqual(['a2'])
+        wrapper.unmount()
+      }
+    })
+
     it('does not add anything while no type is chosen', async () => {
       await paragraph()
       wrapper.vm.selectedType = false

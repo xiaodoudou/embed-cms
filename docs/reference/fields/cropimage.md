@@ -35,11 +35,15 @@ Everything of [image](image.md) applies (`required`, `maxCount`, `accept`, `limi
 - **Auto:** puts the frame where [smart cropping](../SMART_CROPPING.md) would, for the shape that is chosen. It asks the server, which sends back the position (nothing is cut or stored).
 - **Reset** goes back to what the tool had when it opened, **Remove crop** serves the picture as it was uploaded.
 
+## In the form
+
+The picture of the field shows the cut, in the shape of the crop and whole (round for a circle), with an **Edit crop** button under it. A click on the picture opens the cut in a new tab: the small picture of the crop while it is not saved, the cut the API makes once it is. Until the record is saved the field shows the crop as the tool made it.
+
 Apply keeps the crop with the picture. A new picture is uploaded with it when the record is saved; the crop of a saved picture is an update of the attachment.
 
 ## Stored value
 
-The same attachment descriptors as for [image](image.md), with the recipe under `cropOptions` and the address of the cut under `cropUrl`:
+The same attachment descriptors as for [image](image.md), with the recipe under `cropOptions` and the address of the cut under `cropUrl`. `url` stays the address of the original, which is never replaced: read `cropUrl` for the cropped picture (it is only there when the picture has a crop).
 
 ```json
 {

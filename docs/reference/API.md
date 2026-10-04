@@ -49,7 +49,7 @@ A record is the object you saved, with a few fields the CMS adds. Every added fi
 
 A **localised field** holds one value per locale (`"title": { "enUS": "…", "zhCN": "…" }`); a field with `localised: false` holds the value itself. To query a localised field, name the locale: `"title.enUS"`.
 
-**Attachments** come back grouped under the name of the field they belong to (`cover` above), as an array, with a `url` to download them. A resize cache and a crop are made on request (see below).
+**Attachments** come back grouped under the name of the field they belong to (`cover` above), as an array, with a `url` to download them. A resize cache and a crop are made on request (see below). `url` is always the original; an attachment that has a crop (a [cropimage](fields/cropimage.md) field) also has a `cropUrl`, the address of the cut.
 
 ## REST
 

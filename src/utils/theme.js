@@ -14,6 +14,19 @@ export function applyThemeToDocument (name) {
 }
 
 /**
+ * Runs a change of theme with the transitions of the page turned off for the frame it is drawn in: every colour, border and shadow of the page changes at once, and
+ * letting each one fade over a tenth of a second makes the switch look slow and costs a repaint on every frame of the fade.
+ * @param {function(): void} change
+ */
+export function withoutTransitions (change) {
+  const root = document.documentElement
+  root.classList.add('theme-switching')
+  change()
+  // two frames: the one that applies the new colours, and the one that shows them
+  requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('theme-switching')))
+}
+
+/**
  * The theme to show, the same way on the login page and in the admin: light when dark mode is turned off
  * (disableDarkMode, the server default, also when the configuration could not be read), otherwise the preference given
  * ('dark' or 'light': the system's on the login page, the user's in the admin).
@@ -43,4 +56,4 @@ export function savedUserTheme (resource, record, user, config) {
   return theme === pickTheme(config, user.theme) ? null : theme
 }
 
-export default { applyThemeToDocument, pickTheme, savedUserTheme }
+export default { applyThemeToDocument, withoutTransitions, pickTheme, savedUserTheme }

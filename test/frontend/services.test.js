@@ -275,4 +275,21 @@ describe('LoginService', () => {
     expect(fetchMock.mock.calls[0][0]).toMatch(/changeTheme\/light$/)
     expect(LoginService.user.theme).toBe('light')
   })
+  it('changeTheme keeps the theme it is asked for, whatever the user has', async () => {
+    fetchMock.mockResolvedValue(respond({}))
+    LoginService.user = { theme: 'light' }
+    expect(await LoginService.changeTheme('light')).toBe('light')
+    expect(fetchMock.mock.calls.at(-1)[0]).toMatch(/changeTheme\/light$/)
+    expect(await LoginService.changeTheme('dark')).toBe('dark')
+    expect(LoginService.user.theme).toBe('dark')
+  })
+  it('changeTheme says nothing when the server cannot keep the theme, and tells the listeners the theme that is still the one', async () => {
+    fetchMock.mockRejectedValue(new Error('offline'))
+    const listener = vi.fn()
+    LoginService.events.on('changed-theme', listener)
+    LoginService.user = { theme: 'light' }
+    expect(await LoginService.changeTheme('dark')).toBeUndefined()
+    expect(listener.mock.calls.map(call => call[0])).toEqual(['dark', 'light'])
+    expect(LoginService.user.theme).toBe('light')
+  })
 })

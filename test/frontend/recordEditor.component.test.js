@@ -52,6 +52,8 @@ const edit = async (changes) => {
 }
 
 beforeEach(() => {
+  // an error toast is also written to the console (see mixins/Notification): the tests that expect one check it, the others do not print it
+  vi.spyOn(console, 'error').mockImplementation(() => {})
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
   notifications = []
   dialogs = { send: vi.fn(), show: vi.fn() }
@@ -172,12 +174,14 @@ describe('RecordEditor', () => {
       expect(error.message).toContain('Name')
       expect(button('.status-missing').exists()).toBe(true)
       expect(button('.status-missing').text()).toContain('1')
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Name'))
     })
 
     it('can be saved again after the refusal (the button is not stuck)', async () => {
       await editor()
       await button('.update').trigger('click')
       await flushPromises()
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Name'))
       expect(button('.update').attributes('disabled')).toBeUndefined()
     })
 
@@ -211,6 +215,7 @@ describe('RecordEditor', () => {
       await button('.update').trigger('click')
       await flushPromises()
       expect(notifications.some((n) => n.type === 'error')).toBe(true)
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Field name is duplicated'))
       expect(wrapper.emitted('updateRecordList')).toBeUndefined()
       expect(button('.update').attributes('disabled')).toBeUndefined()
     })
@@ -263,6 +268,7 @@ describe('RecordEditor', () => {
       await flushPromises()
       expect(RequestService.put).not.toHaveBeenCalled()
       expect(button('.status-missing').exists()).toBe(true)
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Name'))
     })
 
     it('asks before deleting, and names what it deletes', async () => {

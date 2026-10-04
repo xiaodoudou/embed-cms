@@ -5,7 +5,7 @@ import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
-import { mdiChevronDown } from '@mdi/js'
+import { mdiChevronDown, mdiCloseCircleOutline, mdiDragVertical, mdiArrowLeft, mdiArrowRight, mdiSwapVertical, mdiArrowUp, mdiArrowDown, mdiTrashCanOutline } from '@mdi/js'
 import TranslateService from '@s/TranslateService'
 import TranslateFilter from '@f/translate'
 import TruncateFilter from '@f/truncate'
@@ -21,7 +21,7 @@ TranslateService.locale = 'enUS'
  * `model` and `schema` are the props every field receives; other mounting options are passed through.
  */
 export function mountComponent (component, options = {}) {
-  const vuetify = createVuetify({ components, directives, icons: { defaultSet: 'mdi', aliases: { ...aliases, chevronDown: mdiChevronDown }, sets: { mdi } } })
+  const vuetify = createVuetify({ components, directives, icons: { defaultSet: 'mdi', aliases: { ...aliases, chevronDown: mdiChevronDown, closeCircleOutline: mdiCloseCircleOutline, dragVertical: mdiDragVertical, arrowLeft: mdiArrowLeft, arrowRight: mdiArrowRight, swapVertical: mdiSwapVertical, arrowUp: mdiArrowUp, arrowDown: mdiArrowDown, trashCanOutline: mdiTrashCanOutline }, sets: { mdi } } })
   const extra = options.global || {}
   return mount(component, {
     ...options,

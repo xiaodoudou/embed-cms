@@ -26,10 +26,6 @@
     min-width: 0;
   }
 
-  .drag-and-drop {
-    background-color: var(--cms-surface-2);
-  }
-
   // The back button only makes sense when list and editor are separate screens.
   button.back {
     display: none;

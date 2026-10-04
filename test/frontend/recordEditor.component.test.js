@@ -70,6 +70,47 @@ afterEach(() => {
 })
 
 describe('RecordEditor', () => {
+  describe('what a save sends for the files of a field', () => {
+    const gallery = { title: 'products', locales: ['enUS'], _attachmentFields: { '^photo(\\.\\d+)$': true }, schema: [] }
+    const file = (id, name, order, extra = {}) => ({ _isAttachment: true, _id: id, _filename: name, _name: 'photo', order, ...extra })
+    const original = () => ({ name: 'Lamp', photo: [file('a', 'one.png', 1), file('b', 'two.png', 2), file('c', 'three.png', 3)] })
+
+    it('sends nothing for the files of a record that was not changed', async () => {
+      await editor()
+      const sent = wrapper.vm.getDataToUpload(gallery, original(), original())
+      expect(sent.updatedAttachments).toEqual([])
+      expect(sent.deletedAttachments).toEqual([])
+      expect(sent.newAttachments).toEqual([])
+    })
+
+    it('sends the new order of the files that moved, with the position each one has now', async () => {
+      await editor()
+      const moved = original()
+      moved.photo = [moved.photo[2], moved.photo[0], moved.photo[1]].map((item, i) => ({ ...item, order: i + 1, orderUpdated: true }))
+      const sent = wrapper.vm.getDataToUpload(gallery, original(), moved)
+      const byId = Object.fromEntries(sent.updatedAttachments.map((item) => [item._id, item.order]))
+      expect(byId).toEqual({ c: 1, a: 2, b: 3 })
+      expect(sent.deletedAttachments).toEqual([])
+      expect(sent.newAttachments).toEqual([])
+    })
+
+    it('counts a file taken out as deleted and one added as new, leaving the others alone', async () => {
+      await editor()
+      const changed = original()
+      changed.photo = [changed.photo[0], changed.photo[2], { _isAttachment: true, _filename: 'four.png', _name: 'photo', file: { name: 'four.png' }, data: 'data:' }]
+      const sent = wrapper.vm.getDataToUpload(gallery, original(), changed)
+      expect(sent.deletedAttachments.map((item) => item._id)).toEqual(['b'])
+      expect(sent.newAttachments.map((item) => item._filename)).toEqual(['four.png'])
+    })
+
+    it('takes the files out of the record that is sent: they travel on their own, not inside it', async () => {
+      await editor()
+      const sent = wrapper.vm.getDataToUpload(gallery, original(), original())
+      expect(sent.uploadObject.name).toBe('Lamp')
+      expect(sent.uploadObject.photo).toBeUndefined()
+    })
+  })
+
   describe('the attachments a save sends', () => {
     it('counts a file dragged to another place (its order changed) as an update, as a rename or a crop is', async () => {
       await editor()

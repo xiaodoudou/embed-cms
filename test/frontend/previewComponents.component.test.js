@@ -219,15 +219,59 @@ describe('ShowAttachment (one file in the preview)', () => {
 describe('PreviewAttachment (one file with its name)', () => {
   const preview = (attachment, extra = {}) => mount(PreviewAttachment, { attachment, isImage, getImageSrc, schema: {}, ...extra }, { global: { stubs: { ShowAttachment: true } } })
 
-  it('shows the name of the file in a chip that can be closed', () => {
-    preview(IMAGE)
-    expect(wrapper.get('.filename').text()).toContain('lamp.jpg')
-    expect(wrapper.get('.filename').props?.closable ?? wrapper.findComponent({ name: 'VChip' }).props('closable')).toBeTruthy()
+  it('shows the position at the top, the name of the file and its size at the foot', () => {
+    preview(IMAGE, { index: 2, count: 4, imageSize: () => '6.85 MB' })
+    expect(wrapper.get('.preview-position').text()).toBe('3/4')
+    expect(wrapper.get('.filename-text').text()).toBe('lamp.jpg')
+    expect(wrapper.get('.filename-size').text()).toBe('6.85 MB')
+    // the top row comes first, and the name follows it, under the picture
+    const follows = (first, second) => !!(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(follows(wrapper.get('.preview-top').element, wrapper.get('.filename').element)).toBe(true)
+    expect(follows(wrapper.get('.preview-top').element, wrapper.get('show-attachment-stub').element)).toBe(true)
+    expect(follows(wrapper.get('show-attachment-stub').element, wrapper.get('.filename').element)).toBe(true)
   })
 
-  it('cannot be closed when the field is locked', () => {
+  it('shows no top row for a single file (no grip, no position), and still has its cross: there is no empty space above the picture', () => {
+    preview(IMAGE, { index: 0, count: 1 })
+    expect(wrapper.find('.preview-top').exists()).toBe(false)
+    expect(wrapper.find('.preview-position').exists()).toBe(false)
+    expect(wrapper.find('.preview-remove').exists()).toBe(true)
+  })
+
+  it('has a cross in the corner of the picture that removes the file, by its position', async () => {
+    const removeImage = vi.fn()
+    preview(IMAGE, { index: 1, count: 3, removeImage })
+    expect(wrapper.get('.preview-picture .preview-remove').exists()).toBe(true)
+    expect(wrapper.find('.preview-top .preview-remove').exists()).toBe(false)
+    await wrapper.get('.preview-remove').trigger('click')
+    expect(removeImage).toHaveBeenCalledWith(IMAGE, 1)
+  })
+
+  it('removes a file that has no picture with a button that has its word, beside the View button (a bin has nothing to sit on)', async () => {
+    const removeImage = vi.fn()
+    preview(PDF, { index: 0, count: 2, removeImage, schema: {} })
+    const area = wrapper.get('.preview-picture')
+    expect(area.classes()).toContain('is-file')
+    const remove = area.get('.preview-remove')
+    expect(remove.classes()).toContain('is-text')
+    expect(remove.text()).toBe('Remove')
+    expect(remove.find('svg, .v-icon').exists()).toBe(false)
+    await remove.trigger('click')
+    expect(removeImage).toHaveBeenCalledWith(PDF, 0)
+  })
+
+  it('removes a picture with the bin in its corner, no word', () => {
+    preview(IMAGE)
+    const area = wrapper.get('.preview-picture')
+    expect(area.classes()).not.toContain('is-file')
+    expect(area.get('.preview-remove').classes()).not.toContain('is-text')
+    expect(area.get('.preview-remove').text()).toBe('')
+    expect(area.get('.preview-remove').attributes('aria-label')).toBe('Remove')
+  })
+
+  it('cannot be removed when the field is locked', () => {
     preview(IMAGE, { locked: true })
-    expect(wrapper.findComponent({ name: 'VChip' }).props('closable')).toBe(false)
+    expect(wrapper.find('.preview-remove').exists()).toBe(false)
   })
 
   it('marks a file that was changed, and says why', () => {
@@ -306,6 +350,77 @@ describe('PreviewMultiple (the list of files of a field)', () => {
     expect(wrapper.findAllComponents(PreviewAttachment).every((item) => item.props('locked'))).toBe(true)
   })
 
+  it('moves a preview with its file when the order changes, instead of giving the file to the preview that was in that place (the pictures would load again and blink)', async () => {
+    const [a, b, c] = [{ ...IMAGE, _id: 'a' }, { ...PDF, _id: 'b' }, { ...NEW_IMAGE }]
+    list([a, b, c])
+    const instances = () => wrapper.findAllComponents(PreviewAttachment).map((preview) => preview.vm.$.uid)
+    const before = instances()
+    await wrapper.setProps({ attachments: [c, a, b] })
+    expect(instances()).toEqual([before[2], before[0], before[1]])
+    await wrapper.setProps({ attachments: [b, c, a] })
+    expect(instances()).toEqual([before[1], before[2], before[0]])
+    // the position each one shows follows the order
+    expect(wrapper.findAllComponents(PreviewAttachment).map((preview) => preview.props('index'))).toEqual([0, 1, 2])
+    expect(wrapper.findAll('.preview-position').map((position) => position.text())).toEqual(['1/3', '2/3', '3/3'])
+  })
+
+  it('makes a preview of a file that is added, and drops the one of a file that is removed, leaving the others as they are', async () => {
+    const [a, b, c] = [{ ...IMAGE, _id: 'a' }, { ...PDF, _id: 'b' }, { ...NEW_IMAGE }]
+    list([a, b])
+    const before = wrapper.findAllComponents(PreviewAttachment).map((preview) => preview.vm.$.uid)
+    await wrapper.setProps({ attachments: [a, b, c] })
+    const added = wrapper.findAllComponents(PreviewAttachment).map((preview) => preview.vm.$.uid)
+    expect(added.slice(0, 2)).toEqual(before)
+    expect(added).toHaveLength(3)
+    await wrapper.setProps({ attachments: [b, c] })
+    expect(wrapper.findAllComponents(PreviewAttachment).map((preview) => preview.vm.$.uid)).toEqual([before[1], added[2]])
+  })
+
+  it('puts each list in a group of its own, so that a file cannot be dragged into the list of another field', () => {
+    list([IMAGE, PDF], { schema: { model: 'photos' } })
+    const first = wrapper.findComponent(draggable).attributes('group')
+    wrapper.unmount()
+    list([IMAGE, PDF], { schema: { model: 'photos' } })
+    const second = wrapper.findComponent(draggable).attributes('group')
+    wrapper.unmount()
+    list([IMAGE, PDF], { schema: { model: 'documents' } })
+    const third = wrapper.findComponent(draggable).attributes('group')
+    expect(first).toContain('photos')
+    expect(third).toContain('documents')
+    // the same field on two records, or two instances of a field, never share one
+    expect(new Set([first, second, third]).size).toBe(3)
+  })
+
+  it('keeps the group of a list for as long as the list lives (re-rendering it does not open it to the others)', async () => {
+    list([IMAGE, PDF])
+    const group = wrapper.findComponent(draggable).attributes('group')
+    await wrapper.setProps({ attachments: [PDF, IMAGE] })
+    expect(wrapper.findComponent(draggable).attributes('group')).toBe(group)
+  })
+
+  it('lets the library know a drag is on: the page stops selecting text from the press on a grip, and is let go on release', async () => {
+    list([IMAGE, PDF])
+    wrapper.findComponent(draggable).vm.$emit('choose', {})
+    expect(document.body.classList.contains('cms-dragging')).toBe(true)
+    wrapper.findComponent(draggable).vm.$emit('unchoose', {})
+    expect(document.body.classList.contains('cms-dragging')).toBe(false)
+  })
+
+  it('reports the end of a drag to the field, which numbers the files again', () => {
+    const onEndDrag = vi.fn()
+    list([IMAGE, PDF], { onEndDrag })
+    const event = { oldIndex: 0, newIndex: 1 }
+    wrapper.findComponent(draggable).vm.$emit('end', event)
+    expect(onEndDrag).toHaveBeenCalledWith(event)
+  })
+
+  it('takes the ids off the copy of a file that follows the pointer when a drag starts', () => {
+    list([IMAGE, PDF])
+    document.body.insertAdjacentHTML('beforeend', '<div class="sortable-fallback"><input id="cms-field-9"></div>')
+    wrapper.findComponent(draggable).vm.$emit('start', {})
+    expect(document.querySelectorAll('.sortable-fallback [id]')).toHaveLength(0)
+  })
+
   it('starts a drag from the grip of a preview alone', () => {
     list([IMAGE, PDF])
     expect(wrapper.findComponent(draggable).attributes('handle')).toBe('.drag-grip')
@@ -319,12 +434,15 @@ describe('PreviewMultiple (the list of files of a field)', () => {
     expect(wrapper.find('.filename').exists()).toBe(true)
   })
 
-  it('puts the grip beside the name of the file, not over it', () => {
+  it('puts the grip in the top row with the position and the cross, and the name at the foot, so a long name cannot push anything out of the card', () => {
     list([IMAGE, PDF])
-    const head = wrapper.find('.preview-head')
-    expect(head.exists()).toBe(true)
-    expect(head.find('.drag-grip').exists()).toBe(true)
-    expect(head.find('.filename').exists()).toBe(true)
+    const top = wrapper.find('.preview-top')
+    expect(top.find('.drag-grip').exists()).toBe(true)
+    expect(top.find('.preview-position').text()).toBe('1/2')
+    expect(top.find('.preview-remove').exists()).toBe(false)
+    expect(wrapper.find('.preview-picture .preview-remove').exists()).toBe(true)
+    expect(top.find('.filename').exists()).toBe(false)
+    expect(wrapper.find('.filename').exists()).toBe(true)
   })
 
   it('offers the compact mode with two files or more: the grips give way to the buttons that move a file, which report where', async () => {

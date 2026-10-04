@@ -1,8 +1,8 @@
 <template>
   <div class="row-handle">
     <div v-if="isImage(attachment)" class="image-wrapper">
-      <v-img v-if="attachment._id" cover :src="getImageSrc(attachment)" class="clickable" @click="viewFile()" @load="setLoadingError(false)" @error="setLoadingError(true)" />
-      <v-img v-else cover :src="getImageSrc(attachment)" @load="setLoadingError(false)" @error="setLoadingError(true)" />
+      <v-img v-if="attachment._id" cover :aspect-ratio="16 / 10" :src="getImageSrc(attachment)" class="clickable" @click="viewFile()" @load="setLoadingError(false)" @error="setLoadingError(true)" />
+      <v-img v-else cover :aspect-ratio="16 / 10" :src="getImageSrc(attachment)" @load="setLoadingError(false)" @error="setLoadingError(true)" />
       <!-- Cropped image -->
       <v-dialog v-if="attachment && schema.crop" class="crop-dialog">
         <template #activator="{ props: activatorProps }">

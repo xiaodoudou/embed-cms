@@ -132,6 +132,78 @@ describe('ParagraphView (blocks)', () => {
       expect(wrapper.findComponent(draggable).attributes('handle')).toBe('.drag-grip')
     })
 
+    it('puts each list of blocks in a group of its own, so a block cannot be dragged into another paragraph field', async () => {
+      const blocks = [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }]
+      await paragraph({ model: 'one' }, { one: blocks })
+      const first = wrapper.findComponent(draggable).attributes('group')
+      wrapper.unmount()
+      await paragraph({ model: 'two' }, { two: blocks })
+      const second = wrapper.findComponent(draggable).attributes('group')
+      wrapper.unmount()
+      await paragraph({ model: 'one' }, { one: blocks })
+      const again = wrapper.findComponent(draggable).attributes('group')
+      expect(first).toContain('one')
+      expect(second).toContain('two')
+      expect(new Set([first, second, again]).size).toBe(3)
+    })
+
+    it('hands the press on a grip and the end of a drag to the page and to the list: text is not selected on the way, the blocks are written back after the drop', async () => {
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }] })
+      const list = wrapper.findComponent(draggable)
+      list.vm.$emit('choose', {})
+      expect(document.body.classList.contains('cms-dragging')).toBe(true)
+      list.vm.$emit('start', {})
+      await wrapper.vm.$nextTick()
+      expect(wrapper.find('.paragraph-view').classes()).toContain('is-dragging')
+      list.vm.$emit('end', { newIndex: 0 })
+      list.vm.$emit('unchoose', {})
+      await wrapper.vm.$nextTick()
+      expect(document.body.classList.contains('cms-dragging')).toBe(false)
+      expect(wrapper.find('.paragraph-view').classes()).not.toContain('is-dragging')
+      expect(lastEmitted()[0].map((item) => item.heading)).toEqual(['a', 'b'])
+    })
+
+    it('drags a block to another place and writes the blocks in the new order', async () => {
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }, { _type: 'block_text', heading: 'c' }] })
+      // the library reorders the list it is given, then says the drag ended
+      const moved = wrapper.vm.items.splice(0, 1)[0]
+      wrapper.vm.items.splice(2, 0, moved)
+      wrapper.findComponent(draggable).vm.$emit('end', { newIndex: 2 })
+      await flushPromises()
+      expect(lastEmitted()[0].map((item) => item.heading)).toEqual(['b', 'c', 'a'])
+      expect(lastEmitted()[1]).toBe('blocks')
+    })
+
+    it('scrolls the form by what the dropped block moved, so that it stays where it was dropped when the blocks unfold', async () => {
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }] })
+      const scroller = document.createElement('div')
+      scroller.className = 'scroll-wrapper'
+      wrapper.element.parentNode.insertBefore(scroller, wrapper.element)
+      scroller.appendChild(wrapper.element)
+      scroller.scrollTop = 50
+      const item = document.createElement('div')
+      document.body.appendChild(item)
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function () {
+        // folded, the dropped block was at 400; unfolded, it is at 700
+        return { top: this === item ? 400 : (this.hasAttribute && this.hasAttribute('data-block-index') ? 700 : 0) }
+      })
+      wrapper.vm.onEndDrag({ item, newIndex: 1 })
+      await flushPromises()
+      expect(scroller.scrollTop).toBe(350)
+    })
+
+    it('does not scroll when the dropped block is not where it can be measured (the drag ended without an event)', async () => {
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }] })
+      const scroller = document.createElement('div')
+      scroller.className = 'scroll-wrapper'
+      wrapper.element.parentNode.insertBefore(scroller, wrapper.element)
+      scroller.appendChild(wrapper.element)
+      scroller.scrollTop = 50
+      wrapper.vm.onEndDrag()
+      await flushPromises()
+      expect(scroller.scrollTop).toBe(50)
+    })
+
     it('has no grip with a single block: there is nothing to put in order', async () => {
       await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'only' }] })
       expect(wrapper.find('.drag-grip').exists()).toBe(false)

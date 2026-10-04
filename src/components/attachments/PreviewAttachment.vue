@@ -1,25 +1,39 @@
 <template>
   <v-card v-if="attachment" :key="getKey(attachment)" :theme="theme" elevation="0" class="preview-attachment" :class="{odd: index % 2 !== 0, 'can-crop': schema.crop}">
-    <!-- the only place that starts a drag (shown when there is something to put in order); the compact mode swaps it for the buttons that move the file one place -->
-    <span v-if="reordering && !locked" class="move-buttons">
-      <v-btn class="move-earlier" :disabled="index === 0" variant="tonal" icon rounded size="x-small" :aria-label="`${$filters.translate('TL_MOVE_EARLIER')}: ${getAttachmentFilename(attachment)}`" @click="moveAttachment(index, -1)"><v-icon icon="$arrowLeft" /></v-btn>
-      <v-btn class="move-later" :disabled="index === count - 1" variant="tonal" icon rounded size="x-small" :aria-label="`${$filters.translate('TL_MOVE_LATER')}: ${getAttachmentFilename(attachment)}`" @click="moveAttachment(index, 1)"><v-icon icon="$arrowRight" /></v-btn>
-    </span>
-    <!-- the grip and the name of the file side by side: the grip is not laid over the name -->
-    <div class="preview-head">
+    <!-- the top row is for putting the files in order: with one file there is nothing to put in order, and no row -->
+    <div v-if="count > 1" class="preview-top">
+      <!-- the only place that starts a drag (shown when there is something to put in order); the compact mode swaps it for the buttons that move the file one place -->
       <span v-if="!locked && !reordering && count > 1" class="drag-grip" :title="$filters.translate('TL_DRAG_TO_REORDER')"><v-icon icon="$dragVertical" size="small" /></span>
-      <v-tooltip :theme="theme" location="right" eager>
-        <template #activator="{ props }">
-          <v-chip variant="outlined" class="filename" :class="{'is-dirty': attachment.dirty}" :closable="!locked" close-icon="$closeCircleOutline" :close-label="$filters.translate('TL_REMOVE')" v-bind="props" @click:close="removeImage(attachment, index)" @contextmenu.stop.prevent="copyFilenameToClipboard()">#{{ index + 1 }} - {{ $filters.truncate(getAttachmentFilename(attachment),10) }} ({{ imageSize(attachment) }})</v-chip>
-        </template>
-        <span>{{ attachment._filename }} <template v-if="attachment.dirty">({{ $filters.translate(getDirtyReason()) }})</template></span>
-      </v-tooltip>
+      <span v-if="reordering && !locked" class="move-buttons">
+        <v-btn class="move-earlier" :disabled="index === 0" variant="tonal" icon rounded size="x-small" :aria-label="`${$filters.translate('TL_MOVE_EARLIER')}: ${getAttachmentFilename(attachment)}`" @click="moveAttachment(index, -1)"><v-icon icon="$arrowLeft" /></v-btn>
+        <v-btn class="move-later" :disabled="index === count - 1" variant="tonal" icon rounded size="x-small" :aria-label="`${$filters.translate('TL_MOVE_LATER')}: ${getAttachmentFilename(attachment)}`" @click="moveAttachment(index, 1)"><v-icon icon="$arrowRight" /></v-btn>
+      </span>
+      <span class="preview-position">{{ index + 1 }}/{{ count }}</span>
     </div>
-    <show-attachment
-      class-name="row-handle"
-      :theme="theme" :attachment="attachment" :image-size="imageSize" :get-image-src="getImageSrc"
-      :remove-image="removeImage" :is-image="isImage" :schema="schema" :on-cropper-change="onCropperChangeForAttachment"
-    />
+    <div class="preview-picture" :class="{'is-file': !isImage(attachment)}">
+      <show-attachment
+        class-name="row-handle"
+        :theme="theme" :attachment="attachment" :image-size="imageSize" :get-image-src="getImageSrc"
+        :remove-image="removeImage" :is-image="isImage" :schema="schema" :on-cropper-change="onCropperChangeForAttachment"
+      />
+      <!-- on a picture: a bin in its corner, so that a file alone (no grip, no position) has no empty row above it -->
+      <v-btn v-if="!locked && isImage(attachment)" class="preview-remove" variant="text" icon size="x-small" :aria-label="$filters.translate('TL_REMOVE')" :title="$filters.translate('TL_REMOVE')" @click="removeImage(attachment, index)">
+        <v-icon icon="$trashCanOutline" size="16" />
+      </v-btn>
+      <!-- no picture to lay it on (a file with its View button): a button with its word, beside View -->
+      <v-btn v-else-if="!locked" class="preview-remove is-text" variant="outlined" size="small" rounded elevation="0" @click="removeImage(attachment, index)">
+        {{ $filters.translate('TL_REMOVE') }}
+      </v-btn>
+    </div>
+    <v-tooltip :theme="theme" location="top" eager>
+      <template #activator="{ props }">
+        <div class="filename" :class="{'is-dirty': attachment.dirty}" v-bind="props" @contextmenu.stop.prevent="copyFilenameToClipboard()">
+          <span class="filename-text">{{ getAttachmentFilename(attachment) }}</span>
+          <span class="filename-size">{{ imageSize(attachment) }}</span>
+        </div>
+      </template>
+      <span>{{ attachment._filename }} <template v-if="attachment.dirty">({{ $filters.translate(getDirtyReason()) }})</template></span>
+    </v-tooltip>
   </v-card>
 </template>
 

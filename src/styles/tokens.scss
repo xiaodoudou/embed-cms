@@ -173,6 +173,8 @@
 
   --cms-focus-ring: #4540a8;
   --cms-scrim: rgba(15, 20, 35, 0.48);
+  --cms-image-control-bg: rgba(15, 20, 35, 0.62); /* a small control laid on a picture (the bin of a preview) */
+  --cms-on-image-control: #ffffff; /* the same in both themes: it sits on a picture, not on the page */
   --cms-shadow-1: 0 1px 2px rgba(16, 24, 40, 0.08), 0 1px 1px rgba(16, 24, 40, 0.04);
   --cms-shadow-2: 0 6px 16px rgba(16, 24, 40, 0.12), 0 2px 4px rgba(16, 24, 40, 0.06);
   --cms-shadow-3: 0 16px 40px rgba(16, 24, 40, 0.2);
@@ -274,6 +276,8 @@
 
   --cms-focus-ring: #c0bcff;
   --cms-scrim: rgba(0, 0, 0, 0.62);
+  --cms-image-control-bg: rgba(0, 0, 0, 0.66);
+  --cms-on-image-control: #ffffff;
   --cms-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
   --cms-shadow-2: 0 6px 16px rgba(0, 0, 0, 0.45);
   --cms-shadow-3: 0 16px 40px rgba(0, 0, 0, 0.6);

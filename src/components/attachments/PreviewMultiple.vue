@@ -13,7 +13,7 @@
     >
       <preview-attachment
         v-for="(a, i) in attachments"
-        :key="i" :schema="schema"
+        :key="identityOf(a)" :schema="schema"
         :theme="theme" :attachment="a" :image-size="imageSize" :get-image-src="getImageSrc"
         :locked="disabled" :reordering="reordering" :count="attachments.length" :move-attachment="moveAttachment" :remove-image="removeImage" :is-image="isImage" :index="i" :on-cropper-change="onCropperChange"
       />
@@ -24,6 +24,11 @@
 <script>
   import PreviewAttachment from '@c/attachments/PreviewAttachment.vue'
   import DragList from '@m/DragList'
+
+  // A key for each attachment, for as long as it is the same object: after a reorder the preview moves with its file. Keyed by position,
+  // each preview would keep its place and be given another file, whose picture it loads again (the images blink at every move).
+  const identities = new WeakMap()
+  let sequence = 0
 
   export default {
     components: {PreviewAttachment},
@@ -44,6 +49,18 @@
     },
     data () {
       return { reordering: false }
+    },
+    methods: {
+      /**
+       * @param {Object} attachment
+       * @returns {number} a number that stays with this attachment, wherever it is in the list
+       */
+      identityOf (attachment) {
+        if (!identities.has(attachment)) {
+          identities.set(attachment, ++sequence)
+        }
+        return identities.get(attachment)
+      }
     },
   }
 </script>

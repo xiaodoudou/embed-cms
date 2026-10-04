@@ -60,7 +60,7 @@ import TranslateService from '@s/TranslateService'
 import RequestService from '@s/RequestService.js'
 import DialogService from '@s/DialogService.js'
 import { host } from '@s/HostService'
-import { pluginPages, replicationEnabled } from '@u/pluginPages'
+import { pluginPages } from '@u/pluginPages'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -149,13 +149,8 @@ window.addEventListener('load', async function () {
     item.type = 'plugin'
   })
   window.TranslateService = TranslateService
-  const isLoginPage = document.querySelector('#app')?.getAttribute('type') === 'login'
-  const [config, replication] = await Promise.all([
-    RequestService.get(`${window.location.pathname}config`),
-    // the replicator's routes need a login: not asked from the login page
-    isLoginPage ? false : replicationEnabled((url) => RequestService.get(url), `${window.location.pathname}../replicator/resources`)
-  ])
-  _.each(pluginPages(config, { replication }), (page) => addPlugin(page.title, page.displayname, page.group, undefined, page.label))
+  const config = await RequestService.get(`${window.location.pathname}config`)
+  _.each(pluginPages(config), (page) => addPlugin(page.title, page.displayname, page.group, undefined, page.label))
   window.disableJwtLogin = _.get(config, 'disableJwtLogin', false)
   window.noLogin = window.disableJwtLogin && _.get(config, 'disableAuthentication', false)
   app.mount('#app')

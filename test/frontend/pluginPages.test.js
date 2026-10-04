@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
-import { pluginPages, replicationEnabled } from '../../src/utils/pluginPages.js'
+import { pluginPages } from '../../src/utils/pluginPages.js'
 
-const names = (config, options) => pluginPages(config, options).map((page) => page.displayname)
+const names = (config) => pluginPages(config).map((page) => page.displayname)
 const ROOT = path.resolve(__dirname, '../..')
+const replication = { disableReplication: false }
 
 describe('plugin pages added to the menu', () => {
   it('always offers Syslog, and no page to edit the configuration file', () => {
@@ -16,11 +17,11 @@ describe('plugin pages added to the menu', () => {
     expect(pluginPages({})[0]).toEqual({ title: 'Syslog', displayname: 'Syslog', label: 'TL_SYSLOG', group: 'CMS' })
     expect(pluginPages({ import: {} }).slice(1).every((page) => !page.group)).toBe(true)
     expect(pluginPages({ sync: {} }).find((page) => page.displayname === 'Sync Resource')).toEqual({ title: 'SyncResource', displayname: 'Sync Resource', label: 'TL_SYNC_RESOURCE', group: 'CMS' })
-    expect(pluginPages({ import: {}, sync: {} }, { replication: true }).filter((page) => !page.group).map((page) => page.displayname)).toEqual(['Replicator', 'Cms Import'])
+    expect(pluginPages({ import: {}, sync: {}, ...replication }).filter((page) => !page.group).map((page) => page.displayname)).toEqual(['Replicator', 'Cms Import'])
   })
 
   it('gives every page a translation key for its name, and keeps the display name the rights of a group refer to', () => {
-    const pages = pluginPages({ import: {}, sync: {} }, { replication: true })
+    const pages = pluginPages({ import: {}, sync: {}, ...replication })
     expect(pages.map((page) => [page.displayname, page.label])).toEqual([
       ['Syslog', 'TL_SYSLOG'], ['Replicator', 'TL_REPLICATOR'], ['Cms Import', 'TL_CMS_IMPORT'], ['Sync Resource', 'TL_SYNC_RESOURCE']
     ])
@@ -31,22 +32,22 @@ describe('plugin pages added to the menu', () => {
     expect(names({ sync: { disablePlugin: true } })).not.toContain('Sync Resource')
   })
 
-  it('offers the Replicator page, in the System group\'s list, only when replication runs', () => {
-    expect(names({}, { replication: true })).toContain('Replicator')
-    expect(pluginPages({}, { replication: true }).find((page) => page.displayname === 'Replicator').title).toBe('CmsReplicator')
+  it('offers the Replicator page, in the System group\'s list, only when /config says replication runs', () => {
+    expect(names(replication)).toContain('Replicator')
+    expect(pluginPages(replication).find((page) => page.displayname === 'Replicator').title).toBe('CmsReplicator')
+    expect(names({ disableReplication: true })).not.toContain('Replicator')
+    // a server that does not say: no page, rather than a page whose routes answer 404
     expect(names({})).not.toContain('Replicator')
     const main = fs.readFileSync(path.join(ROOT, 'src/main.js'), 'utf8')
     expect(main).toContain('.component(\'CmsReplicator\', CmsReplicator)')
-    expect(main).toContain('pluginPages(config, { replication })')
+    expect(main).toContain('pluginPages(config)')
   })
 
-  it('knows replication runs when the replicator lists its resources, and not when its route is missing or refused', async () => {
-    const asked = []
-    expect(await replicationEnabled(async (url) => { asked.push(url); return [{ name: 'articles' }] })).toBe(true)
-    expect(asked).toEqual(['../replicator/resources'])
-    expect(await replicationEnabled(async () => { throw { status: 404 } })).toBe(false)
-    expect(await replicationEnabled(async () => { throw { status: 401 } })).toBe(false)
-    expect(await replicationEnabled(async () => '<html>')).toBe(false)
+  it('no longer probes the replicator\'s routes at start (a 404 in the console on every admin load when replication is off)', () => {
+    const main = fs.readFileSync(path.join(ROOT, 'src/main.js'), 'utf8')
+    expect(main).not.toContain('replicator/resources')
+    const admin = fs.readFileSync(path.join(ROOT, 'lib/plugins/admin/index.js'), 'utf8')
+    expect(admin).toMatch(/configFieldsToExpose = \[[^\]]*'disableReplication'/)
   })
 
   it('adds no Import from remote page, which was a placeholder, even with the plugin on (it is by default)', () => {

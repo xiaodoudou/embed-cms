@@ -84,6 +84,8 @@ describe('admin plugin (unit)', () => {
       const res = await request(app.url).get('/admin/config')
       expect(res.status).to.equal(200)
       expect(res.body).to.have.property('version')
+      // the admin lists the Replicator page from this field instead of probing the plugin's routes
+      expect(res.body).to.have.property('disableReplication').that.is.a('boolean')
       const text = JSON.stringify(res.body)
       expect(text).to.not.include(baseOptions.auth.secret)
       expect(text).to.not.include(baseOptions.session.secret)

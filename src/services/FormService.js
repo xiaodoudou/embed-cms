@@ -2,6 +2,7 @@
 import _ from 'lodash'
 import TranslateServiceLib from '@s/TranslateService'
 import { ratingOptions, normaliseRating } from '@u/rating'
+import { validateDuration } from '@u/duration'
 
 const TranslateService = window.TranslateService || TranslateServiceLib
 /**
@@ -116,6 +117,12 @@ const customLabel = (item, labelProp) => {
 }
 
 const customValidators = {
+  /**
+   * @param {*} value seconds
+   * @param {Object} field
+   * @returns {true|string}
+   */
+  duration: (value, field) => validateDuration(field, value) || true,
   /**
    * @param {*} value
    * @param {Object} field
@@ -432,6 +439,11 @@ const typeMapper = {
   },
   object: {
     type: 'JsonEditor'
+  },
+  // a length of time, typed in hours and minutes (or the units the field says) and kept in seconds (see utils/duration.js)
+  duration: {
+    type: 'DurationField',
+    validator: customValidators.duration
   },
   // a number of icons filled up to the value (see utils/rating.js)
   rating: {

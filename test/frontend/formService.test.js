@@ -32,7 +32,7 @@ describe('FormService (how each input type is built and checked)', () => {
   describe('the input types', () => {
     it('knows every input type the documentation lists', () => {
       expect(Object.keys(mapper).sort()).toEqual([
-        'checkbox', 'code', 'color', 'cropimage', 'date', 'datetime', 'double', 'email', 'file', 'group', 'image', 'imagemap', 'integer', 'json', 'multiselect',
+        'checkbox', 'code', 'color', 'cropimage', 'date', 'datetime', 'double', 'duration', 'email', 'file', 'group', 'image', 'imagemap', 'integer', 'json', 'multiselect',
         'number', 'object', 'paragraph', 'password', 'pillbox', 'rating', 'select', 'string', 'text', 'time', 'transliterate', 'url', 'wysiwyg'
       ])
     })
@@ -194,6 +194,26 @@ describe('FormService (how each input type is built and checked)', () => {
       expect(check('url', 'https://example.com/a?b=1')).toBe(true)
       expect(check('url', 'example.com')).toBe(false)
       expect(check('url', '')).toBe(false)
+    })
+  })
+
+  describe('duration', () => {
+    it('is built by its own component', () => {
+      expect(mapper.duration.type).toBe('DurationField')
+    })
+
+    it('says when a required length is missing, and takes zero as a length', () => {
+      expect(check('duration', undefined, { required: true })).toBe(REQUIRED())
+      expect(check('duration', 0, { required: true })).toBe(true)
+      expect(check('duration', undefined, {})).toBe(true)
+    })
+
+    it('takes a whole number of seconds within the least and the most of the field', () => {
+      expect(check('duration', 5400, { min: 60, max: 7200 })).toBe(true)
+      expect(check('duration', 30, { min: 60 })).toBe(TranslateService.get('TL_DURATION_TOO_SHORT', { min: '1m' }))
+      expect(check('duration', 9000, { max: 7200 })).toBe(TranslateService.get('TL_DURATION_TOO_LONG', { max: '2h' }))
+      expect(check('duration', -5, {})).toBe(TranslateService.get('TL_INVALID_DURATION'))
+      expect(check('duration', 1.5, {})).toBe(TranslateService.get('TL_INVALID_DURATION'))
     })
   })
 

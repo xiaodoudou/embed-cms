@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { renderPreview } from '@u/cropPreview'
+import { renderPreview, dataUrlToBlob } from '@u/cropPreview'
 
 // The small picture of a crop that the field shows until the picture is saved: drawn once, in the order the server cuts in.
 // jsdom has no canvas: a stand-in records what is drawn.
@@ -94,5 +94,32 @@ describe('renderPreview', () => {
   it('fails when the picture cannot be loaded', async () => {
     stand(400, 400)
     await expect(renderPreview('broken', { left: 0, top: 0, width: 1, height: 1 })).rejects.toThrow('could not be loaded')
+  })
+})
+
+describe('dataUrlToBlob', () => {
+  const bytesOf = (blob) => new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve([...new Uint8Array(reader.result)])
+    reader.readAsArrayBuffer(blob)
+  })
+
+  it('gives the picture a base64 data url holds, with its type', async () => {
+    const blob = dataUrlToBlob('data:image/png;base64,AAEC/w==')
+    expect(blob.type).toBe('image/png')
+    expect(await bytesOf(blob)).toEqual([0, 1, 2, 255])
+  })
+
+  it('reads a data url that is not base64', async () => {
+    const blob = dataUrlToBlob('data:text/plain,a%20b')
+    expect(blob.type).toBe('text/plain')
+    expect(await bytesOf(blob)).toEqual([97, 32, 98])
+  })
+
+  it('does not fetch: the security policy of the admin refuses a fetch of a data url', () => {
+    const fetch = vi.fn()
+    vi.stubGlobal('fetch', fetch)
+    dataUrlToBlob('data:image/jpeg;base64,AAEC')
+    expect(fetch).not.toHaveBeenCalled()
   })
 })

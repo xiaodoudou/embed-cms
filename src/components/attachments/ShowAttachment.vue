@@ -22,6 +22,7 @@
   import _ from 'lodash'
   import CropDialog from '@c/attachments/CropDialog.vue'
   import RequestService from '@s/RequestService'
+  import { dataUrlToBlob } from '@u/cropPreview'
   import { canCrop, hasCrop, isCroppable, readRecipe, resultSize } from '@u/cropRecipe'
 
   // the tallest a picture with a crop is shown (a tall crop is narrower than the card, so that it is whole and not higher)
@@ -81,12 +82,11 @@
         this.loadingError = val
       },
       /** Opens the attachment in a new tab, its extension added to the url so the browser knows the type (the cut of a picture that has a crop). */
-      async viewFile() {
+      viewFile() {
         if (!this.attachment) { return }
         // a picture with a crop shows its cut: the small picture while the crop is not saved, the cut the API makes after
         if (this.hasPendingCrop) {
-          const blob = await (await fetch(this.attachment.cropPreview)).blob()
-          const address = URL.createObjectURL(blob)
+          const address = URL.createObjectURL(dataUrlToBlob(this.attachment.cropPreview))
           const tab = window.open(address, '_blank')
           if (tab) { tab.focus() }
           setTimeout(() => URL.revokeObjectURL(address), 60000)

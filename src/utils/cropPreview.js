@@ -51,3 +51,18 @@ export async function renderPreview (src, recipe, maxSide = 360) {
   context.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2)
   return canvas.toDataURL(recipe.shape === 'circle' ? 'image/png' : 'image/jpeg', 0.85)
 }
+
+/**
+ * @param {string} dataUrl `data:image/jpeg;base64,...`
+ * @returns {Blob} the picture it holds (decoded here: the admin's security policy does not let a page fetch a data url)
+ */
+export function dataUrlToBlob (dataUrl) {
+  const [head, body = ''] = String(dataUrl).split(',')
+  const type = _.get(/^data:([^;,]+)/.exec(head), 1, 'application/octet-stream')
+  const text = /;base64$/.test(head) ? atob(body) : decodeURIComponent(body)
+  const bytes = new Uint8Array(text.length)
+  for (let i = 0; i < text.length; i++) {
+    bytes[i] = text.charCodeAt(i)
+  }
+  return new Blob([bytes], { type })
+}

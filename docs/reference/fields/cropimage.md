@@ -41,6 +41,44 @@ The picture of the field shows the cut, in the shape of the crop and whole (roun
 
 Apply keeps the crop with the picture. A new picture is uploaded with it when the record is saved; the crop of a saved picture is an update of the attachment.
 
+## Variations
+
+### Any shape
+
+`resources/media_crop.js`, field `photo`: no option, so the shape is free, and the usual ratios and a ratio of your own are there to choose.
+
+![Photo](img/cropimage-default.png) ![Photo chosen](img/cropimage-filled.png)
+
+The tool opens with **Edit crop**: the picture with the frame, the shapes, the turns, the position in pixels and the result. In the dark theme:
+
+![The crop tool](img/cropimage-dialog.png) ![The crop tool, dark](img/cropimage-dialog-dark.png)
+
+A ratio keeps the frame to its shape while you resize it:
+
+![A 16:9 frame](img/cropimage-dialog-ratio.png)
+
+After **Apply crop** the field shows the cut, in its shape:
+
+![The cut](img/cropimage-cropped.png)
+
+### Round and square
+
+`resources/media_crop.js`, field `avatar` (`aspectRatio: '1:1'`, `shape: 'circle'`, `output: { maxWidth: 256, format: 'png' }`): the frame is a circle that stays square, and there is no choice of shape.
+
+![Avatar](img/cropimage-avatar.png)
+
+### A size the field fixes
+
+`resources/media_crop.js`, field `banner` (`width: 1200, height: 400`): the frame keeps the shape of the size, and the result is cut to it.
+
+![Banner](img/cropimage-banner.png)
+
+### Saved
+
+The picture keeps the crop, and the field shows the cut the API makes:
+
+![Saved crops](img/cropimage-saved.png)
+
 ## Stored value
 
 The same attachment descriptors as for [image](image.md), with the recipe under `cropOptions` and the address of the cut under `cropUrl`. `url` stays the address of the original, which is never replaced: read `cropUrl` for the cropped picture (it is only there when the picture has a crop).

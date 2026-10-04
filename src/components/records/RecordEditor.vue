@@ -626,11 +626,12 @@
       /**
        * @param {Object} oldA
        * @param {Object} newA
-       * @returns {boolean} name, position or crop changed
+       * @returns {boolean} name, position, order (the file was dragged to another place) or crop changed
        */
       attachmentWasUpdated(oldA, newA) {
         if (_.get(newA, '_name', '?') !== _.get(oldA, '_name', '?') ||
           _.get(newA, '_payload.index', 0) !== _.get(oldA, '_payload.index', 0) ||
+          _.get(newA, 'order') !== _.get(oldA, 'order') ||
           _.get(newA, 'cropOptions.updated', false)) {
           return true
         }
@@ -852,13 +853,6 @@
         }
         modelParts.push(attachment._name)
         return _.join(modelParts, '.')
-      },
-      /**
-       * @param {Array<Object>} attachments
-       * @returns {Array<Object>} those whose crop changed
-       */
-      getUpdatedAttachments (attachments) {
-        return _.filter(attachments, (attachment) => _.get(attachment, 'cropOptions.updated', false))
       },
       /**
        * @param {*} value

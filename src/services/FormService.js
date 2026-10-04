@@ -4,6 +4,7 @@ import TranslateServiceLib from '@s/TranslateService'
 import { ratingOptions, normaliseRating } from '@u/rating'
 import { validateDuration } from '@u/duration'
 import { validateMoney } from '@u/money'
+import { validateDateRange } from '@u/dateRange'
 import { validatePhone } from '@u/phone'
 
 const TranslateService = window.TranslateService || TranslateServiceLib
@@ -131,6 +132,12 @@ const customValidators = {
    * @returns {true|string}
    */
   money: (value, field) => validateMoney(field, value) || true,
+  /**
+   * @param {*} value { start, end }
+   * @param {Object} field
+   * @returns {true|string}
+   */
+  daterange: (value, field) => validateDateRange(field, value) || true,
   /**
    * @param {*} value an international number, +442071838750
    * @param {Object} field
@@ -349,6 +356,11 @@ const typeMapper = {
     customDatetimePickerOptions: {
       placeholder: 'YYYY-MM-DD'
     }
+  },
+  // a start and an end on one calendar, kept as { start, end } (see utils/dateRange.js)
+  daterange: {
+    type: 'DateRangeField',
+    validator: customValidators.daterange
   },
   time: {
     type: 'CustomDatetimePicker',

@@ -15,6 +15,7 @@ const KIND_BY_INPUT = {
   double: 'number',
   date: 'date',
   datetime: 'datetime',
+  daterange: 'daterange',
   time: 'time',
   image: 'image',
   cropimage: 'image',
@@ -44,6 +45,7 @@ const WIDTHS = {
   number: { width: 116 },
   date: { width: 124 },
   datetime: { width: 164 },
+  daterange: { width: 236 },
   time: { width: 92 },
   image: { width: 104 },
   color: { width: 96 },
@@ -499,6 +501,9 @@ export function sortValue (record, column, options = {}) {
   }
   if (column.kind === 'markdown') {
     return markdownToPlain(value)
+  }
+  if (column.kind === 'daterange') {
+    return _.get(value, 'start')
   }
   if (_.isFunction(options.labelOf) && (column.kind === 'select' || column.kind === 'multi')) {
     const label = options.labelOf(column)

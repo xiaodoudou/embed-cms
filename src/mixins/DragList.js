@@ -40,10 +40,21 @@ export default {
     },
     /**
      * The drag begins: the copy of the block that follows the pointer is a clone of its DOM, ids included, so the page would hold
-     * every id of the block twice until the drop. The clone is only to be seen: it keeps none.
+     * every id of the block twice until the drop. The clone is only to be seen: it keeps none, and a block's keeps its title bar alone.
      */
     onDragStart () {
-      const strip = () => document.querySelectorAll('.sortable-fallback [id]').forEach((el) => el.removeAttribute('id'))
+      const strip = () => {
+        document.querySelectorAll('.sortable-fallback [id]').forEach((el) => el.removeAttribute('id'))
+        // the copy of a block is a clone of all its forms, repainted at every move of the pointer: only its title bar is kept (the
+        // library sized it as the whole block)
+        document.querySelectorAll('.sortable-fallback').forEach((ghost) => {
+          const body = ghost.querySelector('.item-main-wrapper')
+          if (body) {
+            body.remove()
+            ghost.style.height = 'auto'
+          }
+        })
+      }
       strip()
       // the copy is added to the page a moment after the event on some versions of the library
       requestAnimationFrame(strip)

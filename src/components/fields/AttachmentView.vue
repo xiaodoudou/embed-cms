@@ -19,7 +19,7 @@
       </v-card>
     </form>
     <preview-multiple
-      :attachments="getAttachments()" :schema="schema" :theme="theme" :is-image="isImage" :disabled="isLocked()" :on-end-drag="onEndDrag" :image-size="imageSize" :get-image-src="getImageSrc"
+      :attachments="getAttachments()" :move-attachment="moveAttachment" :schema="schema" :theme="theme" :is-image="isImage" :disabled="isLocked()" :on-end-drag="onEndDrag" :image-size="imageSize" :get-image-src="getImageSrc"
       :remove-image="removeImage"
     />
     <file-input-errors file-type="file" :schema="schema" :is-for-multiple-images="isForMultipleImages" :get-max-count="getMaxCount" />

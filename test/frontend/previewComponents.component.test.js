@@ -306,6 +306,35 @@ describe('PreviewMultiple (the list of files of a field)', () => {
     expect(wrapper.findAllComponents(PreviewAttachment).every((item) => item.props('locked'))).toBe(true)
   })
 
+  it('starts a drag from the grip of a preview alone', () => {
+    list([IMAGE, PDF])
+    expect(wrapper.findComponent(draggable).attributes('handle')).toBe('.drag-grip')
+    expect(wrapper.findAll('.drag-grip')).toHaveLength(2)
+    expect(wrapper.find('.move-buttons').exists()).toBe(false)
+  })
+
+  it('offers the compact mode with two files or more: the grips give way to the buttons that move a file, which report where', async () => {
+    const moved = []
+    list([IMAGE, PDF, NEW_IMAGE], { moveAttachment: (index, delta) => moved.push([index, delta]) })
+    await wrapper.get('.reorder-toggle').trigger('click')
+    expect(wrapper.findAll('.drag-grip')).toHaveLength(0)
+    expect(wrapper.findAll('.move-buttons')).toHaveLength(3)
+    expect(wrapper.findAll('.move-earlier')[0].attributes('disabled')).toBeDefined()
+    expect(wrapper.findAll('.move-later')[2].attributes('disabled')).toBeDefined()
+    await wrapper.findAll('.move-later')[0].trigger('click')
+    await wrapper.findAll('.move-earlier')[2].trigger('click')
+    expect(moved).toEqual([[0, 1], [2, -1]])
+  })
+
+  it('offers no compact mode for one file or a locked field', () => {
+    list([IMAGE])
+    expect(wrapper.find('.reorder-toggle').exists()).toBe(false)
+    wrapper.unmount()
+    list([IMAGE, PDF], { disabled: true })
+    expect(wrapper.find('.reorder-toggle').exists()).toBe(false)
+    expect(wrapper.find('.drag-grip').exists()).toBe(false)
+  })
+
   it('numbers its previews from zero, for the cropping', () => {
     list([IMAGE, PDF])
     expect(wrapper.findAllComponents(PreviewAttachment).map((item) => item.props('index'))).toEqual([0, 1])

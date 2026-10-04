@@ -20,6 +20,20 @@ export default {
     }
   },
   methods: {
+    /**
+     * Moves the attachment at an index one place, as dragging it there does.
+     * @param {number} index
+     * @param {number} delta -1 earlier, 1 later; nothing past the ends
+     */
+    moveAttachment (index, delta) {
+      const list = this.getAttachments()
+      const to = index + delta
+      if (!list || to < 0 || to >= list.length) {
+        return
+      }
+      list.splice(to, 0, list.splice(index, 1)[0])
+      this.onEndDrag()
+    },
     /** Renumbers the order of the attachments. */
     onEndDrag () {
       const attachments = _.map(this.getAttachments(), (item, i) => {

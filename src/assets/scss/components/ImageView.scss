@@ -93,8 +93,6 @@
     // }
   }
   .row-handle {
-    cursor: -webkit-grab;
-    cursor: move;
     height: 100%;
     width: 100%;
     display: flex;
@@ -237,11 +235,47 @@
     }
   }
 
-  .row-handle {
-    cursor: grab;
-    &:active {
-      cursor: grabbing;
+  // the grip is the only place that starts a drag, and the compact mode puts the buttons that move a file in its place
+  .preview-attachment {
+    position: relative;
+    .drag-grip,
+    .move-buttons {
+      position: absolute;
+      top: var(--cms-space-2);
+      left: var(--cms-space-2);
+      z-index: 2;
+      background: var(--cms-surface);
+      border: 1px solid var(--cms-border);
+      border-radius: var(--cms-radius-sm, 4px);
     }
+    .drag-grip {
+      padding: 2px;
+      display: inline-flex;
+      color: var(--cms-text-muted);
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      &:hover {
+        color: var(--cms-text);
+      }
+      &:active {
+        cursor: grabbing;
+      }
+    }
+    // the compact mode: at the foot of the card, so that the name of the file stays readable above the picture
+    .move-buttons {
+      display: inline-flex;
+      gap: var(--cms-space-1);
+      padding: 2px;
+      top: auto;
+      bottom: var(--cms-space-2);
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  }
+  .reorder-bar {
+    display: flex;
+    justify-content: flex-end;
   }
 
   .file-input-errors,

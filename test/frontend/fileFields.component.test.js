@@ -281,6 +281,21 @@ describe.each([
       expect(model.photo.every((item) => item.orderUpdated)).toBe(true)
     })
 
+    it('moves a file one place earlier or later, as dragging it there does, and not past the ends', async () => {
+      const model = { photo: [{ ...SAVED, _id: 'a1', order: 1 }, { ...SAVED, _id: 'a2', order: 2 }, { ...SAVED, _id: 'a3', order: 3 }] }
+      field(component, {}, model)
+      await flushPromises()
+      wrapper.vm.moveAttachment(0, 1)
+      expect(model.photo.map((item) => item._id)).toEqual(['a2', 'a1', 'a3'])
+      expect(model.photo.map((item) => item.order)).toEqual([1, 2, 3])
+      expect(model.photo.filter((item) => item.orderUpdated).map((item) => item._id)).toEqual(['a2', 'a1'])
+      wrapper.vm.moveAttachment(2, -1)
+      expect(model.photo.map((item) => item._id)).toEqual(['a2', 'a3', 'a1'])
+      wrapper.vm.moveAttachment(0, -1)
+      wrapper.vm.moveAttachment(2, 1)
+      expect(model.photo.map((item) => item._id)).toEqual(['a2', 'a3', 'a1'])
+    })
+
     it('leaves the files that are already in place alone', async () => {
       const model = { photo: [{ ...SAVED, order: 1 }, { ...SAVED, _id: 'a2', order: 2 }] }
       field(component, {}, model)

@@ -42,6 +42,17 @@ describe('the options shared by the sortable lists (blocks, images, files)', () 
       expect(document.body.classList.contains('cms-dragging')).toBe(false)
     })
 
+    it('cuts the copy of a block that follows the pointer to its title bar: the forms are taken out of it, the library sized it as the whole block', () => {
+      document.body.innerHTML = '<div class="sortable-fallback" style="height: 600px"><div class="paragraph-header"></div><div class="item-main-wrapper"></div></div><div class="sortable-fallback" style="height: 120px"><div class="preview"></div></div>'
+      methods.onDragStart()
+      const [block, thumbnail] = document.querySelectorAll('.sortable-fallback')
+      expect(block.style.height).toBe('auto')
+      expect(block.querySelector('.item-main-wrapper')).toBe(null)
+      expect(block.querySelector('.paragraph-header')).not.toBe(null)
+      // a copy that is not a block (an image, a file) keeps the size it has
+      expect(thumbnail.style.height).toBe('120px')
+    })
+
     it('takes the ids off the copy of a block that follows the pointer, so the page does not hold them twice, and leaves the real block alone', () => {
       document.body.innerHTML = '<div class="item"><input id="cms-field-1"></div><div class="sortable-fallback"><input id="cms-field-1"><label id="a"></label></div>'
       methods.onDragStart()

@@ -14,7 +14,7 @@
           :text-input="textInput"
           :placeholder="placeholder"
           :locale="locale"
-          :input-attrs="{ clearable: !isLocked }"
+          :input-attrs="{ clearable: !locked }"
           :readonly="isReadonly"
           :disabled="isDisabled"
           :aria-labels="{input: schema.label}"
@@ -23,7 +23,7 @@
         />
       </div>
       <!-- Now on a field with a time, Today on a date-only one -->
-      <v-btn v-if="!isLocked" class="date-now" variant="outlined" size="small" @click="setNow">{{ $filters.translate(enableTimePicker ? 'TL_NOW' : 'TL_TODAY') }}</v-btn>
+      <v-btn v-if="!locked" class="date-now" variant="outlined" size="small" @click="setNow">{{ $filters.translate(enableTimePicker ? 'TL_NOW' : 'TL_TODAY') }}</v-btn>
     </div>
     <div v-if="showHint()" class="help-block">
       <v-icon size="small" icon="$information" />
@@ -90,7 +90,7 @@
         return !!(this.disabled || this.schema.disabled)
       },
       /** @returns {boolean} readonly or disabled */
-      isLocked () {
+      locked () {
         return this.isReadonly || this.isDisabled
       },
       // typing and picking both work: typed text is parsed with the schema format

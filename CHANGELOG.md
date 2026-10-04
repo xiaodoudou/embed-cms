@@ -39,6 +39,8 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ### Fixed
 
+- **The date field's `isLocked` hid the method of the same name every field has:** the date picker defined it as a computed property, so Vue warned and a call to `this.isLocked()` from the shared field code would have failed. The computed property is now `locked`.
+- **The tests of the admin no longer print thousands of warnings:** their Vuetify knew only a few icons and their fields lacked the look the app gives every field, so a run printed about 3900 `Vue warn` lines (the icons that could not be found, a `variant` and a `density` that were not valid). The icons the admin draws are in `src/utils/iconAliases.js`, which the app and the tests both read, and the test helper gives a field the look of its type; a run now prints a handful of lines, which are real (an event a test emits that a component does not declare, and the errors the tests of a refused save expect).
 - **Resolving relations never worked:** the hook was bound with `.bind` on an arrow function (a no-op), and the walk by regular expression looped on the records it had itself put in place.
 - **A required file field refused the first file dropped on it:** the rules ran against the box's own value, which only knows the files picked in it; they run against the files that arrive.
 - **A copied image kept no type:** a sync copied an image as `application/octet-stream`; it now goes through a file, as an upload does, and keeps `image/jpeg`.

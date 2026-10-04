@@ -153,7 +153,7 @@ describe('ShowAttachment (one file in the preview)', () => {
     it('opens with a click on the picture of a saved image', async () => {
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
       show(IMAGE)
-      wrapper.findComponent({ name: 'VImg' }).vm.$emit('click')
+      wrapper.findComponent({ name: 'VImg' }).trigger('click')
       expect(open).toHaveBeenCalledTimes(1)
     })
   })
@@ -219,7 +219,7 @@ describe('ShowAttachment (one file in the preview)', () => {
 
     describe('opening a picture that has a crop', () => {
       const CROP = { left: 1, top: 2, width: 3, height: 4 }
-      const click = () => wrapper.findComponent({ name: 'VImg' }).vm.$emit('click')
+      const click = () => wrapper.findComponent({ name: 'VImg' }).trigger('click')
 
       it('opens the cut the API makes, not the original', () => {
         const open = vi.spyOn(window, 'open').mockReturnValue(null)

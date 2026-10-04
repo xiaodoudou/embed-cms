@@ -139,6 +139,16 @@ describe('CMS class (unit)', () => {
       expect(cms._resources.f.options._attachments).to.have.members(['photo', 'doc'])
       expect(Object.keys(cms._attachmentFields.f)).to.have.length(2)
     })
+    it('records a crop image field as an attachment field, in a resource and in a block', () => {
+      const cms = build({}, {
+        'f.js': 'module.exports = { schema: [{ field: \'avatar\', input: \'cropimage\' }, { field: \'blocks\', input: \'paragraph\', options: { types: [\'hero\'] } }] }',
+        'paragraphs/hero.js': 'module.exports = { schema: [{ field: \'banner\', input: \'cropimage\' }] }'
+      })
+      const found = Object.keys(cms._attachmentFields.f).join(' ')
+      expect(Object.keys(cms._attachmentFields.f)).to.have.length(2)
+      expect(found).to.include('avatar')
+      expect(found).to.include('banner')
+    })
     it('records relations only to resources that exist', () => {
       const cms = build({}, {
         'cities.js': 'module.exports = { schema: [{ field: \'key\', input: \'string\', unique: true }] }',

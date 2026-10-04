@@ -5,6 +5,7 @@ const _ = require('lodash')
 const path = require('path')
 const fs = require('fs-extra')
 const logger = require('../lib/logger')
+const { isAttachmentInput } = require('../lib/util/inputTypes')
 const { GoogleSpreadsheet } = require('google-spreadsheet')
 const md5File = require('md5-file')
 const prompt = require('prompt')
@@ -272,7 +273,7 @@ class ImportManager {
             }
           }
           _.each(schema, item => {
-            if (_.includes(['file', 'image'], item.input)) {
+            if (isAttachmentInput(item.input)) {
               const bv = _.get(gsheetObj, item.field)
               if (!_.isUndefined(bv)) {
                 _.set(binaryObj, item.field, bv)
@@ -353,7 +354,7 @@ class ImportManager {
       return async () => {
         const endProcess = h.startProcess('Add dummy records %s ... ... ', resource)
         const uniqueKeys = this.api(resource).getUniqueKeys()
-        const fields = _.filter(this.schemaMap[resource], item => _.includes(['image', 'file'], item.input))
+        const fields = _.filter(this.schemaMap[resource], item => isAttachmentInput(item.input))
         _.each(data, item => {
           _.each(fields, field => {
             const folderPath = path.resolve(path.join('.', resource, _.get(item, _.first(uniqueKeys)), field.field))

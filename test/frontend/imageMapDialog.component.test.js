@@ -11,6 +11,7 @@ import { mountComponent } from './helpers/mountField.js'
 vi.mock('@s/ResourceService', () => ({ default: { get: vi.fn(), cache: vi.fn(), getSchema: vi.fn() } }))
 
 const SHOWN = { width: 1000, height: 500 }
+const room = { width: SHOWN.width, height: SHOWN.height }
 const KITCHEN = { id: 'kitchen', shape: 'rect', coords: [0.1, 0.1, 0.4, 0.5], title: 'Kitchen', href: '/kitchen', target: '_self' }
 const LAMP = { id: 'lamp', shape: 'circle', coords: [0.7, 0.3, 0.1], title: 'Lamp', href: 'https://example.com/lamp', target: '_blank' }
 const DOOR = { id: 'door', shape: 'poly', coords: [0.6, 0.6, 0.9, 0.6, 0.75, 0.95], title: 'Door', ref: { resource: 'pages', id: 'p2' }, target: '_self' }
@@ -52,10 +53,10 @@ const key = async (name, init = {}) => {
   await flushPromises()
   return event
 }
-const loaded = async () => {
+const loaded = async (width = 2000, height = 1000) => {
   const image = body('.map-image')
-  Object.defineProperty(image, 'naturalWidth', { configurable: true, value: 2000 })
-  Object.defineProperty(image, 'naturalHeight', { configurable: true, value: 1000 })
+  Object.defineProperty(image, 'naturalWidth', { configurable: true, value: width })
+  Object.defineProperty(image, 'naturalHeight', { configurable: true, value: height })
   image.dispatchEvent(new Event('load'))
   await flushPromises()
 }
@@ -75,7 +76,11 @@ const coords = (index = 0) => wrapper.vm.areas[index].coords
 
 beforeEach(() => {
   vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, right: SHOWN.width, bottom: SHOWN.height, x: 0, y: 0, ...SHOWN })
-  Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => SHOWN.width })
+  // the stage and the box of the picture have the room of the box the picture is shown in
+  room.width = SHOWN.width
+  room.height = SHOWN.height
+  Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => room.width })
+  Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, get: () => room.height })
   ResourceService.get.mockReset().mockReturnValue(PAGES)
   ResourceService.cache.mockReset().mockResolvedValue(PAGES)
   ResourceService.getSchema.mockReset().mockReturnValue({ locales: ['enUS'], schema: [{ field: 'title', input: 'string' }] })
@@ -139,6 +144,77 @@ describe('ImageMapDialog (the image map tool)', () => {
       await wrapper.setProps({ modelValue: true })
       await flushPromises()
       expect(wrapper.vm.areas).toHaveLength(1)
+    })
+  })
+
+  describe('the picture on the stage', () => {
+    const canvas = () => body('.map-canvas')
+
+    it('is shown to fill the room the stage has, whatever its size', async () => {
+      await open()
+      // 2000 x 1000 in a room of 1000 x 500
+      expect(canvas().getAttribute('style')).toContain('width: 1000px')
+      expect(canvas().getAttribute('style')).toContain('height: 500px')
+      expect(canvas().classList.contains('is-fitted')).toBe(true)
+      expect(wrapper.vm.fit).toBe(0.5)
+      expect(wrapper.vm.shownWidth).toBe(1000)
+    })
+
+    it('is shown larger than it is when it is small, up to four times', async () => {
+      mount()
+      await flushPromises()
+      await loaded(200, 100)
+      expect(wrapper.vm.fit).toBe(4)
+      expect(canvas().getAttribute('style')).toContain('width: 800px')
+      expect(canvas().getAttribute('style')).toContain('height: 400px')
+    })
+
+    it('keeps its shape in a room of another shape, the side that is short deciding', async () => {
+      mount()
+      await flushPromises()
+      room.width = 300
+      room.height = 900
+      await loaded(600, 300)
+      expect(wrapper.vm.fit).toBe(0.5)
+      expect(canvas().getAttribute('style')).toContain('width: 300px')
+      expect(canvas().getAttribute('style')).toContain('height: 150px')
+    })
+
+    it('is fitted again when the window changes size', async () => {
+      await open()
+      room.width = 500
+      room.height = 500
+      window.dispatchEvent(new Event('resize'))
+      await flushPromises()
+      expect(wrapper.vm.fit).toBe(0.25)
+      expect(canvas().getAttribute('style')).toContain('width: 500px')
+      expect(canvas().getAttribute('style')).toContain('height: 250px')
+    })
+
+    it('is not fitted before the picture is there, or when the stage has no room', async () => {
+      mount()
+      await flushPromises()
+      expect(wrapper.vm.fit).toBe(0)
+      expect(canvas().classList.contains('is-fitted')).toBe(false)
+      room.width = 0
+      await loaded()
+      expect(wrapper.vm.fit).toBe(0)
+      expect(canvas().getAttribute('style') || '').not.toContain('width')
+    })
+
+    it('draws where the pointer is on the picture as it is shown: the same point at any size', async () => {
+      await open()
+      await click('.map-tool-rect')
+      await drag([0.2, 0.2], [0.6, 0.7])
+      expect(coords()).toEqual([0.2, 0.2, 0.6, 0.7])
+      wrapper.vm.clear()
+      room.width = 400
+      room.height = 200
+      window.dispatchEvent(new Event('resize'))
+      await flushPromises()
+      await click('.map-tool-rect')
+      await drag([0.2, 0.2], [0.6, 0.7])
+      expect(coords()).toEqual([0.2, 0.2, 0.6, 0.7])
     })
   })
 

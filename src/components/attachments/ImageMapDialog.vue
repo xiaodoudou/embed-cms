@@ -6,8 +6,8 @@
     <v-card class="map-card">
       <h2 :id="titleId" class="map-title">{{ title }}</h2>
       <div class="map-body">
-        <div class="map-stage">
-          <div v-if="modelValue" ref="canvas" class="map-canvas">
+        <div ref="stage" class="map-stage">
+          <div v-if="modelValue" ref="canvas" class="map-canvas" :class="{ 'is-fitted': fit > 0 }" :style="canvasStyle">
             <img class="map-image" :src="src" alt="" draggable="false" @load="onLoad" @error="onError">
             <svg
               v-if="ready" ref="overlay" class="map-overlay" :class="`is-${tool}`" :viewBox="`0 0 ${size.width} ${size.height}`" preserveAspectRatio="none"
@@ -180,6 +180,8 @@
   const HINTS = { select: 'TL_MAP_HINT_SELECT', rect: 'TL_MAP_HINT_RECT', circle: 'TL_MAP_HINT_CIRCLE', poly: 'TL_MAP_HINT_POLY' }
   // a click this close (in screen pixels) to the first point of a polygon closes it
   const CLOSE_DISTANCE = 12
+  // a picture is shown larger than it is, to fill the room the stage has, up to this many times (a small picture is easier to draw on)
+  const MAX_ZOOM = 4
   // an arrow key moves the area a fraction of the picture; with Shift, ten times that
   const NUDGE = 0.005
 
@@ -208,6 +210,8 @@
         // the picture in pixels, and how wide it is shown (the size of a handle and of a number does not follow the picture)
         size: { width: 1, height: 1 },
         shownWidth: 0,
+        // how many times the picture is shown at its size to fill the stage (0: not measured yet, it takes the room its own size and the stylesheet allow)
+        fit: 0,
         areas: [],
         selected: -1,
         tool: 'select',
@@ -257,6 +261,10 @@
       /** @returns {Object|null} the area that is selected */
       current () {
         return this.areas[this.selected] || null
+      },
+      /** @returns {Object} the box of the picture, the size that fills the stage */
+      canvasStyle () {
+        return this.fit > 0 ? { width: `${Math.round(this.size.width * this.fit)}px`, height: `${Math.round(this.size.height * this.fit)}px` } : {}
       },
       /** @returns {number} how many units of the picture a pixel of the screen is */
       unit () {
@@ -448,8 +456,13 @@
       onError () {
         this.loadError = true
       },
-      /** Takes how wide the picture is shown. */
-      measure () {
+      /** Fits the picture to the room the stage has, and takes how wide it is shown (the handles and the numbers on it do not follow the picture). */
+      async measure () {
+        const stage = this.$refs.stage
+        const space = (side) => (stage ? parseFloat(getComputedStyle(stage)[`padding${side}`]) || 0 : 0)
+        const room = stage && this.ready ? { width: stage.clientWidth - space('Left') - space('Right'), height: stage.clientHeight - space('Top') - space('Bottom') } : null
+        this.fit = room && room.width > 0 && room.height > 0 ? _.clamp(Math.min(room.width / this.size.width, room.height / this.size.height), 0.01, MAX_ZOOM) : 0
+        await this.$nextTick()
         this.shownWidth = this.$refs.canvas ? this.$refs.canvas.clientWidth : 0
       },
       /**
@@ -845,6 +858,12 @@
     max-width: 100%;
     line-height: 0;
   }
+  .map-canvas.is-fitted .map-image {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+  }
   .map-image {
     display: block;
     max-width: 100%;
@@ -1063,6 +1082,7 @@
       overflow-y: auto;
     }
     .map-stage {
+      height: 46vh;
       min-height: 200px;
     }
     .map-image {

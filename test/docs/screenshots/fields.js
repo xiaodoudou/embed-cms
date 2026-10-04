@@ -850,4 +850,27 @@ add('markdown-required-error', 'text_long', async (c) => {
 })
 add('markdown-states', 'text_long', (c) => [c.field('readOnlyMarkdown'), c.field('disabledMarkdown')])
 
+// ---------------------------------------------------------------- daterange
+const typedRange = async (c, model, text) => {
+  await c.input(model).click()
+  await c.input(model).fill(text)
+  await c.input(model).press('Enter')
+  await c.blur()
+  return c.field(model)
+}
+add('daterange-default', 'dates', (c) => typedRange(c, 'range', '2026/10/05 – 2026/10/09'))
+add('daterange-open', 'dates', async (c) => {
+  await c.input('range').click()
+  await c.page.mouse.move(5, 5)
+  await c.page.waitForSelector('.dp--menu', { state: 'visible' })
+  await c.page.waitForTimeout(400)
+  return c.field('range')
+}, { crop: { height: 400 }, scroll: 'start' })
+add('daterange-time', 'dates', (c) => typedRange(c, 'timeRange', '2026/10/05 09:00 – 2026/10/05 17:30'))
+add('daterange-required-error', 'dates', async (c) => {
+  await c.type('name', 'Name')
+  return refuse(c, 'requiredRange')
+})
+add('daterange-states', 'dates', (c) => [c.field('readOnlyRange'), c.field('disabledRange')])
+
 module.exports = { specs }

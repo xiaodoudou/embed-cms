@@ -32,7 +32,7 @@ describe('FormService (how each input type is built and checked)', () => {
   describe('the input types', () => {
     it('knows every input type the documentation lists', () => {
       expect(Object.keys(mapper).sort()).toEqual([
-        'checkbox', 'code', 'color', 'cropimage', 'date', 'datetime', 'double', 'duration', 'email', 'file', 'group', 'image', 'imagemap', 'integer', 'json', 'markdown', 'money', 'multiselect',
+        'checkbox', 'code', 'color', 'cropimage', 'date', 'daterange', 'datetime', 'double', 'duration', 'email', 'file', 'group', 'image', 'imagemap', 'integer', 'json', 'markdown', 'money', 'multiselect',
         'number', 'object', 'paragraph', 'password', 'phone', 'pillbox', 'rating', 'select', 'string', 'text', 'time', 'transliterate', 'url', 'wysiwyg'
       ])
     })
@@ -194,6 +194,26 @@ describe('FormService (how each input type is built and checked)', () => {
       expect(check('url', 'https://example.com/a?b=1')).toBe(true)
       expect(check('url', 'example.com')).toBe(false)
       expect(check('url', '')).toBe(false)
+    })
+  })
+
+  describe('daterange', () => {
+    const day = (text) => new Date(text + 'T00:00:00').getTime()
+
+    it('is built by its own component', () => {
+      expect(mapper.daterange.type).toBe('DateRangeField')
+    })
+
+    it('says when a required range is missing', () => {
+      expect(check('daterange', undefined, { required: true })).toBe(REQUIRED())
+      expect(check('daterange', undefined, {})).toBe(true)
+    })
+
+    it('takes a range, and refuses an end before the start and a range of the wrong length', () => {
+      expect(check('daterange', { start: day('2026-10-01'), end: day('2026-10-03') }, {})).toBe(true)
+      expect(check('daterange', { start: day('2026-10-03'), end: day('2026-10-01') }, {})).toBe(TranslateService.get('TL_DATE_RANGE_ORDER'))
+      expect(check('daterange', { start: day('2026-10-01'), end: day('2026-10-02') }, { minDays: 3 })).toBe(TranslateService.get('TL_DATE_RANGE_TOO_SHORT', { min: 3 }))
+      expect(check('daterange', { start: 1 }, {})).toBe(TranslateService.get('TL_INVALID_DATE_RANGE'))
     })
   })
 

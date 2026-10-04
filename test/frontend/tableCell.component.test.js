@@ -20,6 +20,14 @@ describe('TableCell', () => {
     expect(cell('rating', { value: 2.5 }, { field: {} }).text()).toBe('2.5 / 5')
   })
 
+  it('shows a date range as its two days, and with the times when the field has them', () => {
+    const start = new Date(2026, 9, 1, 9, 30).getTime()
+    const end = new Date(2026, 9, 5, 17, 0).getTime()
+    expect(cell('daterange', { value: { start, end } }, { field: {} }).text()).toBe('2026-10-01 → 2026-10-05')
+    expect(cell('daterange', { value: { start, end } }, { field: { options: { time: true } } }).text()).toBe('2026-10-01 09:30 → 2026-10-05 17:00')
+    expect(cell('daterange', {}, { field: {} }).find('.cell-empty').exists()).toBe(true)
+  })
+
   it('shows markdown as what it says, without the signs', () => {
     const wrapper = cell('markdown', { value: '# Title\n\nSome **bold** and [a link](https://x.co).' }, { field: {} })
     expect(wrapper.text()).toBe('Title Some bold and a link.')

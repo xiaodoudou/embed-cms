@@ -71,7 +71,7 @@ declare namespace EmbedCMS {
     | 'string' | 'transliterate' | 'text' | 'password' | 'email' | 'url'
     | 'number' | 'integer' | 'double'
     | 'checkbox' | 'color' | 'rating' | 'duration' | 'money' | 'phone' | 'markdown'
-    | 'date' | 'time' | 'datetime'
+    | 'date' | 'daterange' | 'time' | 'datetime'
     | 'pillbox' | 'select' | 'multiselect'
     | 'json' | 'object' | 'code' | 'wysiwyg'
     | 'image' | 'cropimage' | 'imagemap' | 'file' | 'paragraph'
@@ -125,6 +125,16 @@ declare namespace EmbedCMS {
     currency?: string
     /** `money`: the currencies it offers, when there is more than one (the common ones by default) */
     currencies?: string[]
+    /** `daterange`: the moments have a time as well as a day */
+    time?: boolean
+    /** `daterange`: how the two moments are written in the box (dayjs tokens, `YYYY/MM/DD` by default) */
+    format?: string
+    /** `daterange`: the first and the last day it takes, a date (`'2026-10-05'`), a number of milliseconds, or `'today'` */
+    minDate?: string | number
+    maxDate?: string | number
+    /** `daterange`: the fewest and the most days a range has, the first and the last included */
+    minDays?: number
+    maxDays?: number
     /** `markdown`: the buttons of the toolbar, in the order of the toolbar (`'bold'`, `'italic'`, `'strike'`, `'heading'`, `'quote'`, `'ul'`, `'ol'`, `'code'`, `'link'`); `false` for none, all by default */
     toolbar?: boolean | Array<'bold' | 'italic' | 'strike' | 'heading' | 'quote' | 'ul' | 'ol' | 'code' | 'link'>
     /** `markdown`: where the preview is: in a tab (by default), beside the box, or `false` for none */

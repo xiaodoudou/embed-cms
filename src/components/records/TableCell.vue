@@ -43,6 +43,7 @@
   import { formatMoney } from '@u/money'
   import { formatPhone, splitE164 } from '@u/phone'
   import { markdownToPlain } from '@u/markdown'
+  import { formatDateRange } from '@u/dateRange'
   import { localeTag } from '@u/locale'
 
   /**
@@ -104,6 +105,7 @@
           case 'duration': return formatDuration(value, durationOptions(this.column.field).units, localeTag(TranslateService.locale))
           case 'phone': return formatPhone(value)
           case 'markdown': return markdownToPlain(value)
+          case 'daterange': return formatDateRange(value, _.get(this.column, 'field.options.time') === true)
           case 'money': return formatMoney(value, localeTag(TranslateService.locale))
           case 'rating': return ratingText(value, ratingOptions(this.column.field).max)
           case 'date':

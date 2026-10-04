@@ -55,6 +55,7 @@ describe('buildColumns (locale derivation)', () => {
     expect(fieldKind('money')).toBe('money')
     expect(fieldKind('phone')).toBe('phone')
     expect(fieldKind('markdown')).toBe('markdown')
+    expect(fieldKind('daterange')).toBe('daterange')
     const [column] = buildColumns([{ originalModel: 'avatar', model: 'avatar', localised: false }], { locales: [], schema: [{ field: 'avatar', input: 'cropimage' }] })
     expect(column).toMatchObject({ kind: 'image', input: 'cropimage', sortable: false })
   })
@@ -131,6 +132,15 @@ describe('sorting', () => {
     expect(state).toEqual([{ key: 'a', order: 'asc' }, { key: 'b', order: 'asc' }])
     expect(nextSort(state, 'b', true)).toEqual([{ key: 'a', order: 'asc' }, { key: 'b', order: 'desc' }])
     expect(nextSort(nextSort(state, 'b', true), 'b', true)).toEqual([{ key: 'a', order: 'asc' }])
+  })
+})
+
+describe('sorting date ranges', () => {
+  it('sorts by the start, with the rows that have no range last', () => {
+    const rows = [{ r: { start: 30, end: 40 } }, {}, { r: { start: 10, end: 90 } }, { r: { start: 20, end: 25 } }]
+    const get = (row) => sortValue(row, { model: 'r', kind: 'daterange' })
+    expect(sortRows(rows, [{ key: 'r', order: 'asc' }], get).map((row) => row.r && row.r.start)).toEqual([10, 20, 30, undefined])
+    expect(sortRows(rows, [{ key: 'r', order: 'desc' }], get).map((row) => row.r && row.r.start)).toEqual([30, 20, 10, undefined])
   })
 })
 

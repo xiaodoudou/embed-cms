@@ -8,11 +8,11 @@
     </div>
     <div class="paragraph-view" :class="{'can-add-more': !blockMoreItems()}" :style="{ '--paragraph-level': getParagraphLevel() }">
       <div v-if="!blockMoreItems()" class="paragraph-header-bar">
+        <label :id="`${inputId}-type-label`" :for="`${inputId}-type`" class="cms-visually-hidden">{{ $filters.translate('TL_PARAGRAPH_TYPE') }}</label>
         <v-autocomplete
-          ref="input" :ripple="false" :menu-props="menuProps" :theme="theme" transition="none" :model-value="selectedType" :items="types" :item-title="getLabel" item-value="title" hide-details
+          :id="`${inputId}-type`" ref="input" :ripple="false" :menu-props="menuProps" :theme="theme" transition="none" :model-value="selectedType" :items="types" :item-title="getLabel" item-value="title" hide-details
           rounded density="compact" persistent-placeholder variant="solo-filled" flat :rules="[validateField]" :disabled="disabled || schema.disabled" menu-icon="$chevronDown" @update:model-value="onChangeType"
         >
-          <template #label />
         </v-autocomplete>
         <div class="add-btn-wrapper">
           <v-btn elevation="0" class="add-new-item" :disabled="blockMoreItems()" @click="onClickAddNewItem"><span>{{ $filters.translate('TL_ADD') }}</span></v-btn>
@@ -58,11 +58,10 @@
                   <template v-if="item.showConvert">
                     <div class="convert-action">
                       <v-select
-                        :model-value="item.showConvert" :menu-props="menuProps" :theme="theme" transition="none" :items="types" hide-details rounded density="compact" persistent-placeholder variant="solo-filled"
+                        :id="`${inputId}-convert-${idx}`" :model-value="item.showConvert" :menu-props="menuProps" :theme="theme" transition="none" :items="types" hide-details rounded density="compact" persistent-placeholder variant="solo-filled"
                         flat
                       >
-                        <template #prepend><field-label :schema="{label: $filters.translate('TL_CONVERT_TO')}" /></template>
-                        <template #label />
+                        <template #prepend><field-label :schema="{label: $filters.translate('TL_CONVERT_TO')}" :input-id="`${inputId}-convert-${idx}`" /></template>
                       </v-select>
                       <v-btn elevation="0" rounded @click="convertParagraph(item)">{{ $filters.translate('TL_CONVERT') }}</v-btn>
                     </div>
@@ -122,6 +121,10 @@
       }
     },
     computed: {
+      /** @returns {string} the id prefix of the selects of this field, so their labels can point at them */
+      inputId () {
+        return `cms-paragraph-${this.$.uid}`
+      },
       /** @returns {boolean} options.dynamicLayout, or an item that carries slots */
       isDynamicLayoutContainer() {
         return this.schema && (

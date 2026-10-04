@@ -168,6 +168,7 @@
     "TL_WIDTH": "Width",
     "TL_HEIGHT": "Height",
     "TL_CONVERT_TO": "Convert to",
+    "TL_PARAGRAPH_TYPE": "Block type",
     "TL_CONVERT": "Convert",
     "TL_INVALID_PARAGRAPH_WOULD_YOU_LIKE_TO_CONVERT_IT": "Invalid paragraph, would you like to convert it?",
     "TL_INVALID_PARAGRAPH_CANNOT_BE_CONVERTED": "Invalid paragraph, cannot be converted",

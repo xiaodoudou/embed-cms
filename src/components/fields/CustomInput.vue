@@ -1,14 +1,13 @@
 <template>
   <div class="custom-input">
     <v-text-field
-      ref="input"
+      ref="input" :id="inputId"
       :theme="theme" :class="[schema.labelClasses]" :type="getType()" :model-value="_value"
       :max-length="schema.max" :min-length="schema.min" autocomplete="off" validate-on="blur" :rules="[validateField]"
       :variant="getVariant()" :flat="get('flat')" :rounded="get('rounded')" :density="get('density')" :disabled="disabled" :readonly="get('readonly')" :aria-readonly="get('readonly') ? 'true' : undefined"
       persistent-placeholder hide-details="auto" :aria-label="schema.label" :aria-required="schema.required ? 'true' : undefined" @update:model-value="onChangeData" @update:focused="onFieldFocus"
     >
-      <template #prepend><field-label :schema="schema" :disabled="disabled" /></template>
-      <template #label />
+      <template #prepend><field-label :schema="schema" :disabled="disabled" :input-id="inputId" /></template>
     </v-text-field>
     <div v-if="showHint()" class="help-block">
       <v-icon size="small" icon="$information" />

@@ -10,6 +10,15 @@ describe('CustomInput (text, number, email...)', () => {
     expect(wrapper.find('.help-block').text()).toBe('Names the record')
   })
 
+  it('is a real label pointing at the input, and the input points back at it (no empty Vuetify label in between)', () => {
+    const wrapper = mountField(CustomInput, { schema: { label: 'Name' } })
+    const label = wrapper.get('label.field-label')
+    const input = wrapper.get('input')
+    expect(label.attributes('for')).toBe(input.attributes('id'))
+    expect(input.attributes('aria-labelledby')).toBe(label.attributes('id'))
+    expect(wrapper.findAll('label')).toHaveLength(1)
+  })
+
   it('shows the value of the model', () => {
     const wrapper = mountField(CustomInput, { model: { title: 'Hello' }, schema: { model: 'title' } })
     expect(wrapper.get('input').element.value).toBe('Hello')

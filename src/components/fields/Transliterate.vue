@@ -1,7 +1,7 @@
 <template>
   <div class="transliterate-field">
     <v-text-field
-      ref="input"
+      ref="input" :id="inputId"
       :theme="theme"
       :class="[schema.labelClasses]"
       :model-value="_value"
@@ -16,8 +16,7 @@
       hide-details
       @update:model-value="onChangeData"
     >
-      <template #prepend><field-label :schema="schema" :disabled="disabled" /></template>
-      <template #label />
+      <template #prepend><field-label :schema="schema" :disabled="disabled" :input-id="inputId" /></template>
     </v-text-field>
     <div v-if="showHint()" class="help-block">
       <v-icon size="small" icon="$information" />

@@ -1,14 +1,13 @@
 <template>
   <div class="custom-input-tag">
     <v-combobox
-      ref="input"
+      ref="input" :id="inputId"
       :theme="theme" :class="[schema.labelClasses]" :type="getType()" :model-value="_value" :input-value="_value" :items="suggestions"
       :max-length="schema.max" :min-length="schema.min" autocomplete="off" validate-on-submit :rules="[validateField]" persistent-placeholder hide-details="auto" chips closable-chips multiple
       :variant="getVariant()" :flat="get('flat')" :rounded="get('rounded')" :density="get('density')" :disabled="disabled" :readonly="get('readonly')" clearable
       @update:model-value="onChangeData" @update:focused="onFieldFocus" @paste="onPaste"
     >
-      <template #prepend><field-label :schema="schema" :disabled="disabled" /></template>
-      <template #label />
+      <template #prepend><field-label :schema="schema" :disabled="disabled" :input-id="inputId" /></template>
       <template #chip="{ props, item }">
         <v-chip
           v-bind="props"

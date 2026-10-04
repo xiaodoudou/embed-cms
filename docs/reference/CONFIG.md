@@ -100,10 +100,11 @@ The admin has a log page (**Syslog**, in the CMS menu) fed by `/api/_syslog`. Th
 
 | `syslog` | On Linux | On macOS and Windows |
 |---|---|---|
-| not set | Nothing is captured; the log page stays empty. | Sample log lines are generated, so the page has something to show. |
+| not set | Nothing is captured; the log page stays empty. | The page shows what the CMS itself prints (its console output, kept in memory, no file). |
 | `{ "method": "file", "path": "./cms.log" }` | The CMS captures its own console output, appends it to `path`, and shows that file (including what was in it at start-up). | Same. |
-| `{ "method": "journalctl", "identifier": "my-cms" }` | Follows `journalctl -u my-cms.service`. | Treated like `file` if `path` is set, otherwise sample lines. |
-| `{ "method": "syslog", "identifier": "my-cms" }` | Follows `/var/log/syslog` and strips the `my-cms[pid]:` prefix from lines. | Treated like `file` if `path` is set, otherwise sample lines. |
+| `{ "method": "journalctl", "identifier": "my-cms" }` | Follows `journalctl -u my-cms.service`. | Treated like `file` if `path` is set, otherwise the console output of the CMS. |
+| `{ "method": "syslog", "identifier": "my-cms" }` | Follows `/var/log/syslog` and strips the `my-cms[pid]:` prefix from lines. | Treated like `file` if `path` is set, otherwise the console output of the CMS. |
+| `{ "method": "console" }` | The page shows what the CMS itself prints, kept in memory (nothing is written to a file). | Same, and what the page shows by default. |
 
 `syslog.max` (default `2000`) is the number of lines kept in memory and sent to a page that opens. On Linux, `journalctl` and `syslog` need an `identifier`: without one nothing is captured.
 
@@ -114,6 +115,8 @@ A very long log is kept in check by three more settings (set any of them to `0` 
 | `syslog.maxLineLength` | `10000` | A longer line is cut on the page, with the number of characters left out. The file keeps it whole. |
 | `syslog.maxFileSize` | `10485760` (10 MB) | With the `file` method, a log file past this size is copied to `<path>.1` (replacing the previous copy) and emptied. Checked at start-up and every minute. |
 | `syslog.maxClientBuffer` | `8388608` (8 MB) | A page that stops reading is dropped once this many bytes wait for it. It reconnects by itself. |
+
+`{ "method": "example" }` shows made-up lines of every kind (colours, emojis, tables, objects, multiline text) to see how the page renders them; it is for working on the page, not for a server.
 
 `{ "method": "command", "command": "tail -F /var/log/app.log" }` follows the output of any command, on every operating system and without an `identifier`. It runs through the shell, so pipes work, and it is started again 2 seconds after it exits, which makes it a poor fit for one-shot commands.
 

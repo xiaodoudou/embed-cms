@@ -82,6 +82,8 @@
   gap: var(--cms-space-3);
   padding: var(--cms-space-3) var(--cms-space-4);
   min-height: 64px;
+  // a child of the editor's column: when the bar wraps on a narrow screen it grows, it is not squeezed by the form below
+  flex-shrink: 0;
   border-bottom: 2px solid var(--cms-border);
   background: var(--cms-bar-bg);
 

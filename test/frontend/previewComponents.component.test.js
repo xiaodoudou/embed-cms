@@ -238,20 +238,19 @@ describe('ShowAttachment (one file in the preview)', () => {
 
       it('opens the small picture of a crop that is not saved yet', async () => {
         const open = vi.spyOn(window, 'open').mockReturnValue(null)
-        vi.stubGlobal('fetch', vi.fn(async () => ({ blob: async () => new Blob(['small']) })))
         URL.createObjectURL = vi.fn(() => 'blob:small')
         URL.revokeObjectURL = vi.fn()
         show({ ...IMAGE, cropOptions: { ...CROP, updated: true }, cropPreview: 'data:image/jpeg;base64,PP' }, { schema: CROP_IMAGE })
         click()
         await flushPromises()
-        expect(fetch).toHaveBeenCalledWith('data:image/jpeg;base64,PP')
+        // (decoded in the page: a fetch of a data url is refused by the security policy of the admin)
+        expect(URL.createObjectURL).toHaveBeenCalledTimes(1)
+        expect(URL.createObjectURL.mock.calls[0][0].type).toBe('image/jpeg')
         expect(open).toHaveBeenCalledWith('blob:small', '_blank')
-        vi.unstubAllGlobals()
       })
 
       it('opens a new picture that was just cropped, which has no address yet, and nothing before it is', async () => {
         const open = vi.spyOn(window, 'open').mockReturnValue(null)
-        vi.stubGlobal('fetch', vi.fn(async () => ({ blob: async () => new Blob(['small']) })))
         URL.createObjectURL = vi.fn(() => 'blob:small')
         URL.revokeObjectURL = vi.fn()
         show(NEW_IMAGE, { schema: CROP_IMAGE })
@@ -264,7 +263,6 @@ describe('ShowAttachment (one file in the preview)', () => {
         click()
         await flushPromises()
         expect(open).toHaveBeenCalledWith('blob:small', '_blank')
-        vi.unstubAllGlobals()
       })
 
       it('can be clicked when it is saved', () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  fieldKind, buildColumns, defaultHiddenKeys, applyPrefs, orderedColumns, loadPrefs, savePrefs, clearPrefs,
+  fieldKind, columnAlign, buildColumns, defaultHiddenKeys, applyPrefs, orderedColumns, loadPrefs, savePrefs, clearPrefs,
   compareValues, sortRows, nextSort, richTextToPlain, attachmentOf
 } from '../../src/utils/tableModel.js'
 
@@ -51,9 +51,17 @@ describe('buildColumns (locale derivation)', () => {
     expect(fieldKind('cropimage')).toBe('image')
     expect(fieldKind('imagemap')).toBe('image')
     expect(fieldKind('rating')).toBe('rating')
+    expect(fieldKind('duration')).toBe('duration')
     const [column] = buildColumns([{ originalModel: 'avatar', model: 'avatar', localised: false }], { locales: [], schema: [{ field: 'avatar', input: 'cropimage' }] })
     expect(column).toMatchObject({ kind: 'image', input: 'cropimage', sortable: false })
   })
+  it('aligns a duration to the right, like a number', () => {
+    expect(columnAlign('duration')).toBe('right')
+    expect(columnAlign('number')).toBe('right')
+    expect(columnAlign('text')).toBe('left')
+    expect(columnAlign('duration', 'left')).toBe('left')
+  })
+
   it('ignores groups and fields without a model', () => {
     expect(buildColumns([{ type: 'group' }, { model: 'x' }], resource)).toEqual([])
   })

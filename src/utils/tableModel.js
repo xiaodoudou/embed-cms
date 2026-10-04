@@ -30,7 +30,8 @@ const KIND_BY_INPUT = {
   url: 'link',
   email: 'link',
   color: 'color',
-  rating: 'rating'
+  rating: 'rating',
+  duration: 'duration'
 }
 
 // Fixed or flexible widths per kind (px). Flexible text columns have a min and a max and truncate.
@@ -43,6 +44,7 @@ const WIDTHS = {
   image: { width: 104 },
   color: { width: 96 },
   rating: { width: 116 },
+  duration: { width: 116 },
   select: { min: 140, max: 240 },
   multi: { min: 160, max: 280 },
   link: { min: 160, max: 280 },
@@ -88,7 +90,7 @@ export function columnAlign (kind, rawAlign) {
   if (rawAlign) {
     return rawAlign
   }
-  return kind === 'number' ? 'right' : 'left'
+  return kind === 'number' || kind === 'duration' ? 'right' : 'left'
 }
 
 /**

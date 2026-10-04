@@ -20,6 +20,14 @@ describe('TableCell', () => {
     expect(cell('rating', { value: 2.5 }, { field: {} }).text()).toBe('2.5 / 5')
   })
 
+  it('shows a duration in the units of the field, right aligned like a number', () => {
+    const wrapper = cell('duration', { value: 5400 }, { field: { options: { units: ['hours', 'minutes'] } } })
+    expect(wrapper.get('.cell-number').text()).toBe('1h 30m')
+    expect(cell('duration', { value: 90061 }, { field: { options: { units: ['days', 'hours', 'minutes', 'seconds'] } } }).text()).toBe('1d 1h 1m 1s')
+    expect(cell('duration', { value: 0 }, { field: {} }).text()).toBe('0m')
+    expect(cell('duration', {}, { field: {} }).find('.cell-empty').exists()).toBe(true)
+  })
+
   it('draws an empty rating as a dash', () => {
     expect(cell('rating', {}, { field: {} }).find('.cell-empty').exists()).toBe(true)
   })

@@ -1,4 +1,4 @@
-// rating, duration and money: numbers with a unit, a scale or a currency
+// rating, duration and money: numbers with a scale, a unit or a currency
 module.exports = {
   displayname: { enUS: 'Quantities', zhCN: '数量' },
   group: { enUS: 'Numbers', zhCN: '数字' },
@@ -6,6 +6,7 @@ module.exports = {
   type: 'normal',
   schema: [
     { field: 'name', input: 'string', label: 'Name', localised: false, required: true, options: { hint: 'Required. Names the record in lists' } },
+
     // rating: five stars, whole
     { field: 'stars', input: 'rating', label: 'Stars', localised: false, options: { hint: 'Five stars, click one; click it again to take the rating away' } },
     // half steps
@@ -16,6 +17,16 @@ module.exports = {
     { field: 'requiredRating', input: 'rating', label: 'Required rating', localised: false, required: true, options: { clearable: false, hint: 'Required, and once given it can be changed but not taken away' } },
     { field: 'localisedRating', input: 'rating', label: 'Rating per locale', options: { hint: 'One rating per locale' } },
     { field: 'readOnlyRating', input: 'rating', label: 'Read-only rating', localised: false, options: { readonly: true, hint: 'Read-only: visible, not editable' } },
-    { field: 'disabledRating', input: 'rating', label: 'Disabled rating', localised: false, options: { disabled: true, hint: 'Disabled: greyed out and not focusable' } }
+    { field: 'disabledRating', input: 'rating', label: 'Disabled rating', localised: false, options: { disabled: true, hint: 'Disabled: greyed out and not focusable' } },
+
+    // duration: kept in seconds, typed in hours and minutes by default
+    { field: 'duration', input: 'duration', label: 'Duration', localised: false, options: { hint: 'Hours and minutes, kept as a number of seconds' } },
+    { field: 'preciseDuration', input: 'duration', label: 'Precise duration', localised: false, options: { units: ['hours', 'minutes', 'seconds'], hint: 'Hours, minutes and seconds' } },
+    { field: 'longDuration', input: 'duration', label: 'Long duration', localised: false, options: { units: ['days', 'hours'], hint: 'Days and hours' } },
+    { field: 'minutesOnly', input: 'duration', label: 'Minutes only', localised: false, options: { units: ['minutes'], min: 5 * 60, max: 8 * 3600, hint: 'Minutes only, from 5 minutes to 8 hours (a box holds more than 59: 90 minutes stay 90)' } },
+    { field: 'requiredDuration', input: 'duration', label: 'Required duration', localised: false, required: true, options: { hint: 'Required. A length of zero is a length' } },
+    { field: 'localisedDuration', input: 'duration', label: 'Duration per locale', options: { hint: 'One duration per locale' } },
+    { field: 'readOnlyDuration', input: 'duration', label: 'Read-only duration', localised: false, options: { readonly: true, hint: 'Read-only: visible, not editable' } },
+    { field: 'disabledDuration', input: 'duration', label: 'Disabled duration', localised: false, options: { disabled: true, hint: 'Disabled: greyed out and not focusable' } }
   ]
 }

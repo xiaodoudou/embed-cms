@@ -39,6 +39,7 @@ import CustomTreeView from '@c/fields/CustomTreeView.vue'
 import CustomCode from '@c/fields/CustomCode.vue'
 import ColorPicker from '@c/fields/ColorPicker.vue'
 import RatingField from '@c/fields/RatingField.vue'
+import DurationField from '@c/fields/DurationField.vue'
 import JsonEditor from '@c/fields/JsonEditor.vue'
 import WysiwygField from '@c/fields/Wysiwyg.vue'
 import ParagraphView from '@c/fields/ParagraphView.vue'
@@ -103,6 +104,7 @@ app.use(router)
   .component('CustomCode', CustomCode)
   .component('ColorPicker', ColorPicker)
   .component('RatingField', RatingField)
+  .component('DurationField', DurationField)
   .component('JsonEditor', JsonEditor)
   .component('WysiwygField', WysiwygField)
   .component('CustomDatetimePicker', CustomDatetimePicker)

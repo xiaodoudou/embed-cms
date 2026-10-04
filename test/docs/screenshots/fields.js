@@ -481,6 +481,122 @@ add('image-readonly-saved', 'media_images', (c) => opened(c, 'readOnlyImage'), s
 add('image-disabled', 'media_images', (c) => c.field('disabledImage'))
 add('image-disabled-saved', 'media_images', (c) => opened(c, 'disabledImage'), saved('media_images', 'images'))
 
+// ---------------------------------------------------------------- cropimage and imagemap (the tools open in a modal: its card is the picture)
+/** Opens the tool of a crop or image map field (the button under its picture), waits for the picture to load, and answers the card of the modal */
+const tool = async (c, model, button, card) => {
+  await c.field(model).locator(button).click()
+  await c.page.waitForSelector(card, { timeout: 15000 })
+  await c.page.waitForTimeout(2500)
+  return c.page.locator(card)
+}
+const MODAL = { crop: { width: 0, pad: { l: 0, r: 0, t: 0, b: 0 } }, scroll: 'none' }
+/** Selects the n-th area of the list of the map tool */
+const pickArea = async (c, n) => {
+  await c.page.locator('.map-pick').nth(n).click()
+  await c.page.waitForTimeout(600)
+}
+
+add('cropimage-default', 'media_crop', (c) => c.field('photo'))
+add('cropimage-filled', 'media_crop', (c) => attach(c, 'photo', ['man.jpg']))
+add('cropimage-dialog', 'media_crop', async (c) => {
+  await attach(c, 'photo', ['man.jpg'])
+  return tool(c, 'photo', '.edit-crop', '.crop-card')
+}, MODAL)
+add('cropimage-dialog-dark', 'media_crop', async (c) => {
+  await attach(c, 'photo', ['man.jpg'])
+  return tool(c, 'photo', '.edit-crop', '.crop-card')
+}, { ...MODAL, theme: 'dark' })
+add('cropimage-dialog-ratio', 'media_crop', async (c) => {
+  await attach(c, 'photo', ['man.jpg'])
+  const card = await tool(c, 'photo', '.edit-crop', '.crop-card')
+  await c.page.locator('.crop-ratio', { hasText: '16:9' }).click()
+  await c.page.waitForTimeout(900)
+  return card
+}, MODAL)
+add('cropimage-avatar', 'media_crop', async (c) => {
+  await attach(c, 'avatar', ['man.jpg'])
+  return tool(c, 'avatar', '.edit-crop', '.crop-card')
+}, MODAL)
+add('cropimage-banner', 'media_crop', async (c) => {
+  await attach(c, 'banner', ['man.jpg'])
+  return tool(c, 'banner', '.edit-crop', '.crop-card')
+}, MODAL)
+add('cropimage-cropped', 'media_crop', async (c) => {
+  await attach(c, 'photo', ['man.jpg'])
+  await tool(c, 'photo', '.edit-crop', '.crop-card')
+  await c.page.locator('.crop-ratio', { hasText: '1:1' }).click()
+  await c.page.waitForTimeout(800)
+  await c.page.locator('.crop-apply').click()
+  await c.page.waitForTimeout(1200)
+  await c.blur()
+  return c.field('photo')
+})
+add('cropimage-saved', 'media_crop', async (c) => {
+  await c.blur()
+  return [c.field('photo'), c.field('avatar')]
+  // a tall window: both fields are in the picture, whole
+}, { ...saved('media_crop', 'cropped'), viewport: { width: 1280, height: 1100 } })
+
+add('imagemap-default', 'media_map', (c) => c.field('floorPlan'))
+add('imagemap-filled', 'media_map', (c) => attach(c, 'floorPlan', ['man.jpg']))
+add('imagemap-draw', 'media_map', async (c) => {
+  await attach(c, 'floorPlan', ['man.jpg'])
+  const card = await tool(c, 'floorPlan', '.edit-map', '.map-card')
+  const box = await c.page.locator('.map-overlay').boundingBox()
+  const at = (x, y) => [box.x + box.width * x, box.y + box.height * y]
+  const drag = async (from, to) => {
+    await c.page.mouse.move(...at(...from))
+    await c.page.mouse.down()
+    await c.page.mouse.move(...at(...to), { steps: 8 })
+    await c.page.mouse.up()
+    await c.page.waitForTimeout(400)
+  }
+  await c.page.locator('.map-tool-circle').click()
+  await drag([0.333, 0.458], [0.333 + 0.14, 0.458])
+  await c.page.locator('input[name=map-title]').fill('Lamp')
+  await c.page.locator('input[name=map-href]').fill('https://example.com/lamp')
+  await c.page.locator('.map-tool-rect').click()
+  await drag([0.6, 0.5], [0.9, 0.88])
+  await c.page.locator('input[name=map-title]').fill('Kitchen')
+  await c.page.locator('input[name=map-href]').fill('/kitchen')
+  await c.page.waitForTimeout(500)
+  return card
+}, MODAL)
+add('imagemap-saved', 'media_map', async (c) => {
+  await c.blur()
+  return c.field('floorPlan')
+}, saved('media_map', 'maps'))
+add('imagemap-dialog', 'media_map', async (c) => {
+  const card = await tool(c, 'floorPlan', '.edit-map', '.map-card')
+  await pickArea(c, 1)
+  return card
+}, { ...MODAL, ...saved('media_map', 'maps') })
+add('imagemap-dialog-dark', 'media_map', async (c) => {
+  const card = await tool(c, 'floorPlan', '.edit-map', '.map-card')
+  await pickArea(c, 1)
+  return card
+}, { ...MODAL, ...saved('media_map', 'maps'), theme: 'dark' })
+add('imagemap-record', 'media_map', async (c) => {
+  const card = await tool(c, 'catalogue', '.edit-map', '.map-card')
+  await pickArea(c, 0)
+  return card
+}, { ...MODAL, ...saved('media_map', 'maps') })
+add('imagemap-record-only', 'media_map', async (c) => {
+  const card = await tool(c, 'productMap', '.edit-map', '.map-card')
+  await pickArea(c, 0)
+  return card
+}, { ...MODAL, ...saved('media_map', 'maps') })
+add('imagemap-value', 'media_map', async (c) => {
+  const card = await tool(c, 'roomMap', '.edit-map', '.map-card')
+  await pickArea(c, 0)
+  return card
+}, { ...MODAL, ...saved('media_map', 'maps') })
+add('imagemap-everything', 'media_map', async (c) => {
+  const card = await tool(c, 'everything', '.edit-map', '.map-card')
+  await pickArea(c, 1)
+  return card
+}, { ...MODAL, ...saved('media_map', 'maps') })
+
 // ---------------------------------------------------------------- json
 add('json-default', 'structured_data', (c) => c.field('json'))
 add('json-localised', 'structured_data', (c) => c.field('localisedJson.enUS'))

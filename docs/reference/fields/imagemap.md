@@ -38,6 +38,50 @@ Everything of [image](image.md) applies (`required`, `maxCount`, `accept`, `limi
 
 Apply keeps the map with the picture. A new picture is uploaded with its map when the record is saved; the map of a saved picture is an update of the attachment.
 
+## Variations
+
+### Addresses
+
+`resources/media_map.js`, field `floorPlan`: the default, an area links to an address, with a title and where it opens.
+
+![Floor plan](img/imagemap-default.png) ![Floor plan chosen](img/imagemap-filled.png)
+
+Draw with the tools: a circle dragged from its centre, a rectangle dragged across, a polygon of clicks. The area that is drawn is selected, and its title and address are asked for.
+
+![Drawing areas](img/imagemap-draw.png)
+
+The field shows the areas over the picture, with how many there are:
+
+![Saved map](img/imagemap-saved.png)
+
+Selecting an area in the list or on the picture shows its title, address, where it opens and its position. In the dark theme:
+
+![The map tool](img/imagemap-dialog.png) ![The map tool, dark](img/imagemap-dialog-dark.png)
+
+### An address or a record
+
+`resources/media_map.js`, field `catalogue` (`references: [{ resource: 'reference_items', label: '{{name}}' }]`): the person chooses, for each area, an address or a record of the resource. A record has no title, since the record is what it is called.
+
+![An area linked to a record](img/imagemap-record.png)
+
+### Records only
+
+`resources/media_map.js`, field `productMap` (`links: 'record'`, `openIn: true`, one reference with a `title`): nothing to choose but the record, which is named by the title the field gives its resource, and where it opens, which the field asks for.
+
+![Records only](img/imagemap-record-only.png)
+
+### Values only
+
+`resources/media_map.js`, field `roomMap` (`links: 'value'`, `labels: { value: 'Room number' }`): each area holds a text the person types, with the word the field gives it. No title, no address, no choice of where it opens.
+
+![Values only](img/imagemap-value.png)
+
+### All three, with the words of the field
+
+`resources/media_map.js`, field `everything` (`links: ['url', 'record', 'value']`, `labels`, `openIn`): the buttons carry the words of the field.
+
+![All three kinds of link](img/imagemap-everything.png)
+
 ## Stored value
 
 The same attachment descriptors as for [image](image.md), with the map under `imageMap`:

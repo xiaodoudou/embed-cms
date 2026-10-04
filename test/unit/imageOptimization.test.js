@@ -79,10 +79,26 @@ describe('ImageOptimization (unit)', () => {
       const meta = await sharp(await resultBuffer(result)).metadata()
       expect([meta.width, meta.height]).to.deep.equal([40, 40])
     })
-    it('fails for a region outside of the image', async () => {
-      let error
-      try { await ImageOptimization.optimizeAttachment(Readable.from([await make('jpeg', 50, 50)]), { left: 40, top: 40, width: 100, height: 100 }) } catch (e) { error = e }
-      expect(error).to.be.instanceOf(Error)
+    it('keeps a region that hangs over the image inside it', async () => {
+      const result = await ImageOptimization.optimizeAttachment(Readable.from([await make('jpeg', 50, 50)]), { left: 40, top: 40, width: 100, height: 100 })
+      const meta = await sharp(await resultBuffer(result)).metadata()
+      expect([meta.width, meta.height]).to.deep.equal([10, 10])
+    })
+    it('sends the image as it is when the recipe changes nothing', async () => {
+      const original = await make('png', 30, 20)
+      const result = await ImageOptimization.optimizeAttachment(Readable.from([original]), { updated: true })
+      expect(await resultBuffer(result)).to.deep.equal(original)
+      expect(result.mimeType).to.equal('image/png')
+    })
+    it('turns, flips and sizes the image as the recipe says', async () => {
+      const result = await ImageOptimization.optimizeAttachment(Readable.from([await make('jpeg', 200, 100)]), { rotate: 90, flipX: true, output: { width: 25 } })
+      const meta = await sharp(await resultBuffer(result)).metadata()
+      expect([meta.width, meta.height]).to.deep.equal([25, 50])
+    })
+    it('gives the size asked for the result', async () => {
+      const result = await ImageOptimization.optimizeAttachment(Readable.from([await make('jpeg', 200, 100)]), { left: 0, top: 0, width: 100, height: 100 }, { resize: '20xauto' })
+      const meta = await sharp(await resultBuffer(result)).metadata()
+      expect([meta.width, meta.height]).to.deep.equal([20, 20])
     })
     it('rejects an empty input', async () => {
       let error

@@ -17,6 +17,7 @@ const express = require('express')
 const helmet = require('helmet')
 const _ = require('lodash')
 const fsExtra = require('fs-extra')
+const { isAttachmentInput } = require('./lib/util/inputTypes')
 const session = require('express-session')
 const UUID = require('./lib/util/uuid')
 const SyslogManager = require('./lib/SyslogManager')
@@ -458,7 +459,7 @@ class CMS {
       const schema = _.get(resource, 'options.schema', [])
       _.each(schema, fieldItem => {
         const rootPath = `${fieldItem.field}`
-        if (_.includes(['file', 'image'], fieldItem.input)) {
+        if (isAttachmentInput(fieldItem.input)) {
           const field = _.cloneDeep(fieldItem)
           field.path = rootPath
           _.set(this._resources, [resourceKey, 'options', '_attachmentFields', fieldPathPattern(rootPath)], field)
@@ -481,7 +482,7 @@ class CMS {
       const schema = _.get(this._paragraphs, `["${paragraphType}"].schema`, [])
       _.each(schema, paragraphFieldItem => {
         const paragraphRootPath = `${rootPath}.${BLOCK_WILDCARD}.${paragraphFieldItem.field}`
-        if (_.includes(['file', 'image'], paragraphFieldItem.input)) {
+        if (isAttachmentInput(paragraphFieldItem.input)) {
           const field = _.cloneDeep(paragraphFieldItem)
           field.path = paragraphRootPath
           _.set(this._resources, [resourceKey, 'options', '_attachmentFields', fieldPathPattern(paragraphRootPath, field.localised)], field)

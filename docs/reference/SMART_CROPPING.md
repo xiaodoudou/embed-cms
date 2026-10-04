@@ -90,7 +90,7 @@ Smart crops are cached next to the original file, under `<aid>-smart-<size>`, an
 
 ## What to expect
 
-The attention strategy is a clever guess, not face recognition. It does well on portraits, products and most photos with a clear subject. On a busy picture with several subjects, or a flat low-contrast one, it may pick a different region than a person would. When the framing really matters, set the crop by hand in the admin's crop tool, served as `/attachments/:aid/cropped` (see [API.md](API.md#attachments)).
+The attention strategy is a clever guess, not face recognition. It does well on portraits, products and most photos with a clear subject. On a busy picture with several subjects, or a flat low-contrast one, it may pick a different region than a person would. When the framing really matters, set the crop by hand in the admin's crop tool of a crop image field, served as `/attachments/:aid/cropped` (see [API.md](API.md#attachments)). The tool has an **Auto** button that puts its frame where smart cropping would (`/attachments/:aid/crop-suggestion`), for you to adjust.
 
 ## Tests
 

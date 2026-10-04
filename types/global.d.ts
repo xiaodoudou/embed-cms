@@ -74,7 +74,7 @@ declare namespace EmbedCMS {
     | 'date' | 'time' | 'datetime'
     | 'pillbox' | 'select' | 'multiselect'
     | 'json' | 'object' | 'code' | 'wysiwyg'
-    | 'image' | 'cropimage' | 'file' | 'paragraph'
+    | 'image' | 'cropimage' | 'imagemap' | 'file' | 'paragraph'
 
   /** A pattern for the text types */
   interface FieldRegex {
@@ -111,6 +111,14 @@ declare namespace EmbedCMS {
     maxCount?: number
     /** `image` and `file`: the largest file, in bytes */
     limit?: number
+    /** `imagemap`: the resources a record link can be from, by name or `{ resource, label, title }` (`label` is a Mustache template that names a record, `title` what the kind of record is called) */
+    references?: Array<string | { resource: string, label?: string, title?: Translatable }>
+    /** `imagemap`: what an area can link to: an address, a record (needs `references`), a value the person types */
+    links?: 'url' | 'record' | 'value' | Array<'url' | 'record' | 'value'>
+    /** `imagemap`: asks where a record opens (an address always does) */
+    openIn?: boolean
+    /** `imagemap`: the words of the three kinds of link */
+    labels?: { url?: Translatable, record?: Translatable, value?: Translatable }
     /** `cropimage`: the one ratio the crop may have, `1.5`, `'3:2'` or `'16/9'` */
     aspectRatio?: number | string
     /** `cropimage`: the shapes to choose from, ratios (`1.5`, `'3:2'`, `[3, 2]`, `{ ratio: '4:5', label: 'Portrait' }`) and `'free'` and `'original'` */

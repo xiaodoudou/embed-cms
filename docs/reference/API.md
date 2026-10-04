@@ -111,7 +111,7 @@ curl -u localAdmin:localAdmin localhost:9990/api/articles/<id>/attachments -F co
 
 The attachment keeps the name of the uploaded file (`harbour.jpg`), and its type is taken from that name. A `_filename` text part, which the admin sends, overrides it.
 
-Send one file per request: only the first file of a request is kept. Other text parts are stored in `_fields`, except `order` (a number, for sorting the files of a field) and `cropOptions` (JSON, used by `/cropped` below).
+Send one file per request: only the first file of a request is kept. Other text parts are stored in `_fields`, except `order` (a number, for sorting the files of a field), `cropOptions` (JSON, used by `/cropped` below) and `imageMap` (JSON, the areas of an [image map](fields/imagemap.md), checked before anything is written).
 
 | Method and path | What it does |
 |---|---|
@@ -121,7 +121,7 @@ Send one file per request: only the first file of a request is kept. Other text 
 | `GET /api/:resource/:id/attachments/:aid/crop-suggestion?aspect=3:2` | Where smart cropping would put a crop of that shape: `{ left, top, width, height }` in pixels. `aspect` is a number or `W:H`; `rotate=90`, `flipX=true` and `flipY=true` turn the picture first and the answer is in its pixels. Nothing is cut or stored. |
 | `POST /api/:resource/attachments/crop-suggestion` | The same for a picture that is not stored: multipart, the picture as the `image` part, the rest in the query. |
 | `GET /api/:resource/file/:aid` | Download by attachment id alone. |
-| `PUT /api/:resource/:id/attachments/:aid` | Change its metadata (JSON body): `_fields`, `order`, `cropOptions` and the like. |
+| `PUT /api/:resource/:id/attachments/:aid` | Change its metadata (JSON body): `_fields`, `order`, `cropOptions`, `imageMap` (replaced as a whole, `null` takes it away) and the like. |
 | `PUT /api/:resource/:id/attachments` | The same for several attachments: a JSON array of objects with an `_id`. |
 | `DELETE /api/:resource/:id/attachments/:aid` | Remove it. |
 | `DELETE /api/:resource/:id/attachments` | Remove several: a JSON array of `{ "_id": … }`. |

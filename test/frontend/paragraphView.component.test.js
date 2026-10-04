@@ -363,7 +363,7 @@ describe('ParagraphView (blocks)', () => {
     })
 
     it('drops the files of a removed crop image field from the record, as it does for an image', async () => {
-      for (const input of ['image', 'cropimage', 'file']) {
+      for (const input of ['image', 'cropimage', 'imagemap', 'file']) {
         const model = {
           blocks: [{ _type: 'block_media', id: 'f1' }],
           _attachments: [{ _id: 'a1', _fields: { fileItemId: 'f1' } }, { _id: 'a2', _fields: { fileItemId: 'f2' } }]

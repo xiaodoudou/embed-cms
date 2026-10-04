@@ -15,7 +15,7 @@
         v-for="(a, i) in attachments"
         :key="identityOf(a)" :schema="schema"
         :theme="theme" :attachment="a" :image-size="imageSize" :get-image-src="getImageSrc"
-        :locked="disabled" :reordering="reordering" :count="attachments.length" :move-attachment="moveAttachment" :remove-image="removeImage" :is-image="isImage" :index="i" :on-crop="onCrop"
+        :locked="disabled" :reordering="reordering" :count="attachments.length" :move-attachment="moveAttachment" :remove-image="removeImage" :is-image="isImage" :index="i" :on-crop="onCrop" :on-map="onMap"
       />
     </draggable>
   </div>
@@ -45,7 +45,8 @@
       moveAttachment: { type: Function, default: () => {} },
       imageSize: { type: Function, default: () => {} },
       removeImage: { type: Function, default: () => {} },
-      onCrop: { type: Function, default: () => {} }
+      onCrop: { type: Function, default: () => {} },
+      onMap: { type: Function, default: () => {} }
     },
     data () {
       return { reordering: false }

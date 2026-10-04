@@ -527,3 +527,36 @@ describe('a required field that has nothing yet', () => {
     await vi.waitFor(() => expect(wrapper.vm.attachments.map((a) => a._filename)).toEqual(['handed.png']))
   })
 })
+
+describe('the image map field', () => {
+  const AREAS = [{ id: 'a', shape: 'rect', coords: [0.1, 0.1, 0.5, 0.5] }]
+
+  it('keeps the map made in the tool with the picture, by its position, flagged as new', async () => {
+    const model = { photo: [{ ...SAVED }, { ...SAVED, _id: 'a2' }] }
+    field(ImageView, { input: 'imagemap' }, model)
+    await flushPromises()
+    wrapper.vm.onMap(1, { areas: AREAS, updated: true })
+    expect(model.photo[1].imageMap).toEqual({ areas: AREAS, updated: true })
+    expect(model.photo[0].imageMap).toBeUndefined()
+  })
+
+  it('ignores a map for a picture that is not there', async () => {
+    const model = { photo: [{ ...SAVED }] }
+    field(ImageView, { input: 'imagemap' }, model)
+    await flushPromises()
+    expect(() => wrapper.vm.onMap(4, { areas: [], updated: true })).not.toThrow()
+    expect(model.photo[0].imageMap).toBeUndefined()
+  })
+
+  it('shows the picture as it is, not cut: a map does not crop', async () => {
+    field(ImageView, { input: 'imagemap' }, { photo: [{ ...SAVED }] })
+    await flushPromises()
+    expect(wrapper.vm.getImageSrc({ ...SAVED, cropOptions: { left: 1, top: 2, width: 3, height: 4 } })).toBe('/api/products/1/attachments/a1?resize=autox100')
+  })
+
+  it('hands the tool to the preview of each picture', async () => {
+    field(ImageView, { input: 'imagemap' }, { photo: [{ ...SAVED }] })
+    await flushPromises()
+    expect(wrapper.findComponent({ name: 'PreviewMultiple' }).props('onMap')).toBe(wrapper.vm.onMap)
+  })
+})

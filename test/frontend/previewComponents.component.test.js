@@ -5,6 +5,8 @@ import ShowAttachment from '@c/attachments/ShowAttachment.vue'
 import PreviewAttachment from '@c/attachments/PreviewAttachment.vue'
 import PreviewMultiple from '@c/attachments/PreviewMultiple.vue'
 import CropDialog from '@c/attachments/CropDialog.vue'
+import ImageMapDialog from '@c/attachments/ImageMapDialog.vue'
+import ImageMapOverlay from '@c/attachments/ImageMapOverlay.vue'
 import RequestService from '@s/RequestService'
 import { mountComponent } from './helpers/mountField.js'
 
@@ -89,7 +91,7 @@ describe('FileInputErrors (what a file field requires)', () => {
 
 describe('ShowAttachment (one file in the preview)', () => {
   // the crop tool has its own tests (cropDialog.component.test.js): a stand-in keeps these on what the preview does around it
-  const show = (attachment, extra = {}) => mount(ShowAttachment, { attachment, isImage, getImageSrc, schema: {}, ...extra }, { global: { stubs: { CropDialog: true } } })
+  const show = (attachment, extra = {}) => mount(ShowAttachment, { attachment, isImage, getImageSrc, schema: {}, ...extra }, { global: { stubs: { CropDialog: true, ImageMapDialog: true } } })
 
   it('shows an image as a picture, from the address the field gives', () => {
     show(IMAGE)
@@ -302,6 +304,100 @@ describe('ShowAttachment (one file in the preview)', () => {
       })
     })
 
+    describe('the image map', () => {
+      const MAP_FIELD = { label: 'Floor plan', input: 'imagemap', resource: { title: 'plans' } }
+      const AREAS = [{ id: 'a', shape: 'rect', coords: [0.1, 0.1, 0.5, 0.5] }, { id: 'b', shape: 'circle', coords: [0.7, 0.3, 0.1] }]
+      const dialog = () => wrapper.findComponent(ImageMapDialog)
+      const picture = (width, height) => {
+        vi.stubGlobal('Image', class {
+          set src (value) {
+            this.naturalWidth = width
+            this.naturalHeight = height
+            Promise.resolve().then(() => this.onload())
+          }
+        })
+      }
+
+      it('is offered to an image map field only, for a picture', () => {
+        show(IMAGE)
+        expect(wrapper.find('.edit-map').exists()).toBe(false)
+        expect(dialog().exists()).toBe(false)
+        wrapper.unmount()
+        show(IMAGE, { schema: MAP_FIELD })
+        expect(wrapper.find('.edit-map').exists()).toBe(true)
+        expect(wrapper.find('.edit-crop').exists()).toBe(false)
+        wrapper.unmount()
+        show(PDF, { schema: MAP_FIELD })
+        expect(wrapper.find('.edit-map').exists()).toBe(false)
+      })
+
+      it('opens the tool with a click, with the original picture, the field and the map kept with it', async () => {
+        const imageMap = { areas: AREAS }
+        show({ ...IMAGE, imageMap }, { schema: MAP_FIELD })
+        expect(dialog().props('modelValue')).toBe(false)
+        await wrapper.get('.edit-map').trigger('click')
+        expect(dialog().props()).toMatchObject({ modelValue: true, src: IMAGE.url, title: 'Floor plan', imageMap })
+        expect(dialog().props('schema')).toBe(wrapper.props('schema'))
+      })
+
+      it('gives the tool the data of a picture that is not uploaded yet', () => {
+        show(NEW_IMAGE, { schema: MAP_FIELD })
+        expect(dialog().props('src')).toBe(NEW_IMAGE.data)
+      })
+
+      it('hands the map to the field when it is applied', () => {
+        const onMap = vi.fn()
+        show(IMAGE, { schema: MAP_FIELD, onMap })
+        dialog().vm.$emit('apply', { areas: AREAS, updated: true })
+        expect(onMap).toHaveBeenCalledWith({ areas: AREAS, updated: true })
+      })
+
+      it('says how many areas it has, and draws them over the picture', () => {
+        show({ ...IMAGE, imageMap: { areas: AREAS } }, { schema: MAP_FIELD })
+        expect(wrapper.get('.map-count').text()).toBe('2 area(s)')
+        expect(wrapper.findComponent(ImageMapOverlay).props('areas')).toEqual(AREAS)
+        wrapper.unmount()
+        show(IMAGE, { schema: MAP_FIELD })
+        expect(wrapper.find('.map-count').exists()).toBe(false)
+        expect(wrapper.findComponent(ImageMapOverlay).exists()).toBe(false)
+      })
+
+      it('draws no map for a field that is not an image map, whatever its picture has', () => {
+        show({ ...IMAGE, imageMap: { areas: AREAS } })
+        expect(wrapper.findComponent(ImageMapOverlay).exists()).toBe(false)
+      })
+
+      it('shows the picture whole, in its own shape, so that the areas are over the right parts of it', async () => {
+        picture(1200, 600)
+        show({ ...IMAGE, imageMap: { areas: AREAS } }, { schema: MAP_FIELD })
+        await flushPromises()
+        expect(wrapper.get('.image-wrapper').classes()).toContain('is-cropped')
+        expect(wrapper.findComponent({ name: 'VImg' }).props('aspectRatio')).toBe(2)
+        expect(wrapper.findComponent(ImageMapOverlay).props('aspect')).toBe(2)
+        expect(wrapper.get('.image-wrapper').attributes('style')).toContain('max-width: 440px')
+        vi.unstubAllGlobals()
+      })
+
+      it('takes the shape the server measured until the browser has measured the picture', () => {
+        vi.stubGlobal('Image', class { set src (value) {} })
+        show({ ...IMAGE, _meta: { width: 900, height: 600 }, imageMap: { areas: AREAS } }, { schema: MAP_FIELD })
+        expect(wrapper.findComponent(ImageMapOverlay).props('aspect')).toBe(1.5)
+        vi.unstubAllGlobals()
+      })
+
+      it('measures the picture again when it is another one', async () => {
+        picture(400, 400)
+        show({ ...IMAGE, imageMap: { areas: AREAS } }, { schema: MAP_FIELD })
+        await flushPromises()
+        expect(wrapper.findComponent(ImageMapOverlay).props('aspect')).toBe(1)
+        picture(800, 200)
+        await wrapper.setProps({ attachment: { ...IMAGE, url: '/api/plans/1/attachments/a9', imageMap: { areas: AREAS } } })
+        await flushPromises()
+        expect(wrapper.findComponent(ImageMapOverlay).props('aspect')).toBe(4)
+        vi.unstubAllGlobals()
+      })
+    })
+
     describe('asking the server where to crop', () => {
       it('is offered for a picture that is saved, and for a file the browser can send, not for another', () => {
         show(IMAGE, { schema: CROP_IMAGE })
@@ -432,6 +528,13 @@ describe('PreviewAttachment (one file with its name)', () => {
     wrapper.vm.copyFilenameToClipboard()
     expect(writeText).toHaveBeenCalledWith('lamp.jpg')
     delete window.navigator.clipboard
+  })
+
+  it('tells the field which file got a map, by its position', () => {
+    const onMap = vi.fn()
+    preview(IMAGE, { index: 2, onMap })
+    wrapper.vm.onMapAt({ areas: [], updated: true })
+    expect(onMap).toHaveBeenCalledWith(2, { areas: [], updated: true })
   })
 
   it('tells the field which file was cropped, by its position', () => {

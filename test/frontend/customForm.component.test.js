@@ -177,7 +177,7 @@ describe('AbstractEditorView (what the editor pages share)', () => {
   describe('formatAttachments', () => {
     it('keeps only what the server needs', () => {
       host()
-      expect(wrapper.vm.formatAttachments([{ _id: '1', _name: 'photo', order: 2, cropOptions: { x: 1 }, url: '/x', file: {} }])).toEqual([{ _id: '1', _name: 'photo', order: 2, cropOptions: { x: 1 } }])
+      expect(wrapper.vm.formatAttachments([{ _id: '1', _name: 'photo', order: 2, cropOptions: { x: 1 }, imageMap: { areas: [] }, url: '/x', file: {} }])).toEqual([{ _id: '1', _name: 'photo', order: 2, cropOptions: { x: 1 }, imageMap: { areas: [] } }])
     })
 
     it('keeps the fields it is told to', () => {
@@ -196,7 +196,7 @@ describe('AbstractEditorView (what the editor pages share)', () => {
     it('sends each file to the attachments of the record, with what the server needs', async () => {
       host()
       await wrapper.vm.uploadAttachments('r1', [
-        { field: 'photo', file: file('a.png'), _fields: { locale: 'zhCN' }, _filename: 'renamed.png', cropOptions: { x: 1 }, orderUpdated: true, order: 2 }
+        { field: 'photo', file: file('a.png'), _fields: { locale: 'zhCN' }, _filename: 'renamed.png', cropOptions: { x: 1 }, imageMap: { areas: [{ id: 'a', shape: 'rect', coords: [0, 0, 1, 1] }], updated: true }, orderUpdated: true, order: 2 }
       ])
       const [url, data, meta] = upload.mock.calls[0]
       expect(url).toBe('../api/articles/r1/attachments')
@@ -204,6 +204,7 @@ describe('AbstractEditorView (what the editor pages share)', () => {
       expect(data.get('locale')).toBe('zhCN')
       expect(data.get('_filename')).toBe('renamed.png')
       expect(JSON.parse(data.get('cropOptions'))).toEqual({ x: 1 })
+      expect(JSON.parse(data.get('imageMap')).areas[0].id).toBe('a')
       expect(data.get('order')).toBe('2')
       expect(meta).toMatchObject({ name: 'a.png', recordId: 'r1', resource: 'articles' })
     })

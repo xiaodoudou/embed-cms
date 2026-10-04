@@ -61,6 +61,21 @@ export default {
       this.attachments = attachments
       this._value = attachments
     },
+    /**
+     * Keeps the image map made in the map tool with the picture, flagged so that the record editor sends it.
+     * @param {number} index of the attachment
+     * @param {{areas: Array<Object>, updated: boolean}} imageMap
+     */
+    onMap (index, imageMap) {
+      const attachments = this.getAttachments()
+      const attachment = attachments[index]
+      if (!attachment) {
+        return
+      }
+      attachment.imageMap = imageMap
+      this.attachments = attachments
+      this._value = attachments
+    },
     /** Renumbers the order of the attachments. */
     onEndDrag () {
       const attachments = _.map(this.getAttachments(), (item, i) => {

@@ -49,6 +49,7 @@ describe('buildColumns (locale derivation)', () => {
   })
   it('shows a crop image like an image: the picture of its first file, and no sorting', () => {
     expect(fieldKind('cropimage')).toBe('image')
+    expect(fieldKind('imagemap')).toBe('image')
     const [column] = buildColumns([{ originalModel: 'avatar', model: 'avatar', localised: false }], { locales: [], schema: [{ field: 'avatar', input: 'cropimage' }] })
     expect(column).toMatchObject({ kind: 'image', input: 'cropimage', sortable: false })
   })

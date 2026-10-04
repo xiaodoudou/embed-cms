@@ -126,7 +126,7 @@
       return {
         items: _.cloneDeep(_.get(this.model, this.schema.model, [])),
         types: [],
-        fileInputTypes: ['file', 'img', 'image', 'cropimage', 'imageView', 'attachmentView'],
+        fileInputTypes: ['file', 'img', 'image', 'cropimage', 'imagemap', 'imageView', 'attachmentView'],
         selectedType: false,
         subResourcesLoaded: false,
         key: crypto.randomUUID(),

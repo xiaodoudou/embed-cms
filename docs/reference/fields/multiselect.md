@@ -52,6 +52,8 @@ Behaviour that differs from `select`: several chips, each with a remove button; 
 
 `resources/choice_multi.js`, field `linkedMany` (`sources: ['reference_items', { resource: 'reference_people', customLabel: '{{name}} ({{role}})', title: 'People' }]`): the records of several resources in one list, in groups, as for [select](select.md#records-of-several-resources). The value is an array of references, `[{ "resource": "reference_people", "id": "mus3k2…" }]`. Select all chooses every record of every resource.
 
+![Several resources](img/multiselect-sources-open.png) ![Chosen](img/multiselect-sources-filled.png)
+
 ### Localised
 
 `resources/choice_multi.js`, field `localisedItems`: one selection per locale. The list labels follow the current locale.

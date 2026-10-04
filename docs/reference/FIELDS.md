@@ -67,6 +67,8 @@ Declared in `options`:
 | `options.disabled` | boolean | `false` | Greyed out and not focusable (also accepted as `disabled` next to `input`). Honoured like `readonly`; a disabled `image` or `file` shows only its label and previews, without the hint. Ignored by `object`, `json`. |
 | `options.min` / `options.max` | number | none | Length for `string`, `text`, `password`, `email`, `url`, `transliterate`; value for `number`, `integer`, `double`. Enforced by the admin. |
 | `options.regex` | `{ value, description }` or one per locale | none | Pattern for the text types (`'/pattern/flags'`). Enforced by the admin. |
+| `options.mask` | string | none | `string` only: a template the box keeps while it is typed in, `(___) ___-____`, `AA-___-AA`, `F__-AAAA` (`_` or `#` a digit, `A` a letter, `*` a letter or a digit, a backslash makes the next character itself). See [string](fields/string.md#mask). |
+| `options.template` | string | the usual one | `duration` only: its own template, `_h __m`, `___ days`. See [duration](fields/duration.md#your-own-template). |
 
 Every key of `options` is also copied onto the component schema, which is how type-specific options such as `regex`, `min`, `max`, `labels`, `customLabel`, `accept`, `maxCount`, `limit`, `types` or `jsonEditorOptions` reach the component. Type-specific options are described on each type's page.
 

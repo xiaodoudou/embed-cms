@@ -33,6 +33,32 @@ Catalogue: `resources/numbers_quantities.js` (group **Numbers**, resource **Quan
 - It is a group of radio buttons, one for each value, named by the label and "3 of 5": a screen reader says what each one is, and one of them is in the tab order. The arrow keys move by a step and write it, Home and End go to the ends, Delete and Backspace take the rating away.
 - The value is shown as text next to the icons (`3.5 / 5`).
 
+## Variations
+
+### Default and half steps
+
+`resources/numbers_quantities.js`, fields `stars` and `hearts` (`half: true`). The text after the icons says the value (`4 / 5`, `2.5 / 5`), and the cross takes the rating away.
+
+![Stars and hearts](img/rating-default.png)
+
+### Another scale, another icon
+
+Fields `scale` (`max: 10`, `icon: 'circle'`, `color: 'info'`) and `flames` (`max: 3`, `icon: 'flame'`).
+
+![Scale and flames](img/rating-scale.png)
+
+### Required
+
+Field `requiredRating`: an empty rating is refused when the record is saved, and once it is given it can be changed but not taken away (`clearable: false`).
+
+![Required rating refused](img/rating-required-error.png)
+
+### Read-only and disabled
+
+Fields `readOnlyRating` (lock icon after the label) and `disabledRating` (greyed out, not focusable).
+
+![Read-only and disabled](img/rating-states.png)
+
 ## Stored value
 
 A number: a whole number from 1 to `max`, or with `half: true` a multiple of 0.5 from 0.5. Without a rating the key is absent (a rating of 0 does not exist). A localised field holds one per locale.

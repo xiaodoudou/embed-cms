@@ -55,6 +55,26 @@ One box that keeps its template, with a slot for each digit: `__:__` for hours a
 
 ![Template](img/duration-template.png)
 
+## Variations
+
+### The template
+
+`resources/numbers_quantities.js`, fields `duration` (`__:__`), `preciseDuration` (`__:__:__`) and `longDuration` (`___d __h`). The box shows its template while it is empty and keeps it while it is typed in; typing `0130` is 01:30.
+
+![Empty](img/duration-empty.png) ![Typed](img/duration-default.png)
+
+### Limits
+
+Field `minutesOnly` (`units: ['minutes']`, `min: 300`, `max: 28800`). A length outside is refused when the box is left, in the units of the field.
+
+![Too short](img/duration-limits-error.png)
+
+### Read-only and disabled
+
+Fields `readOnlyDuration` and `disabledDuration`.
+
+![Read-only and disabled](img/duration-states.png)
+
 ## Stored value
 
 A whole number of seconds; the key is absent when there is no length. A localised field holds one per locale.

@@ -43,6 +43,11 @@ async function seed (base, user, password, files) {
     itemIds.push(item._id)
   }
 
+  // the people of the second resource of the selects of several resources
+  for (const [en, zh, role] of [['Ann', '安', 'chief'], ['Bob', '鲍勃', 'editor'], ['Cleo', '克莉奥', 'writer']]) {
+    await post('reference_people', { name: { enUS: en, zhCN: zh }, role })
+  }
+
   // a JSON document, with a different document per locale
   const data = await post('structured_data', {
     name: 'Data',

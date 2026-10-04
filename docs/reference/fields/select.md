@@ -84,6 +84,8 @@ The list shows the records of every resource under a heading for each (the title
 - Import files, spreadsheets and sync name the record by its first `unique` field, as for a `source`: `{ "resource": "editors", "id": "Eve" }`. In a spreadsheet the cell holds the reference as JSON.
 - Nothing checks that a reference is of a resource of `sources`.
 
+![Several resources](img/select-sources-open.png) ![Chosen](img/select-sources-filled.png)
+
 ### Localised
 
 `resources/choice_select.js`, field `localisedChoice`: one choice per locale.

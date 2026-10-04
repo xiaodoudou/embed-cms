@@ -31,8 +31,17 @@ describe('the stylesheet of the image map tool', () => {
   })
 
   it('keeps the picture in the room the stage has, centred', () => {
-    expect(rule('.map-image {')).toMatch(/max-height:\s*calc\(min\(92vh,\s*820px\)/)
+    // (before the picture is fitted to the stage, which is when it is measured)
+    expect(rule('.map-image {\n    display: block;')).toMatch(/max-height:\s*calc\(min\(92vh,\s*820px\)/)
     expect(rule('.map-stage {')).toMatch(/align-items:\s*center/)
+  })
+
+  it('lets the picture fill the box it is fitted to, and shows the stage in a height of its own on a narrow screen', () => {
+    const fitted = rule('.map-canvas.is-fitted .map-image {')
+    expect(fitted).toMatch(/width:\s*100%/)
+    expect(fitted).toMatch(/height:\s*100%/)
+    expect(fitted).toMatch(/max-height:\s*none/)
+    expect(styles).toMatch(/\.map-stage \{\s*height:\s*46vh/)
   })
 
   it('draws the areas with the colours of the theme, not colours of its own', () => {

@@ -71,6 +71,22 @@ describe('sync plugin: attachments (unit)', () => {
     expect((await files(A, 'a man'))[0]).to.include({ _md5sum: md5(fs.readFileSync(IMAGE)), _contentType: 'image/jpeg' })
   })
 
+  it('carries the image map of a picture, and copies the picture again when its map has changed', async () => {
+    const kitchen = { id: 'kitchen', shape: 'rect', coords: [0.1, 0.1, 0.4, 0.5], title: 'Kitchen', href: '/kitchen', target: '_self' }
+    const lamp = { id: 'lamp', shape: 'circle', coords: [0.7, 0.3, 0.1], title: 'Lamp', ref: { resource: 'articles', id: 'abc' }, target: '_blank' }
+    const found = await api(A).create({ string: { enUS: 'a plan' } })
+    const created = await api(A).createAttachment(found._id, { name: 'file', stream: fs.createReadStream(IMAGE), fields: { _filename: 'plan.jpg' }, imageMap: { areas: [kitchen] } })
+    await A.cms.$sync.run('articles', 'push')
+    expect((await files(B, 'a plan'))[0].imageMap).to.deep.equal({ areas: [kitchen] })
+    // nothing changed: nothing is copied
+    expect(await A.cms.$sync.run('articles', 'push')).to.include({ attachmentsAdded: 0, attachmentsRemoved: 0 })
+    // the map changed, the file did not: the picture is copied again with its new map
+    await api(A).updateAttachment(found._id, created._id, { imageMap: { areas: [kitchen, lamp] } })
+    const result = await A.cms.$sync.run('articles', 'push')
+    expect(result).to.include({ status: 'done', attachmentsAdded: 1, attachmentsRemoved: 1 })
+    expect((await files(B, 'a plan'))[0].imageMap).to.deep.equal({ areas: [kitchen, lamp] })
+  })
+
   it('changes nothing, and copies no file, when both are alike', async () => {
     await upload(A, 'same', 'one file')
     await A.cms.$sync.run('articles', 'push')

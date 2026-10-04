@@ -274,7 +274,7 @@
         const fromData = _.get(this.recordData, from, [])
         const toData = _.get(this.recordData, to, [])
         // a file that is the same (content and name) is not copied again: only the ones that are not on both sides count
-        const key = (attach) => `${attach._md5sum}|${attach._filename}|${JSON.stringify(_.pick(attach, ['_payload', 'cropOptions', 'order', '_fields']))}`
+        const key = (attach) => `${attach._md5sum}|${attach._filename}|${JSON.stringify(_.pick(attach, ['_payload', 'cropOptions', 'imageMap', 'order', '_fields']))}`
         let add = 0
         let remove = 0
         _.each(fromData, item => {

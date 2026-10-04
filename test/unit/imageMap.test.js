@@ -144,6 +144,20 @@ describe('image map (unit)', () => {
     })
   })
 
+  describe('the value', () => {
+    it('is a text the person typed, trimmed, and not checked as a link', () => {
+      const [area] = normalizeImageMap(map({ ...rect, value: '  room-12/B  ' })).areas
+      expect(area.value).to.equal('room-12/B')
+      expect(normalizeImageMap(map({ ...rect, value: 'javascript:alert(1)' })).areas[0].value).to.equal('javascript:alert(1)')
+    })
+
+    it('is left out when it is empty, and refused when it is not a text or too long', () => {
+      expect(normalizeImageMap(map({ ...rect, value: '   ' })).areas[0]).to.not.have.property('value')
+      refused(map({ ...rect, value: 5 }), /value is a text/)
+      refused(map({ ...rect, value: 'x'.repeat(501) }), /value is at most 500/)
+    })
+  })
+
   describe('limits', () => {
     it('takes 200 areas and refuses 201', () => {
       const many = (n) => map(...Array.from({ length: n }, (_, i) => ({ ...rect, id: `a${i}` })))

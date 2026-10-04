@@ -2,6 +2,7 @@ const crypto = require('crypto')
 const fs = require('fs')
 const path = require('path')
 const { Readable } = require('stream')
+const _ = require('lodash')
 const { expect } = require('chai')
 const { startApp } = require('../helpers/app')
 
@@ -287,5 +288,51 @@ describe('sync plugin: record ids written in texts (unit)', () => {
     expect((await page(B, 'late')).body).to.equal(`<i>${(await tag(B, 'blue'))._id}</i>`)
     const third = await A.cms.$sync.run('pages', 'push')
     expect(third).to.include({ status: 'done', updated: 0 })
+  })
+
+  describe('the records an image map points to', () => {
+    const area = (ref, id = 'a') => ({ id, shape: 'rect', coords: [0.1, 0.1, 0.5, 0.5], title: 'Area', target: '_self', ref })
+    const plan = async (app, slug) => {
+      const found = await page(app, slug)
+      return _.find(found._attachments, { _name: 'plan' })
+    }
+    const draw = async (app, slug, areas) => {
+      const created = await api(app, 'pages').create({ slug })
+      await api(app, 'pages').createAttachment(created._id, { name: 'plan', stream: fs.createReadStream(IMAGE), fields: { _filename: 'plan.jpg' }, imageMap: { areas } })
+    }
+
+    it('keeps pointing at the same record on the other CMS, which gave it another id', async () => {
+      const redA = await api(A, 'tags').create({ name: 'mapred' })
+      const redB = await api(B, 'tags').create({ name: 'mapred' })
+      expect(redA._id).to.not.equal(redB._id)
+      await draw(A, 'with-map', [area({ resource: 'tags', id: redA._id }), area(undefined, 'b')])
+      const result = await push()
+      expect(result).to.include({ status: 'done', created: 1, attachmentsAdded: 1, attachmentsFailed: 0 })
+      const copied = (await plan(B, 'with-map')).imageMap.areas
+      expect(copied[0].ref).to.deep.equal({ resource: 'tags', id: redB._id })
+      expect(copied[1]).to.not.have.property('ref')
+      // the other way too, and nothing to do the second time
+      expect(await push()).to.include({ status: 'done', created: 0, updated: 0, removed: 0, attachmentsAdded: 0 })
+      await draw(B, 'from-b', [area({ resource: 'tags', id: redB._id })])
+      await A.cms.$sync.run('tags', 'pull')
+      await A.cms.$sync.run('pages', 'pull')
+      expect((await plan(A, 'from-b')).imageMap.areas[0].ref).to.deep.equal({ resource: 'tags', id: redA._id })
+    })
+
+    it('keeps the reference of a record the other CMS does not have yet, and resolves it when it comes', async () => {
+      const blue = await api(A, 'tags').create({ name: 'mapblue' })
+      await draw(A, 'late-map', [area({ resource: 'tags', id: blue._id })])
+      expect(await A.cms.$sync.run('pages', 'push')).to.include({ status: 'done', created: 1, attachmentsFailed: 0 })
+      expect((await plan(B, 'late-map')).imageMap.areas[0].ref).to.deep.equal({ resource: 'tags', id: 'cms-ref://tags/mapblue' })
+      await A.cms.$sync.run('tags', 'push')
+      expect(await A.cms.$sync.run('pages', 'push')).to.include({ status: 'done', updated: 1 })
+      expect((await plan(B, 'late-map')).imageMap.areas[0].ref).to.deep.equal({ resource: 'tags', id: (await tag(B, 'mapblue'))._id })
+    })
+
+    it('leaves the links that are addresses as they are', async () => {
+      await draw(A, 'addresses', [{ ...area(undefined), href: '/kitchen' }])
+      await push()
+      expect((await plan(B, 'addresses')).imageMap.areas[0]).to.include({ href: '/kitchen' })
+    })
   })
 })

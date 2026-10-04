@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { UNITS, DEFAULT_UNITS, durationOptions, splitDuration, joinDuration, formatDuration, validateDuration } from '@u/duration'
+import { UNITS, DEFAULT_UNITS, durationOptions, splitDuration, parseDuration, formatDurationInput, durationTemplate, formatDuration, validateDuration, validateDurationText } from '@u/duration'
 import { TranslateService } from './helpers/mountField.js'
 
 // The arithmetic and the words of the duration field.
@@ -7,6 +7,8 @@ import { TranslateService } from './helpers/mountField.js'
 const units = (...names) => UNITS.filter(unit => names.includes(unit.name))
 const HM = units('hours', 'minutes')
 const DHMS = units('days', 'hours', 'minutes', 'seconds')
+const MS = units('minutes', 'seconds')
+const HMS = units('hours', 'minutes', 'seconds')
 
 describe('durationOptions', () => {
   it('has hours and minutes by default, largest first', () => {
@@ -53,34 +55,92 @@ describe('splitDuration', () => {
   })
 })
 
-describe('joinDuration', () => {
-  it('adds the units up', () => {
-    expect(joinDuration({ hours: '1', minutes: '30' }, HM)).toBe(5400)
-    expect(joinDuration({ days: 1, hours: 0, minutes: 0, seconds: 5 }, DHMS)).toBe(86405)
-    expect(joinDuration({ hours: '0', minutes: '0' }, HM)).toBe(0)
+describe('parseDuration', () => {
+  it.each([
+    ['1:30', HM, 5400], ['0:45', HM, 2700], ['10:00', HM, 36000], ['1:90', HM, 9000], ['1:30', MS, 90], ['1:30:05', HMS, 5405], ['1:30', HMS, 90],
+    ['1h 30m', HM, 5400], ['1h30m', HM, 5400], ['1 hour 30 minutes', HM, 5400], ['1 hr, 30 min', HM, 5400], ['1.5h', HM, 5400], ['1,5h', HM, 5400], ['90m', HM, 5400],
+    ['2d 3h', DHMS, 183600], ['1d 1h 1m 1s', DHMS, 90061], ['45s', MS, 45], ['1小时30分', HM, 5400], ['2天', DHMS, 172800], ['1H 30M', HM, 5400], ['3h 3h', HM, 21600]
+  ])('reads %s in %j as %s', (text, which, seconds) => {
+    expect(parseDuration(text, which)).toBe(seconds)
   })
 
-  it('counts a box that is empty as nothing, and has no duration when all are empty', () => {
-    expect(joinDuration({ hours: '2', minutes: '' }, HM)).toBe(7200)
-    expect(joinDuration({ hours: '', minutes: '45' }, HM)).toBe(2700)
-    expect(joinDuration({ hours: '', minutes: '' }, HM)).toBe(undefined)
-    expect(joinDuration({}, HM)).toBe(undefined)
-    expect(joinDuration({ hours: null, minutes: '  ' }, HM)).toBe(undefined)
+  it('takes a number alone in the smallest unit of the field', () => {
+    expect(parseDuration('90', HM)).toBe(5400)
+    expect(parseDuration('90', units('minutes'))).toBe(5400)
+    expect(parseDuration('2', units('days', 'hours'))).toBe(7200)
+    expect(parseDuration('45', MS)).toBe(45)
+    expect(parseDuration('0', HM)).toBe(0)
+    expect(parseDuration('1.5', HM)).toBe(120)
   })
 
-  it('takes more than a unit holds, which the next unit up takes over when the box is left', () => {
-    expect(joinDuration({ hours: '0', minutes: '90' }, HM)).toBe(5400)
-    expect(splitDuration(joinDuration({ hours: '0', minutes: '90' }, HM), HM)).toEqual({ hours: 1, minutes: 30 })
+  it('rounds to the smallest unit of the field', () => {
+    expect(parseDuration('1h 30s', HM)).toBe(3660)
+    expect(parseDuration('29s', HM)).toBe(0)
+    expect(parseDuration('30s', HM)).toBe(60)
+    expect(parseDuration('1m 20s', units('minutes'))).toBe(60)
   })
 
-  it('is not a number for what is not one, or is negative', () => {
-    expect(joinDuration({ hours: 'x', minutes: '0' }, HM)).toBeNaN()
-    expect(joinDuration({ hours: '-1', minutes: '0' }, HM)).toBeNaN()
+  it('has nothing for an empty box', () => {
+    for (const text of ['', '   ', null, undefined]) {
+      expect(parseDuration(text, HM)).toBeUndefined()
+    }
   })
 
-  it('keeps whole seconds', () => {
-    expect(joinDuration({ hours: '0', minutes: '1.5' }, HM)).toBe(90)
-    expect(joinDuration({ hours: '0', minutes: '0.01' }, HM)).toBe(1)
+  it.each(['abc', '-5', '1h -5m', '1:2:3:4', '1:', ':30', '1 fortnight', '1h x', 'h', '1..5', '1:30:00'])('refuses %s', (text) => {
+    expect(parseDuration(text, HM)).toBeNaN()
+  })
+})
+
+describe('formatDurationInput and durationTemplate', () => {
+  it('writes hours and minutes as a clock, the first part as it is and the others in two digits', () => {
+    expect(formatDurationInput(5400, HM)).toBe('1:30')
+    expect(formatDurationInput(3600, HM)).toBe('1:00')
+    expect(formatDurationInput(300, HM)).toBe('0:05')
+    expect(formatDurationInput(100 * 3600, HM)).toBe('100:00')
+    expect(formatDurationInput(0, HM)).toBe('0:00')
+    expect(formatDurationInput(5405, HMS)).toBe('1:30:05')
+    expect(formatDurationInput(90, MS)).toBe('1:30')
+  })
+
+  it('writes days, or one unit, with letters, leaving out what is zero', () => {
+    expect(formatDurationInput(183600, DHMS)).toBe('2d 3h')
+    expect(formatDurationInput(90061, DHMS)).toBe('1d 1h 1m 1s')
+    expect(formatDurationInput(5400, units('minutes'))).toBe('90m')
+    expect(formatDurationInput(7200, units('days', 'hours'))).toBe('2h')
+    expect(formatDurationInput(0, units('days', 'hours'))).toBe('0h')
+    expect(formatDurationInput(5400, units('hours', 'seconds'))).toBe('1h 1800s')
+  })
+
+  it('writes what it reads back to the same length', () => {
+    for (const [seconds, which] of [[5400, HM], [5405, HMS], [90, MS], [183600, DHMS], [5400, units('minutes')], [7200, units('days', 'hours')], [0, HM], [0, DHMS]]) {
+      expect(parseDuration(formatDurationInput(seconds, which), which), `${seconds} ${which.map(u => u.name)}`).toBe(seconds)
+    }
+  })
+
+  it('shows how to write a length, as a clock or with letters', () => {
+    expect(durationTemplate(HM)).toBe('h:mm')
+    expect(durationTemplate(HMS)).toBe('h:mm:ss')
+    expect(durationTemplate(MS)).toBe('m:ss')
+    expect(durationTemplate(DHMS)).toBe('0d 0h 0m 0s')
+    expect(durationTemplate(units('minutes'))).toBe('0m')
+    expect(durationTemplate(units('days', 'hours'))).toBe('0d 0h')
+  })
+})
+
+describe('validateDurationText', () => {
+  const message = (key, params) => TranslateService.get(key, params)
+
+  it('reads the box and checks the length', () => {
+    expect(validateDurationText({ min: 900, max: 7200 }, '1:30')).toBe(null)
+    expect(validateDurationText({ min: 900, max: 7200 }, '10m')).toBe(message('TL_DURATION_TOO_SHORT', { min: '15m' }))
+    expect(validateDurationText({ min: 900, max: 7200 }, '3h')).toBe(message('TL_DURATION_TOO_LONG', { max: '2h' }))
+  })
+
+  it('refuses what is not a length, and an empty box when required', () => {
+    expect(validateDurationText({}, 'soon')).toBe(message('TL_INVALID_DURATION'))
+    expect(validateDurationText({ required: true }, '')).toBe(message('TL_FIELD_IS_REQUIRED'))
+    expect(validateDurationText({}, '')).toBe(null)
+    expect(validateDurationText({ required: true }, '0:00')).toBe(null)
   })
 })
 

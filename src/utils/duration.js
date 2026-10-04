@@ -39,25 +39,88 @@ export function splitDuration (seconds, units) {
   return parts
 }
 
+// the names a length can be typed with, by what they are worth in seconds
+const WORDS = [
+  [86400, /^(d|day|days|天)$/],
+  [3600, /^(h|hr|hrs|hour|hours|时|小时|小時)$/],
+  [60, /^(m|min|mins|minute|minutes|分|分钟|分鐘)$/],
+  [1, /^(s|sec|secs|second|seconds|秒)$/]
+]
+
 /**
- * @param {Object<string, string|number>} parts what was typed in each unit
- * @param {Array<{name: string, seconds: number}>} units
- * @returns {number|undefined} the seconds they make; nothing when every box is empty; a box that is not a number (or is negative) makes it NaN, so that it is refused
+ * What a length typed in the box is worth, in seconds. The box takes what people write: `1:30` (the colon form, filling the units of the field from the
+ * smallest up: `1:30` is 1 h 30 in hours and minutes, 1 min 30 s in minutes and seconds), `1h 30m`, `1 hour 30 minutes`, `1.5h`, `2d 3h`, `1小时30分`, and a
+ * number alone (`90`) is in the smallest unit of the field. It is rounded to that unit.
+ * @param {string} text
+ * @param {Array<{name: string, seconds: number}>} units the units of the field, largest first
+ * @returns {number|undefined} the seconds; nothing for an empty box; NaN for what is not a length (a minus sign, a word it does not know, more parts than the field has units)
  */
-export function joinDuration (parts, units) {
-  const typed = _.filter(units, unit => !_.isNil(parts[unit.name]) && String(parts[unit.name]).trim() !== '')
-  if (!typed.length) {
+export function parseDuration (text, units) {
+  const raw = _.toLower(_.trim(_.toString(text)))
+  if (raw === '') {
     return undefined
   }
-  let total = 0
-  for (const unit of typed) {
-    const number = Number(String(parts[unit.name]).trim())
-    if (!_.isFinite(number) || number < 0) {
+  const smallest = _.last(units).seconds
+  let total
+  if (/^\d+(:\d+)+$/.test(raw)) {
+    const parts = raw.split(':')
+    if (parts.length > units.length) {
       return NaN
     }
-    total += number * unit.seconds
+    const first = units.length - parts.length
+    total = _.sum(_.map(parts, (part, index) => Number(part) * units[first + index].seconds))
+  } else if (/^\d+([.,]\d+)?$/.test(raw)) {
+    total = Number(raw.replace(',', '.')) * smallest
+  } else if (/^(\s*\d+([.,]\d+)?\s*[^\d\s.,:]+\s*,?)+$/.test(raw)) {
+    total = 0
+    for (const [, amount, word] of raw.matchAll(/(\d+(?:[.,]\d+)?)\s*([^\d\s.,:]+)/g)) {
+      const known = _.find(WORDS, ([, pattern]) => pattern.test(word))
+      if (!known) {
+        return NaN
+      }
+      total += Number(amount.replace(',', '.')) * known[0]
+    }
+  } else {
+    return NaN
   }
-  return Math.round(total)
+  return _.isFinite(total) ? Math.round(total / smallest) * smallest : NaN
+}
+
+// the letters of the units, for a length written with letters
+const LETTERS = { days: 'd', hours: 'h', minutes: 'm', seconds: 's' }
+
+/**
+ * @param {Array<{name: string}>} units
+ * @returns {boolean} the units follow each other (hours, minutes; minutes, seconds; hours, minutes, seconds) and have no days: they are written as a clock, 1:30
+ */
+function isClock (units) {
+  const names = _.map(units, 'name')
+  return units.length >= 2 && !_.includes(names, 'days') && _.every(names, (name, index) => index === 0 || UNITS[_.findIndex(UNITS, { name }) - 1].name === names[index - 1])
+}
+
+/**
+ * @param {number} seconds
+ * @param {Array<{name: string, seconds: number}>} units
+ * @returns {string} the length as the box shows it: a clock (`1:30`, `1:30:05`, `5:00`) for hours, minutes and seconds, letters (`2d 3h`, `90m`) for the rest
+ */
+export function formatDurationInput (seconds, units) {
+  const parts = splitDuration(seconds, units)
+  if (isClock(units)) {
+    return _.map(units, (unit, index) => index === 0 ? String(parts[unit.name]) : _.padStart(parts[unit.name], 2, '0')).join(':')
+  }
+  const shown = _.filter(units, unit => parts[unit.name] > 0)
+  return _.isEmpty(shown) ? `0${LETTERS[_.last(units).name]}` : _.map(shown, unit => `${parts[unit.name]}${LETTERS[unit.name]}`).join(' ')
+}
+
+/**
+ * @param {Array<{name: string}>} units
+ * @returns {string} what the empty box shows to say how to write a length: `h:mm`, `h:mm:ss`, `m:ss`, `0d 0h`
+ */
+export function durationTemplate (units) {
+  if (isClock(units)) {
+    return _.map(units, (unit, index) => index === 0 ? LETTERS[unit.name] : _.repeat(LETTERS[unit.name], 2)).join(':')
+  }
+  return _.map(units, unit => `0${LETTERS[unit.name]}`).join(' ')
 }
 
 /**
@@ -102,4 +165,14 @@ export function validateDuration (schema, value) {
     return t('TL_DURATION_TOO_LONG', { max: formatDuration(max, units, localeTag(TranslateService.locale)) })
   }
   return null
+}
+
+/**
+ * @param {Object} schema the field
+ * @param {string} text what is typed in the box
+ * @returns {string|null} what is wrong with the box (not a length, outside the limits, missing when required); null when it is fine
+ */
+export function validateDurationText (schema, text) {
+  const seconds = parseDuration(text, durationOptions(schema).units)
+  return _.isNaN(seconds) ? TranslateService.get('TL_INVALID_DURATION') : validateDuration(schema, seconds)
 }

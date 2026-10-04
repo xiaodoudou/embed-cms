@@ -1,20 +1,14 @@
 <template>
   <div class="duration-field" :class="{ 'is-readonly': isReadonly, 'is-disabled': isDisabled }">
-    <field-label :schema="schema" :disabled="disabled" />
-    <div class="duration-row" role="group" :aria-label="schema.label">
-      <div v-for="(unit, index) in options.units" :key="unit.name" class="duration-unit" :class="`duration-${unit.name}`">
-        <v-text-field
-          :id="`${inputId}-${unit.name}`" :ref="index === 0 ? 'input' : undefined" :model-value="parts[unit.name]" :name="`${schema.model}-${unit.name}`"
-          type="number" min="0" step="1" inputmode="numeric" placeholder="0" persistent-placeholder autocomplete="off" hide-details
-          :variant="getVariant()" :flat="get('flat')" :rounded="get('rounded')" :density="get('density')" :error="!!message" :rules="index === 0 ? [rule] : []" validate-on="blur"
-          :disabled="isDisabled" :readonly="isReadonly" :aria-readonly="isReadonly ? 'true' : undefined" :aria-required="schema.required ? 'true' : undefined"
-          @update:model-value="onInput(unit.name, $event)" @focus="selectAll" @blur="onBlur" @update:focused="onFieldFocus"
-        />
-        <label :id="`${inputId}-${unit.name}-label`" :for="`${inputId}-${unit.name}`" class="duration-suffix">{{ $filters.translate(unitKey(unit)) }}</label>
-      </div>
-    </div>
-    <div v-if="message" class="duration-error" role="alert">{{ message }}</div>
-    <div v-else-if="showHint()" class="help-block">
+    <field-label :schema="schema" :disabled="disabled" :input-id="inputId" />
+    <v-text-field
+      :id="inputId" ref="input" :model-value="text" :name="schema.model" type="text" autocomplete="off" spellcheck="false"
+      :placeholder="template" persistent-placeholder hide-details="auto" class="duration-input"
+      :variant="getVariant()" :flat="get('flat')" :rounded="get('rounded')" :density="get('density')" :rules="[rule]" validate-on="blur"
+      :disabled="isDisabled" :readonly="isReadonly" :aria-readonly="isReadonly ? 'true' : undefined" :aria-required="schema.required ? 'true' : undefined"
+      @update:model-value="onInput" @focus="selectAll" @blur="onBlur" @update:focused="onFieldFocus"
+    />
+    <div v-if="showHint()" class="help-block">
       <v-icon size="small" icon="$information" />
       <span>{{ schema.options.hint }}</span>
     </div>
@@ -24,29 +18,30 @@
 <script>
   import _ from 'lodash'
   import AbstractField from '@m/AbstractField'
-  import { durationOptions, joinDuration, splitDuration, validateDuration } from '@u/duration'
+  import { durationOptions, durationTemplate, formatDurationInput, parseDuration, validateDurationText } from '@u/duration'
 
   /**
-   * A length of time, typed in the units the field shows (hours and minutes by default). It is kept as a number of seconds, or nothing when
-   * every box is empty. A box can hold more than the unit above would (90 minutes): when it is left the lengths are carried up.
+   * A length of time typed in one box, the way people write it: `1:30`, `1h 30m`, `90` (minutes), `1.5h`. It is kept as a number of seconds, or
+   * nothing when the box is empty, and written back in the form of the field when the box is left (a clock, `1:30`, for hours and minutes; letters,
+   * `2d 3h`, for days or a single unit). The box shows how to write it before anything is typed.
    */
   export default {
     mixins: [AbstractField],
     emits: ['input'],
     data () {
       return {
-        // what is typed in each box (text, so that an empty box stays empty)
-        parts: {},
-        // what is wrong with the value, shown under the boxes
-        message: '',
-        // a box holds what is not a length of time (a minus sign)
-        badInput: false
+        // what is typed in the box (text, so that what is half typed stays as typed)
+        text: ''
       }
     },
     computed: {
       /** @returns {{units: Array<Object>, min: number|undefined, max: number|undefined}} what the field says */
       options () {
         return durationOptions(this.schema)
+      },
+      /** @returns {string} how to write a length, shown while the box is empty */
+      template () {
+        return durationTemplate(this.options.units)
       },
       /** @returns {*} the value of the record: the seconds */
       current () {
@@ -62,14 +57,10 @@
       }
     },
     watch: {
-      // another value from outside (a record loaded, a discard): the boxes show it. What is being typed is left alone.
-      current () {
-        // (an input that is not a length holds nothing: it is not another value, it is waiting to be corrected)
-        if (this.badInput) {
-          return
-        }
-        const typed = joinDuration(this.parts, this.options.units)
-        if (!(typed === this.current || (_.isUndefined(typed) && _.isNil(this.current)))) {
+      // another value from outside (a record loaded, a discard): the box shows it. What is being typed is left alone.
+      current (value) {
+        const typed = parseDuration(this.text, this.options.units)
+        if (!(typed === value || (_.isUndefined(typed) && _.isNil(value)) || _.isNaN(typed))) {
           this.showValue()
         }
       }
@@ -78,58 +69,39 @@
       this.showValue()
     },
     methods: {
-      /** Fills the boxes from the value. */
+      /** Fills the box from the value. */
       showValue () {
-        this.parts = _.isFinite(this.current) && this.current >= 0 ? _.mapValues(splitDuration(this.current, this.options.units), String) : {}
-        this.badInput = false
+        this.text = _.isFinite(this.current) && this.current >= 0 ? formatDurationInput(this.current, this.options.units) : ''
       },
-      /**
-       * @param {Object} unit
-       * @returns {string} the translation key of its name
-       */
-      unitKey (unit) {
-        return `TL_UNIT_${_.toUpper(unit.name)}`
-      },
-      /**
-       * @param {string} name the unit
-       * @param {string|number|null} text what was typed
-       */
-      onInput (name, text) {
+      /** @param {string|null} text what was typed: what is not a length holds nothing, and the rule says so */
+      onInput (text) {
         if (this.isLocked()) {
           return
         }
-        this.parts = { ...this.parts, [name]: _.isNil(text) ? '' : String(text) }
-        const total = joinDuration(this.parts, this.options.units)
-        this.badInput = _.isNaN(total)
-        this._value = this.badInput ? undefined : total
+        this.text = _.isNil(text) ? '' : String(text)
+        const seconds = parseDuration(this.text, this.options.units)
+        this._value = _.isNaN(seconds) ? undefined : seconds
         this.$emit('input', this._value, this.schema.model)
-        if (this.message) {
-          this.message = validateDuration(this.schema, this._value) || ''
-        }
       },
-      /** @param {FocusEvent} event a box that is entered has its number selected, so that typing replaces it (it shows 0 where the length is none of that unit) */
+      /** @param {FocusEvent} event a box that is entered has its text selected, so that typing replaces it */
       selectAll (event) {
         if (event.target && event.target.select) {
           event.target.select()
         }
       },
-      /** Leaving a box: the lengths are carried up (90 minutes are 1 hour 30), and the value is checked. */
+      /** Leaving the box: a length is written in the form of the field (90 is 1:30). */
       onBlur () {
-        if (_.isFinite(this.current) && this.current >= 0) {
-          this.showValue()
+        const seconds = parseDuration(this.text, this.options.units)
+        if (_.isFinite(seconds)) {
+          this.text = formatDurationInput(seconds, this.options.units)
         }
-        this.message = this.badInput ? this.$filters.translate('TL_INVALID_DURATION') : validateDuration(this.schema, this._value) || ''
       },
       /**
-       * The rule of the form (Vuetify asks for it when the record is shown, when a box is left and when the record is saved). A value that
-       * is wrong says so under the boxes; a required length that is missing does not (the editor marks it after a failed save, and a
-       * form that has not been touched is not red).
+       * The rule of the form (Vuetify asks for it when the box is left and when the record is saved).
        * @returns {true|string}
        */
       rule () {
-        const message = this.badInput ? this.$filters.translate('TL_INVALID_DURATION') : validateDuration(this.schema, this._value)
-        this.message = this.badInput || !_.isNil(this._value) ? message || '' : ''
-        return message || true
+        return validateDurationText(this.schema, this.text) || true
       }
     }
   }
@@ -137,39 +109,11 @@
 
 <style lang="scss">
 .duration-field {
-  .duration-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--cms-space-4);
-  }
-  .duration-unit {
-    display: flex;
-    align-items: center;
-    gap: var(--cms-space-2);
-    .v-text-field {
-      width: 96px;
+  .duration-input {
+    max-width: 240px;
+    input {
+      font-variant-numeric: tabular-nums;
     }
-    // a number box without the spin buttons: they are in the way and the keyboard does the work
-    input[type=number] {
-      appearance: textfield;
-      -moz-appearance: textfield;
-      &::-webkit-outer-spin-button,
-      &::-webkit-inner-spin-button {
-        margin: 0;
-        appearance: none;
-        -webkit-appearance: none;
-      }
-    }
-  }
-  .duration-suffix {
-    color: var(--cms-text-muted);
-    font-size: var(--cms-fs-sm);
-  }
-  .duration-error {
-    margin-top: var(--cms-space-1);
-    color: var(--cms-error);
-    font-size: var(--cms-fs-sm);
   }
 }
 </style>

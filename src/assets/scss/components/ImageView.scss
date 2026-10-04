@@ -238,7 +238,6 @@
   // the grip is the only place that starts a drag, and the compact mode puts the buttons that move a file in its place
   .preview-attachment {
     position: relative;
-    .drag-grip,
     .move-buttons {
       position: absolute;
       top: var(--cms-space-2);
@@ -248,9 +247,19 @@
       border: 1px solid var(--cms-border);
       border-radius: var(--cms-radius-sm, 4px);
     }
+    .preview-head {
+      display: flex;
+      align-items: center;
+      gap: var(--cms-space-1);
+      .filename {
+        min-width: 0;
+      }
+    }
     .drag-grip {
+      flex: 0 0 auto;
       padding: 2px;
       display: inline-flex;
+      align-items: center;
       color: var(--cms-text-muted);
       cursor: grab;
       touch-action: none;

@@ -313,6 +313,20 @@ describe('PreviewMultiple (the list of files of a field)', () => {
     expect(wrapper.find('.move-buttons').exists()).toBe(false)
   })
 
+  it('shows no grip for a single file: there is nothing to put in order', () => {
+    list([IMAGE])
+    expect(wrapper.find('.drag-grip').exists()).toBe(false)
+    expect(wrapper.find('.filename').exists()).toBe(true)
+  })
+
+  it('puts the grip beside the name of the file, not over it', () => {
+    list([IMAGE, PDF])
+    const head = wrapper.find('.preview-head')
+    expect(head.exists()).toBe(true)
+    expect(head.find('.drag-grip').exists()).toBe(true)
+    expect(head.find('.filename').exists()).toBe(true)
+  })
+
   it('offers the compact mode with two files or more: the grips give way to the buttons that move a file, which report where', async () => {
     const moved = []
     list([IMAGE, PDF, NEW_IMAGE], { moveAttachment: (index, delta) => moved.push([index, delta]) })

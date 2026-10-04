@@ -37,7 +37,7 @@
       </div>
       <div class="paragraph-content">
         <!-- a compact list of the blocks, one line each, to move them with the buttons (or the keyboard) instead of dragging them across the form -->
-        <div v-if="items.length > 1 && !(disabled || schema.disabled)" class="paragraph-reorder-bar">
+        <div v-if="canReorder" class="paragraph-reorder-bar">
           <v-btn class="reorder-toggle" variant="text" size="small" :aria-pressed="reordering ? 'true' : 'false'" @click="toggleReordering">
             <v-icon start icon="$swapVertical" />{{ $filters.translate(reordering ? 'TL_DONE_REORDERING' : 'TL_REORDER') }}
           </v-btn>
@@ -48,8 +48,8 @@
           @choose="onDragChoose" @unchoose="onDragUnchoose" @start="onBlockDragStart" @end="onEndDrag"
         >
           <v-card v-for="(item, idx) in items" :key="`paragraph-item-${idx}`" :data-block-index="idx" :theme="theme" elevation="0" :class="getItemClasses(idx, item)" :style="getItemStyles(item)">
-            <v-card-title class="handle paragraph-header">
-              <span v-if="!(disabled || schema.disabled)" class="drag-grip" :title="$filters.translate('TL_DRAG_TO_REORDER')"><v-icon icon="$dragVertical" size="small" /></span>
+            <v-card-title class="handle paragraph-header" :class="{'no-grip': !canReorder}">
+              <span v-if="canReorder" class="drag-grip" :title="$filters.translate('TL_DRAG_TO_REORDER')"><v-icon icon="$dragVertical" size="small" /></span>
               <div class="paragraph-title">{{ getLabel(item) }}</div>
               <div v-if="summaryOf(item)" class="paragraph-summary">{{ summaryOf(item) }}</div>
               <div class="add-btn-wrapper">
@@ -144,6 +144,10 @@
       }
     },
     computed: {
+      /** @returns {boolean} whether there is something to put in order: two blocks or more, in a field that is not locked */
+      canReorder () {
+        return this.items.length > 1 && !(this.disabled || this.schema.disabled)
+      },
       /** @returns {string} the id prefix of the selects of this field, so their labels can point at them */
       inputId () {
         return `cms-paragraph-${this.$.uid}`
@@ -977,6 +981,10 @@
   gap: var(--cms-space-1);
   padding-right: 0;
   padding-left: 4px;
+  // without the grip (one block, or a locked field) the title takes its place
+  &.no-grip {
+    padding-left: 16px;
+  }
   // the top corners follow the rounded border of the block card (8px less its 2px border)
   border-radius: 6px 6px 0 0;
   .paragraph-title {

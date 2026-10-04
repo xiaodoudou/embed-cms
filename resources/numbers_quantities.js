@@ -20,10 +20,10 @@ module.exports = {
     { field: 'disabledRating', input: 'rating', label: 'Disabled rating', localised: false, options: { disabled: true, hint: 'Disabled: greyed out and not focusable' } },
 
     // duration: kept in seconds, typed in hours and minutes by default
-    { field: 'duration', input: 'duration', label: 'Duration', localised: false, options: { hint: 'Hours and minutes, kept as a number of seconds' } },
-    { field: 'preciseDuration', input: 'duration', label: 'Precise duration', localised: false, options: { units: ['hours', 'minutes', 'seconds'], hint: 'Hours, minutes and seconds' } },
-    { field: 'longDuration', input: 'duration', label: 'Long duration', localised: false, options: { units: ['days', 'hours'], hint: 'Days and hours' } },
-    { field: 'minutesOnly', input: 'duration', label: 'Minutes only', localised: false, options: { units: ['minutes'], min: 5 * 60, max: 8 * 3600, hint: 'Minutes only, from 5 minutes to 8 hours (a box holds more than 59: 90 minutes stay 90)' } },
+    { field: 'duration', input: 'duration', label: 'Duration', localised: false, options: { hint: 'Write 1:30, 1h 30m or 90 (minutes); kept as a number of seconds' } },
+    { field: 'preciseDuration', input: 'duration', label: 'Precise duration', localised: false, options: { units: ['hours', 'minutes', 'seconds'], hint: 'Hours, minutes and seconds: 1:30:05' } },
+    { field: 'longDuration', input: 'duration', label: 'Long duration', localised: false, options: { units: ['days', 'hours'], hint: 'Days and hours: 2d 3h' } },
+    { field: 'minutesOnly', input: 'duration', label: 'Minutes only', localised: false, options: { units: ['minutes'], min: 5 * 60, max: 8 * 3600, hint: 'Minutes only, from 5 minutes to 8 hours' } },
     { field: 'requiredDuration', input: 'duration', label: 'Required duration', localised: false, required: true, options: { hint: 'Required. A length of zero is a length' } },
     { field: 'localisedDuration', input: 'duration', label: 'Duration per locale', options: { hint: 'One duration per locale' } },
     { field: 'readOnlyDuration', input: 'duration', label: 'Read-only duration', localised: false, options: { readonly: true, hint: 'Read-only: visible, not editable' } },

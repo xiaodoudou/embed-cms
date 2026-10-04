@@ -1050,3 +1050,11 @@ a {
   font-size: var(--cms-fs-sm);
   font-weight: var(--cms-fw-medium);
 }
+
+/* ---- The frame a theme is switched in -------------------------------------------------------------------------------- */
+/* Every colour of the page changes at once: nothing fades (utils/theme.js withoutTransitions puts the class on for two frames). */
+html.theme-switching body *,
+html.theme-switching body *::before,
+html.theme-switching body *::after {
+  transition: none;
+}

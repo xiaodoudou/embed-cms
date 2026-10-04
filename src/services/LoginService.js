@@ -69,18 +69,23 @@ class LoginService {
     }
   }
 
-  /** @returns {Promise<string|false>} the new theme, saved for the user */
-  async changeTheme () {
+  /**
+   * @param {string} [wanted] the theme to keep ('light' or 'dark'); the other one than the user has when none is given
+   * @returns {Promise<string|undefined>} the theme, saved for the user; nothing when the server could not keep it
+   */
+  async changeTheme (wanted) {
+    const before = _.get(this.user, 'theme', 'dark')
+    const newTheme = wanted || (before === 'dark' ? 'light' : 'dark')
     try {
-      const newTheme = _.get(this.user, 'theme', 'dark') === 'dark' ? 'light' : 'dark'
       this.events.emit('changed-theme', newTheme)
       await RequestService.get(`${window.location.pathname}changeTheme/${newTheme}`)
       log.debug(`Successfully changed the theme for user: ${newTheme}`)
       _.set(this.user, 'theme', newTheme)
-      document.querySelectorAll('body')[0].classList = [`v-theme--${newTheme}`]
       return newTheme
     } catch (error) {
       console.error('Failed to change theme: ', error)
+      // the fields that were told are told again, with the theme that is still the one
+      this.events.emit('changed-theme', before)
     }
   }
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import FieldLabel from '@c/fields/FieldLabel.vue'
 import Group from '@c/fields/Group.vue'
@@ -129,6 +129,8 @@ describe('CustomTreeView (a read only view of a value)', () => {
 })
 
 describe('CustomCode (a code editor)', () => {
+  // the editor library writes "resize 100% 100%" to the console each time it is sized (a debugging line it left in)
+  beforeEach(() => { vi.spyOn(console, 'log').mockImplementation(() => {}) })
   const code = async (model, schema = {}) => {
     wrapper = mountField(CustomCode, { model, schema: { model: 'script', label: 'Script', ...schema }, attachTo: document.body })
     await flushPromises()

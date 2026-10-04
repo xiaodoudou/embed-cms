@@ -164,7 +164,7 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
     it('writes the timestamp the person picks into the record, with its path', async () => {
       const model = {}
       picker('datetime', model)
-      inner().vm.$emit('update:modelValue', LOCAL)
+      inner().vm.$emit('update:model-value', LOCAL)
       await flushPromises()
       expect(model.when).toBe(LOCAL)
       expect(wrapper.emitted('input')[0]).toEqual([LOCAL, 'when'])
@@ -173,7 +173,7 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
     it('writes nothing when the value is cleared, and the record loses it', async () => {
       const model = { when: LOCAL }
       picker('date', model)
-      inner().vm.$emit('update:modelValue', null)
+      inner().vm.$emit('update:model-value', null)
       await flushPromises()
       expect(model.when).toBe(null)
     })

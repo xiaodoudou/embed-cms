@@ -47,7 +47,7 @@
           v-if="schema && subResourcesLoaded" :key="`${schema.model}-${key}`" :list="items" :class="{disabled, 'dynamic-layout-container': isDynamicLayoutContainer}" draggable=".item" v-bind="dragOptions" handle=".drag-grip" :group="`${schema.model}-${key}`" ghost-class="ghost" :force-fallback="true"
           @choose="onDragChoose" @unchoose="onDragUnchoose" @start="onBlockDragStart" @end="onEndDrag"
         >
-          <v-card v-for="(item, idx) in items" :key="`paragraph-item-${idx}`" :data-block-index="idx" :theme="theme" elevation="0" :class="getItemClasses(idx, item)" :style="getItemStyles(item)">
+          <v-card v-for="(item, idx) in items" :key="identityOf(item)" :data-block-index="idx" :theme="theme" elevation="0" :class="getItemClasses(idx, item)" :style="getItemStyles(item)">
             <v-card-title class="handle paragraph-header" :class="{'no-grip': !canReorder}">
               <span v-if="canReorder" class="drag-grip" :title="$filters.translate('TL_DRAG_TO_REORDER')"><v-icon icon="$dragVertical" size="small" /></span>
               <div class="paragraph-title">{{ getLabel(item) }}</div>
@@ -102,6 +102,11 @@
   import ResourceService from '@s/ResourceService'
   import TranslateService from '@s/TranslateService'
   import DragList from '@m/DragList'
+
+  // A key for each block, for as long as it is the same object: when the blocks are moved or one is removed, the others are moved or left
+  // as they are, with their forms, their editors and their pictures, and not made again.
+  const identities = new WeakMap()
+  let sequence = 0
   import pAll from 'p-all'
   import { queueFiles, takeFiles } from '@u/pendingFiles'
 
@@ -517,8 +522,17 @@
         }
         _.set(this.model, '_attachments', attachments)
         this.items = _.difference(this.items, [item])
-        this.key = crypto.randomUUID()
         this.updateItems()
+      },
+      /**
+       * @param {Object} item a block
+       * @returns {number} a number that stays with this block, wherever it is in the list
+       */
+      identityOf (item) {
+        if (!identities.has(item)) {
+          identities.set(item, ++sequence)
+        }
+        return identities.get(item)
       },
       /** @returns {HTMLElement|null} the list of blocks of this field (not the one of a block inside it) */
       ownContent () {
@@ -556,7 +570,7 @@
       },
       /**
        * A block is dropped: the list is drawn again with its forms, and the page scrolls to keep the block where it was dropped.
-       * Re-keys the list so the moved items render again, then writes the items back.
+       * Writes the blocks back in the order they have now.
        * @param {{item?: HTMLElement, newIndex?: number}} evt the drag event of the library
        */
       onEndDrag (evt) {
@@ -570,7 +584,6 @@
           content.style.minHeight = ''
           content.style.paddingTop = ''
         }
-        this.key = crypto.randomUUID()
         this.$nextTick(() => {
           const dropped = _.find(this.$el.querySelectorAll(`[data-block-index="${index}"]`), (el) => el.closest('.paragraph-field') === this.$el)
           if (before !== null && scroller && dropped) {
@@ -617,7 +630,6 @@
         const items = [...this.items]
         items.splice(to, 0, items.splice(idx, 1)[0])
         this.items = items
-        this.key = crypto.randomUUID()
         this.updateItems()
         this.announcement = TranslateService.get('TL_MOVED_TO_POSITION', { name: `${this.getLabel(items[to])} ${this.summaryOf(items[to])}`.trim(), pos: to + 1, total: items.length })
         // the list is drawn again: the focus goes back to the button that was pressed, now on the block's new line

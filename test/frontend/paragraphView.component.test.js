@@ -174,6 +174,51 @@ describe('ParagraphView (blocks)', () => {
       expect(lastEmitted()[1]).toBe('blocks')
     })
 
+    describe('what happens to the forms of the blocks when the blocks move', () => {
+      const blocks = () => [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }, { _type: 'block_text', heading: 'c' }]
+      const instances = () => wrapper.findAllComponents(customForm).map((form) => form.vm.$.uid)
+      const headings = () => wrapper.findAllComponents(customForm).map((form) => form.props('model')._value.heading)
+
+      it('moves the form of a block with it when it is moved with the buttons, instead of making every form again (the editors and the pictures would flash)', async () => {
+        await paragraph({}, { blocks: blocks() })
+        await wrapper.get('.reorder-toggle').trigger('click')
+        const before = instances()
+        await cards()[0].get('.move-down').trigger('click')
+        await flushPromises()
+        expect(headings()).toEqual(['b', 'a', 'c'])
+        expect(instances()).toEqual([before[1], before[0], before[2]])
+      })
+
+      it('moves the forms the same way after a drag', async () => {
+        await paragraph({}, { blocks: blocks() })
+        const before = instances()
+        const moved = wrapper.vm.items.splice(0, 1)[0]
+        wrapper.vm.items.splice(2, 0, moved)
+        wrapper.findComponent(draggable).vm.$emit('end', { newIndex: 2 })
+        await flushPromises()
+        expect(headings()).toEqual(['b', 'c', 'a'])
+        expect(instances()).toEqual([before[1], before[2], before[0]])
+      })
+
+      it('leaves the forms of the other blocks as they are when a block is removed', async () => {
+        await paragraph({}, { blocks: blocks() })
+        const before = instances()
+        await cards()[1].get('.remove-item').trigger('click')
+        await flushPromises()
+        expect(headings()).toEqual(['a', 'c'])
+        expect(instances()).toEqual([before[0], before[2]])
+      })
+
+      it('shows each form with the block it belongs to, and the new position of the block, after a move', async () => {
+        await paragraph({}, { blocks: blocks() })
+        await wrapper.get('.reorder-toggle').trigger('click')
+        await cards()[2].get('.move-up').trigger('click')
+        await flushPromises()
+        expect(wrapper.findAllComponents(customForm).map((form) => [form.props('model')._value.heading, form.props('paragraphIndex')])).toEqual([['a', 0], ['c', 1], ['b', 2]])
+        expect(cards().map((card) => card.attributes('data-block-index'))).toEqual(['0', '1', '2'])
+      })
+    })
+
     it('scrolls the form by what the dropped block moved, so that it stays where it was dropped when the blocks unfold', async () => {
       await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }] })
       const scroller = document.createElement('div')

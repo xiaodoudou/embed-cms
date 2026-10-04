@@ -464,6 +464,11 @@ const typeMapper = {
     type: 'PhoneField',
     validator: customValidators.phone
   },
+  // a text written in Markdown, with a toolbar and a preview (see utils/markdown.js)
+  markdown: {
+    type: 'MarkdownField',
+    validator: customValidators.text
+  },
   // an amount in a currency, kept as { amount, currency } (see utils/money.js)
   money: {
     type: 'MoneyField',

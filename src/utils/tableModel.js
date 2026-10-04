@@ -1,5 +1,6 @@
 import _ from 'lodash'
 import dayjs from 'dayjs'
+import { markdownToPlain } from '@u/markdown'
 
 /**
  * Pure logic behind the table view: column derivation (which locales are shown),
@@ -33,7 +34,8 @@ const KIND_BY_INPUT = {
   rating: 'rating',
   duration: 'duration',
   money: 'money',
-  phone: 'phone'
+  phone: 'phone',
+  markdown: 'markdown'
 }
 
 // Fixed or flexible widths per kind (px). Flexible text columns have a min and a max and truncate.
@@ -56,6 +58,7 @@ const WIDTHS = {
   json: { min: 140, max: 240 },
   paragraph: { min: 120, max: 180 },
   richtext: { min: 180, max: 340 },
+  markdown: { min: 180, max: 340 },
   text: { min: 160, max: 340 }
 }
 
@@ -493,6 +496,9 @@ export function sortValue (record, column, options = {}) {
   const value = _.get(record, column.model)
   if (column.kind === 'richtext') {
     return richTextToPlain(value)
+  }
+  if (column.kind === 'markdown') {
+    return markdownToPlain(value)
   }
   if (_.isFunction(options.labelOf) && (column.kind === 'select' || column.kind === 'multi')) {
     const label = options.labelOf(column)

@@ -133,6 +133,15 @@ describe('SchemaService (the form a resource schema becomes)', () => {
       expect(field.selectOptions.label).toEqual([{ value: 'a', text: 'Alpha' }, { value: 'b', text: 'Beta' }])
     })
 
+    it('gives a select of several resources the records of all of them, in groups, and says it is one', () => {
+      ResourceService.get.mockImplementation(name => ({ authors: [{ _id: 'a1', name: 'Zoe' }], tags: [{ _id: 't1', name: 'red' }] })[name])
+      ResourceService.getSchema.mockImplementation(name => ({ title: name, displayname: name === 'tags' ? 'Tags' : 'Authors', schema: [{ field: 'name', input: 'string', localised: false }] }))
+      const field = one({ field: 'owner', input: 'select', sources: ['authors', { resource: 'tags', title: 'Labels' }] })
+      expect(field.multiSource).toBe(true)
+      expect(field.values.map(item => [item._id, item._label, item._title])).toEqual([['authors:a1', 'Zoe', 'Authors'], ['tags:t1', 'red', 'Labels']])
+      expect(one({ field: 'owner', input: 'select', source: 'authors' }).multiSource).toBeUndefined()
+    })
+
     it('gives a select and a pillbox the words of the multiselect', () => {
       for (const input of ['select', 'pillbox']) {
         const options = one({ field: 'x', input }).selectOptions

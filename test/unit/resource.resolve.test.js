@@ -84,6 +84,56 @@ describe('resource API: resolving relations (unit)', () => {
     })
   })
 
+  describe('a field of several resources', () => {
+    let A, api, red, fresh
+    before(async () => {
+      A = await startApp({ resources: './test/fixtures/syncResources', disableJwtLogin: true })
+      api = A.cms.api()
+      red = await api('tags').create({ name: 'red' })
+      fresh = await api('labels').create({ name: 'new' })
+    })
+    after(() => A.close())
+
+    const ref = (resource, record) => ({ resource, id: record._id })
+
+    it('keeps the references as they are stored, and replaces them by the records, each with its resource, for the resources asked for', async () => {
+      const made = await api('pages').create({ slug: 'multi', related: ref('tags', red), relatedMany: [ref('labels', fresh), ref('tags', red)] })
+      expect(made.related).to.deep.equal(ref('tags', red))
+      const found = await api('pages', 'tags', 'labels').find(made._id)
+      expect(found.related).to.include({ _id: red._id, name: 'red', _resource: 'tags' })
+      expect(found.relatedMany.map(one => [one._resource, one.name])).to.deep.equal([['labels', 'new'], ['tags', 'red']])
+      expect((await api('pages').find(made._id)).relatedMany).to.deep.equal([ref('labels', fresh), ref('tags', red)])
+    })
+
+    it('leaves the references to the resources that were not asked for', async () => {
+      const made = await api('pages').create({ slug: 'partly', relatedMany: [ref('labels', fresh), ref('tags', red)] })
+      const found = await api('pages', 'tags').find(made._id)
+      expect(found.relatedMany[0]).to.deep.equal(ref('labels', fresh))
+      expect(found.relatedMany[1]).to.include({ name: 'red', _resource: 'tags' })
+    })
+
+    it('gives undefined, in its place, for a record that is not there, keeping the positions', async () => {
+      const made = await api('pages').create({ slug: 'gone-multi', related: { resource: 'tags', id: 'musxxxxxxxxxxxxxxxxxxxxx' }, relatedMany: [{ resource: 'tags', id: 'musxxxxxxxxxxxxxxxxxxxxx' }, ref('tags', red)] })
+      const found = await api('pages', 'tags').find(made._id)
+      expect(found).to.have.property('related', undefined)
+      expect(found.relatedMany[0]).to.equal(undefined)
+      expect(found.relatedMany[1]).to.include({ name: 'red' })
+    })
+
+    it('gives each record its own copy of the related record', async () => {
+      await api('pages').create({ slug: 'copy-m-a', related: ref('tags', red) })
+      await api('pages').create({ slug: 'copy-m-b', related: ref('tags', red) })
+      const [a, b] = await api('pages', 'tags').list({ slug: { $in: ['copy-m-a', 'copy-m-b'] } })
+      a.related.name = 'changed by a caller'
+      expect(b.related.name).to.equal('red')
+    })
+
+    it('is a relation of the resource, as long as one of its resources is there', () => {
+      const relations = A.cms.resource('pages').options._relations
+      expect(Object.values(relations).map(field => field.field)).to.include.members(['topic', 'related', 'relatedMany'])
+    })
+  })
+
   describe('with languages, and relations of the related records', () => {
     let A, api, article, other, author
     before(async () => {

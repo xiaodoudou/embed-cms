@@ -18,6 +18,7 @@ const helmet = require('helmet')
 const _ = require('lodash')
 const fsExtra = require('fs-extra')
 const { isAttachmentInput } = require('./lib/util/inputTypes')
+const { isMultiSource, sourcesOf } = require('./lib/util/fieldSources')
 const session = require('express-session')
 const UUID = require('./lib/util/uuid')
 const SyslogManager = require('./lib/SyslogManager')
@@ -495,9 +496,12 @@ class CMS {
   }
   /**
    * @param {object} field
-   * @returns {boolean} a select or a multiselect pointing at a resource that exists
+   * @returns {boolean} a select or a multiselect pointing at a resource that exists (at one of the resources that exist, for a field of several)
    */
   isValidRelation = (field) => {
+    if (isMultiSource(field)) {
+      return _.some(sourcesOf(field), source => _.includes(this._resourceNames, source.resource))
+    }
     return _.includes(['select', 'multiselect'], field.input) && _.includes(this._resourceNames, field.source)
   }
   /** Records, per resource, the relations with their path patterns (`_relations`), the ones of the blocks included. */

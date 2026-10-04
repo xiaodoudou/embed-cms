@@ -7,7 +7,7 @@
       :theme="theme"
       :chips="getSelectOpt('chips')"
       :menu-props="menuProps"
-      :model-value="objectValue || _value" :items="listItems" :closable-chips="getSelectOpt('deletableChips') || getSelectOpt('multiple')" :hide-selected="getSelectOpt('hideSelected')"
+      :model-value="selection" :items="listItems" :closable-chips="getSelectOpt('deletableChips') || getSelectOpt('multiple')" :hide-selected="getSelectOpt('hideSelected')"
       :disabled="disabled || schema.disabled" :readonly="!!schema.readonly" :aria-readonly="schema.readonly ? 'true' : undefined" :placeholder="schema.placeholder" :multiple="getSelectOpt('multiple')" :ripple="false" :flat="get('flat')" :rules="[validateField]"
       :item-title="customLabel" :item-value="getValue"
       menu-icon="$chevronDown" :clearable="isClearable" clear-icon="$close" :variant="getVariant()" :density="get('density')" rounded hide-details="auto" validate-on="blur" :aria-label="schema.label"
@@ -51,6 +51,7 @@
   import Notification from '@m/Notification'
   import Mustache from 'mustache'
   import { highlightSegments, withGroupHeadings } from '@u/highlight'
+  import { keyRef, toKey } from '@u/sources'
 
   export default {
     mixins: [AbstractField, Notification],
@@ -76,8 +77,23 @@
         }
         return !this.getSelectOpt('multiple') && !this.schema.required && !this.schema.readonly && !this.disabled
       },
+      /** @returns {boolean} the records of several resources (`sources`): the choices are grouped by resource and what is kept is `{ resource, id }` */
+      multiSource () {
+        return !!this.schema.multiSource
+      },
+      /** @returns {*} what the list shows as chosen: the choices by their keys for a field of several resources, the value as it is for the others */
+      selection () {
+        const value = this.objectValue || this._value
+        if (!this.multiSource) {
+          return value
+        }
+        return _.isArray(value) ? _.compact(_.map(value, toKey)) : toKey(value)
+      },
       // options.groupBy names a field of the option records that becomes the group heading
       listItems () {
+        if (this.multiSource) {
+          return withGroupHeadings(this.options, (item) => item._title)
+        }
         const groupBy = _.get(this.schema, 'options.groupBy', false)
         const options = this.options
         if (!groupBy || !_.isArray(options)) {
@@ -98,6 +114,12 @@
         const values = this.schema.values
         if (_.isFunction(values)) {
           return values.apply(this, [this.model, this.schema])
+        }
+        if (this.multiSource) {
+          // a reference to a record that is gone is still shown, by its id, so that the value is not lost without being seen
+          const value = this.objectValue || this._value
+          const missing = _.filter(_.map(_.isArray(value) ? value : [value], toKey), key => key && !_.some(values, { _id: key }))
+          return _.concat(values || [], _.map(missing, key => ({ _id: key, _label: `${keyRef(key).id} (${TranslateService.get('TL_MAP_RECORD_MISSING')})`, _title: '', missing: true })))
         }
         return values
       }
@@ -120,6 +142,10 @@
         if (template) {
           const rendered = Mustache.render(template, raw)
           return _.includes(rendered, '[object Object]') ? undefined : rendered
+        }
+        if (this.multiSource) {
+          // the groups say what kind of record it is; a search leaves their headings out, so the kind is said under the record then
+          return this.searchText ? _.get(raw, '_title') || undefined : undefined
         }
         return _.isString(this.schema.source) ? _.get(raw, '_id') : undefined
       },
@@ -161,6 +187,10 @@
        */
       customLabel (item) {
         const val = _.get(item, 'raw', item)
+        if (this.multiSource) {
+          // (the headings of the groups are entries of the list too: they have a title)
+          return _.toString(_.get(val, '_label', _.get(val, 'title', '')))
+        }
         // plain values can carry a readable label: a string, or one string per locale
         const label = _.isObject(val) ? undefined : _.get(this.schema, ['options', 'labels', val])
         if (_.isString(label)) {
@@ -193,6 +223,8 @@
         const allSelected = this.allOptionsSelected()
         if (allSelected) {
           this.objectValue = []
+        } else if (this.multiSource) {
+          this.objectValue = _.map(_.reject(this.options, 'missing'), '_id')
         } else {
           let allValues = _.compact(_.map(this.options, '_value'))
           if (_.get(allValues, 'length', 0) === 0) {
@@ -200,7 +232,7 @@
           }
           this.objectValue = allValues
         }
-        this._value = this.objectValue
+        this._value = this.multiSource ? _.compact(_.map(this.objectValue, keyRef)) : this.objectValue
         this.$emit('input', this._value, this.schema.model)
       },
       /** @returns {string} selectOptions.label, else the label of the schema; empty when disabled */
@@ -213,6 +245,10 @@
       /** @param {Array|Object|string} value the selection; stored by selectOptions.key when there is one */
       updateSelected (value) {
         this.objectValue = value
+        if (this.multiSource) {
+          this.$emit('input', _.isArray(value) ? _.compact(_.map(value, keyRef)) : (_.isNil(value) ? value : keyRef(value)), this.schema.model)
+          return
+        }
         const key = _.get(this.schema, 'selectOptions.key', false)
         if (key) {
           value = _.isString(value) ? value : _.get(value, key, value)

@@ -19,6 +19,7 @@ Catalogue: `resources/choice_select.js` (group **Choice**, resource **Selects**)
 |---|---|---|---|
 | `field`, `input`, `label`, `localised`, `unique` | | | As for [string](string.md). |
 | `source` | `string[]` \| `number[]` \| resource name | none (empty list) | The values. An array is used as is; a string is the name of another resource whose records are the choices. `source` is a field key, not an option: it sits next to `input`, not inside `options`. |
+| `sources` | array of resource names, or `{ resource, customLabel, title }` | none | Records of **several** resources in one list, in groups, one for each resource in the order you list them (see below). Instead of `source`, next to `input`: `sources: ['authors', { resource: 'editors', customLabel: '{{name}} ({{role}})', title: 'Editors' }]`. `customLabel` names a record of that resource (a Mustache template, in the language of the record); `title` is what the group is called (translatable), by default the name of the resource in the admin. A name that is not a resource is left out. |
 | `required` | boolean | `false` | Empty selection shows `This field is required!`. In a localised field every locale must be filled. |
 | `options.labels` | `{ value: string \| { enUS, zhCN } }` | none | Readable label per static value. A plain string is used for every locale; an object gives one label per locale (falls back to its first entry). Only applied to static values. |
 | `options.customLabel` | Mustache template | first field of the target resource | Label of a record of a resource `source`, e.g. `'{{name}}'`. For a localised target field the current locale is used (`{{name}}` becomes `name.enUS`). Without it the first field of the target resource is displayed. |
@@ -69,6 +70,20 @@ options: { labels: { low: { enUS: 'Low', zhCN: '低' }, medium: { enUS: 'Medium'
 
 ![Resource select](img/select-resource-open.png) ![Custom label list](img/select-custom-label-open.png) ![Custom label selected](img/select-filled-custom-label.png)
 
+### Records of several resources
+
+`resources/choice_select.js`, field `linked` (`sources: ['reference_items', { resource: 'reference_people', customLabel: '{{name}} ({{role}})', title: 'People' }]`).
+
+```js
+{ field: 'owner', input: 'select', label: 'Owner', localised: false, sources: ['authors', { resource: 'editors', customLabel: '{{name}} ({{role}})', title: 'Editors' }] }
+```
+
+The list shows the records of every resource under a heading for each (the title, in the order of `sources`), each by its label (while you search, the headings are left out and the kind of record is said under each record). An id alone does not say which resource it is of, so the value kept is a **reference**, `{ resource, id }`: `{ "owner": { "resource": "editors", "id": "mus3k2…" } }`. A reference to a record that is gone is shown by its id and marked as not found, so that it is not lost without being seen. In the table the record is shown by its label.
+
+- API: `cms.api()('pages', 'authors', 'editors')` resolves the references of the resources it is asked for into the records, each with `_resource` (the resource it is of); a reference to a resource that was not asked for stays as it is, and one to a record that is gone becomes `undefined`.
+- Import files, spreadsheets and sync name the record by its first `unique` field, as for a `source`: `{ "resource": "editors", "id": "Eve" }`. In a spreadsheet the cell holds the reference as JSON.
+- Nothing checks that a reference is of a resource of `sources`.
+
 ### Localised
 
 `resources/choice_select.js`, field `localisedChoice`: one choice per locale.
@@ -93,7 +108,7 @@ options: { labels: { low: { enUS: 'Low', zhCN: '低' }, medium: { enUS: 'Medium'
 
 ## Stored value
 
-The chosen value: the string from `source`, or the `_id` of the chosen record. Localised: one value per locale.
+The chosen value: the string from `source`, the `_id` of the chosen record, or for `sources` the reference `{ resource, id }`. Localised: one value per locale.
 
 ```json
 {

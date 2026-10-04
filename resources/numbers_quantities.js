@@ -27,6 +27,16 @@ module.exports = {
     { field: 'requiredDuration', input: 'duration', label: 'Required duration', localised: false, required: true, options: { hint: 'Required. A length of zero is a length' } },
     { field: 'localisedDuration', input: 'duration', label: 'Duration per locale', options: { hint: 'One duration per locale' } },
     { field: 'readOnlyDuration', input: 'duration', label: 'Read-only duration', localised: false, options: { readonly: true, hint: 'Read-only: visible, not editable' } },
-    { field: 'disabledDuration', input: 'duration', label: 'Disabled duration', localised: false, options: { disabled: true, hint: 'Disabled: greyed out and not focusable' } }
+    { field: 'disabledDuration', input: 'duration', label: 'Disabled duration', localised: false, options: { disabled: true, hint: 'Disabled: greyed out and not focusable' } },
+
+    // money: an amount and its currency
+    { field: 'price', input: 'money', label: 'Price', localised: false, options: { hint: 'An amount, with a currency from the common ones' } },
+    { field: 'euroPrice', input: 'money', label: 'Price in euros', localised: false, options: { currency: 'EUR', hint: 'One currency, written beside the amount' } },
+    { field: 'mixedPrice', input: 'money', label: 'Price in several currencies', localised: false, options: { currencies: ['USD', 'JPY', 'KWD'], hint: 'Dollars have 2 decimals, yen none, dinars 3: the amount takes those of the currency chosen' } },
+    { field: 'limitedPrice', input: 'money', label: 'Limited price', localised: false, options: { currency: 'USD', min: 5, max: 500, hint: 'From 5 to 500 dollars' } },
+    { field: 'requiredPrice', input: 'money', label: 'Required price', localised: false, required: true, options: { currency: 'USD', hint: 'Required. An amount of zero is an amount' } },
+    { field: 'localisedPrice', input: 'money', label: 'Price per locale', options: { currencies: ['USD', 'CNY'], hint: 'One price per locale' } },
+    { field: 'readOnlyPrice', input: 'money', label: 'Read-only price', localised: false, options: { currency: 'EUR', readonly: true, hint: 'Read-only: visible, not editable' } },
+    { field: 'disabledPrice', input: 'money', label: 'Disabled price', localised: false, options: { currency: 'EUR', disabled: true, hint: 'Disabled: greyed out and not focusable' } }
   ]
 }

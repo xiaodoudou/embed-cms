@@ -70,7 +70,7 @@ declare namespace EmbedCMS {
   type FieldInput =
     | 'string' | 'transliterate' | 'text' | 'password' | 'email' | 'url'
     | 'number' | 'integer' | 'double'
-    | 'checkbox' | 'color' | 'rating' | 'duration'
+    | 'checkbox' | 'color' | 'rating' | 'duration' | 'money'
     | 'date' | 'time' | 'datetime'
     | 'pillbox' | 'select' | 'multiselect'
     | 'json' | 'object' | 'code' | 'wysiwyg'
@@ -121,6 +121,10 @@ declare namespace EmbedCMS {
     clearable?: boolean
     /** `duration`: the boxes to show, largest first whatever the order (hours and minutes by default); `min` and `max` are in seconds */
     units?: Array<'days' | 'hours' | 'minutes' | 'seconds'>
+    /** `money`: the one currency it takes (an ISO 4217 code, 'EUR'); `min` and `max` are amounts */
+    currency?: string
+    /** `money`: the currencies it offers, when there is more than one (the common ones by default) */
+    currencies?: string[]
     /** `imagemap`: the resources a record link can be from, by name or `{ resource, label, title }` (`label` is a Mustache template that names a record, `title` what the kind of record is called) */
     references?: Array<string | { resource: string, label?: string, title?: Translatable }>
     /** `imagemap`: what an area can link to: an address, a record (needs `references`), a value the person types */

@@ -32,6 +32,7 @@ Every field in a resource's schema has an `input` type, and it's the input that 
 | `paragraph` | `ParagraphView` | array of blocks (`_type` + fields) | [paragraph](fields/paragraph.md) |
 | `object` | `JsonEditor` | JSON built from a JSON schema | [object](fields/object.md) |
 | `duration` | `DurationField` | number of seconds | [duration](fields/duration.md) |
+| `money` | `MoneyField` | `{ amount, currency }` | [money](fields/money.md) |
 | `rating` | `RatingField` | number (1 to `max`, or halves) | [rating](fields/rating.md) |
 | `color` | `ColorPicker` | hex string | [color](fields/color.md) |
 

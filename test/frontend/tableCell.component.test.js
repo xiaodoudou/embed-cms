@@ -20,6 +20,14 @@ describe('TableCell', () => {
     expect(cell('rating', { value: 2.5 }, { field: {} }).text()).toBe('2.5 / 5')
   })
 
+  it('shows money with its currency in the language, right aligned like a number', () => {
+    const wrapper = cell('money', { value: { amount: 19.99, currency: 'USD' } }, { field: {} })
+    expect(wrapper.get('.cell-number').text()).toBe('$19.99')
+    expect(cell('money', { value: { amount: 1999, currency: 'JPY' } }, { field: {} }).text()).toBe('¥1,999')
+    expect(cell('money', { value: { amount: 0, currency: 'EUR' } }, { field: {} }).text()).toBe('€0.00')
+    expect(cell('money', {}, { field: {} }).find('.cell-empty').exists()).toBe(true)
+  })
+
   it('shows a duration in the units of the field, right aligned like a number', () => {
     const wrapper = cell('duration', { value: 5400 }, { field: { options: { units: ['hours', 'minutes'] } } })
     expect(wrapper.get('.cell-number').text()).toBe('1h 30m')

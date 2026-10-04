@@ -3,6 +3,7 @@ import _ from 'lodash'
 import TranslateServiceLib from '@s/TranslateService'
 import { ratingOptions, normaliseRating } from '@u/rating'
 import { validateDuration } from '@u/duration'
+import { validateMoney } from '@u/money'
 
 const TranslateService = window.TranslateService || TranslateServiceLib
 /**
@@ -123,6 +124,12 @@ const customValidators = {
    * @returns {true|string}
    */
   duration: (value, field) => validateDuration(field, value) || true,
+  /**
+   * @param {*} value { amount, currency }
+   * @param {Object} field
+   * @returns {true|string}
+   */
+  money: (value, field) => validateMoney(field, value) || true,
   /**
    * @param {*} value
    * @param {Object} field
@@ -444,6 +451,11 @@ const typeMapper = {
   duration: {
     type: 'DurationField',
     validator: customValidators.duration
+  },
+  // an amount in a currency, kept as { amount, currency } (see utils/money.js)
+  money: {
+    type: 'MoneyField',
+    validator: customValidators.money
   },
   // a number of icons filled up to the value (see utils/rating.js)
   rating: {

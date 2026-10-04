@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   fieldKind, columnAlign, buildColumns, defaultHiddenKeys, applyPrefs, orderedColumns, loadPrefs, savePrefs, clearPrefs,
-  compareValues, sortRows, nextSort, richTextToPlain, attachmentOf
+  compareValues, sortRows, sortValue, nextSort, richTextToPlain, attachmentOf
 } from '../../src/utils/tableModel.js'
 
 const resource = {
@@ -52,11 +52,13 @@ describe('buildColumns (locale derivation)', () => {
     expect(fieldKind('imagemap')).toBe('image')
     expect(fieldKind('rating')).toBe('rating')
     expect(fieldKind('duration')).toBe('duration')
+    expect(fieldKind('money')).toBe('money')
     const [column] = buildColumns([{ originalModel: 'avatar', model: 'avatar', localised: false }], { locales: [], schema: [{ field: 'avatar', input: 'cropimage' }] })
     expect(column).toMatchObject({ kind: 'image', input: 'cropimage', sortable: false })
   })
   it('aligns a duration to the right, like a number', () => {
     expect(columnAlign('duration')).toBe('right')
+    expect(columnAlign('money')).toBe('right')
     expect(columnAlign('number')).toBe('right')
     expect(columnAlign('text')).toBe('left')
     expect(columnAlign('duration', 'left')).toBe('left')
@@ -127,6 +129,18 @@ describe('sorting', () => {
     expect(state).toEqual([{ key: 'a', order: 'asc' }, { key: 'b', order: 'asc' }])
     expect(nextSort(state, 'b', true)).toEqual([{ key: 'a', order: 'asc' }, { key: 'b', order: 'desc' }])
     expect(nextSort(nextSort(state, 'b', true), 'b', true)).toEqual([{ key: 'a', order: 'asc' }])
+  })
+})
+
+describe('sorting money', () => {
+  it('sorts by the amount, whatever the currency, with the rows that have none last', () => {
+    const rows = [
+      { price: { amount: 30, currency: 'EUR' } }, { }, { price: { amount: 5, currency: 'JPY' } }, { price: { amount: 12.5, currency: 'USD' } }
+    ]
+    const column = { model: 'price', kind: 'money' }
+    const get = (row) => sortValue(row, column)
+    expect(sortRows(rows, [{ key: 'price', order: 'asc' }], get).map((r) => r.price && r.price.amount)).toEqual([5, 12.5, 30, undefined])
+    expect(sortRows(rows, [{ key: 'price', order: 'desc' }], get).map((r) => r.price && r.price.amount)).toEqual([30, 12.5, 5, undefined])
   })
 })
 

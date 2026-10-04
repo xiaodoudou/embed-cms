@@ -24,6 +24,7 @@
   <span v-else-if="kind === 'file'" class="cell-file"><v-icon size="14" icon="$paperclip" /><span class="cell-text" @mouseenter="titleIfClipped">{{ text }}</span></span>
   <span v-else-if="kind === 'number'" class="cell-text cell-number">{{ text }}</span>
   <span v-else-if="kind === 'duration'" class="cell-text cell-number" :title="text">{{ text }}</span>
+  <span v-else-if="kind === 'money'" class="cell-text cell-number" :title="text">{{ text }}</span>
   <span v-else-if="kind === 'rating'" class="cell-rating" :title="text"><v-icon :icon="ratingIcon" size="14" /><span class="cell-text">{{ text }}</span></span>
   <span v-else-if="kind === 'date' || kind === 'datetime' || kind === 'time'" class="cell-text cell-date">{{ text }}</span>
   <span v-else class="cell-text" @mouseenter="titleIfClipped">{{ text }}</span>
@@ -35,6 +36,7 @@
   import { chipsFor, formatDateValue, formatNumberValue, isEmptyValue, richTextToPlain } from '@u/tableModel'
   import { ICONS, ratingOptions, ratingText } from '@u/rating'
   import { durationOptions, formatDuration } from '@u/duration'
+  import { formatMoney } from '@u/money'
   import { localeTag } from '@u/locale'
 
   /**
@@ -94,6 +96,7 @@
         switch (this.kind) {
           case 'number': return formatNumberValue(value)
           case 'duration': return formatDuration(value, durationOptions(this.column.field).units, localeTag(TranslateService.locale))
+          case 'money': return formatMoney(value, localeTag(TranslateService.locale))
           case 'rating': return ratingText(value, ratingOptions(this.column.field).max)
           case 'date':
           case 'datetime':

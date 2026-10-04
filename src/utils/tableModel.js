@@ -31,7 +31,8 @@ const KIND_BY_INPUT = {
   email: 'link',
   color: 'color',
   rating: 'rating',
-  duration: 'duration'
+  duration: 'duration',
+  money: 'money'
 }
 
 // Fixed or flexible widths per kind (px). Flexible text columns have a min and a max and truncate.
@@ -45,6 +46,7 @@ const WIDTHS = {
   color: { width: 96 },
   rating: { width: 116 },
   duration: { width: 116 },
+  money: { width: 132 },
   select: { min: 140, max: 240 },
   multi: { min: 160, max: 280 },
   link: { min: 160, max: 280 },
@@ -90,7 +92,7 @@ export function columnAlign (kind, rawAlign) {
   if (rawAlign) {
     return rawAlign
   }
-  return kind === 'number' || kind === 'duration' ? 'right' : 'left'
+  return kind === 'number' || kind === 'duration' || kind === 'money' ? 'right' : 'left'
 }
 
 /**
@@ -493,6 +495,9 @@ export function sortValue (record, column, options = {}) {
   if (_.isFunction(options.labelOf) && (column.kind === 'select' || column.kind === 'multi')) {
     const label = options.labelOf(column)
     return _.isArray(value) ? _.map(value, label).join(', ') : label(value)
+  }
+  if (column.kind === 'money') {
+    return _.get(value, 'amount')
   }
   if (column.kind === 'json') {
     return _.isEmpty(value) ? undefined : _.size(value)

@@ -61,6 +61,10 @@ export default {
     }
   },
   computed: {
+    /** @returns {string} an id for the input of the field, so the label before it can point at it (and Vuetify's aria-labelledby at the label) */
+    inputId () {
+      return `cms-field-${this.$.uid}`
+    },
     _value: {
       cache: false,
       /** @returns {*} the value of the field, through schema.get when there is one */

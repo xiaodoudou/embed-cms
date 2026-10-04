@@ -161,6 +161,7 @@
     "TL_WIDTH": "宽度",
     "TL_HEIGHT": "高度",
     "TL_CONVERT_TO": "转换为",
+    "TL_PARAGRAPH_TYPE": "块类型",
     "TL_CONVERT": "转换",
     "TL_INVALID_PARAGRAPH_WOULD_YOU_LIKE_TO_CONVERT_IT": "无效段落，是否要转换？",
     "TL_INVALID_PARAGRAPH_CANNOT_BE_CONVERTED": "无效段落，无法转换",

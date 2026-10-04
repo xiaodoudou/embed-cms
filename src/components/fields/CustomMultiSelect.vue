@@ -1,7 +1,7 @@
 <template>
   <div class="multiselect-wrapper">
     <v-autocomplete
-      :id="selectOptions.id"
+      :id="selectOptions.id || inputId"
       ref="input"
       v-model:search="searchText"
       :theme="theme"
@@ -15,7 +15,7 @@
       @update:focused="onFieldFocus"
     >
       <template #prepend>
-        <field-label :schema="schema" :disabled="disabled" :label="getLabel()" />
+        <field-label :schema="schema" :disabled="disabled" :label="getLabel()" :input-id="selectOptions.id || inputId" />
         <span v-if="getSelectOpt('multiple') && selectedCount > 0" class="selected-count" aria-live="polite">{{ $filters.translate('TL_N_SELECTED', { num: selectedCount }) }}</span>
         <v-btn v-if="schema.listBox" variant="tonal" size="small" rounded elevation="0" @click="onChangeSelectAll">{{ $filters.translate(allOptionsSelected() ? 'TL_DESELECT_ALL' : 'TL_SELECT_ALL') }}</v-btn>
       </template>
@@ -26,7 +26,6 @@
           @contextmenu.stop.prevent="copyToClipboard(item.value)"
         />
       </template>
-      <template #label />
       <template #append />
       <template #item="{props, item}">
         <v-list-item density="compact" v-bind="props" :subtitle="subtitleOf(item)">

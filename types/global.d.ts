@@ -169,6 +169,8 @@ declare namespace EmbedCMS {
     localised?: boolean
     /** `select` and `multiselect`: the values, or the name of the resource the options come from */
     source?: string[] | string
+    /** `select` and `multiselect`: the records of several resources in one list, in groups, by name or `{ resource, customLabel, title }`; the value kept is `{ resource, id }` */
+    sources?: Array<string | { resource: string, customLabel?: string, title?: Translatable }>
     /** `pillbox`: fewest and most tags */
     min?: number
     max?: number

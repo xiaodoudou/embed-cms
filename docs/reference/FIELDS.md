@@ -54,6 +54,7 @@ Declared next to `input` in the schema entry:
 | `unique` | boolean | `false` | Checked by the server on create and update (`400 Field 'x' is duplicated`). |
 | `localised` | boolean | `true` when the resource declares `locales` | See below. |
 | `source` | array \| resource name | none | The values of `select` and `multiselect`. |
+| `sources` | array of resource names | none | `select` and `multiselect`: the records of several resources in one list; the value is `{ resource, id }`. |
 | `min`, `max` | number | none | On `pillbox` only, at field level: minimum / maximum number of tags (enforced). For the other types use `options.min` / `options.max`. |
 | `hint` | string \| `{ enUS, zhCN }` | none | Same as `options.hint`; it may be declared at the top of the field. |
 

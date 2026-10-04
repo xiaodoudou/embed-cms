@@ -3,6 +3,7 @@ import Mustache from 'mustache'
 import TranslateServiceLib from '@s/TranslateService'
 import FormService from '@s/FormService'
 import ResourceService from './ResourceService'
+import { isMultiSource, sourceItems } from '@u/sources'
 
 const TranslateService = window.TranslateService || TranslateServiceLib
 
@@ -87,6 +88,10 @@ class SchemaService {
         fields[id].values = field.source
       } else if (_.isString(field.source)) {
         this.updateFieldSchema(fields, field, id, locale, extraSources)
+      } else if (isMultiSource(field)) {
+        // the records of several resources, in groups; what is kept is { resource, id } (see utils/sources.js)
+        fields[id].multiSource = true
+        fields[id].values = sourceItems(field, locale)
       } else if (_.get(resource, 'name', false) === '_groups') {
         if (_.includes(['create', 'update', 'read', 'remove', 'attachments'], fields[id].model)) {
           fields[id].values = _.map(ResourceService.schemas, 'name')

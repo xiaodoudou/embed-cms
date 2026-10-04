@@ -28,6 +28,7 @@ real project: copy the field you need into your own resource.
 | Structured | `structured_grid` | paragraph blocks side by side: 2 by 2, 3 by 3, mixed (see [DYNAMIC_LAYOUT.md](../docs/reference/DYNAMIC_LAYOUT.md)) |
 | Table | `table_view` | the table view (`view: 'table'`): one column per field |
 | Reference data | `reference_items` | target of the `source` examples |
+| Reference data | `reference_people` | the second resource of the `sources` examples |
 
 Variations shown in each resource, where the type supports them:
 

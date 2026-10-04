@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import ResourceService from '@s/ResourceService'
 import Mustache from 'mustache'
+import { isRef, refLabel } from '@u/sources'
 
 export default {
   methods: {
@@ -26,7 +27,10 @@ export default {
           displayname = attachment && attachment._filename
         } else if (field.input === 'select') {
           let value = _.get(item, field.field)
-          if (_.isString(value)) {
+          if (isRef(value)) {
+            // a field of several resources: the record it points to
+            displayname = refLabel(value, field, this.locale)
+          } else if (_.isString(value)) {
             if (_.isString(field.source)) {
               value = _.find(ResourceService.get(field.source), {_id: value})
               if (value) {

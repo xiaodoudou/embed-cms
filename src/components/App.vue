@@ -125,6 +125,7 @@
   import UploadService from '@s/UploadService'
   import { applyThemeToDocument, pickTheme, savedUserTheme } from '@u/theme'
   import { savedUserLanguage } from '@u/locale'
+  import { sourcesOf } from '@u/sources'
   import { buildPageTitle } from '@u/pageTitle'
   import { getRecordLabel, getResourceLabel } from '@u/recordLabel'
   import NavRail from '@c/layout/NavRail.vue'
@@ -714,6 +715,8 @@
                 resources.push(..._.values(extraSources))
                 if (value === 'select' || value === 'multiselect') {
                   const source = _.get(obj, 'source')
+                  // a field of several resources draws from all of them
+                  resources.push(..._.map(sourcesOf(obj), 'resource'))
                   if (_.isString(source)) {
                     resources.push(source)
                     const schema = ResourceService.getSchema(source)

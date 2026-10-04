@@ -110,6 +110,7 @@
   import pAll from 'p-all'
   import { queueFiles, takeFiles } from '@u/pendingFiles'
   import { isAttachmentInput } from '@u/inputTypes'
+  import { isMultiSource, sourcesOf } from '@u/sources'
 
   export default {
     mixins: [DragList],
@@ -478,10 +479,10 @@
         // NOTE: Requests additional resources
         await pAll(_.map(paragraph.schema, (field)=> {
           return async () => {
-            if (_.includes(['select', 'multiselect'], _.get(field, 'input', false)) && _.isString(_.get(field, 'source', false))) {
-              const result = ResourceService.get(field.source)
-              if (_.isUndefined(result)) {
-                await ResourceService.cache(field.source)
+            const sources = isMultiSource(field) ? _.map(sourcesOf(field), 'resource') : (_.includes(['select', 'multiselect'], _.get(field, 'input', false)) && _.isString(_.get(field, 'source', false)) ? [field.source] : [])
+            for (const source of sources) {
+              if (_.isUndefined(ResourceService.get(source))) {
+                await ResourceService.cache(source)
               }
             }
           }

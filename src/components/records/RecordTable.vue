@@ -107,6 +107,7 @@
 
   import RecordEditor from '@c/records/RecordEditor.vue'
   import Notification from '@m/Notification'
+  import { isRef, refLabel } from '@u/sources'
 
   const TEXTUAL_KINDS = ['text', 'richtext', 'select', 'multi', 'link', 'number']
 
@@ -330,6 +331,10 @@
       optionLabel (column, value) {
         if (_.isNil(value) || value === '') {
           return ''
+        }
+        if (isRef(value)) {
+          // a field of several resources: the record, named the way the field says
+          return refLabel(value, column.raw || {}, this.locale)
         }
         if (_.isObject(value)) {
           return _.toString(value.text || value.name || value._id)

@@ -20,6 +20,7 @@ module.exports = {
     },
     // multiselect: values from another resource
     { field: 'items', input: 'multiselect', label: 'Linked items', localised: false, source: 'reference_items', options: { customLabel: '{{name}}', hint: 'Several records from the Reference items resource' } },
+    { field: 'linkedMany', input: 'multiselect', label: 'Linked records (several resources)', localised: false, sources: ['reference_items', { resource: 'reference_people', customLabel: '{{name}} ({{role}})', title: 'People' }], options: { hint: 'Records from the Reference items and the Reference people resources, in groups; kept as { resource, id }' } },
     { field: 'localisedItems', input: 'multiselect', label: 'Linked items per locale', source: 'reference_items', options: { hint: 'One selection per locale' } },
     { field: 'readOnlyItems', input: 'multiselect', label: 'Read-only items', localised: false, source: 'reference_items', options: { readonly: true, hint: 'Read-only: visible, not editable' } },
     { field: 'disabledItems', input: 'multiselect', label: 'Disabled items', localised: false, source: 'reference_items', options: { disabled: true, hint: 'Disabled: greyed out and not focusable' } },

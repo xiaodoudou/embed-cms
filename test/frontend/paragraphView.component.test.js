@@ -132,6 +132,17 @@ describe('ParagraphView (blocks)', () => {
       expect(wrapper.findComponent(draggable).attributes('handle')).toBe('.drag-grip')
     })
 
+    it('has no grip with a single block: there is nothing to put in order', async () => {
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'only' }] })
+      expect(wrapper.find('.drag-grip').exists()).toBe(false)
+      expect(wrapper.find('.reorder-toggle').exists()).toBe(false)
+      expect(wrapper.find('.paragraph-header').classes()).toContain('no-grip')
+      wrapper.unmount()
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }] })
+      expect(wrapper.findAll('.drag-grip')).toHaveLength(2)
+      expect(wrapper.find('.paragraph-header').classes()).not.toContain('no-grip')
+    })
+
     it('has no grip, and no way to reorder, on a field that is locked', async () => {
       await paragraph({ disabled: true }, { blocks: [{ _type: 'block_text', heading: 'one' }, { _type: 'block_text', heading: 'two' }] })
       expect(wrapper.find('.drag-grip').exists()).toBe(false)

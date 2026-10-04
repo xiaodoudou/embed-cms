@@ -192,19 +192,24 @@ describe('DurationField', () => {
       expect(wrapper.find('.duration-error').exists()).toBe(false)
     })
 
-    it('says a required length is missing when the form asks, and the hint comes back when it is given', async () => {
-      const model = {}
-      mount({ required: true, options: { hint: 'Needed' } }, model)
+    it('refuses a required length that is missing when the form asks, without painting the field red before anyone has touched it (the editor marks it after a failed save)', async () => {
+      mount({ required: true, options: { hint: 'Needed' } }, {})
+      await flushPromises()
+      expect(wrapper.find('.duration-error').exists()).toBe(false)
+      expect(wrapper.find('.v-input--error').exists()).toBe(false)
+      expect(wrapper.get('.help-block').text()).toBe('Needed')
       expect(wrapper.vm.rule()).toBe(TranslateService.get('TL_FIELD_IS_REQUIRED'))
       await flushPromises()
-      expect(wrapper.get('.duration-error').text()).toBe(TranslateService.get('TL_FIELD_IS_REQUIRED'))
-      expect(wrapper.find('.help-block').exists()).toBe(false)
+      expect(wrapper.find('.duration-error').exists()).toBe(false)
       await type(0, '1')
       await leave(0)
       expect(wrapper.vm.rule()).toBe(true)
+    })
+
+    it('says at once that a length a record holds is not one the field takes', async () => {
+      mount({ max: 60 }, { length: 7200 })
       await flushPromises()
-      expect(wrapper.find('.duration-error').exists()).toBe(false)
-      expect(wrapper.find('.help-block').exists()).toBe(true)
+      expect(wrapper.get('.duration-error').text()).toBe(TranslateService.get('TL_DURATION_TOO_LONG', { max: '1m' }))
     })
 
     it('has the rule on the first box only, and marks the boxes red when there is an error', async () => {

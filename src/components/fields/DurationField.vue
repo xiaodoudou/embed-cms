@@ -121,12 +121,14 @@
         this.message = this.badInput ? this.$filters.translate('TL_INVALID_DURATION') : validateDuration(this.schema, this._value) || ''
       },
       /**
-       * The rule of the form (Vuetify asks for it when the record is saved).
+       * The rule of the form (Vuetify asks for it when the record is shown, when a box is left and when the record is saved). A value that
+       * is wrong says so under the boxes; a required length that is missing does not (the editor marks it after a failed save, and a
+       * form that has not been touched is not red).
        * @returns {true|string}
        */
       rule () {
         const message = this.badInput ? this.$filters.translate('TL_INVALID_DURATION') : validateDuration(this.schema, this._value)
-        this.message = message || ''
+        this.message = this.badInput || !_.isNil(this._value) ? message || '' : ''
         return message || true
       }
     }

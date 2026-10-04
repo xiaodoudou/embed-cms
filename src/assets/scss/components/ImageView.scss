@@ -274,7 +274,10 @@
         height: auto;
       }
       .preview-remove.is-text {
-        position: static;
+        // relative, not static: the hover layer and the border of a Vuetify button are positioned inside it, and would spread over the row
+        position: relative;
+        top: auto;
+        right: auto;
         width: auto;
         height: auto;
         padding: 0 var(--cms-space-3);

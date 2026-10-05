@@ -1267,6 +1267,14 @@
 @media (pointer: coarse) {
   .paragraph-view .paragraph-header {
     height: var(--cms-touch-target);
+    // (the title of a card has 8px above and below it: with a grip as tall as the bar the grip stood 8px low and the title 8px high)
+    padding-top: 0;
+    padding-bottom: 0;
+    // (the title fills the bar and its text stood at the top of it)
+    .paragraph-title {
+      display: flex;
+      align-items: center;
+    }
     .drag-grip {
       display: inline-flex;
       align-items: center;

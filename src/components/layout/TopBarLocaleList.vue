@@ -12,7 +12,7 @@
         {{ getLocaleTranslation(locale) }}
         <span v-if="isDirty(locale)" class="locale-dirty" aria-hidden="true" />
         <span v-if="missingCount(locale) > 0" class="locale-missing" aria-hidden="true"><span class="locale-missing-icon">!</span></span>
-        <span v-if="othersNeedAttention" class="locale-others" aria-hidden="true" />
+        <span v-if="othersCount > 0" class="locale-others" :class="{ 'has-missing': othersMissing }" aria-hidden="true">{{ othersCount }}</span>
         <v-icon end icon="$swapHorizontal" />
       </v-btn>
       <v-menu v-else v-model="menuOpen" content-class="locale-menu" location="bottom start">
@@ -24,7 +24,7 @@
             {{ getLocaleTranslation(locale) }}
             <span v-if="isDirty(locale)" class="locale-dirty" aria-hidden="true" />
             <span v-if="missingCount(locale) > 0" class="locale-missing" aria-hidden="true"><span class="locale-missing-icon">!</span></span>
-            <span v-if="othersNeedAttention" class="locale-others" aria-hidden="true" />
+            <span v-if="othersCount > 0" class="locale-others" :class="{ 'has-missing': othersMissing }" aria-hidden="true">{{ othersCount }}</span>
             <v-icon end icon="$chevronDown" />
           </v-btn>
         </template>
@@ -95,7 +95,15 @@
       },
       /** @returns {boolean} another language than the one shown has unsaved edits or a missing required field: the button says so with a dot */
       othersNeedAttention () {
-        return _.some(this.locales, (item) => item !== this.locale && (this.isDirty(item) || this.missingCount(item) > 0))
+        return this.othersCount > 0
+      },
+      /** @returns {number} how many other languages have unsaved edits or a missing required field: the number on the corner of the button */
+      othersCount () {
+        return _.filter(this.locales, (item) => item !== this.locale && (this.isDirty(item) || this.missingCount(item) > 0)).length
+      },
+      /** @returns {boolean} one of the other languages misses a required field (the number is red, else amber) */
+      othersMissing () {
+        return _.some(this.locales, (item) => item !== this.locale && this.missingCount(item) > 0)
       },
       /** @returns {string} what the button of two languages does */
       switchLabel () {
@@ -321,6 +329,14 @@
 
   // the button of a phone: the language, its markers, and what changes it
   .locale-compact {
+    // (the markers stand close, so that the button and the buttons of the bar fit one line)
+    .locale-dirty,
+    .locale-missing {
+      margin-left: var(--cms-space-1);
+    }
+    .v-btn__append {
+      margin-inline-start: var(--cms-space-1);
+    }
     position: relative;
     min-height: var(--cms-touch-target);
     padding: 0 var(--cms-space-2) 0 var(--cms-space-3);
@@ -390,16 +406,28 @@
   }
 }
 
-// another language than the one shown needs a look (unsaved edits, a missing required field): a dot on the corner of the button of a phone
+// how many other languages than the one shown need a look (unsaved edits, a missing required field), on the button of a phone
 .locale-compact .locale-others {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 10px;
-  height: 10px;
+  // in the button, after the markers of the language that is shown (the button clips what stands out of it)
+  display: inline-block;
+  margin-left: var(--cms-space-1);
+  vertical-align: middle;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border: 1px solid var(--cms-warning);
   border-radius: var(--cms-radius-pill);
-  background: var(--cms-warning);
-  box-shadow: 0 0 0 2px var(--cms-surface);
+  background: var(--cms-warning-soft);
+  color: var(--cms-warning);
+  font-size: 11px;
+  font-weight: var(--cms-fw-bold);
+  line-height: 16px;
+  text-align: center;
+  &.has-missing {
+    border-color: var(--cms-error);
+    background: var(--cms-error-soft);
+    color: var(--cms-error);
+  }
 }
 
 .locale-menu .locale-item {

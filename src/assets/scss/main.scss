@@ -454,7 +454,7 @@ body.cms-dragging {
   .record-editor .top-bar {
     min-height: 0;
     padding: var(--cms-space-2) var(--cms-space-3);
-    gap: var(--cms-space-2);
+    gap: var(--cms-space-1);
 
     .top-bar-locale-list {
       flex: 0 1 auto;
@@ -476,10 +476,11 @@ body.cms-dragging {
     }
     .buttons {
       flex: 0 0 auto;
-      gap: var(--cms-space-2);
+      gap: var(--cms-space-1);
       margin-left: auto;
     }
-    .discard {
+    .discard,
+    .jump-to {
       min-width: var(--cms-touch-target);
       padding: 0;
     }

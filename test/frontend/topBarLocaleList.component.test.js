@@ -210,6 +210,11 @@ describe('TopBarLocaleList on a phone (one button instead of the tabs)', () => {
     expect(compact().attributes('aria-label')).toContain('Other languages have unsaved edits or missing fields')
     await wrapper.setProps({ dirtyLocales: [], missing: { zhCN: 2 } })
     expect(compact().find('.locale-others').exists()).toBe(true)
+    expect(compact().get('.locale-others').text()).toBe('1')
+    expect(compact().get('.locale-others').classes()).toContain('has-missing')
+    await wrapper.setProps({ dirtyLocales: ['zhCN', 'frFR'], missing: {} })
+    expect(compact().get('.locale-others').text()).toBe('2')
+    expect(compact().get('.locale-others').classes()).not.toContain('has-missing')
   })
 
   it('follows the screen when it becomes a phone', async () => {

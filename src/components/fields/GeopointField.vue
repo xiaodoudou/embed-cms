@@ -12,7 +12,7 @@
         />
       </div>
       <div class="geopoint-box">
-        <label :for="`${inputId}-lng`" class="cms-visually-hidden">{{ $filters.translate('TL_LONGITUDE') }}</label>
+        <label :id="`${inputId}-lng-label`" :for="`${inputId}-lng`" class="cms-visually-hidden">{{ $filters.translate('TL_LONGITUDE') }}</label>
         <v-text-field
           :id="`${inputId}-lng`" :model-value="lngText" :name="`${schema.model}-lng`" type="text" autocomplete="off" hide-details :placeholder="$filters.translate('TL_LONGITUDE')"
           :variant="getVariant()" :flat="get('flat')" :rounded="get('rounded')" :density="get('density')" :rules="[lngRule]" validate-on="blur"

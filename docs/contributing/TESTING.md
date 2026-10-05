@@ -62,7 +62,7 @@ Setting `LOG_LEVEL` does the same (`LOG_LEVEL=debug` shows even the refused requ
 |---|---|
 | `test/unit/` | The backend, one `<subject>.test.js` per module or plugin (mocha, in-process) |
 | `test/security/` | One `<area>.security.test.js` per finding of the security audit (mocha, in-process) |
-| `test/frontend/` | The admin app (vitest and jsdom): `<subject>.test.js` for pure logic, `<component>.component.test.js` for mounted components, `helpers/` for the mount helpers and the setup file |
+| `test/frontend/` | The admin app (vitest and jsdom): `<subject>.test.js` for pure logic, `<component>.component.test.js` for mounted components, `helpers/` for the mount helpers and the setup file. A test that fails is run again, twice, before it counts as failed (`retry` in `vitest.config.mjs`): a few tests of overlays and focus depend on how soon jsdom gets to a timer, and on a machine with many busy cores one of them fails about one run in five. If a test passes only on the second try, the report says so: look at it |
 | `test/integration/` | The older HTTP suite that `npm test` runs against one server (`server.js` starts it, `runTests.js` lists the suites) |
 | `test/helpers/` | What the backend tests share: `app.js` boots a CMS, `cmsInstance.js` holds the shared options, `engines.js` the storage engines of the contract suite, `quiet.js` the log level |
 | `test/fixtures/` | Data the tests read: the `resources/` of the shared CMS, `contractResources/` for the contract suite, `ossResources/` for the OSS tests, `man.jpg` and the `smartCrop/` reference pictures |

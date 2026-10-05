@@ -362,3 +362,38 @@
     font-size: var(--cms-fs-sm);
   }
 }
+
+// ---- Narrow editor and touch screens ---------------------------------------------------------------------------------------
+// The previews are 200px cards: in an editor too narrow for two of them (a phone, a tablet beside the list) one card of 200px left the rest of the
+// line empty, so each takes the whole line.
+@container (max-width: 479.98px) {
+  .image-view,
+  .attachment-view {
+    .preview-attachment,
+    .preview-single-attachment {
+      width: 100%;
+      min-width: 0;
+      max-width: none;
+      box-sizing: border-box;
+    }
+  }
+}
+
+// a finger: the line of a preview is as tall as a button, and the grip that drags it is a button-sized target (Reorder moves files without dragging)
+@media (pointer: coarse) {
+  .image-view,
+  .attachment-view {
+    .preview-attachment {
+      .preview-top {
+        min-height: var(--cms-touch-target);
+      }
+      .drag-grip {
+        justify-content: center;
+        width: var(--cms-touch-target);
+        height: var(--cms-touch-target);
+        padding: 0;
+        margin: calc((var(--cms-touch-target) - 28px) / -2) 0;
+      }
+    }
+  }
+}

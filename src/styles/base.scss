@@ -979,10 +979,19 @@ a {
   padding-bottom: 0;
 }
 
-.v-menu .outline-search .v-field__prepend-inner,
+/* the magnifier is over the text of the rows (12px in), with 8px before the box; the clear button has the same 12px at the other end */
+.v-menu .outline-search .v-field__prepend-inner {
+  align-items: center;
+  padding: 0 var(--cms-space-2) 0 var(--cms-space-3);
+}
+
 .v-menu .outline-search .v-field__clearable {
   align-items: center;
-  padding-top: 0;
+  padding: 0 var(--cms-space-3) 0 var(--cms-space-2);
+}
+
+.v-menu .outline-search .v-field__input {
+  padding-inline: 0;
 }
 
 .v-menu .outline-search .v-field__prepend-inner > .v-icon,

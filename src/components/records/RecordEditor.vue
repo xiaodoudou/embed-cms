@@ -1,5 +1,5 @@
 <template>
-  <v-card v-if="record" elevation="0" class="record-editor" :class="{frozen:!record._local, 'full-width': resource && resource.maxCount === 1}">
+  <v-card v-if="record" v-shortkey.anywhere="{ jump: ['ctrl', 'j'] }" elevation="0" class="record-editor" :class="{frozen:!record._local, 'full-width': resource && resource.maxCount === 1}" @shortkey="toggleJump">
     <div class="top-bar">
       <top-bar-locale-list :locales="resource.locales" :locale="locale" :select-locale="selectLocale" :back="back" :dirty-locales="dirtyLocales" :missing="visibleMissing" />
       <div class="editor-status" role="status" aria-live="polite">
@@ -11,20 +11,37 @@
         </button>
       </div>
       <div class="buttons">
-        <v-menu v-if="outlineEntries.length > 0" location="bottom end">
+        <v-menu v-if="outlineEntries.length > 0" v-model="jumpOpen" location="bottom end">
           <template #activator="{ props }">
-            <v-btn v-bind="props" elevation="0" variant="text" class="jump-to" :aria-label="$filters.translate('TL_JUMP_TO')" :title="$filters.translate('TL_JUMP_TO')">
+            <v-btn v-bind="props" elevation="0" variant="text" class="jump-to" :aria-label="$filters.translate('TL_JUMP_TO')" :title="`${$filters.translate('TL_JUMP_TO')} (Ctrl J)`">
               <v-icon icon="$formatListBulleted" />
             </v-btn>
           </template>
-          <v-list density="compact" class="outline-list">
-            <v-list-item v-for="entry in outlineEntries" :key="entry.key" :title="entry.label" :class="{ 'outline-block': entry.block !== undefined && !entry.blockField, 'outline-field': !!entry.blockField }" @click="jumpToEntry(entry)">
-              <template v-if="entry.dirty || (entry.block === undefined && isFieldMissing(entry.field))" #append>
-                <span v-if="entry.dirty" class="outline-dirty" role="img" :aria-label="$filters.translate('TL_UNSAVED_CHANGES')" :title="$filters.translate('TL_UNSAVED_CHANGES')" />
-                <v-icon v-if="entry.block === undefined && isFieldMissing(entry.field)" size="small" color="error" icon="$alertBoxOutline" :aria-label="$filters.translate('TL_REQUIRED')" />
-              </template>
-            </v-list-item>
-          </v-list>
+          <div class="outline-panel">
+            <!-- a search box that keeps the focus: the arrows move over the rows, Enter jumps, Escape closes the menu -->
+            <div class="outline-search">
+              <label :for="`${randomId}-jump-search`" class="cms-visually-hidden">{{ $filters.translate('TL_JUMP_TO_SEARCH') }}</label>
+              <v-text-field
+                :id="`${randomId}-jump-search`" ref="jumpSearch" v-model="jumpQuery" type="text" autocomplete="off" spellcheck="false" density="compact" variant="solo-filled" flat hide-details
+                clearable clear-icon="$close"
+                prepend-inner-icon="$magnify" :placeholder="$filters.translate('TL_JUMP_TO_SEARCH')" role="combobox" aria-expanded="true" :aria-controls="`${randomId}-jump-rows`"
+                :aria-activedescendant="jumpRows.length > 0 ? `${randomId}-jump-row-${jumpHighlight}` : undefined" @keydown="onJumpKeydown"
+              />
+            </div>
+            <v-list :id="`${randomId}-jump-rows`" density="compact" class="outline-list" role="listbox">
+              <v-list-item
+                v-for="(row, i) in jumpRows" :id="`${randomId}-jump-row-${i}`" :key="row.entry.key" role="option" :aria-selected="i === jumpHighlight ? 'true' : 'false'"
+                :class="{ 'outline-block': row.entry.block !== undefined && !row.entry.blockField, 'outline-field': !!row.entry.blockField, highlighted: i === jumpHighlight }" @click="jumpTo(row.entry)"
+              >
+                <template #title><template v-for="(part, p) in row.parts" :key="p"><mark v-if="part.hit">{{ part.text }}</mark><template v-else>{{ part.text }}</template></template></template>
+                <template v-if="row.entry.dirty || (row.entry.block === undefined && isFieldMissing(row.entry.field))" #append>
+                  <span v-if="row.entry.dirty" class="outline-dirty" role="img" :aria-label="$filters.translate('TL_UNSAVED_CHANGES')" :title="$filters.translate('TL_UNSAVED_CHANGES')" />
+                  <v-icon v-if="row.entry.block === undefined && isFieldMissing(row.entry.field)" size="small" color="error" icon="$alertBoxOutline" :aria-label="$filters.translate('TL_REQUIRED')" />
+                </template>
+              </v-list-item>
+              <div v-if="jumpRows.length === 0" class="outline-empty" role="status">{{ $filters.translate('TL_NO_MATCHES') }}</div>
+            </v-list>
+          </div>
         </v-menu>
         <v-btn v-if="isDirty" elevation="0" variant="outlined" class="discard" :aria-label="$filters.translate('TL_DISCARD')" :title="$filters.translate('TL_DISCARD')" @click="discardChanges"><v-icon class="discard-icon" icon="$undoVariant" /><span class="discard-text">{{ $filters.translate('TL_DISCARD') }}</span></v-btn>
         <v-btn v-if="editingRecord._id" elevation="0" class="delete" icon variant="outlined" color="error" :aria-label="$filters.translate('TL_DELETE')" :title="$filters.translate('TL_DELETE')" @click="deleteRecord"><v-icon icon="$trashCanOutline" /></v-btn>
@@ -65,6 +82,9 @@
   import { getRecordLabel, recordMessage } from '@u/recordLabel'
   import { createSnapshot, changedParts, isDirty, missingRequired, absorbPaths, unsetSwitchesToFalse } from '@u/dirtyTracker'
   import { isScrolledToBottom } from '@u/scroll'
+  import { revealField } from '@u/groups'
+  import { searchOutline } from '@u/jumpSearch'
+  import { moveHighlight } from '@u/switcherModel'
 
   // Fields fill in their own defaults when they appear. For this long after a form (re)renders, and until the user
   // touches it, such changes are not edits (see settle() below).
@@ -89,6 +109,10 @@
         blinkButtonTimeout: false,
         scrolledToBottom: false,
         randomId: Math.random(),
+        // the Jump to field menu: whether it is open, what is typed in its search box, and the row the arrows are on
+        jumpOpen: false,
+        jumpQuery: '',
+        jumpHighlight: 0,
         formValid: false,
         isDirty: false,
         formKey: 0,
@@ -131,9 +155,27 @@
         })
         return result
       },
+      /**
+       * @returns {Array<Object>} the fields of the form in the order they are drawn (the lines of a layout, else the schema), those inside groups (and groups of groups) too.
+       * A field in a group is named after its groups: `Address · City`
+       */
+      formFields () {
+        const drawn = (form) => _.get(form, 'layout.lines') ? _.compact(_.flatMap(form.layout.lines, (line) => _.map(line.fields, 'schema'))) : _.get(form, 'fields', [])
+        const walk = (form, titles) => _.flatMap(drawn(form), (field) => {
+          if (field.type === 'group') {
+            return walk(field.groupOptions, [...titles, field.label])
+          }
+          return [titles.length > 0 ? { ...field, label: `${titles.join(' · ')} · ${field.label}` } : field]
+        })
+        return walk(this.schema, [])
+      },
       /** @returns {Array<Object>} the labelled fields, one per original model */
       outlineFields () {
-        return _.uniqBy(_.filter(_.get(this.schema, 'fields', []), (f) => f.label && f.originalModel), 'originalModel')
+        return _.uniqBy(_.filter(this.formFields, (f) => f.label && f.originalModel), 'originalModel')
+      },
+      /** @returns {Array<{entry: Object, parts: Array<{text: string, hit: boolean}>}>} the rows of the Jump to field menu for what is typed in its search box */
+      jumpRows () {
+        return searchOutline(this.outlineEntries, this.jumpQuery)
       },
       // the fields, and under each paragraph field a row for each of its blocks (from the record, so repeats are listed as they are)
       outlineEntries () {
@@ -146,6 +188,22 @@
       }
     },
     watch: {
+      // the menu starts over each time it opens: every row, the first one under the arrows, and the search box ready to type in (not on a touch screen, where it would bring up the keyboard
+      // over the list)
+      jumpOpen (open) {
+        if (!open) {
+          return
+        }
+        this.jumpQuery = ''
+        this.jumpHighlight = 0
+        if (!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) {
+          this.$nextTick(() => _.invoke(this.$refs.jumpSearch, 'focus'))
+        }
+      },
+      // typing starts again from the best match
+      jumpQuery () {
+        this.jumpHighlight = 0
+      },
       // Deep watch: catches every field type, including in-place edits of nested arrays and objects
       editingRecord: {
         deep: true,
@@ -248,7 +306,7 @@
           return
         }
         const text = TranslateService.get('TL_FIELD_IS_REQUIRED')
-        _.each(_.get(this.schema, 'fields', []), (field) => {
+        _.each(this.formFields, (field) => {
           const element = this.isFieldMissing(field) ? this.$el.querySelector(`.field-wrapper[data-model="${field.model}"]`) : null
           if (element && !element.querySelector('.v-input--error')) {
             element.classList.add('is-missing')
@@ -256,11 +314,26 @@
           }
         })
       },
+      /**
+       * Opens the closed groups that hold a field with an error, so that the error is seen (and the field can be focused).
+       * @param {Element|null} [first] the field to focus, which may be in a closed group whose error is not drawn yet
+       */
+      async revealInvalidFields (first) {
+        await this.$nextTick()
+        const opened = _.map([first, ...this.$el.querySelectorAll('.group.is-collapsed .v-input--error, .group.is-collapsed .is-missing')], revealField)
+        if (_.some(opened)) {
+          await this.$nextTick()
+        }
+      },
       /** Jumps to the first required field without a value. */
-      focusFirstMissing () {
+      async focusFirstMissing () {
         const field = _.find(this.outlineFields, (f) => this.isFieldMissing(f))
         if (!field) {
           return
+        }
+        // (a field in a closed group is shown first)
+        if (revealField(this.$el.querySelector(`.field-wrapper[data-model="${field.model}"]`))) {
+          await this.$nextTick()
         }
         this.jumpToField(field)
         const input = this.$el.querySelector(`.field-wrapper[data-model="${field.model}"] input, .field-wrapper[data-model="${field.model}"] textarea, .field-wrapper[data-model="${field.model}"] [contenteditable]`)
@@ -277,7 +350,32 @@
         return _.includes(this.missing.shared, name) || _.includes(_.get(this.missing.byLocale, this.locale, []), name)
       },
       // a row of the menu: a field, or a block of a paragraph field
-      jumpToEntry (entry) {
+      /** The shortcut of the menu (Ctrl+J, also inside a field): opens it, or closes it when it is open. */
+      toggleJump () {
+        if (this.outlineEntries.length > 0) {
+          this.jumpOpen = !this.jumpOpen
+        }
+      },
+      /** @param {Object} entry a row of the menu: the menu closes and the form goes to it */
+      jumpTo (entry) {
+        this.jumpOpen = false
+        return this.jumpToEntry(entry)
+      },
+      /**
+       * The keys of the search box: the arrows move over the rows (Home and End stay with the text), Enter goes to the row.
+       * @param {KeyboardEvent} event
+       */
+      onJumpKeydown (event) {
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          event.preventDefault()
+          this.jumpHighlight = moveHighlight(this.jumpHighlight, event.key, this.jumpRows.length)
+          this.$nextTick(() => _.invoke(document.getElementById(`${this.randomId}-jump-row-${this.jumpHighlight}`), 'scrollIntoView', { block: 'nearest' }))
+        } else if (event.key === 'Enter' && this.jumpRows[this.jumpHighlight]) {
+          event.preventDefault()
+          this.jumpTo(this.jumpRows[this.jumpHighlight].entry)
+        }
+      },
+      async jumpToEntry (entry) {
         if (entry.block === undefined) {
           return this.jumpToField(entry.field)
         }
@@ -287,6 +385,10 @@
         if (block) {
           // the fields of a block are all named _value.<field>: the one of this block, not of a block inside it
           const inner = entry.blockField && _.find(block.querySelectorAll(`.field-wrapper[data-model^="_value.${entry.blockField}"]`), (element) => element.closest('.item') === block)
+          // (a field in a closed group is shown first)
+          if (revealField(inner)) {
+            await this.$nextTick()
+          }
           // centred: the paragraph field keeps a bar of its own at the top, which would cover the top of a block
           this.scrollAndFlash(inner || block, 'center')
         } else {
@@ -294,9 +396,12 @@
         }
       },
       /** @param {Object} field scrolled to and flashed */
-      jumpToField (field) {
+      async jumpToField (field) {
         const elem = this.$el.querySelector(`.field-wrapper[data-model="${field.model}"]`)
         if (elem) {
+          if (revealField(elem)) {
+            await this.$nextTick()
+          }
           this.scrollAndFlash(elem, 'start')
         }
       },
@@ -432,7 +537,9 @@
         if (!_.isUndefined(firstInvalidField)) {
           console.error('First invalid field', firstInvalidField)
           formValid = false
-          document.querySelector(`#${firstInvalidField.id}`).focus()
+          const invalidElement = document.querySelector(`#${firstInvalidField.id}`)
+          await this.revealInvalidFields(invalidElement)
+          invalidElement.focus()
         } else {
           _.find(document.querySelectorAll('.wysiwyg-wrapper[data-val="<p></p>"]'), (elem) => {
             if (elem.innerText && elem.innerText.length > 0) {

@@ -89,4 +89,13 @@ add('form-layout-light', { width: 1280, height: 1000 }, async (c) => {
   await c.page.locator('.record-editor-form').screenshot({ path: `${c.outDir}/form-layout-light.png` })
 }, { resource: 'structured_layout', record: (seeded) => seeded.layout })
 
+// the groups of a form: one always open, one that starts closed and is opened (with a group inside it), one that is closed
+add('form-groups-light', { width: 1280, height: 1300 }, async (c) => {
+  await c.page.locator('.record-editor-form .group-toggle').first().waitFor()
+  await c.page.locator('.record-editor-form .group-toggle', { hasText: 'Online' }).click()
+  await c.page.locator('.record-editor-form .group-toggle', { hasText: 'Address' }).click()
+  await c.page.waitForTimeout(800)
+  await c.page.locator('.record-editor-form').screenshot({ path: `${c.outDir}/form-groups-light.png` })
+}, { resource: 'structured_groups', record: (seeded) => seeded.groups })
+
 module.exports = { specs }

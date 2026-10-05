@@ -123,7 +123,7 @@ export default {
       if (!_.get(schema, 'layout.lines', false)) {
         return schema
       }
-      const alreadyPlacedFields = []
+      const alreadyPlaced = new Set()
       _.each(schema.layout.lines, (line) => {
         line.slots = line.slots || _.get(line, 'fields.length', 1)
         _.each(line.fields, (field) => {
@@ -131,17 +131,21 @@ export default {
           if (_.isUndefined(field.schema)) {
             field.schema = _.find(schema.fields, {originalModel: field.model})
           }
+          // a group of nested fields (`address.city`) is named by its first part, `address`
+          if (_.isUndefined(field.schema)) {
+            field.schema = _.find(schema.fields, {type: 'group', key: field.model})
+          }
           if (_.isUndefined(field.schema)) {
             console.error(`Couldn't find schema for field ${field.model}`)
           } else {
-            alreadyPlacedFields.push(field.model)
+            alreadyPlaced.add(field.schema)
           }
         })
       })
       _.each(schema.fields, (field) => {
-        if (!_.includes(alreadyPlacedFields, field.model) && !_.includes(alreadyPlacedFields, field.originalModel)) {
-          console.warn(`not placed field ${field.model} in layout, placing at the end`)
-          schema.layout.lines.push({fields: [{model: field.model, schema: field}]})
+        if (!alreadyPlaced.has(field)) {
+          console.warn(`not placed field ${field.model || field.key} in layout, placing at the end`)
+          schema.layout.lines.push({fields: [{model: field.model || field.key, schema: field}]})
         } else {
           log.debug(`field ${field.model} already placed in layout, skipping`)
         }

@@ -4,7 +4,7 @@
 
 An ordered list of typed blocks. Each block type is a small resource (a schema without records) declared in `resources/paragraphs/`; blocks can hold any field type, including files, images and other paragraphs. Component: `ParagraphView` (`src/components/fields/ParagraphView.vue`).
 
-Catalogue: `resources/structured_blocks.js` (group **Structured**, resource **Blocks**) with the block types `resources/paragraphs/block_text.js` (heading, wysiwyg body, note), `block_media.js` (image, caption, download, link) and `block_group.js` (title, switch, select, and a nested paragraph field).
+Catalogue: `resources/structured_blocks.js` (group **Structured**, resource **Blocks**) with the block types `resources/paragraphs/block_text.js` (heading, wysiwyg body, note), `block_media.js` (image, caption, download, link), `block_group.js` (title, switch, select, and a nested paragraph field) and `block_contact.js` (title and fields in [groups](../FIELDS.md#groups): a person, an address that closes, links that start closed).
 
 ## Declaration
 
@@ -47,7 +47,7 @@ Inside a block, each field follows its own type page and options (`required`, hi
 
 ### Several block types
 
-`resources/structured_blocks.js`, field `content` (`types: ['block_text', 'block_media', 'block_group']`). Pick the type in the drop-down, then Add; blocks can be reordered by dragging the handle.
+`resources/structured_blocks.js`, field `content` (`types: ['block_text', 'block_media', 'block_group', 'block_contact']`). Pick the type in the drop-down, then Add; blocks can be reordered by dragging the handle.
 
 ![Page content](img/paragraph-types.png) ![A media block and a group block](img/paragraph-types-filled.png)
 

@@ -421,6 +421,7 @@
     "TL_UNSAVED_CHANGES_HINT": "你有尚未保存的修改。点击创建或保存以保留，点击放弃则丢弃。",
     "TL_ALL_SAVED": "所有更改已保存",
     "TL_JUMP_TO": "跳转到字段",
+    "TL_JUMP_TO_SEARCH": "查找字段",
     "TL_INCOMPLETE": "未完成",
     "TL_FILTER_RESOURCES": "筛选资源",
     "TL_NO_MATCHING_RESOURCES": "没有匹配的资源",

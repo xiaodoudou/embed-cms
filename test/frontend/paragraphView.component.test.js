@@ -514,6 +514,42 @@ describe('ParagraphView (blocks)', () => {
     })
   })
 
+  describe('the groups of the fields of a block', () => {
+    it('are described by the block type, not by the resource around it', async () => {
+      const SchemaService = (await import('@s/SchemaService')).default
+      PARAGRAPHS.block_text.groups = { person: { label: 'Person', collapsed: true } }
+      try {
+        await paragraph({ resource: { title: 'pages', groups: { person: { label: 'Of the page' } } } }, { blocks: [{ _type: 'block_text' }] })
+        const asked = SchemaService.getNestedGroups.mock.calls.map((call) => call[0].groups)
+        expect(asked).toContainEqual({ person: { label: 'Person', collapsed: true } })
+        expect(asked).not.toContainEqual({ person: { label: 'Of the page' } })
+      } finally {
+        delete PARAGRAPHS.block_text.groups
+      }
+    })
+  })
+
+  describe('the layout of the fields of a block', () => {
+    const group = { type: 'group', key: 'address', label: 'Address', groupOptions: { fields: [] } }
+    const field = { model: '_value.name', originalModel: 'name' }
+
+    it('places a group of nested fields where the layout names it by its first part, and shows no warning for it', async () => {
+      await paragraph()
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const result = wrapper.vm.formatSchemaLayout({ fields: [field, group], layout: { lines: [{ slots: 2, fields: [{ model: 'name' }, { model: 'address' }] }] } })
+      expect(result.layout.lines[0].fields.map((item) => item.schema)).toEqual([field, group])
+      expect(warn).not.toHaveBeenCalled()
+    })
+
+    it('says which group the layout forgot', async () => {
+      await paragraph()
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      wrapper.vm.formatSchemaLayout({ fields: [field, group], layout: { lines: [{ fields: [{ model: 'name' }] }] } })
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(warn.mock.calls[0][0]).toContain('address')
+    })
+  })
+
   describe('adding files', () => {
     const mapping = {
       'jpg, png': { _type: 'block_media', field: 'picture' },

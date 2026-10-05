@@ -942,6 +942,67 @@ a {
   }
 }
 
+/* "Jump to": a search box over the rows, which scroll under it; the row the arrows are on has the tint of a hovered row, and the letters typed are marked */
+.v-menu .outline-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 260px;
+  max-width: min(420px, calc(100vw - var(--cms-space-8)));
+  background: var(--cms-surface);
+  border-radius: var(--cms-radius-md);
+}
+
+.v-menu .outline-search {
+  padding: var(--cms-space-1) var(--cms-space-2);
+  border-bottom: 1px solid var(--cms-border);
+}
+
+/* a small box, not the 40px of a form field: it sits over a list of rows 32px tall */
+.v-menu .outline-search .v-input {
+  --v-input-control-height: 30px;
+}
+
+.v-menu .outline-search .v-field {
+  --v-field-padding-start: var(--cms-space-2);
+  --v-field-padding-end: var(--cms-space-2);
+  --v-input-padding-top: 0px;
+  font-size: var(--cms-fs-sm);
+  font-weight: var(--cms-fw-regular);
+}
+
+.v-menu .outline-search .v-field__input {
+  min-height: 30px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.v-menu .outline-search .v-field__prepend-inner > .v-icon,
+.v-menu .outline-search .v-field__clearable > .v-icon {
+  font-size: 16px;
+}
+
+.v-menu .outline-list {
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.v-menu .outline-list .v-list-item.highlighted {
+  background: var(--cms-surface-2);
+}
+
+.v-menu .outline-list mark {
+  background: transparent;
+  color: var(--cms-primary);
+  font-weight: var(--cms-fw-bold);
+}
+
+.v-menu .outline-list .outline-empty {
+  padding: var(--cms-space-3) var(--cms-space-4);
+  color: var(--cms-text-muted);
+  font-size: var(--cms-fs-sm);
+}
+
 /* "Jump to": the blocks of a paragraph field sit under it, and the fields of a block under the block, each level indented and quieter */
 .v-menu .outline-list .v-list-item.outline-block {
   padding-inline-start: var(--cms-space-8);

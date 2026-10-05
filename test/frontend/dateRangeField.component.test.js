@@ -23,6 +23,31 @@ const pick = async (value) => {
 afterEach(() => wrapper?.unmount())
 
 describe('DateRangeField', () => {
+  describe('on a phone', () => {
+    const original = window.matchMedia
+    const pointer = (coarse) => {
+      window.matchMedia = (query) => ({ matches: coarse && query === '(pointer: coarse)', media: query, addEventListener () {}, removeEventListener () {} })
+    }
+    afterEach(() => {
+      window.matchMedia = original
+    })
+
+    it('opens the calendar over the page, not inside the form that would clip it', () => {
+      mount()
+      expect(inner().props('teleport')).toBeTruthy()
+    })
+
+    it('opens it in the middle of the screen for a finger, and under the box for a mouse', () => {
+      pointer(true)
+      mount()
+      expect(inner().props('centered')).toBe(true)
+      wrapper.unmount()
+      pointer(false)
+      mount()
+      expect(inner().props('centered')).toBe(false)
+    })
+  })
+
   describe('what it shows', () => {
     it('has the label, a box that says how to write a range, and the hint', () => {
       mount({ options: { hint: 'Check in and out' } })

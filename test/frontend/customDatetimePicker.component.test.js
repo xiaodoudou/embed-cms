@@ -47,6 +47,31 @@ afterEach(() => {
 })
 
 describe('CustomDatetimePicker (date, time and datetime)', () => {
+  describe('on a phone', () => {
+    const original = window.matchMedia
+    const pointer = (coarse) => {
+      window.matchMedia = (query) => ({ matches: coarse && query === '(pointer: coarse)', media: query, addEventListener () {}, removeEventListener () {} })
+    }
+    afterEach(() => {
+      window.matchMedia = original
+    })
+
+    it('opens the calendar over the page, not inside the form that would clip it', () => {
+      picker('datetime')
+      expect(inner().props('teleport')).toBeTruthy()
+    })
+
+    it('opens it in the middle of the screen for a finger, and under the box for a mouse', () => {
+      pointer(true)
+      picker('date')
+      expect(inner().props('centered')).toBe(true)
+      wrapper.unmount()
+      pointer(false)
+      picker('date')
+      expect(inner().props('centered')).toBe(false)
+    })
+  })
+
   describe('the box', () => {
     it('shows the label, the required mark and the hint', () => {
       picker('date', {}, { required: true, options: { hint: 'Calendar date' } })

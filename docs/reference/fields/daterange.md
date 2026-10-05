@@ -29,6 +29,7 @@ Catalogue: `resources/dates.js` (group **Date and time**, resource **Dates and t
 ## The widget
 
 - One box, with two months side by side in the calendar. Picking the first day and then the last makes the range; picking in the other order gives the same range. The box can also be typed in (`2026/10/01 – 2026/10/05`).
+- On a touch screen the calendar opens in the middle of the screen, over the page, with its Cancel and Select buttons in view (on a computer it opens under the box). On a phone it shows one month at a time.
 - A range is both days or none: while the end is not picked nothing is written to the record.
 - With `time`, the calendar has a time for each end, to the minute.
 - The box has a clear button. A range the record already holds that the field does not take (too few days, a day outside `minDate` and `maxDate`, an end before the start) is shown with the reason in red under the box.

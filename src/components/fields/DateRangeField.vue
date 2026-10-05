@@ -19,6 +19,7 @@
           :input-attrs="{ clearable: !locked }"
           :readonly="isReadonly"
           :disabled="isDisabled"
+          teleport :centered="onTouchScreen"
           :aria-labels="{ input: schema.label }"
           model-type="timestamp"
           @update:model-value="onPick"
@@ -57,6 +58,10 @@
     },
     emits: ['input'],
     computed: {
+      /** @returns {boolean} a finger, not a mouse: the calendar opens in the middle of the screen, over the page, instead of under the box */
+      onTouchScreen () {
+        return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(pointer: coarse)').matches
+      },
       /** @returns {Object} what the field says (see utils/dateRange.js) */
       options () {
         return dateRangeOptions(this.schema)

@@ -34,6 +34,12 @@ export default {
     },
     /** The handle is pressed: the page stops selecting text for as long as the drag lasts. */
     onDragChoose () {
+      // a field with the cursor in it is folded away with its block when the drag begins, and the page jumps to the end of the list with it (the block is not moved): the cursor
+      // (and the keyboard on a phone) goes first
+      const active = document.activeElement
+      if (active && active !== document.body && active.matches('input, textarea, [contenteditable]')) {
+        active.blur()
+      }
       document.body.classList.add(DRAGGING_CLASS)
     },
     /** The handle is let go (a click that never became a drag included). */

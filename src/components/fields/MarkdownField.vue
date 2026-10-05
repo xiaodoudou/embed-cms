@@ -315,6 +315,16 @@
     .markdown-preview {
       border-left: 1px solid var(--cms-border);
     }
+    // a phone: the preview under the box (beside it, each was 170px wide)
+    @media (max-width: 599.98px) {
+      .markdown-panes {
+        flex-direction: column;
+      }
+      .markdown-preview {
+        border-top: 1px solid var(--cms-border);
+        border-left: 0;
+      }
+    }
   }
   .markdown-empty {
     margin: 0;

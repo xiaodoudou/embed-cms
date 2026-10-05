@@ -154,26 +154,25 @@
 
   // ---- segmented: joined buttons, the chosen one filled
   &.is-segmented {
+    // the buttons wrap onto another row when they do not fit (five or seven of them overflowed a 320px or a 375px screen, and a row that scrolls shows nothing of what is out
+    // of sight); the lines between them are the 1px gap, which shows the colour of the box, between the rows as well
     .choice-items {
       display: inline-flex;
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
+      gap: 1px;
       max-width: 100%;
-      overflow-x: auto;
+      overflow: hidden;
+      background: var(--cms-border-strong);
       border: 1px solid var(--cms-border-strong);
       border-radius: var(--cms-radius-md);
     }
     .choice-item {
-      flex: 0 0 auto;
+      flex: 1 1 auto;
       min-height: var(--cms-field-h);
-      & + .choice-item {
-        border-left: 1px solid var(--cms-border-strong);
-      }
-      &:first-child .choice-body {
-        border-radius: calc(var(--cms-radius-md) - 1px) 0 0 calc(var(--cms-radius-md) - 1px);
-      }
-      &:last-child .choice-body {
-        border-radius: 0 calc(var(--cms-radius-md) - 1px) calc(var(--cms-radius-md) - 1px) 0;
-      }
+      background: var(--cms-field-bg);
+    }
+    .choice-body {
+      flex: 1 1 auto;
     }
     .choice-body {
       display: inline-flex;
@@ -254,6 +253,24 @@
     .choice-description {
       color: var(--cms-text-muted);
       font-size: var(--cms-fs-sm);
+    }
+  }
+
+  // ---- a finger: every choice is as tall as a button (a radio button was 28px, a segment 40px)
+  @media (pointer: coarse) {
+    &.is-segmented .choice-item {
+      min-height: var(--cms-touch-target);
+    }
+    &.is-radio {
+      .choice-items,
+      &.is-inline .choice-items {
+        row-gap: 0;
+      }
+      .choice-item {
+        box-sizing: border-box;
+        min-height: var(--cms-touch-target);
+        padding: calc((var(--cms-touch-target) - 24px) / 2) 0 var(--cms-space-1);
+      }
     }
   }
 

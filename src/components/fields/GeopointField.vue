@@ -5,7 +5,7 @@
       <div class="geopoint-box">
         <label :for="`${inputId}-lat`" class="cms-visually-hidden">{{ $filters.translate('TL_LATITUDE') }}</label>
         <v-text-field
-          :id="`${inputId}-lat`" ref="input" :model-value="latText" :name="`${schema.model}-lat`" type="text" autocomplete="off" hide-details :placeholder="$filters.translate('TL_LATITUDE')"
+          :id="`${inputId}-lat`" ref="input" :model-value="latText" :name="`${schema.model}-lat`" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" hide-details :placeholder="$filters.translate('TL_LATITUDE')"
           :variant="getVariant()" :flat="get('flat')" :rounded="get('rounded')" :density="get('density')" :rules="[latRule]" validate-on="blur"
           :disabled="isDisabled" :readonly="isReadonly" :aria-readonly="isReadonly ? 'true' : undefined" :aria-required="schema.required ? 'true' : undefined"
           class="geopoint-lat" @update:model-value="onInput('lat', $event)" @blur="onBlur" @update:focused="onFieldFocus"
@@ -14,7 +14,7 @@
       <div class="geopoint-box">
         <label :id="`${inputId}-lng-label`" :for="`${inputId}-lng`" class="cms-visually-hidden">{{ $filters.translate('TL_LONGITUDE') }}</label>
         <v-text-field
-          :id="`${inputId}-lng`" :model-value="lngText" :name="`${schema.model}-lng`" type="text" autocomplete="off" hide-details :placeholder="$filters.translate('TL_LONGITUDE')"
+          :id="`${inputId}-lng`" :model-value="lngText" :name="`${schema.model}-lng`" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" hide-details :placeholder="$filters.translate('TL_LONGITUDE')"
           :variant="getVariant()" :flat="get('flat')" :rounded="get('rounded')" :density="get('density')" :rules="[lngRule]" validate-on="blur"
           :disabled="isDisabled" :readonly="isReadonly" :aria-readonly="isReadonly ? 'true' : undefined" :aria-required="schema.required ? 'true' : undefined"
           class="geopoint-lng" @update:model-value="onInput('lng', $event)" @blur="onBlur" @update:focused="onFieldFocus"
@@ -214,7 +214,8 @@
     gap: var(--cms-space-4);
   }
   .geopoint-box {
-    flex: 1 1 150px;
+    // two boxes side by side on a 320px screen too (150px each wrapped them onto two lines, 220px wide, in a column of 288px)
+    flex: 1 1 120px;
     max-width: 220px;
     input {
       font-variant-numeric: tabular-nums;

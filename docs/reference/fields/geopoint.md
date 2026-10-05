@@ -31,6 +31,7 @@ Catalogue: `resources/places.js` (group **Place**, resource **Places**), fields 
 - A pair pasted in either box fills both: `48.8566, 2.3522` (what Google Maps copies), `48.8566 2.3522`, `48,8566; 2,3522`, `(48.8566, 2.3522)`, `N 48.8566 E 2.3522`, `48°51'24"N 2°21'8"E`. With the sides written the longitude may come first.
 - The point is both numbers or none: while one box is empty or is not a number nothing is written to the record, and the box that is wrong or missing is red with the reason under the boxes.
 - A clear button takes the point away.
+- On a phone the map dialog keeps its title and its foot (Cancel, Use this point) in view and scrolls its middle, whatever the height of the screen or the keyboard; the zoom buttons, the search box and the pin are 44px for a finger, and in landscape the map takes the room.
 - **Pick on map** opens the map on the point (or on `center`). A click, or the pin dragged, places the point; the search box looks an address up (Enter) and the map goes there; **Use this point** writes it to the boxes, Cancel leaves them as they were. When the map cannot be loaded (no connection, a tile server that does not answer) the dialog says so and the boxes still work. With `maps: false` there is no button.
 
 ![Pasted pair](img/geopoint-default.png)

@@ -22,9 +22,10 @@
       </div>
       <div class="geo-foot">
         <span class="geo-point" aria-live="polite">{{ pointText || $filters.translate('TL_GEOPOINT_NO_POINT') }}</span>
-        <v-spacer />
-        <v-btn class="geo-cancel" variant="text" @click="close">{{ $filters.translate('TL_CANCEL') }}</v-btn>
-        <v-btn class="geo-use" color="primary" variant="flat" :disabled="!picked" @click="confirm">{{ $filters.translate('TL_GEOPOINT_USE') }}</v-btn>
+        <div class="geo-actions">
+          <v-btn class="geo-cancel" variant="text" @click="close">{{ $filters.translate('TL_CANCEL') }}</v-btn>
+          <v-btn class="geo-use" color="primary" variant="flat" :disabled="!picked" @click="confirm">{{ $filters.translate('TL_GEOPOINT_USE') }}</v-btn>
+        </div>
       </div>
     </v-card>
   </v-dialog>
@@ -181,7 +182,11 @@
 
 <style lang="scss">
 .geo-dialog {
+  // the title and the foot stay in view and the middle scrolls: on a short screen (a phone on its side, the keyboard up, text at 200%) Cancel and Use this point were below the fold
   .geo-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     background: var(--cms-surface);
     color: var(--cms-text);
     border-radius: var(--cms-radius-lg);
@@ -195,8 +200,11 @@
   }
   .geo-body {
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
     gap: var(--cms-space-3);
+    min-height: 0;
+    overflow-y: auto;
     padding: var(--cms-space-4) var(--cms-space-6);
   }
   .geo-tools {
@@ -249,11 +257,66 @@
   }
   .geo-foot {
     display: flex;
+    flex: 0 0 auto;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--cms-space-3);
     padding: var(--cms-space-3) var(--cms-space-6) var(--cms-space-4);
     border-top: 1px solid var(--cms-border);
+    // the point has a line of its own when the two buttons do not fit beside it, and the buttons stay together on the right
+    .geo-point {
+      flex: 1 1 8rem;
+    }
+    .geo-actions {
+      display: flex;
+      gap: var(--cms-space-2);
+      margin-left: auto;
+    }
+  }
+  // a short screen (a phone on its side, the keyboard up): a smaller title and the map as high as the room allows
+  @media (max-height: 500px) {
+    .geo-title {
+      padding: var(--cms-space-2) var(--cms-space-4);
+    }
+    .geo-body {
+      padding: var(--cms-space-2) var(--cms-space-4);
+    }
+    .geo-hint {
+      display: none;
+    }
+    .geo-stage {
+      height: 40vh;
+      min-height: 140px;
+    }
+    .geo-foot {
+      padding: var(--cms-space-2) var(--cms-space-4);
+    }
+  }
+  // a finger: the zoom buttons are button-sized (30px for a mouse, as Leaflet draws them), and the pin can be caught a thumb's width around its drawing
+  @media (pointer: coarse) {
+    .geo-stage.leaflet-container .leaflet-bar a {
+      width: var(--cms-touch-target);
+      height: var(--cms-touch-target);
+      line-height: var(--cms-touch-target);
+    }
+    .geo-search .v-field {
+      min-height: var(--cms-touch-target);
+    }
+    // the search icon and the clear icon answer on a larger area than they are drawn
+    .geo-search .v-field__append-inner .v-icon,
+    .geo-search .v-field__clearable .v-icon {
+      position: relative;
+      &::after {
+        content: '';
+        position: absolute;
+        inset: calc(var(--cms-space-3) * -1);
+      }
+    }
+    .geo-pin::before {
+      content: '';
+      position: absolute;
+      inset: calc(var(--cms-space-2) * -1) calc(var(--cms-space-3) * -1);
+    }
   }
   // the pin on the map: the colour of an error on the colour of the surface, so that it shows on any tile
   .geo-pin {

@@ -430,7 +430,9 @@ body.cms-dragging {
 // The breadcrumb, the margin of the card and a bar of three lines leave little of the screen to the form, and nothing at all with the
 // keyboard up: the breadcrumb goes (the Back button and the title say where you are), the card is the page, the bar is two lines.
 @media #{$phone-compact-query} {
-  .cms-content:has(.records.has-selection:not(.full-width)) > .cms-crumbs {
+  // (a class that App.vue sets: a :has() on the wrapper made the browser look through everything in it, and restyle every div of it, at each change of the page below it,
+  // which a drag makes at every move)
+  .cms-content.editor-open > .cms-crumbs {
     display: none;
   }
 

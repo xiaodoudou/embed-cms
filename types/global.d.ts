@@ -185,6 +185,24 @@ declare namespace EmbedCMS {
     [option: string]: any
   }
 
+  /** A line of a form layout: the fields on it share its `slots` (see docs/reference/FORM_LAYOUT.md) */
+  interface LayoutLine {
+    slots?: number
+    fields: Array<{ model: string, width?: number }>
+  }
+
+  /** What a resource says of a group of nested fields, in its `groups` (see docs/reference/FIELDS.md#groups) */
+  interface GroupDefinition {
+    /** The title of the group; the first part of the key when left out */
+    label?: Translatable
+    /** The title opens and closes the group. `true` when `collapsed` is, unless this says `false`. */
+    collapsible?: boolean
+    /** The group starts closed (every time the record is opened); it opens when a field in it is wrong */
+    collapsed?: boolean
+    /** Its fields side by side, named by their key inside the group (`city` for `address.city`) */
+    layout?: { lines: LayoutLine[] }
+  }
+
   /** One entry of a resource's `schema` */
   interface FieldDefinition {
     /** The key of the value. A dotted key (`address.city`) nests the value and groups the fields in the form. */
@@ -229,8 +247,8 @@ declare namespace EmbedCMS {
     /** The most records it holds. With `1` the admin opens the single record directly. */
     maxCount?: number
     type?: ResourceDirection
-    /** Titles of the nested fields, keyed by prefix: `{ address: { label: 'Address' } }` */
-    groups?: Record<string, { label?: Translatable }>
+    /** What each group of nested fields (`address.city`) looks like, keyed by the path of the group: `{ address: { label: 'Address', collapsible: true } }` */
+    groups?: Record<string, GroupDefinition>
     /** The user groups that see it in the admin menu (the API does not enforce this: use the rights of the groups) */
     allowed?: string[]
     schema: FieldDefinition[]

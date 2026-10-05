@@ -299,6 +299,24 @@ describe('AbstractEditorView (what the editor pages share)', () => {
       expect(console.warn).toHaveBeenCalledTimes(2)
     })
 
+    it('puts a group of nested fields where the layout names it by its first part', () => {
+      host()
+      const group = { type: 'group', key: 'address', label: 'Address', groupOptions: { fields: [] } }
+      const result = wrapper.vm.formatSchemaLayout({ fields: [{ model: 'a' }, group], layout: { lines: [{ slots: 2, fields: [{ model: 'address' }, { model: 'a' }] }] } })
+      expect(result.layout.lines).toHaveLength(1)
+      expect(result.layout.lines[0].fields.map((item) => item.schema)).toEqual([group, { model: 'a' }])
+      expect(console.warn).not.toHaveBeenCalled()
+      expect(console.error).not.toHaveBeenCalled()
+    })
+
+    it('puts a group the layout forgot at the end, with its first part for its model, and says so', () => {
+      host()
+      const group = { type: 'group', key: 'address', label: 'Address', groupOptions: { fields: [] } }
+      const result = wrapper.vm.formatSchemaLayout({ fields: [{ model: 'a' }, group], layout: { lines: [{ fields: [{ model: 'a' }] }] } })
+      expect(result.layout.lines[1].fields).toEqual([{ model: 'address', schema: group }])
+      expect(console.warn).toHaveBeenCalledTimes(1)
+    })
+
     it('says when the layout names a field that does not exist', () => {
       host()
       wrapper.vm.formatSchemaLayout(schema({ layout: { lines: [{ fields: [{ model: 'ghost' }] }] } }))

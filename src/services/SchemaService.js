@@ -5,6 +5,7 @@ import FormService from '@s/FormService'
 import ResourceService from './ResourceService'
 import { isMultiSource, sourceItems } from '@u/sources'
 import { parseMask } from '@u/mask'
+import { placeGroupLayout } from '@u/groups'
 
 const TranslateService = window.TranslateService || TranslateServiceLib
 
@@ -196,14 +197,20 @@ class SchemaService {
         }
         return value
       }
-      const currentPath = _.isUndefined(path) ? key : `${path}.${key}`
+      const currentPath = _.isNil(path) ? key : `${path}.${key}`
+      // what the resource says of the group, by its dotted path (`groups: { 'address.geo': {...} }` for a group in a group)
+      const options = _.get(resource, ['groups', currentPath]) || {}
+      const items = this.getNestedGroups(resource, list, level + 1, currentPath, prefix)
+      // a group that starts closed can be opened, unless it says it cannot
+      const collapsible = !!_.get(options, 'collapsible', !!options.collapsed)
+      const layout = placeGroupLayout(items, options.layout, currentPath, prefix)
       return _.extend({}, this.typeMapper.group, {
-        label: TranslateService.get(_.get(resource, `groups.${currentPath}.label`, key)),
+        label: TranslateService.get(_.get(options, 'label', key)),
         key,
         path,
-        groupOptions: {
-          fields: this.getNestedGroups(resource, list, level + 1, path, prefix)
-        }
+        collapsible,
+        collapsed: collapsible && !!options.collapsed,
+        groupOptions: layout ? { fields: items, layout } : { fields: items }
       })
     })
     return groups

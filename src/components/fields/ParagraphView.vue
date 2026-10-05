@@ -413,7 +413,8 @@
         }
         const extraSources = _.isString(item.source) ? _.get(ResourceService.getSchema(item.source), 'extraSources', {}) : {}
         const fields = SchemaService.getSchemaFields(schemaItems, resource, locale, userLocale, disabled, extraSources, this.schema.rootView || this)
-        const groups = SchemaService.getNestedGroups(resource, fields, 0, null, '_value.')
+        // the groups of the fields of a block are described by the block type (`groups` in its file), as the groups of a resource are by it
+        const groups = SchemaService.getNestedGroups(_.extend({}, resource, { groups: _.get(item, 'groups', _.get(resource, 'groups')) }), fields, 0, null, '_value.')
         const schema = this.formatSchemaLayout({
           fields: groups,
           layout: item.layout
@@ -441,16 +442,21 @@
             if (_.isUndefined(field.schema)) {
               field.schema = _.find(schema.fields, {originalModel: field.model})
             }
+            // a group of nested fields is named by its first part
+            const isGroup = _.isUndefined(field.schema)
+            if (isGroup) {
+              field.schema = _.find(schema.fields, {type: 'group', key: field.model})
+            }
             if (_.isUndefined(field.schema)) {
               console.error(`Couldn't find schema for field ${field.model}`)
             } else {
-              alreadyPlacedFields.push(modelKey)
+              alreadyPlacedFields.push(isGroup ? field.schema.key : modelKey)
             }
           })
         })
         _.each(schema.fields, (field) => {
-          if (!_.includes(alreadyPlacedFields, field.model) && !_.includes(alreadyPlacedFields, field.originalModel)) {
-            console.warn(`Layout doesn't contain field ${field.model}, will not display it. To fix this, add the field to the layout of the paragraph resource.`)
+          if (!_.includes(alreadyPlacedFields, field.model || field.key) && !_.includes(alreadyPlacedFields, field.originalModel)) {
+            console.warn(`Layout doesn't contain field ${field.model || field.key}, will not display it. To fix this, add the field to the layout of the paragraph resource.`)
             // schema.layout.lines.push({fields: [{model: field.model, schema: field}]})
           }
         })

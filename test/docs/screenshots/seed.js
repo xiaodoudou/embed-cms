@@ -154,6 +154,15 @@ async function seed (base, user, password, files) {
     reference: 'CUST-0042'
   })
   ids.layout = layout._id
+  // a record for the picture of the groups of fields
+  const groups = await post('structured_groups', {
+    name: 'Ana Moreau',
+    contact: { email: 'ana.moreau@example.com', phone: '+33 1 23 45 67 89' },
+    address: { street: 'Rue des Lilas', number: '12', city: 'Lyon', postcode: '69003', country: 'France' },
+    social: { website: 'https://example.com', blog: 'https://blog.example.com', profiles: { github: 'anamoreau', linkedin: 'ana-moreau' } },
+    notes: 'Prefers to be contacted by email.'
+  })
+  ids.groups = groups._id
   return ids
 }
 

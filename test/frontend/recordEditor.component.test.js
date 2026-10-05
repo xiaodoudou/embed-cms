@@ -343,6 +343,140 @@ describe('RecordEditor', () => {
       expect(wrapper.find('.jump-to').exists()).toBe(true)
     })
 
+    describe('the search box of the menu', () => {
+      const withBlocks = { ...page, schema: [...page.schema, { field: 'city', input: 'string', label: 'City', localised: false }] }
+      const rowLabels = () => wrapper.vm.jumpRows.map((row) => row.entry.label)
+      const press = (key, extra = {}) => {
+        const event = { key, preventDefault: vi.fn(), ...extra }
+        wrapper.vm.onJumpKeydown(event)
+        return event
+      }
+
+      it('shows every row, in the order of the form, until something is typed', async () => {
+        await editor({ _local: true, tiles: [{ _type: 'tile', heading: 'News' }] }, { resource: withBlocks })
+        expect(rowLabels()).toEqual(['Name', 'Tiles', 'Tile · News', 'Heading', 'City'])
+      })
+
+      it('keeps the rows that hold what is typed, best first', async () => {
+        await editor({ _local: true, tiles: [{ _type: 'tile', heading: 'News' }] }, { resource: withBlocks })
+        wrapper.vm.jumpQuery = 'cit'
+        expect(rowLabels()).toEqual(['City'])
+        wrapper.vm.jumpQuery = 'news'
+        expect(rowLabels()).toEqual(['Tile · News', 'Heading'])
+        wrapper.vm.jumpQuery = 'zzz'
+        expect(rowLabels()).toEqual([])
+      })
+
+      it('moves over the rows with the arrows (and stops at both ends), and goes to the one it is on with Enter', async () => {
+        await editor({ _local: true }, { resource: withBlocks })
+        const jumped = vi.spyOn(wrapper.vm, 'jumpToEntry').mockResolvedValue()
+        wrapper.vm.jumpOpen = true
+        expect(press('ArrowDown').preventDefault).toHaveBeenCalled()
+        expect(wrapper.vm.jumpHighlight).toBe(1)
+        press('ArrowDown')
+        press('ArrowDown')
+        expect(wrapper.vm.jumpHighlight).toBe(2)
+        press('ArrowUp')
+        press('ArrowUp')
+        press('ArrowUp')
+        expect(wrapper.vm.jumpHighlight).toBe(0)
+        press('ArrowDown')
+        const enter = press('Enter')
+        expect(enter.preventDefault).toHaveBeenCalled()
+        expect(jumped).toHaveBeenCalledWith(wrapper.vm.jumpRows[1].entry)
+        expect(wrapper.vm.jumpOpen).toBe(false)
+      })
+
+      it('leaves the other keys, Home and End included, to the text', async () => {
+        await editor({ _local: true }, { resource: withBlocks })
+        for (const key of ['Home', 'End', 'a', 'Escape']) {
+          expect(press(key).preventDefault).not.toHaveBeenCalled()
+        }
+      })
+
+      it('does nothing on Enter when no row is left', async () => {
+        await editor({ _local: true }, { resource: withBlocks })
+        const jumped = vi.spyOn(wrapper.vm, 'jumpToEntry').mockResolvedValue()
+        wrapper.vm.jumpQuery = 'zzz'
+        expect(press('Enter').preventDefault).not.toHaveBeenCalled()
+        expect(jumped).not.toHaveBeenCalled()
+      })
+
+      it('starts again from the best match when the text changes, and from every row when the menu opens', async () => {
+        await editor({ _local: true }, { resource: withBlocks })
+        wrapper.vm.jumpOpen = true
+        await wrapper.vm.$nextTick()
+        press('ArrowDown')
+        wrapper.vm.jumpQuery = 'a'
+        await wrapper.vm.$nextTick()
+        expect(wrapper.vm.jumpHighlight).toBe(0)
+        wrapper.vm.jumpHighlight = 2
+        wrapper.vm.jumpOpen = false
+        await wrapper.vm.$nextTick()
+        wrapper.vm.jumpOpen = true
+        await wrapper.vm.$nextTick()
+        expect(wrapper.vm.jumpQuery).toBe('')
+        expect(wrapper.vm.jumpHighlight).toBe(0)
+      })
+
+      it('opens and closes with Ctrl+J', async () => {
+        await editor({ _local: true }, { resource: withBlocks })
+        const ctrlJ = () => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', ctrlKey: true, bubbles: true, cancelable: true }))
+        ctrlJ()
+        await wrapper.vm.$nextTick()
+        expect(wrapper.vm.jumpOpen).toBe(true)
+        ctrlJ()
+        await wrapper.vm.$nextTick()
+        expect(wrapper.vm.jumpOpen).toBe(false)
+        wrapper.vm.toggleJump()
+        expect(wrapper.vm.jumpOpen).toBe(true)
+      })
+
+      it('says the shortcut in the title of its button', async () => {
+        await editor({ _local: true }, { resource: withBlocks })
+        expect(wrapper.get('.jump-to').attributes('title')).toBe('Jump to field (Ctrl J)')
+        expect(wrapper.get('.jump-to').attributes('aria-label')).toBe('Jump to field')
+      })
+    })
+
+    it('lists the fields of a group too, named after their group', async () => {
+      const grouped = {
+        ...page,
+        schema: [
+          { field: 'name', input: 'string', label: 'Name', localised: false },
+          { field: 'address.street', input: 'string', label: 'Street', localised: false },
+          { field: 'address.city', input: 'string', label: 'City', localised: false },
+          { field: 'links.profiles.github', input: 'string', label: 'GitHub', localised: false },
+          { field: 'links.profiles.linkedin', input: 'string', label: 'LinkedIn', localised: false },
+          { field: 'notes', input: 'text', label: 'Notes', localised: false }
+        ],
+        groups: { address: { label: 'Address', collapsed: true }, links: { label: 'Links' }, 'links.profiles': { label: 'Profiles' } }
+      }
+      await editor({ _local: true }, { resource: grouped })
+      expect(wrapper.vm.outlineEntries.map((entry) => entry.label)).toEqual(['Name', 'Address · Street', 'Address · City', 'Links · Profiles · GitHub', 'Links · Profiles · LinkedIn', 'Notes'])
+      // (the rows mark what changed in a group too)
+      await edit({ address: { city: 'Lyon' } })
+      expect(wrapper.vm.outlineEntries.filter((entry) => entry.dirty).map((entry) => entry.label)).toEqual(['Address · City'])
+    })
+
+    it('lists the fields in the order the form draws them: the lines of a layout, of the resource and of a group', async () => {
+      const laid = {
+        ...page,
+        schema: [
+          { field: 'name', input: 'string', label: 'Name', localised: false },
+          { field: 'address.street', input: 'string', label: 'Street', localised: false },
+          { field: 'address.city', input: 'string', label: 'City', localised: false },
+          { field: 'social.website', input: 'url', label: 'Website', localised: false },
+          { field: 'social.blog', input: 'url', label: 'Blog', localised: false },
+          { field: 'notes', input: 'text', label: 'Notes', localised: false }
+        ],
+        groups: { address: { label: 'Address', layout: { lines: [{ fields: [{ model: 'city' }] }, { fields: [{ model: 'street' }] }] } }, social: { label: 'Online' } },
+        layout: { lines: [{ fields: [{ model: 'name' }] }, { fields: [{ model: 'social' }] }, { fields: [{ model: 'address' }] }, { fields: [{ model: 'notes' }] }] }
+      }
+      await editor({ _local: true }, { resource: laid })
+      expect(wrapper.vm.outlineEntries.map((entry) => entry.label)).toEqual(['Name', 'Online · Website', 'Online · Blog', 'Address · City', 'Address · Street', 'Notes'])
+    })
+
     it('lists the blocks of a paragraph field under it, named by their type and first text', async () => {
       await editor({ _local: true, tiles: [{ _type: 'tile', heading: 'News' }, { _type: 'tile' }] }, { resource: page })
       expect(wrapper.vm.outlineEntries.map((entry) => entry.label)).toEqual(['Name', 'Tiles', 'Tile · News', 'Heading', 'Tile 2', 'Heading'])
@@ -377,6 +511,37 @@ describe('RecordEditor', () => {
       wrapper.vm.jumpToEntry(entries[4])
       wrapper.vm.jumpToEntry(entries[1])
       expect(scrolled).toEqual([second, field])
+    })
+
+    it('opens the closed group around a field before it scrolls to it', async () => {
+      await editor({ _local: true }, { resource: page })
+      const group = document.createElement('div')
+      group.className = 'group is-collapsed'
+      group.innerHTML = '<div class="field-wrapper" data-model="name"></div>'
+      wrapper.element.appendChild(group)
+      const field = group.firstChild
+      const events = []
+      group.addEventListener('cms-reveal-group', () => { events.push('opened'); group.classList.remove('is-collapsed') })
+      field.scrollIntoView = () => events.push('scrolled')
+      await wrapper.vm.jumpToEntry(wrapper.vm.outlineEntries[0])
+      expect(events).toEqual(['opened', 'scrolled'])
+    })
+
+    it('opens the closed groups that hold an error after a failed save, and the one of the field it will focus', async () => {
+      await editor({ _local: true }, { resource: page })
+      const closed = (html) => {
+        const group = document.createElement('div')
+        group.className = 'group is-collapsed'
+        group.innerHTML = html
+        group.addEventListener('cms-reveal-group', () => group.classList.remove('is-collapsed'))
+        wrapper.element.appendChild(group)
+        return group
+      }
+      const withError = closed('<div class="v-input--error"><input></div>')
+      const untouched = closed('<div><input></div>')
+      const focused = closed('<div><input></div>')
+      await wrapper.vm.revealInvalidFields(focused.querySelector('input'))
+      expect([withError, untouched, focused].map((group) => group.classList.contains('is-collapsed'))).toEqual([false, true, false])
     })
 
     it('scrolls to the field of a block, not to the same field of a block inside it, and to the block when it is not drawn', async () => {

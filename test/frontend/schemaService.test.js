@@ -280,6 +280,67 @@ describe('SchemaService (the form a resource schema becomes)', () => {
       expect(result[0].label).toBe('Search engines')
     })
 
+    it('is always open and has no layout unless the resource says so', () => {
+      const group = SchemaService.getNestedGroups(res(), flat('seo.a', 'seo.b'), 0)[0]
+      expect(group.collapsible).toBe(false)
+      expect(group.collapsed).toBe(false)
+      expect(group.groupOptions.layout).toBeUndefined()
+    })
+
+    it('can be closed and opened when the resource says so', () => {
+      const group = SchemaService.getNestedGroups(res({ groups: { seo: { collapsible: true } } }), flat('seo.a', 'seo.b'), 0)[0]
+      expect(group.collapsible).toBe(true)
+      expect(group.collapsed).toBe(false)
+    })
+
+    it('starts closed, and can be opened, when the resource says collapsed', () => {
+      const group = SchemaService.getNestedGroups(res({ groups: { seo: { collapsed: true } } }), flat('seo.a', 'seo.b'), 0)[0]
+      expect(group.collapsible).toBe(true)
+      expect(group.collapsed).toBe(true)
+    })
+
+    it('stays open when it is collapsed but says it cannot be collapsible', () => {
+      const group = SchemaService.getNestedGroups(res({ groups: { seo: { collapsed: true, collapsible: false } } }), flat('seo.a', 'seo.b'), 0)[0]
+      expect(group.collapsible).toBe(false)
+      expect(group.collapsed).toBe(false)
+    })
+
+    it('gives a group the lines of its layout, with its fields on them', () => {
+      const groups = { seo: { layout: { lines: [{ slots: 2, fields: [{ model: 'a' }, { model: 'b' }] }] } } }
+      const group = SchemaService.getNestedGroups(res({ groups }), flat('seo.a', 'seo.b', 'seo.c'), 0)[0]
+      expect(group.groupOptions.layout.lines.map((line) => line.fields.map((field) => field.model))).toEqual([['seo.a', 'seo.b'], ['seo.c']])
+      expect(group.groupOptions.fields).toHaveLength(3)
+    })
+
+    it('says what a group inside a group is by its whole path', () => {
+      TranslateService.dict.enUS.TL_TEST_PROFILES = 'Online profiles'
+      const groups = {
+        'a.b': { label: 'TL_TEST_PROFILES', collapsed: true, layout: { lines: [{ fields: [{ model: 'c' }, { model: 'd' }] }] } },
+        // (the last part alone does not name it)
+        b: { label: 'not this' }
+      }
+      const outer = SchemaService.getNestedGroups(res({ groups }), flat('a.b.c', 'a.b.d', 'a.e'), 0)[0]
+      expect(outer.collapsible).toBe(false)
+      const inner = outer.groupOptions.fields[0]
+      expect(inner.label).toBe('Online profiles')
+      expect(inner.collapsed).toBe(true)
+      expect(inner.groupOptions.layout.lines[0].fields.map((field) => field.model)).toEqual(['a.b.c', 'a.b.d'])
+    })
+
+    it('starts the path of a group at its own key whether the path given is nothing or null (a block gives null)', () => {
+      const groups = { 'a.b': { label: 'Inner' } }
+      for (const path of [undefined, null]) {
+        const outer = SchemaService.getNestedGroups(res({ groups }), flat('a.b.c', 'a.b.d', 'a.e'), 0, path)[0]
+        expect(outer.groupOptions.fields[0].label).toBe('Inner')
+      }
+    })
+
+    it('places the fields of a block, whose keys start with a prefix', () => {
+      const groups = { a: { layout: { lines: [{ fields: [{ model: 'y' }, { model: 'x' }] }] } } }
+      const group = SchemaService.getNestedGroups(res({ groups }), flat('block.a.x', 'block.a.y'), 0, undefined, 'block.')[0]
+      expect(group.groupOptions.layout.lines[0].fields.map((field) => field.model)).toEqual(['block.a.y', 'block.a.x'])
+    })
+
     it('warns about a field that is declared twice, and shows it once', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const result = SchemaService.getNestedGroups(res(), flat('title', 'title'), 0)

@@ -102,11 +102,15 @@ One detail: when a text or number field fails its own rules (for example an empt
 
 ## Jump to a field
 
-The list button in the top bar of the record form opens **Jump to field**: one row for each field of the form, in the order of the form. A click scrolls to the field and tints it for a moment, a little past its edges, so the eye finds it (with reduced motion on, it scrolls without animation and the tint stays for the same time).
+The list button in the top bar of the record form opens **Jump to field**: one row for each field of the form, in the order of the form; a field in a group is named after its groups (`Address · City`). A click scrolls to the field and tints it for a moment, a little past its edges, so the eye finds it (with reduced motion on, it scrolls without animation and the tint stays for the same time).
 
 - A required field that is still empty has a red mark, and a field that changed since the record was loaded or saved has an amber dot, the same dot as on its label.
 - Under a [paragraph field](fields/paragraph.md) there is a row for each of its blocks, in the order they have now, named by the type and the first text the block holds (`Half · News`), or by the type and its place (`Half 3`) when it holds none. Under each block there is a row for each of its fields. A click scrolls to that block or field. A block or field that changed has the amber dot, and so does the paragraph field around it. A block that moved to another place counts as changed.
 - Blocks inside a block are not listed.
+
+The menu opens on a search box. Type some letters of a name, in order, and only the rows that hold them stay, the best match first, with the letters marked (`ctry` finds `Address · Country`; the fields of a block are searched with the name of their block in front, so `news head` finds the Heading of the block named `Tile · News`). The arrow keys move over the rows, Enter goes to the row, Escape closes the menu, and with nothing typed every row is there, in the order of the form. On a touch screen the box is not focused when the menu opens, so the keyboard does not cover the rows.
+
+**Ctrl+J** (Cmd+J on a Mac) opens the menu from anywhere in the form, inside a text box too, and closes it when it is open: type, press Enter, and the form is at the field. A field in a group that is closed opens the group.
 
 The button is there on every form, long or short.
 
@@ -126,9 +130,53 @@ The admin runs its rules on blur and when Create/Save is clicked; an invalid fie
 
 The server stores what it receives, so if you write over REST, validate your own input.
 
+## Groups
+
+Fields whose keys share a first part, `address.city`, `address.postcode`, are stored in one object, `{ address: { city, postcode } }`, and drawn together in a box under a title. A key with more parts makes a group inside a group (`social.profiles.github`). A first part that only one field has makes no group: that field stays where it is, with its key.
+
+![A form with groups: Contact, always open; Online, which started closed and was opened, with the group Profiles inside it; and Address, closed](../ui/form-groups-light.png)
+
+The `groups` of the resource say more of each group, by its dotted path. Every key is optional:
+
+```js
+module.exports = {
+  schema: [
+    { field: 'address.street', input: 'string', label: 'Street' },
+    { field: 'address.number', input: 'string', label: 'Number' },
+    { field: 'address.city', input: 'string', label: 'City' },
+    { field: 'social.website', input: 'url', label: 'Website' },
+    { field: 'social.profiles.github', input: 'string', label: 'GitHub' }
+  ],
+  groups: {
+    address: {
+      label: 'Address',
+      collapsible: true,
+      layout: { lines: [{ slots: 4, fields: [{ model: 'street', width: 3 }, { model: 'number' }] }, { fields: [{ model: 'city' }] }] }
+    },
+    social: { label: 'Online', collapsed: true },
+    'social.profiles': { label: 'Profiles', collapsible: true }
+  }
+}
+```
+
+| Key | Meaning |
+|---|---|
+| `label` | The title: a string, a translation key or one text per language. The first part of the key (`address`) when left out. |
+| `collapsible` | `true` makes the title a button that closes and opens the group (a chevron turns, and a screen reader hears whether it is expanded). `false` when left out, except that `collapsed: true` makes it `true`; say `collapsible: false` to turn that off. |
+| `collapsed` | `true` starts the group closed. The group is closed every time the record is opened: what the person opened is not remembered. |
+| `layout` | Its fields in lines, as in [Form layout](FORM_LAYOUT.md): `lines`, each with `slots` and `fields` of a `model` and a `width`. A field is named by its key inside the group (`city` for `address.city`), or by its whole key; a group inside it by its last part (`profiles`). A field in no line is added at the end, each on a line of its own, and one that is not in the group is ignored, and the console reports it. |
+
+The path of a group inside a group is the whole key up to it, in quotes: `'social.profiles'`.
+
+A closed group keeps its fields: they are checked and saved like the others. A closed group opens by itself when a field in it is wrong at a save, or when [Jump to field](#jump-to-a-field) goes to one of its fields, so that an error is never out of sight. Its lines keep their fields side by side only where the editor is at least 480px wide, as in a form layout, and the bar of a group that opens is 44px tall on a touch screen.
+
+The layout of the resource (`layout` at its top) places a group like a field, by its first part: `{ slots: 2, fields: [{ model: 'address' }, { model: 'social' }] }` puts two groups side by side, and a group no line names goes at the end. The fields inside a group are placed by the `layout` of that group, not by the one of the resource.
+
+A block type has its fields in groups the same way: its file (`resources/paragraphs/block_contact.js`) has the `groups` next to its `schema`, and the block shows them, closed groups included. A block type with its own `layout` places a group by its first part as well.
+
 ## Nested and other notes
 
-- Nested fields: `{ label: 'City', field: 'address.city', input: 'string' }` stores `{ address: { city: ... } }` and groups the fields under an `address` heading (`groups.address.label` in the resource sets its title).
+- Nested fields: `{ label: 'City', field: 'address.city', input: 'string' }` stores `{ address: { city: ... } }` and groups the fields under an `address` heading, as described in [Groups](#groups).
 - Import and sync files reference records of a `select` / `multiselect` source by their first `unique` field.
 - The look of the form is in the [Design system](../extending/DESIGN_SYSTEM.md); fields side by side in the form are in [Form layout](FORM_LAYOUT.md), and blocks side by side in a paragraph field in [Dynamic layout](DYNAMIC_LAYOUT.md).
 - A field label shows a small lock when the field is read-only. A disabled field has no icon: it is greyed out with a dashed border.

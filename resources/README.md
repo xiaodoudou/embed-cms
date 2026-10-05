@@ -28,6 +28,7 @@ real project: copy the field you need into your own resource.
 | Structured | `structured_data` | json, object |
 | Structured | `structured_blocks` | paragraph |
 | Structured | `structured_layout` | fields side by side in the record form, with `layout.lines` (see [FORM_LAYOUT.md](../docs/reference/FORM_LAYOUT.md)) |
+| Structured | `structured_groups` | groups of dotted fields (`contact.email`): a title, `collapsible`, `collapsed` and a `layout` of their own (see [FIELDS.md](../docs/reference/FIELDS.md#groups)) |
 | Structured | `structured_grid` | paragraph blocks side by side: 2 by 2, 3 by 3, mixed (see [DYNAMIC_LAYOUT.md](../docs/reference/DYNAMIC_LAYOUT.md)) |
 | Table | `table_view` | the table view (`view: 'table'`): one column per field |
 | Reference data | `reference_items` | target of the `source` examples |
@@ -40,4 +41,4 @@ Variations shown in each resource, where the type supports them:
 - validation: `regex`, `min` / `max`, `accept`, `maxCount`, `limit`
 - sources: a static array, labelled values, or another resource with `customLabel`
 
-Paragraph types live in `paragraphs/`: text, media, and a group block that nests the other two.
+Paragraph types live in `paragraphs/`: text, media, a group block that nests the other two, and a contact block whose fields are in groups (see [Groups](../docs/reference/FIELDS.md#groups)).

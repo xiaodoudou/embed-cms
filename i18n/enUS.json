@@ -432,6 +432,7 @@
     "TL_UNSAVED_CHANGES_HINT": "You have edits that are not saved yet. Create or Save keeps them, Discard drops them.",
     "TL_ALL_SAVED": "All changes saved",
     "TL_JUMP_TO": "Jump to field",
+    "TL_JUMP_TO_SEARCH": "Find a field",
     "TL_INCOMPLETE": "incomplete",
     "TL_FILTER_RESOURCES": "Filter resources",
     "TL_NO_MATCHING_RESOURCES": "No matching resources",

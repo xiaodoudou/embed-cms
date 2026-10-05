@@ -9,7 +9,7 @@ module.exports = {
   type: 'normal',
   schema: [
     { field: 'title', input: 'string', label: label('Title', '标题', 'Titre', 'ชื่อเรื่อง'), required: true, options: { hint: 'Required in every language. Names the record in lists' } },
-    { field: 'slug', input: 'transliterate', label: label('Slug', '别名', 'Identifiant', 'สลัก'), options: { valueFrom: 'title', hint: 'Made from the title of its language, and can be edited. One value per language' } },
+    { field: 'slug', input: 'transliterate', label: label('Slug', '别名', 'Identifiant', 'สลัก'), options: { valueFrom: 'title', readonly: false, hint: 'Made from the title of its language, and can be edited. One value per language' } },
     { field: 'summary', input: 'text', label: label('Summary', '摘要', 'Résumé', 'สรุป'), options: { hint: 'Optional. One value per language' } },
     { field: 'body', input: 'wysiwyg', label: label('Body', '正文', 'Contenu', 'เนื้อหา'), options: { hint: 'Rich text, one per language' } },
     { field: 'requiredBody', input: 'wysiwyg', label: label('Required body', '必填正文', 'Contenu obligatoire', 'เนื้อหาที่จำเป็น'), required: true, options: { hint: 'Required in every language: the switch shows where it is missing' } },

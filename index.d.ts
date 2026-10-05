@@ -284,6 +284,8 @@ declare module 'embed-cms' {
       importFromRemote?: boolean | Record<string, any>
       /** Turn the Excel export and import routes on */
       xlsx?: boolean
+      /** The folder of the translations of your project (`frFR.json`, a flat object of `TL_KEY: "text"`), put over the ones of the CMS. Default `./i18n`. */
+      i18n?: string
       /** Resource names anyone may read without a login */
       anonymousRead?: string[]
       /** Broadcast record changes over a websocket. Default `true`. */

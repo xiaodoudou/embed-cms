@@ -93,7 +93,23 @@ The `maps` option points the map at other servers, or turns it off:
 | `wsRecordUpdates` | `true` | Broadcast record changes over a websocket, so an open admin sees edits made elsewhere. |
 | `disableDarkMode` | `true` | With `true`, the login page and the admin are always light. With `false`, the login page follows the system's light or dark preference, and the admin follows each user's **Theme**, with a switch in the top bar (and the field of the user, which applies as soon as you save your own). |
 | `admin.language` | English only | The admin's languages: `{ "defaultLocale": "enUS", "locales": ["enUS", "zhCN"] }`. The older form `admin.config.language` is read too. Each user chooses one of them in the **Language** field of their user, and the admin opens in it (and its date pickers speak it); a user without one gets `defaultLocale`. There is no language switch in the app bar, and the field only offers the languages listed here. |
+| `i18n` | `./i18n` | The folder of your own translations of the admin, put over the ones of the CMS. See [Translations](#translations). |
 | `toolbarTitle` | not set | Text shown in the admin's top bar. A string, or one text per admin language: `{ "enUS": "Newsroom", "zhCN": "新闻室" }`. |
+
+## Translations
+
+The words of the admin (buttons, messages, the names of the languages of a resource) are in one file per language, a flat object of `TL_KEY: "text"`. The CMS has English (`enUS`) and Chinese (`zhCN`) in its own `i18n` folder. A project adds to them, or changes them, with files of its own in a folder named `i18n` next to `cms.json` (or the folder of the `i18n` option):
+
+```json
+// ./i18n/zhCN.json: only what is yours
+{ "TL_SEARCH": "查找", "TL_ARTICLES": "文章" }
+```
+
+- What the admin is given for a language is the words of the CMS with the ones of your file over them: say only what is yours, and a key that is in both takes your text. Your keys are the ones a resource names in `displayname`, `label` and `options.hint` (`label: 'TL_ARTICLES'`), and the ones of your plugin pages.
+- **A new language** is a new file: `./i18n/frFR.json`, then `admin.language: { "defaultLocale": "enUS", "locales": ["enUS", "frFR"] }`. A key that the file does not have is English, so a language can be added a page at a time. A language is named like `enUS`: two or three lower case letters and two capitals.
+- The names of the languages of a resource (the tabs of the record editor, the columns of the table) are the keys `TL_ENUS`, `TL_FRFR`, `TL_JAJP`... The CMS names English, Chinese, French, Thai, Japanese, Korean, German, Spanish, Portuguese (`ptBR`) and Vietnamese. A language that has no key is shown by its code (`itIT`): add `"TL_ITIT": "Italiano"` to your file to name it.
+- A file that is not a flat object of texts is not used, and the log says so; a value that is not a text is left out. The files are read again when they change, with no restart.
+- The words are served at `/admin/i18n/<language>.json`, to anybody who can open the admin (as the CMS files were before).
 
 ## Authentication
 

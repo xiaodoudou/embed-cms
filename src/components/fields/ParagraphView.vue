@@ -891,7 +891,7 @@
     }
   }
   .handle {
-    border-radius: 6px 6px 0 0 !important; /* follows the rounded border of the card (8px less its 2px border) */
+    border-radius: 6px 6px 0 0; /* follows the rounded border of the card (8px less its 2px border) */
     @include h5;
   }
   .file-item-handle {
@@ -981,6 +981,13 @@
 // the selector is specific enough to win over Vuetify's rules for the first child of a card
 .v-card.item > .v-card-title.paragraph-header {
   border-radius: 6px 6px 0 0;
+}
+// a block folded to its bar (while one is dragged, in the compact list, and the copy that follows the pointer) has no form under the bar: the bar is the whole card, and its bottom
+// corners follow the border too (square, they showed as a nub in the corners of the highlight of the block under the pointer)
+.paragraph-view.is-dragging .v-card.item > .v-card-title.paragraph-header,
+.paragraph-view.is-reordering .v-card.item > .v-card-title.paragraph-header,
+.sortable-fallback > .v-card-title.paragraph-header {
+  border-radius: 6px;
 }
 .paragraph-header {
   // a press on the bar (to move the pointer to a button, or for nothing) must not select the text around it

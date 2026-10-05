@@ -44,6 +44,7 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ### Fixed
 
+- **The calendar of a date field was cut off on a phone:** the popup opened inside the editor card, which clips what is outside it, so a date range lost its Cancel and Select buttons, a date with a time lost a month and the arrow back, and on a tablet the second month was cut at the right edge. The calendar now opens over the page, and in the middle of the screen on a touch screen; the box is as tall as a button there. See [docs/reference/fields/date.md](docs/reference/fields/date.md).
 - **The search box of the map of a geopoint field was flagged by the browser's accessibility check ("No label associated with a form field"):** it was a text field with a floating label that is for no input. It has a real label, hidden from sight, like the other fields, and a test checks that its label and the element its name points at are there.
 - **The longitude box of a geopoint field was named by an element that was not there:** the browser's accessibility check listed an `aria-labelledby` that matched no id for every geopoint field. The box has its label now, and a test checks that every label a geopoint field points at exists.
 - **The table showed the stored value of a select whose labels are in `options.labels`,** not the label (the form and the list showed the label). The table now reads the labels where the form does.

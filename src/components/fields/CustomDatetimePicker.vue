@@ -17,6 +17,7 @@
           :input-attrs="{ clearable: !locked }"
           :readonly="isReadonly"
           :disabled="isDisabled"
+          teleport :centered="onTouchScreen"
           :aria-labels="{input: schema.label}"
           model-type="timestamp"
           @focus="onFieldFocus(true)" @blur="onFieldFocus(false)"
@@ -48,6 +49,10 @@
       customDatetimePickerOptions: { type: Object, default: () => ({}) }
     },
     computed: {
+      /** @returns {boolean} a finger, not a mouse: the calendar opens in the middle of the screen, over the page, instead of under the box */
+      onTouchScreen() {
+        return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(pointer: coarse)').matches
+      },
       /** @returns {string} customDatetimePickerOptions.placeholder, else YYYY-MM-DD with a warning */
       placeholder() {
         const placeholder = _.get(this.schema, 'customDatetimePickerOptions.placeholder', false)
@@ -193,6 +198,13 @@
       border-color: var(--cms-primary);
       box-shadow: 0 0 0 3px var(--cms-field-ring);
       outline: none;
+    }
+  }
+
+  // a finger needs the box as tall as a button
+  @media (pointer: coarse) {
+    .dp--input {
+      height: var(--cms-touch-target);
     }
   }
 

@@ -70,4 +70,5 @@ A **timestamp in milliseconds since the Unix epoch** (a number), `{ enUS, zhCN }
 
 - UI: the required check only; there is no format error message.
 - Clearing with the `x` button empties the value.
+- On a touch screen the calendar opens in the middle of the screen, over the page, instead of under the box, and the box is as tall as a button (44 px). The same goes for `time`, `datetime` and [daterange](daterange.md).
 - Server: only `unique`; any value sent over REST is stored.

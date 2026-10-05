@@ -384,7 +384,8 @@ a {
 }
 
 @media (pointer: coarse) {
-  .v-btn {
+  .v-btn,
+  .v-btn--icon.v-btn--size-default {
     --cms-btn-h: var(--cms-touch-target);
   }
 }

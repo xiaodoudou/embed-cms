@@ -246,8 +246,9 @@
       gap: var(--cms-space-1);
     }
     .search-trigger.v-btn {
-      width: 40px;
-      min-width: 40px;
+      // as wide as a button a finger can hit
+      width: var(--cms-touch-target);
+      min-width: var(--cms-touch-target);
       padding: 0;
       justify-content: center;
       border-radius: var(--cms-radius-pill) !important;

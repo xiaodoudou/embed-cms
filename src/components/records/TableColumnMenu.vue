@@ -87,7 +87,7 @@
        * @returns {string}
        */
       localeLabel (locale) {
-        return TranslateService.get(`TL_${_.toUpper(locale)}`)
+        return TranslateService.localeName(locale)
       }
     }
   }

@@ -127,7 +127,7 @@
        * @returns {string} its translated name
        */
       getLocaleTranslation (locale) {
-        return TranslateService.get('TL_' + locale.toUpperCase())
+        return TranslateService.localeName(locale)
       },
       // with two languages the switch is a toggle: a click on either button, or anywhere on the switch, goes to the other one
       onClickLocale (locale) {

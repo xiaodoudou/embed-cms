@@ -27,7 +27,7 @@ class SchemaService {
     const fields = _.map(schema, (field) => {
       const isLocalised = resource.locales && (field.localised || _.isUndefined(field.localised))
       const name = field.label && TranslateService.get(field.label)
-      const label = `${name || field.field}${isLocalised ? ` (${TranslateService.get(`TL_${locale.toUpperCase()}`)})` : ''}`
+      const label = `${name || field.field}${isLocalised ? ` (${TranslateService.localeName(locale)})` : ''}`
       const schema = _.extend({}, this.typeMapper[field.input], {
         input: field.input,
         label,

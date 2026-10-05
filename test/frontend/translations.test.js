@@ -71,6 +71,22 @@ describe('translations', () => {
     expect(missing).toEqual([])
   })
 
+  it('names every language of the catalogue, in both languages', () => {
+    const languages = new Set()
+    for (const dir of [path.join(ROOT, 'resources'), path.join(ROOT, 'resources', 'paragraphs')]) {
+      for (const file of fs.readdirSync(dir).filter((name) => name.endsWith('.js'))) {
+        const text = fs.readFileSync(path.join(dir, file), 'utf8')
+        for (const list of text.matchAll(/locales:\s*\[([^\]]*)\]/g)) {
+          for (const name of list[1].matchAll(/'([a-z]{2,3}[A-Z]{2})'/g)) languages.add(name[1])
+        }
+      }
+    }
+    expect([...languages].length).toBeGreaterThanOrEqual(10)
+    // (and a broad list besides: a project names its languages with these)
+    const missing = [...languages].filter((name) => !(`TL_${name.toUpperCase()}` in en) || !(`TL_${name.toUpperCase()}` in zh))
+    expect(missing, 'add TL_<LANGUAGE> to i18n/enUS.json and i18n/zhCN.json').toEqual([])
+  })
+
   it('has the same keys in English and in Chinese', () => {
     expect(Object.keys(en).filter((key) => !(key in zh)), 'in English only').toEqual([])
     expect(Object.keys(zh).filter((key) => !(key in en)), 'in Chinese only').toEqual([])

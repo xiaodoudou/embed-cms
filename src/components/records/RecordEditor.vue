@@ -325,7 +325,7 @@
        * @returns {string} its translated name
        */
       getLocaleTranslation (locale) {
-        return TranslateService.get('TL_' + locale.toUpperCase())
+        return TranslateService.localeName(locale)
       },
       /**
        * @param {Object|HTMLElement} elem a component or an element
@@ -707,7 +707,7 @@
         const firstLocale = _.find(this.resource.locales, (locale) => _.has(this.missing.byLocale, locale))
         if (firstLocale) {
           const fields = this.missing.byLocale[firstLocale]
-          const text = TranslateService.get(fields.length === 1 ? 'TL_REQUIRED_MISSING_IN_LOCALE_ONE' : 'TL_REQUIRED_MISSING_IN_LOCALE_MANY', { num: fields.length, locale: TranslateService.get('TL_' + firstLocale.toUpperCase()) })
+          const text = TranslateService.get(fields.length === 1 ? 'TL_REQUIRED_MISSING_IN_LOCALE_ONE' : 'TL_REQUIRED_MISSING_IN_LOCALE_MANY', { num: fields.length, locale: TranslateService.localeName(firstLocale) })
           return `${text}: ${this.namesOfFields(fields)}`
         }
         const fields = this.missing.shared

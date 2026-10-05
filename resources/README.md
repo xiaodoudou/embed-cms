@@ -10,6 +10,7 @@ real project: copy the field you need into your own resource.
 | Text | `text_strings` | string, transliterate |
 | Text | `text_long` | text, wysiwyg, code |
 | Text | `text_formats` | email, url, password |
+| Text | `languages_ten` | the most languages a resource can show: ten (a real project has two to four) |
 | Text | `languages` | text, rich text, tags, selects, image and switch in four languages (English, Chinese, French, Thai) |
 | Numbers | `numbers` | number, integer, double |
 | Numbers | `numbers_quantities` | rating, duration |

@@ -59,6 +59,16 @@ class TranslateService {
     return ''
   }
 
+  /**
+   * @param {string} locale the name of a language of a resource (`frFR`)
+   * @returns {string} what the admin calls it (`TL_FRFR` in the dictionary), else the name itself: a language nobody has named yet is shown by its code, not by a key
+   */
+  localeName (locale) {
+    const key = `TL_${_.toUpper(locale)}`
+    const name = this.get(key)
+    return name === key ? _.toString(locale) : name
+  }
+
   /** @param {string} key logged, once the dictionary is loaded */
   translationNotFound(key) {
     // nothing is missing while the dictionary is still loading

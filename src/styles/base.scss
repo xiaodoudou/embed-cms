@@ -994,18 +994,6 @@ a {
   padding-inline: 0;
 }
 
-/* a finger: the box is as tall as the rows under it */
-@media (pointer: coarse) {
-  .v-menu .outline-search .v-input {
-    --v-input-control-height: var(--cms-touch-target);
-  }
-
-  .v-menu .outline-search .v-field__input {
-    min-height: var(--cms-touch-target);
-    font-size: var(--cms-fs-base);
-  }
-}
-
 .v-menu .outline-search .v-field__prepend-inner > .v-icon,
 .v-menu .outline-search .v-field__clearable > .v-icon {
   font-size: 16px;

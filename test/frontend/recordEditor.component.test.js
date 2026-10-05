@@ -460,6 +460,35 @@ describe('RecordEditor', () => {
         expect(wrapper.vm.jumpOpen).toBe(true)
       })
 
+      it('has the search box on a computer, and the list alone on a phone or a touch screen', async () => {
+        const original = window.matchMedia
+        const screen = (matching) => { window.matchMedia = (query) => ({ matches: matching(query), media: query, addEventListener () {}, removeEventListener () {}, addListener () {}, removeListener () {} }) }
+        try {
+          screen(() => false)
+          await editor({ _local: true }, { resource: withBlocks })
+          wrapper.vm.jumpOpen = true
+          await wrapper.vm.$nextTick()
+          expect(wrapper.vm.jumpSearchShown).toBe(true)
+          expect(document.querySelector('.outline-search')).not.toBeNull()
+          wrapper.unmount()
+          for (const matching of [(query) => query.includes('max-width'), (query) => query === '(pointer: coarse)']) {
+            screen(matching)
+            await editor({ _local: true }, { resource: withBlocks })
+            wrapper.vm.jumpOpen = true
+            await wrapper.vm.$nextTick()
+            expect(wrapper.vm.jumpSearchShown).toBe(false)
+            expect(document.querySelector('.outline-search')).toBeNull()
+            expect(document.querySelectorAll('.outline-list .v-list-item').length).toBeGreaterThan(0)
+            // (a tap sends a mouse move: it marks no row)
+            document.getElementById(`${wrapper.vm.randomId}-jump-row-1`).dispatchEvent(new MouseEvent('mousemove', { bubbles: true }))
+            expect(wrapper.vm.jumpHighlight).toBe(-1)
+            wrapper.unmount()
+          }
+        } finally {
+          window.matchMedia = original
+        }
+      })
+
       it('says the shortcut in the title of its button', async () => {
         await editor({ _local: true }, { resource: withBlocks })
         expect(wrapper.get('.jump-to').attributes('title')).toBe('Jump to field (Ctrl J)')

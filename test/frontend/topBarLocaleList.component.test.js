@@ -223,6 +223,33 @@ describe('TopBarLocaleList on a phone (one button instead of the tabs)', () => {
     expect(compact().exists()).toBe(true)
   })
 
+  it('shows the arrow of Back alone, with its name for a screen reader', () => {
+    phone()
+    list()
+    expect(wrapper.get('.back').classes()).toContain('is-icon')
+    expect(wrapper.find('.back-text').exists()).toBe(false)
+    expect(wrapper.get('.back').attributes('aria-label')).toBe('Back')
+    wrapper.unmount()
+    phone(false)
+    list()
+    expect(wrapper.get('.back').classes()).not.toContain('is-icon')
+    expect(wrapper.get('.back-text').text()).toBe('Back')
+  })
+
+  it('also turns to the button, off a phone, when the tabs do not fit the bar', async () => {
+    phone(false)
+    list({ locales: ['enUS', 'zhCN', 'frFR', 'thTH', 'jaJP', 'koKR', 'deDE', 'esES', 'ptBR', 'viVN'] })
+    expect(wrapper.find('.locales').exists()).toBe(true)
+    wrapper.vm.measure(674)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.locales').exists()).toBe(false)
+    expect(compact().exists()).toBe(true)
+    expect(wrapper.get('.back').classes()).not.toContain('is-icon')
+    wrapper.vm.measure(2000)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.locales').exists()).toBe(true)
+  })
+
   it('has only the back button and the one language for a single language', () => {
     phone()
     list({ locales: ['enUS'] })

@@ -74,6 +74,10 @@
 }
 
 // ---- Record screens ----------------------------------------------------------
+// (Discard is its text on a computer and its icon on a phone, see the end of this file)
+.top-bar .discard .discard-icon {
+  display: none;
+}
 .top-bar {
   display: flex;
   align-items: center;
@@ -445,28 +449,45 @@ body.cms-dragging {
     box-shadow: none;
   }
 
+  // One line when it can: the arrow of Back, the language, and at the right the jump menu, Discard as its icon, and Save. "Unsaved changes" is not written here: the Discard
+  // button, which is there while there are changes, and the dot on the language say it. What is missing after a failed save has a row of its own under the bar.
   .record-editor .top-bar {
     min-height: 0;
     padding: var(--cms-space-2) var(--cms-space-3);
     gap: var(--cms-space-2);
 
-    // "Unsaved changes" is only its dot here: the Discard button and the dot on the language say the rest
-    .editor-status {
-      flex: 0 0 auto;
+    .top-bar-locale-list {
+      flex: 0 1 auto;
     }
-    .status-saved {
+    .editor-status {
+      display: contents;
+    }
+    .status-saved,
+    .status-dirty {
       display: none;
     }
-    .status-dirty {
-      gap: 0;
-      padding: 0;
-      border: 0;
-      background: none;
-      font-size: 0;
+    // after a failed save: a row of its own under the bar, the width of the screen, where the pill reads whole and is easy to hit
+    .status-missing {
+      order: 1;
+      flex: 1 1 100%;
+      justify-content: center;
+      min-height: 36px;
+      margin-left: 0;
     }
-    .status-dot {
-      width: 10px;
-      height: 10px;
+    .buttons {
+      flex: 0 0 auto;
+      gap: var(--cms-space-2);
+      margin-left: auto;
+    }
+    .discard {
+      min-width: var(--cms-touch-target);
+      padding: 0;
+    }
+    .discard-text {
+      display: none;
+    }
+    .discard .discard-icon {
+      display: inline-flex;
     }
   }
 }

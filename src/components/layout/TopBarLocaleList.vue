@@ -1,14 +1,15 @@
 <template>
   <div class="top-bar-locale-list" :class="{hidden: !locales || locales.length === 0}">
-    <v-btn class="back" elevation="0" variant="text" size="small" :aria-label="$filters.translate('TL_BACK')" @click="back">
-      <v-icon icon="$chevronLeft" /> {{ $filters.translate("TL_BACK") }}
+    <!-- on a phone the arrow alone: the bar of the editor then fits one line -->
+    <v-btn class="back" :class="{ 'is-icon': phone }" elevation="0" variant="text" size="small" :aria-label="$filters.translate('TL_BACK')" :title="$filters.translate('TL_BACK')" @click="back">
+      <v-icon icon="$chevronLeft" /><span v-if="!phone" class="back-text"> {{ $filters.translate("TL_BACK") }}</span>
     </v-btn>
     <!-- a phone: one button with the language, which changes it (two languages), or opens the list of them: the tabs of ten languages would take the screen -->
     <template v-if="compact && locales && locales.length > 1">
       <v-btn
         v-if="locales.length === 2" class="locale-compact" variant="outlined" :aria-label="switchLabel" :title="$filters.translate('TL_LOCALE_LEGEND')" @click="toggleLocale"
       >
-        <v-icon start icon="$translate" />{{ getLocaleTranslation(locale) }}
+        {{ getLocaleTranslation(locale) }}
         <span v-if="isDirty(locale)" class="locale-dirty" aria-hidden="true" />
         <span v-if="missingCount(locale) > 0" class="locale-missing" aria-hidden="true"><span class="locale-missing-icon">!</span></span>
         <span v-if="othersNeedAttention" class="locale-others" aria-hidden="true" />
@@ -20,7 +21,7 @@
             v-bind="props" class="locale-compact" variant="outlined" aria-haspopup="menu" :aria-expanded="menuOpen ? 'true' : 'false'" :aria-label="menuLabel"
             :title="$filters.translate('TL_LOCALE_LEGEND')"
           >
-            <v-icon start icon="$translate" />{{ getLocaleTranslation(locale) }}
+            {{ getLocaleTranslation(locale) }}
             <span v-if="isDirty(locale)" class="locale-dirty" aria-hidden="true" />
             <span v-if="missingCount(locale) > 0" class="locale-missing" aria-hidden="true"><span class="locale-missing-icon">!</span></span>
             <span v-if="othersNeedAttention" class="locale-others" aria-hidden="true" />
@@ -73,6 +74,7 @@
   import _ from 'lodash'
   import TranslateService from '@s/TranslateService'
   import { PHONE_QUERY } from '@u/phoneLayout'
+  import { tabsFit } from '@u/localeBar'
 
   export default {
     props: {
@@ -84,9 +86,13 @@
       missing: { type: Object, default: () => ({}) }
     },
     data () {
-      return { indicatorStyle: { opacity: 0 }, indicatorReady: false, compact: this.onPhone(), menuOpen: false }
+      return { indicatorStyle: { opacity: 0 }, indicatorReady: false, phone: this.onPhone(), narrow: false, menuOpen: false }
     },
     computed: {
+      /** @returns {boolean} one button instead of the tabs: on a phone, and where the tabs of the languages do not fit the bar */
+      compact () {
+        return this.phone || this.narrow
+      },
       /** @returns {boolean} another language than the one shown has unsaved edits or a missing required field: the button says so with a dot */
       othersNeedAttention () {
         return _.some(this.locales, (item) => item !== this.locale && (this.isDirty(item) || this.missingCount(item) > 0))
@@ -106,6 +112,7 @@
         this.$nextTick(this.moveIndicator)
       },
       locales () {
+        this.measure()
         this.$nextTick(this.moveIndicator)
       },
       // a dot or a count on a button changes its width
@@ -124,10 +131,15 @@
         this.phoneMedia = window.matchMedia(PHONE_QUERY)
         this.phoneMedia.addEventListener('change', this.onPhoneChange)
       }
+      this.measure()
       this.moveIndicator()
-      if (typeof ResizeObserver !== 'undefined' && this.$refs.group) {
-        this.resizeObserver = new ResizeObserver(() => this.moveIndicator())
-        this.resizeObserver.observe(this.$refs.group)
+      if (typeof ResizeObserver !== 'undefined') {
+        // the bar (the tabs, or the button that took their place, and the other things of the bar change with it)
+        this.resizeObserver = new ResizeObserver(() => {
+          this.measure()
+          this.moveIndicator()
+        })
+        this.resizeObserver.observe(this.$el.parentElement || this.$el)
       }
       // the box appears where it belongs, then moves from there: no slide in from the corner on the first paint
       requestAnimationFrame(() => {
@@ -143,13 +155,21 @@
       }
     },
     methods: {
+      /**
+       * Looks at the bar: the tabs stay when the languages fit it.
+       * @param {number} [width] the width of the bar; measured when it is not given
+       */
+      measure (width) {
+        const bar = this.$el && this.$el.parentElement
+        this.narrow = !tabsFit(_.size(this.locales), _.isUndefined(width) ? _.get(bar, 'clientWidth', 0) : width)
+      },
       /** @returns {boolean} the screen is a phone's (see utils/phoneLayout.js) */
       onPhone () {
         return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia(PHONE_QUERY).matches
       },
       /** The screen became a phone, or stopped being one. */
       onPhoneChange () {
-        this.compact = this.phoneMedia.matches
+        this.phone = this.phoneMedia.matches
         this.$nextTick(this.moveIndicator)
       },
       /** @param {string} item the language chosen in the list */
@@ -303,13 +323,21 @@
   .locale-compact {
     position: relative;
     min-height: var(--cms-touch-target);
-    padding: 0 var(--cms-space-3);
+    padding: 0 var(--cms-space-2) 0 var(--cms-space-3);
     border-color: var(--cms-border-strong);
     background: var(--cms-surface-2);
     color: var(--cms-text);
     font-weight: var(--cms-fw-semibold);
     text-transform: none;
     letter-spacing: 0;
+  }
+
+  // the arrow of Back alone, as tall and as wide as a finger
+  .back.is-icon {
+    min-width: var(--cms-touch-target);
+    width: var(--cms-touch-target);
+    height: var(--cms-touch-target);
+    padding: 0;
   }
 
   &.hidden {

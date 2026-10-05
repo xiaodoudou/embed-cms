@@ -1118,14 +1118,27 @@
       }
     }
 
-    /* Responsive layout for header */
+    /* On a phone the type and the buttons share a row (the bar sticks over the blocks, so it stays one line): the type takes what the buttons leave, and the buttons go
+       to a row of their own when there is no room for them beside it */
     @media (max-width: 768px) {
-      flex-direction: column;
+      flex-wrap: wrap;
+      align-items: center;
       gap: 8px;
 
+      > .v-input {
+        flex: 1 1 140px;
+        min-width: 0;
+      }
       .add-btn-wrapper {
-        width: 100%;
-        justify-content: center;
+        flex: 0 1 auto;
+        flex-wrap: wrap;
+        gap: 8px;
+        &:has(.add-multiple-items) {
+          flex: 1 1 100%;
+        }
+        .v-btn {
+          flex: 1 1 auto;
+        }
       }
     }
   }
@@ -1245,6 +1258,21 @@
     }
     >.paragraph-header-bar {
       top: calc((var(--paragraph-level, 0) + 1) * 80px);
+    }
+  }
+}
+</style>
+<style lang="scss">
+// a finger: the bar of a block is as tall as a button, and the grip that drags it is a button-sized target (the Reorder button moves blocks without dragging)
+@media (pointer: coarse) {
+  .paragraph-view .paragraph-header {
+    height: var(--cms-touch-target);
+    .drag-grip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--cms-touch-target);
+      height: var(--cms-touch-target);
     }
   }
 }

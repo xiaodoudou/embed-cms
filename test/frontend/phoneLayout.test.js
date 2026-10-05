@@ -20,8 +20,9 @@ describe('the phone layout', () => {
   })
 
   it('is the same query in the stylesheets and in App.vue, which decides how the navigation is shown', () => {
-    const app = /const DRAWER_QUERY = '([^']+)'/.exec(read('src/components/App.vue'))[1]
-    expect(app).toBe(scssQuery('phone-query'))
+    const code = /export const PHONE_QUERY = '([^']+)'/.exec(read('src/utils/phoneLayout.js'))[1]
+    expect(code).toBe(scssQuery('phone-query'))
+    expect(read('src/components/App.vue')).toContain('const DRAWER_QUERY = PHONE_QUERY')
   })
 
   it('is written once: no stylesheet spells its width out again', () => {

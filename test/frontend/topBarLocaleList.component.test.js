@@ -7,8 +7,8 @@ TranslateService.dict.enUS.TL_ENUS = 'English'
 TranslateService.dict.enUS.TL_ZHCN = 'Chinese'
 
 let wrapper
-const list = (props = {}) => {
-  wrapper = mountComponent(TopBarLocaleList, { props: { locales: ['enUS', 'zhCN'], locale: 'enUS', ...props } })
+const list = ({ attachTo, ...props } = {}) => {
+  wrapper = mountComponent(TopBarLocaleList, { props: { locales: ['enUS', 'zhCN'], locale: 'enUS', ...props }, attachTo })
   return wrapper
 }
 const buttons = () => wrapper.findAll('.locale-btn')
@@ -133,5 +133,100 @@ describe('TopBarLocaleList (the back button and the language switch)', () => {
     list({ selectLocale })
     wrapper.vm.toggleLocale()
     expect(selectLocale).toHaveBeenCalledWith('zhCN')
+  })
+})
+
+describe('TopBarLocaleList on a phone (one button instead of the tabs)', () => {
+  const original = window.matchMedia
+  const phone = (matches = true) => {
+    window.matchMedia = (query) => ({ matches: matches && query === '(max-width: 767.98px), (pointer: coarse) and (max-height: 500px)', media: query, addEventListener () {}, removeEventListener () {} })
+  }
+  afterEach(() => {
+    window.matchMedia = original
+  })
+  const compact = () => wrapper.find('.locale-compact')
+
+  it('has no tabs and no indicator: the language is one button', () => {
+    phone()
+    list({ locales: ['enUS', 'zhCN', 'frFR'] })
+    expect(wrapper.find('.locales').exists()).toBe(false)
+    expect(compact().exists()).toBe(true)
+    expect(compact().text()).toContain('English')
+  })
+
+  it('keeps the tabs on a screen that is not a phone', () => {
+    phone(false)
+    list({ locales: ['enUS', 'zhCN', 'frFR'] })
+    expect(wrapper.find('.locales').exists()).toBe(true)
+    expect(compact().exists()).toBe(false)
+  })
+
+  it('changes the language with a press, and says to which, when there are two', async () => {
+    phone()
+    const selectLocale = vi.fn()
+    list({ selectLocale })
+    expect(compact().attributes('aria-label')).toBe('Content language: English. Switch to Chinese')
+    await compact().trigger('click')
+    expect(selectLocale).toHaveBeenCalledWith('zhCN')
+    await wrapper.setProps({ locale: 'zhCN' })
+    expect(compact().attributes('aria-label')).toBe('Content language: Chinese. Switch to English')
+    await compact().trigger('click')
+    expect(selectLocale).toHaveBeenLastCalledWith('enUS')
+  })
+
+  it('opens the list of languages when there are more than two, and chooses one', async () => {
+    phone()
+    const selectLocale = vi.fn()
+    list({ selectLocale, locales: ['enUS', 'zhCN', 'frFR', 'jaJP'], attachTo: document.body })
+    expect(compact().attributes('aria-haspopup')).toBe('menu')
+    expect(compact().attributes('aria-expanded')).toBe('false')
+    await compact().trigger('click')
+    await wrapper.vm.$nextTick()
+    const items = [...document.body.querySelectorAll('.locale-menu .locale-item')]
+    expect(items.map((item) => item.textContent.trim())).toEqual(['English', 'Chinese', 'frFR', 'jaJP'])
+    expect(items[0].classList.contains('selected')).toBe(true)
+    items[3].click()
+    expect(selectLocale).toHaveBeenCalledWith('jaJP')
+  })
+
+  it('shows the markers of the language that is shown on the button, and of each one in the list', async () => {
+    phone()
+    list({ locales: ['enUS', 'zhCN', 'frFR'], dirtyLocales: ['enUS', 'frFR'], missing: { enUS: 1, frFR: 3 }, attachTo: document.body })
+    expect(compact().find('.locale-dirty').exists()).toBe(true)
+    expect(compact().find('.locale-missing').exists()).toBe(true)
+    await compact().trigger('click')
+    await wrapper.vm.$nextTick()
+    const french = [...document.body.querySelectorAll('.locale-menu .locale-item')][2]
+    expect(french.querySelector('.locale-dirty')).not.toBeNull()
+    expect(french.querySelector('.locale-missing-count').textContent).toBe('3')
+  })
+
+  it('puts a dot on the button when another language needs a look, and not when only the shown one does', async () => {
+    phone()
+    list({ locales: ['enUS', 'zhCN', 'frFR'], dirtyLocales: ['enUS'] })
+    expect(compact().find('.locale-others').exists()).toBe(false)
+    await wrapper.setProps({ dirtyLocales: ['frFR'] })
+    expect(compact().find('.locale-others').exists()).toBe(true)
+    expect(compact().attributes('aria-label')).toContain('Other languages have unsaved edits or missing fields')
+    await wrapper.setProps({ dirtyLocales: [], missing: { zhCN: 2 } })
+    expect(compact().find('.locale-others').exists()).toBe(true)
+  })
+
+  it('follows the screen when it becomes a phone', async () => {
+    const listeners = []
+    window.matchMedia = (query) => ({ matches: false, media: query, addEventListener: (type, fn) => listeners.push(fn), removeEventListener () {} })
+    list({ locales: ['enUS', 'zhCN', 'frFR'] })
+    expect(wrapper.find('.locales').exists()).toBe(true)
+    wrapper.vm.phoneMedia = { matches: true, removeEventListener () {} }
+    listeners.forEach((fn) => fn())
+    await wrapper.vm.$nextTick()
+    expect(compact().exists()).toBe(true)
+  })
+
+  it('has only the back button and the one language for a single language', () => {
+    phone()
+    list({ locales: ['enUS'] })
+    expect(compact().exists()).toBe(false)
+    expect(wrapper.find('.locales').exists()).toBe(true)
   })
 })

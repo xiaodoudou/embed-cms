@@ -396,6 +396,8 @@
     "TL_SWITCH_TO_DARK": "切换到深色主题",
     "TL_SWITCH_TO_LIGHT": "切换到浅色主题",
     "TL_LANGUAGE": "语言",
+    "TL_SWITCH_TO_LOCALE": "切换到{{ locale }}",
+    "TL_OTHER_LANGUAGES_ATTENTION": "其他语言有未保存的修改或缺少必填项",
     "TL_CONTENT_LANGUAGE": "内容语言",
     "TL_NEW_RECORD": "新建记录",
     "TL_EDIT_MODE": "编辑模式",

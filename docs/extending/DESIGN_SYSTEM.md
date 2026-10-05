@@ -196,6 +196,8 @@ WCAG AA text contrast, visible `:focus-visible` rings everywhere, forced-colors 
 
 On a phone (under 600px wide) the record editor keeps its room for the form: the breadcrumb is hidden (the Back button, the title and the app bar say where you are), the card has no margin and no border, and the action bar is two lines, with "Unsaved changes" shortened to its dot (the text stays for screen readers). The form gets 636px of an 812px screen, where it had 520px, and 224px of a 400px one (the keyboard up), where it had 148px. Tablets and computers keep the card.
 
+In a paragraph field, on a phone the type of block and the Add button share one row (Add multiple goes to a row of its own), the sticky bar stays one line over the blocks, and on a touch screen the bar of a block and its grip are 44px (the Reorder button moves blocks without dragging).
+
 ## Design choices
 
 - The dropdown type-ahead is the field's own input: there is no separate search box inside the menu.

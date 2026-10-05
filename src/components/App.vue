@@ -1026,6 +1026,11 @@
       font: inherit;
       cursor: pointer;
       border-radius: var(--cms-radius-sm);
+      // on a touch screen the hit area grows (to the touch target, with the line staying where it is), the line does not
+      @media (pointer: coarse) {
+        padding: var(--cms-space-3) var(--cms-space-2);
+        margin: calc(var(--cms-space-3) * -1) calc(var(--cms-space-2) * -1);
+      }
       &:hover {
         color: var(--cms-primary);
         text-decoration: underline;

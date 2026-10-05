@@ -192,7 +192,7 @@ To re-theme: change values in `tokens.scss` and the two colour maps at the top o
 
 ## Accessibility summary
 
-WCAG AA text contrast, visible `:focus-visible` rings everywhere, forced-colors fallback, skip link, `aria-label`s on icon buttons, `aria-pressed`/`aria-expanded`/`aria-current` on toggles and navigation, labelled inputs, `role="alert"` login errors, `prefers-reduced-motion` disables animations and the spinner rotation, 44px touch targets on coarse pointers.
+WCAG AA text contrast, visible `:focus-visible` rings everywhere, forced-colors fallback, skip link, `aria-label`s on icon buttons, `aria-pressed`/`aria-expanded`/`aria-current` on toggles and navigation, labelled inputs, `role="alert"` login errors, `prefers-reduced-motion` disables animations and the spinner rotation, 44px touch targets on coarse pointers (every button, including the icon buttons of the app bar, the toggles, the sort and copy-id buttons, the locale buttons, the search boxes and the date boxes; the breadcrumb links grow their hit area without moving), and 16px text in every input on coarse pointers, so that iOS does not zoom in on focus (`src/assets/scss/main.scss`, the touch block at its end).
 
 ## Design choices
 

@@ -352,3 +352,63 @@ body.cms-dragging {
   -webkit-user-select: none;
   pointer-events: none;
 }
+
+// ---- Touch screens -------------------------------------------------------------------------------------------------------
+// Targets of at least --cms-touch-target (the one for every v-btn is in styles/base.scss), and 16px text in every control so that iOS does
+// not zoom in on focus.
+@media (pointer: coarse) {
+  .v-application input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']),
+  .v-application textarea,
+  .v-application .v-field textarea.v-field__input {
+    font-size: var(--cms-fs-md);
+  }
+
+  .markdown-field .markdown-tab,
+  .record-list .record-list-top-bar .v-btn.new-record {
+    min-height: var(--cms-touch-target);
+    --cms-btn-h: var(--cms-touch-target);
+  }
+
+  // (doubled, to win over the rule of the component, which comes later)
+  .search-field.search-field {
+    height: var(--cms-touch-target);
+  }
+
+  .record-list {
+    .copy-id {
+      width: var(--cms-touch-target);
+      height: var(--cms-touch-target);
+    }
+    .records-top-bar .sort-button.v-btn {
+      --cms-btn-h: var(--cms-touch-target);
+    }
+    .toggle-mode-btn {
+      width: var(--cms-touch-target);
+      height: var(--cms-touch-target);
+    }
+    // the tile that slides under the two buttons
+    .toggle-view-mode::before {
+      width: var(--cms-touch-target);
+      height: var(--cms-touch-target);
+    }
+    .toggle-view-mode[data-pos='1']::before {
+      transform: translateX(calc(var(--cms-touch-target) + 2px));
+    }
+  }
+
+  .filter-chip,
+  .top-bar-locale-list .locale-btn {
+    min-height: var(--cms-touch-target);
+  }
+
+  // the buttons of a rating and a switch are drawn small and answer on a larger area
+  .rating-field .rating-item .rating-step {
+    top: calc(var(--cms-space-2) * -1);
+    bottom: calc(var(--cms-space-2) * -1);
+  }
+  .custom-checkbox .switch::after {
+    content: '';
+    position: absolute;
+    inset: calc(var(--cms-space-2) * -1) 0;
+  }
+}

@@ -4,10 +4,13 @@
       <h2 :id="titleId" class="geo-title">{{ $filters.translate('TL_GEOPOINT_MAP_TITLE') }}</h2>
       <div class="geo-body">
         <div class="geo-tools">
-          <v-text-field
-            v-if="config.search" v-model="query" class="geo-search" :label="$filters.translate('TL_GEOPOINT_SEARCH')" density="compact" variant="outlined" hide-details clearable
-            :disabled="status !== 'ready'" append-inner-icon="$magnify" autocomplete="off" @keydown.enter.prevent="onSearch" @click:append-inner="onSearch"
-          />
+          <div v-if="config.search" class="geo-search-box">
+            <label :id="`${titleId}-search-label`" :for="`${titleId}-search`" class="cms-visually-hidden">{{ $filters.translate('TL_GEOPOINT_SEARCH') }}</label>
+            <v-text-field
+              :id="`${titleId}-search`" v-model="query" class="geo-search" :placeholder="$filters.translate('TL_GEOPOINT_SEARCH')" density="compact" variant="outlined" hide-details clearable
+              :disabled="status !== 'ready'" append-inner-icon="$magnify" autocomplete="off" @keydown.enter.prevent="onSearch" @click:append-inner="onSearch"
+            />
+          </div>
         </div>
         <p v-if="searchMessage" class="geo-message" role="status">{{ searchMessage }}</p>
         <div class="geo-map">
@@ -202,7 +205,7 @@
     align-items: center;
     gap: var(--cms-space-3);
   }
-  .geo-search {
+  .geo-search-box {
     flex: 1 1 260px;
   }
   .geo-map {

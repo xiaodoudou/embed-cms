@@ -75,6 +75,18 @@ describe('GeoPickerDialog', () => {
     expect(adapter.setPoint).toHaveBeenCalledWith(PARIS, { pan: false })
   })
 
+  it('names its search box with a label that is there, not a floating one (a label for no input, or a name that points at nothing, is an accessibility error in the browser)', async () => {
+    await mount()
+    const box = body('.geo-search input')
+    expect(box.getAttribute('placeholder')).toBe('Search for a place')
+    expect(document.body.querySelector(`label[for="${box.id}"]`).textContent).toBe('Search for a place')
+    // (Vuetify points the box at the element with this id)
+    expect(document.getElementById(box.getAttribute('aria-labelledby'))).not.toBeNull()
+    for (const label of document.body.querySelectorAll('.geo-card label')) {
+      expect(label.getAttribute('for') || label.querySelector('input'), label.outerHTML).toBeTruthy()
+    }
+  })
+
   it('has a title, a stage with a name, and says it is loading until the map is there', async () => {
     createMapAdapter.mockReturnValue(new Promise(() => {}))
     await mount()

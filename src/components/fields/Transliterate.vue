@@ -47,7 +47,6 @@
       sourceValue() {
         const sourceField = this.getOpt('valueFrom')
         if (!sourceField) {
-          console.warn('Transliterate field requires options.valueFrom to be specified')
           return ''
         }
         const raw = _.get(this.model, sourceField, '')
@@ -95,6 +94,12 @@
             this.userHasEdited = false
           }
         }
+      }
+    },
+    created () {
+      // said once, when the field is made: the source is read again at each change of the record, and the warning came with each of them (hundreds in a form)
+      if (!this.getOpt('valueFrom')) {
+        console.warn(`Transliterate field ${this.schema.model || ''} requires options.valueFrom to be specified`)
       }
     },
     methods: {

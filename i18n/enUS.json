@@ -407,6 +407,8 @@
     "TL_SWITCH_TO_DARK": "Switch to dark theme",
     "TL_SWITCH_TO_LIGHT": "Switch to light theme",
     "TL_LANGUAGE": "Language",
+    "TL_SWITCH_TO_LOCALE": "Switch to {{ locale }}",
+    "TL_OTHER_LANGUAGES_ATTENTION": "Other languages have unsaved edits or missing fields",
     "TL_CONTENT_LANGUAGE": "Content language",
     "TL_NEW_RECORD": "New record",
     "TL_EDIT_MODE": "Edit mode",

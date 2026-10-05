@@ -130,11 +130,12 @@
   import { getRecordLabel, getResourceLabel } from '@u/recordLabel'
   import NavRail from '@c/layout/NavRail.vue'
   import { readPreference, writePreference, readNumber } from '@u/preferences'
+  import { PHONE_QUERY } from '@u/phoneLayout'
   import { resolveNavMode, toggledPref, clampNavWidth, resizeByKey, orderGroups, NAV_DEFAULT_WIDTH, NAV_MIN_WIDTH, NAV_MAX_WIDTH } from '@u/navModel'
 
   // Wide screens open the sidebar, narrower ones start as a rail, phones use the off-canvas drawer
   const WIDE_QUERY = '(min-width: 1280px)'
-  const DRAWER_QUERY = '(max-width: 767.98px), (pointer: coarse) and (max-height: 500px)'
+  const DRAWER_QUERY = PHONE_QUERY
 
   export default {
     components: {

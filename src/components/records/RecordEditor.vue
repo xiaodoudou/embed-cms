@@ -19,7 +19,7 @@
           </template>
           <div class="outline-panel">
             <!-- a search box that keeps the focus: the arrows move over the rows, Enter jumps, Escape closes the menu -->
-            <div class="outline-search">
+            <div v-if="jumpSearchShown" class="outline-search">
               <label :for="`${randomId}-jump-search`" class="cms-visually-hidden">{{ $filters.translate('TL_JUMP_TO_SEARCH') }}</label>
               <v-text-field
                 :id="`${randomId}-jump-search`" ref="jumpSearch" v-model="jumpQuery" type="text" autocomplete="off" spellcheck="false" density="compact" variant="plain" hide-details
@@ -31,7 +31,7 @@
             <v-list :id="`${randomId}-jump-rows`" density="compact" class="outline-list" role="listbox">
               <v-list-item
                 v-for="(row, i) in jumpRows" :id="`${randomId}-jump-row-${i}`" :key="row.entry.key" role="option" :aria-selected="i === jumpHighlight ? 'true' : 'false'"
-                :class="{ 'outline-block': row.entry.block !== undefined && !row.entry.blockField, 'outline-field': !!row.entry.blockField, highlighted: i === jumpHighlight }" @click="jumpTo(row.entry)" @mousemove="jumpHighlight = i"
+                :class="{ 'outline-block': row.entry.block !== undefined && !row.entry.blockField, 'outline-field': !!row.entry.blockField, highlighted: i === jumpHighlight }" @click="jumpTo(row.entry)" @mousemove="jumpSearchShown && (jumpHighlight = i)"
               >
                 <template #title><template v-for="(part, p) in row.parts" :key="p"><mark v-if="part.hit">{{ part.text }}</mark><template v-else>{{ part.text }}</template></template></template>
                 <template v-if="row.entry.dirty || (row.entry.block === undefined && isFieldMissing(row.entry.field))" #append>
@@ -85,6 +85,7 @@
   import { revealField } from '@u/groups'
   import { searchOutline } from '@u/jumpSearch'
   import { moveHighlight } from '@u/switcherModel'
+  import { PHONE_QUERY } from '@u/phoneLayout'
 
   // Fields fill in their own defaults when they appear. For this long after a form (re)renders, and until the user
   // touches it, such changes are not edits (see settle() below).
@@ -113,6 +114,8 @@
         jumpOpen: false,
         jumpQuery: '',
         jumpHighlight: -1,
+        // a phone or a touch screen has the list alone: no search box (it is set each time the menu opens)
+        jumpSearchShown: true,
         formValid: false,
         isDirty: false,
         formKey: 0,
@@ -188,15 +191,16 @@
       }
     },
     watch: {
-      // the menu starts over each time it opens: every row, the first one under the arrows, and the search box ready to type in (not on a touch screen, where it would bring up the keyboard
-      // over the list)
+      // the menu starts over each time it opens: every row, none marked, and the search box ready to type in (on a phone or a touch screen there is no search box, only the list)
       jumpOpen (open) {
         if (!open) {
           return
         }
         this.jumpQuery = ''
         this.jumpHighlight = -1
-        if (!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) {
+        const touch = !!window.matchMedia && (window.matchMedia(PHONE_QUERY).matches || window.matchMedia('(pointer: coarse)').matches)
+        this.jumpSearchShown = !touch
+        if (!touch) {
           this.$nextTick(() => _.invoke(this.$refs.jumpSearch, 'focus'))
         }
       },

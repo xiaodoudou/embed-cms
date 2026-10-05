@@ -35,7 +35,7 @@
               />
             </div>
             <div v-if="navOpen" class="cms-nav-scrim" aria-hidden="true" @click="closeNav" />
-            <div class="cms-content">
+            <div class="cms-content" :class="{ 'editor-open': hasSelection && !(selectedResource && selectedResource.maxCount === 1) }">
               <nav v-if="selectedResource || selectedPlugin" class="cms-crumbs" :aria-label="$filters.translate('TL_YOU_ARE_HERE')">
                 <ol>
                   <li v-if="currentGroupLabel" class="crumb-item" @mouseenter="crumbHint = 'group'" @mouseleave="crumbHint = ''">

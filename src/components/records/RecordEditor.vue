@@ -22,16 +22,16 @@
             <div class="outline-search">
               <label :for="`${randomId}-jump-search`" class="cms-visually-hidden">{{ $filters.translate('TL_JUMP_TO_SEARCH') }}</label>
               <v-text-field
-                :id="`${randomId}-jump-search`" ref="jumpSearch" v-model="jumpQuery" type="text" autocomplete="off" spellcheck="false" density="compact" variant="solo-filled" flat hide-details
+                :id="`${randomId}-jump-search`" ref="jumpSearch" v-model="jumpQuery" type="text" autocomplete="off" spellcheck="false" density="compact" variant="plain" hide-details
                 clearable clear-icon="$close"
                 prepend-inner-icon="$magnify" :placeholder="$filters.translate('TL_JUMP_TO_SEARCH')" role="combobox" aria-expanded="true" :aria-controls="`${randomId}-jump-rows`"
-                :aria-activedescendant="jumpRows.length > 0 ? `${randomId}-jump-row-${jumpHighlight}` : undefined" @keydown="onJumpKeydown"
+                :aria-activedescendant="jumpHighlight >= 0 && jumpRows.length > 0 ? `${randomId}-jump-row-${jumpHighlight}` : undefined" @keydown="onJumpKeydown"
               />
             </div>
             <v-list :id="`${randomId}-jump-rows`" density="compact" class="outline-list" role="listbox">
               <v-list-item
                 v-for="(row, i) in jumpRows" :id="`${randomId}-jump-row-${i}`" :key="row.entry.key" role="option" :aria-selected="i === jumpHighlight ? 'true' : 'false'"
-                :class="{ 'outline-block': row.entry.block !== undefined && !row.entry.blockField, 'outline-field': !!row.entry.blockField, highlighted: i === jumpHighlight }" @click="jumpTo(row.entry)"
+                :class="{ 'outline-block': row.entry.block !== undefined && !row.entry.blockField, 'outline-field': !!row.entry.blockField, highlighted: i === jumpHighlight }" @click="jumpTo(row.entry)" @mousemove="jumpHighlight = i"
               >
                 <template #title><template v-for="(part, p) in row.parts" :key="p"><mark v-if="part.hit">{{ part.text }}</mark><template v-else>{{ part.text }}</template></template></template>
                 <template v-if="row.entry.dirty || (row.entry.block === undefined && isFieldMissing(row.entry.field))" #append>
@@ -112,7 +112,7 @@
         // the Jump to field menu: whether it is open, what is typed in its search box, and the row the arrows are on
         jumpOpen: false,
         jumpQuery: '',
-        jumpHighlight: 0,
+        jumpHighlight: -1,
         formValid: false,
         isDirty: false,
         formKey: 0,
@@ -195,14 +195,14 @@
           return
         }
         this.jumpQuery = ''
-        this.jumpHighlight = 0
+        this.jumpHighlight = -1
         if (!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) {
           this.$nextTick(() => _.invoke(this.$refs.jumpSearch, 'focus'))
         }
       },
-      // typing starts again from the best match
-      jumpQuery () {
-        this.jumpHighlight = 0
+      // typing puts the arrows on the best match; with nothing typed no row is marked until an arrow or the pointer picks one
+      jumpQuery (query) {
+        this.jumpHighlight = _.trim(query) === '' ? -1 : 0
       },
       // Deep watch: catches every field type, including in-place edits of nested arrays and objects
       editingRecord: {
@@ -370,7 +370,7 @@
           event.preventDefault()
           this.jumpHighlight = moveHighlight(this.jumpHighlight, event.key, this.jumpRows.length)
           this.$nextTick(() => _.invoke(document.getElementById(`${this.randomId}-jump-row-${this.jumpHighlight}`), 'scrollIntoView', { block: 'nearest' }))
-        } else if (event.key === 'Enter' && this.jumpRows[this.jumpHighlight]) {
+        } else if (event.key === 'Enter' && this.jumpHighlight >= 0 && this.jumpRows[this.jumpHighlight]) {
           event.preventDefault()
           this.jumpTo(this.jumpRows[this.jumpHighlight].entry)
         }

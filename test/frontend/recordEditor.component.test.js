@@ -371,8 +371,10 @@ describe('RecordEditor', () => {
         await editor({ _local: true }, { resource: withBlocks })
         const jumped = vi.spyOn(wrapper.vm, 'jumpToEntry').mockResolvedValue()
         wrapper.vm.jumpOpen = true
+        // (no row is marked until an arrow, the pointer or some typing picks one)
+        expect(wrapper.vm.jumpHighlight).toBe(-1)
         expect(press('ArrowDown').preventDefault).toHaveBeenCalled()
-        expect(wrapper.vm.jumpHighlight).toBe(1)
+        expect(wrapper.vm.jumpHighlight).toBe(0)
         press('ArrowDown')
         press('ArrowDown')
         expect(wrapper.vm.jumpHighlight).toBe(2)
@@ -394,6 +396,14 @@ describe('RecordEditor', () => {
         }
       })
 
+      it('does nothing on Enter while no row is marked', async () => {
+        await editor({ _local: true }, { resource: withBlocks })
+        const jumped = vi.spyOn(wrapper.vm, 'jumpToEntry').mockResolvedValue()
+        wrapper.vm.jumpOpen = true
+        expect(press('Enter').preventDefault).not.toHaveBeenCalled()
+        expect(jumped).not.toHaveBeenCalled()
+      })
+
       it('does nothing on Enter when no row is left', async () => {
         await editor({ _local: true }, { resource: withBlocks })
         const jumped = vi.spyOn(wrapper.vm, 'jumpToEntry').mockResolvedValue()
@@ -402,21 +412,39 @@ describe('RecordEditor', () => {
         expect(jumped).not.toHaveBeenCalled()
       })
 
-      it('starts again from the best match when the text changes, and from every row when the menu opens', async () => {
+      it('marks the best match when something is typed, and no row when the box is empty again or the menu opens', async () => {
         await editor({ _local: true }, { resource: withBlocks })
         wrapper.vm.jumpOpen = true
         await wrapper.vm.$nextTick()
         press('ArrowDown')
+        press('ArrowDown')
         wrapper.vm.jumpQuery = 'a'
         await wrapper.vm.$nextTick()
         expect(wrapper.vm.jumpHighlight).toBe(0)
+        wrapper.vm.jumpQuery = ''
+        await wrapper.vm.$nextTick()
+        expect(wrapper.vm.jumpHighlight).toBe(-1)
         wrapper.vm.jumpHighlight = 2
         wrapper.vm.jumpOpen = false
         await wrapper.vm.$nextTick()
         wrapper.vm.jumpOpen = true
         await wrapper.vm.$nextTick()
         expect(wrapper.vm.jumpQuery).toBe('')
-        expect(wrapper.vm.jumpHighlight).toBe(0)
+        expect(wrapper.vm.jumpHighlight).toBe(-1)
+      })
+
+      it('puts the mark under the pointer, and shows it on one row only', async () => {
+        await editor({ _local: true }, { resource: withBlocks })
+        wrapper.vm.jumpOpen = true
+        await wrapper.vm.$nextTick()
+        const row = (i) => document.getElementById(`${wrapper.vm.randomId}-jump-row-${i}`)
+        // (the menu is attached to the page, outside the editor)
+        expect(row(0)).not.toBeNull()
+        row(2).dispatchEvent(new MouseEvent('mousemove', { bubbles: true }))
+        await wrapper.vm.$nextTick()
+        expect(wrapper.vm.jumpHighlight).toBe(2)
+        expect(document.querySelectorAll('.outline-list .highlighted')).toHaveLength(1)
+        expect(row(2).classList.contains('highlighted')).toBe(true)
       })
 
       it('opens and closes with Ctrl+J', async () => {

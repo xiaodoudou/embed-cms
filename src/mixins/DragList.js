@@ -6,7 +6,9 @@ export default {
     return {
       key: crypto.randomUUID(),
       dragOptions: {
-        animation: 150,
+        // the others slide aside to make room, on a computer; on a touch screen they do not: the slide measures every item of the list at each swap and costs a phone a fifth of the
+        // drop (130ms of 174ms at four times slower than a computer without it)
+        animation: typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(pointer: coarse)').matches ? 0 : 150,
         // no group here: each list names its own (the key of its component), so that nothing can be dragged from one field into another.
         // A group in these options came after the list's own and won over it, which made every image and file field one group.
         disabled: false,

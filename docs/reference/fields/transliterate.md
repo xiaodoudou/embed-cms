@@ -18,7 +18,7 @@ Catalogue: `resources/text_strings.js`, fields `slug` and `lockedSlug`.
 |---|---|---|---|
 | `field`, `input`, `label`, `localised`, `unique` | | | As for [string](string.md). |
 | `required` | boolean | `false` | Only marks the label with `*`; the component runs no required check itself. |
-| `options.valueFrom` | string | none (warns in the console, stays empty) | Key of the source field. A localised source works: a localised slug uses the source value of **its own locale**, a shared (`localised: false`) slug uses the resource's **first locale**, so switching the editing language does not change a shared slug. |
+| `options.valueFrom` | string | none (warns once in the console, stays empty) | Key of the source field. A localised source works: a localised slug uses the source value of **its own locale**, a shared (`localised: false`) slug uses the resource's **first locale**, so switching the editing language does not change a shared slug. |
 | `options.readonly` | boolean | **`true`** | `true`: the value always follows the source and cannot be edited. `false`: it follows the source until the editor types in it. |
 | `options.disabled` | boolean | `false` | Greyed out, not focusable. |
 | `options.hint` | string | none | Help text under the input. |

@@ -53,6 +53,18 @@ describe('GeopointField', () => {
       expect(wrapper.get(`#${group.attributes('aria-labelledby')}`).text()).toContain('Place')
     })
 
+    it('points every aria-labelledby at an element that is there, and gives every box a label', async () => {
+      await mount({}, {})
+      for (const element of wrapper.element.querySelectorAll('[aria-labelledby]')) {
+        for (const id of element.getAttribute('aria-labelledby').split(/\s+/)) {
+          expect(document.getElementById(id), id).not.toBeNull()
+        }
+      }
+      for (const input of wrapper.element.querySelectorAll('input')) {
+        expect(input.labels.length + (input.getAttribute('aria-label') ? 1 : 0), input.name).toBeGreaterThan(0)
+      }
+    })
+
     it('shows a value as its two numbers, without zeros at the end', async () => {
       await mount({}, { place: { lat: 48.8566, lng: 2.3 } })
       expect(lat().element.value).toBe('48.8566')

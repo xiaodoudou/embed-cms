@@ -43,6 +43,7 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ### Fixed
 
+- **The longitude box of a geopoint field was named by an element that was not there:** the browser's accessibility check listed an `aria-labelledby` that matched no id for every geopoint field. The box has its label now, and a test checks that every label a geopoint field points at exists.
 - **Switching between the light and the dark theme was laggy:** the click waited for the server to save the theme before anything changed, so on a slow connection nothing happened for a moment, and then every colour of the page faded over a tenth of a second at once. The theme now changes at once, the server is asked to keep it in the background (the page goes back to the other theme when it cannot), and the fades are turned off for the two frames the switch is drawn in. `LoginService.changeTheme(theme)` takes the theme to keep, and no longer replaces the classes of the page body.
 - **The toast that follows a copy of a record id said "Id copied":** it says "ID copied".
 - **The date field's `isLocked` hid the method of the same name every field has:** the date picker defined it as a computed property, so Vue warned and a call to `this.isLocked()` from the shared field code would have failed. The computed property is now `locked`.

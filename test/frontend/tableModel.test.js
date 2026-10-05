@@ -56,6 +56,7 @@ describe('buildColumns (locale derivation)', () => {
     expect(fieldKind('phone')).toBe('phone')
     expect(fieldKind('markdown')).toBe('markdown')
     expect(fieldKind('daterange')).toBe('daterange')
+    expect(fieldKind('geopoint')).toBe('geopoint')
     const [column] = buildColumns([{ originalModel: 'avatar', model: 'avatar', localised: false }], { locales: [], schema: [{ field: 'avatar', input: 'cropimage' }] })
     expect(column).toMatchObject({ kind: 'image', input: 'cropimage', sortable: false })
   })
@@ -141,6 +142,15 @@ describe('sorting date ranges', () => {
     const get = (row) => sortValue(row, { model: 'r', kind: 'daterange' })
     expect(sortRows(rows, [{ key: 'r', order: 'asc' }], get).map((row) => row.r && row.r.start)).toEqual([10, 20, 30, undefined])
     expect(sortRows(rows, [{ key: 'r', order: 'desc' }], get).map((row) => row.r && row.r.start)).toEqual([30, 20, 10, undefined])
+  })
+})
+
+describe('sorting geopoints', () => {
+  it('sorts by the latitude, with the rows that have no point last', () => {
+    const rows = [{ p: { lat: 10, lng: 5 } }, {}, { p: { lat: -20, lng: 100 } }, { p: { lat: 48, lng: 2 } }]
+    const get = (row) => sortValue(row, { model: 'p', kind: 'geopoint' })
+    expect(sortRows(rows, [{ key: 'p', order: 'asc' }], get).map((row) => row.p && row.p.lat)).toEqual([-20, 10, 48, undefined])
+    expect(sortRows(rows, [{ key: 'p', order: 'desc' }], get).map((row) => row.p && row.p.lat)).toEqual([48, 10, -20, undefined])
   })
 })
 

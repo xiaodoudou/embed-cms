@@ -20,6 +20,7 @@ Every field in a resource's schema has an `input` type, and it's the input that 
 | `date` | `CustomDatetimePicker` | timestamp in ms (local midnight) | [date](fields/date.md) |
 | `time` | `CustomDatetimePicker` | timestamp in ms (today at that time) | [time](fields/time.md) |
 | `daterange` | `DateRangeField` | `{ start, end }`, in milliseconds | [daterange](fields/daterange.md) |
+| `geopoint` | `GeopointField` | `{ lat, lng }`, in degrees | [geopoint](fields/geopoint.md) |
 | `datetime` | `CustomDatetimePicker` | timestamp in ms | [datetime](fields/datetime.md) |
 | `pillbox` | `CustomInputTag` | array of strings | [pillbox](fields/pillbox.md) |
 | `select` | `CustomMultiSelect` | string, or record `_id` | [select](fields/select.md) |

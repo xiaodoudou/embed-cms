@@ -160,7 +160,7 @@ The values that depend on your setup:
 - `localAdmin` is off. A `localAdmin` record that already exists stays, and every boot logs an error while it has its default password: change that password or delete the account.
 - `safeAttachments` and `strictUploads` are on. Turning `safeAttachments` off displays HTML and SVG attachments inline, with the privileges of the site for whoever opens them. Turning `strictUploads` off removes the file name sanitising, the content-based type and the upload limits.
 
-Not in the block because it depends on the environment: `imageConcurrency` (one per core by default), the `importFromRemote` remotes (`restrictUrls`, `allowedHosts` per remote) and the peers list. In development, run without `NODE_ENV=production` and without this block: the defaults apply (with `localAdmin` and the default secrets allowed). The default Content-Security-Policy is written for the built admin app; a plugin page that loads from another origin needs its own `contentSecurityPolicy`.
+Not in the block because it depends on the environment: `imageConcurrency` (one per core by default), the `importFromRemote` remotes (`restrictUrls`, `allowedHosts` per remote) and the peers list. In development, run without `NODE_ENV=production` and without this block: the defaults apply (with `localAdmin` and the default secrets allowed). The default Content-Security-Policy is written for the built admin app, and lets through the tile server and the search of the map of the geopoint field (OpenStreetMap unless the `maps` option says otherwise, nothing with `maps: false`, see [CONFIG.md](docs/reference/CONFIG.md#maps)); a plugin page that loads from another origin needs its own `contentSecurityPolicy`.
 
 ## Hardening checklist
 

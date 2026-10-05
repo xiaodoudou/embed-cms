@@ -1,6 +1,8 @@
 import {
   mdiChevronDown,
   mdiMagnify,
+  mdiMapMarker,
+  mdiMapMarkerOutline,
   mdiNoteEditOutline,
   mdiNotePlusOutline,
   mdiCheckBold,
@@ -108,6 +110,8 @@ export const iconAliases = {
   ...aliases,
   chevronDown: mdiChevronDown,
   magnify: mdiMagnify,
+  mapMarker: mdiMapMarker,
+  mapMarkerOutline: mdiMapMarkerOutline,
   noteEditOutline: mdiNoteEditOutline,
   notePlusOutline: mdiNotePlusOutline,
   checkBold: mdiCheckBold,

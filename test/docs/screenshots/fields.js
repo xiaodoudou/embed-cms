@@ -873,4 +873,42 @@ add('daterange-required-error', 'dates', async (c) => {
 })
 add('daterange-states', 'dates', (c) => [c.field('readOnlyRange'), c.field('disabledRange')])
 
+// ---------------------------------------------------------------- geopoint
+// a pair pasted in the latitude box fills both
+const pasted = async (c, model, text) => {
+  await c.input(model).click()
+  await c.input(model).fill(text)
+  await c.blur()
+  return c.field(model)
+}
+add('geopoint-default', 'places', (c) => pasted(c, 'location', '48.856601, 2.352222'))
+add('geopoint-sides', 'places', async (c) => {
+  await c.input('location').fill('33.9 S')
+  await c.field('location').locator('input').nth(1).fill('18°25\'30"E')
+  await c.blur()
+  return c.field('location')
+})
+add('geopoint-precision', 'places', (c) => pasted(c, 'roughLocation', '48.856601, 2.352222'))
+add('geopoint-error', 'places', async (c) => {
+  await c.input('location').fill('95')
+  await c.field('location').locator('input').nth(1).fill('2.35')
+  await c.blur()
+  return c.field('location')
+})
+add('geopoint-required-error', 'places', async (c) => {
+  await c.type('name', 'Name')
+  return refuse(c, 'requiredLocation')
+})
+// the map opens on the point of the field; its tiles come from OpenStreetMap, so these two need the network
+const openMap = async (c, pair) => {
+  await pasted(c, 'location', pair)
+  await c.field('location').locator('.geopoint-pick').click()
+  await c.page.waitForSelector('.geo-card .leaflet-tile-loaded', { timeout: 20000 })
+  await c.page.waitForTimeout(2500)
+  return c.page.locator('.geo-card')
+}
+add('geopoint-map', 'places', (c) => openMap(c, '48.8584, 2.2945'), MODAL)
+add('geopoint-map-dark', 'places', (c) => openMap(c, '48.8584, 2.2945'), { ...MODAL, theme: 'dark' })
+add('geopoint-states', 'places', (c) => [c.field('readOnlyLocation'), c.field('disabledLocation')])
+
 module.exports = { specs }

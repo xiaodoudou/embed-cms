@@ -13,7 +13,8 @@ real project: copy the field you need into your own resource.
 | Text | `languages` | text, rich text, tags, selects, image and switch in four languages (English, Chinese, French, Thai) |
 | Numbers | `numbers` | number, integer, double |
 | Numbers | `numbers_quantities` | rating, duration |
-| Date and time | `dates` | date, time, datetime |
+| Date and time | `dates` | date, time, datetime, daterange |
+| Place | `places` | geopoint (a latitude and a longitude, with a map to pick on) |
 | Choice | `choice_boolean` | checkbox |
 | Choice | `choice_select` | select (static, labelled, resource) |
 | Choice | `choice_multi` | multiselect, pillbox |

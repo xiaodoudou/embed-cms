@@ -32,7 +32,7 @@ describe('FormService (how each input type is built and checked)', () => {
   describe('the input types', () => {
     it('knows every input type the documentation lists', () => {
       expect(Object.keys(mapper).sort()).toEqual([
-        'checkbox', 'code', 'color', 'cropimage', 'date', 'daterange', 'datetime', 'double', 'duration', 'email', 'file', 'group', 'image', 'imagemap', 'integer', 'json', 'markdown', 'money', 'multiselect',
+        'checkbox', 'code', 'color', 'cropimage', 'date', 'daterange', 'datetime', 'double', 'duration', 'email', 'file', 'geopoint', 'group', 'image', 'imagemap', 'integer', 'json', 'markdown', 'money', 'multiselect',
         'number', 'object', 'paragraph', 'password', 'phone', 'pillbox', 'rating', 'select', 'string', 'text', 'time', 'transliterate', 'url', 'wysiwyg'
       ])
     })
@@ -214,6 +214,25 @@ describe('FormService (how each input type is built and checked)', () => {
       expect(check('daterange', { start: day('2026-10-03'), end: day('2026-10-01') }, {})).toBe(TranslateService.get('TL_DATE_RANGE_ORDER'))
       expect(check('daterange', { start: day('2026-10-01'), end: day('2026-10-02') }, { minDays: 3 })).toBe(TranslateService.get('TL_DATE_RANGE_TOO_SHORT', { min: 3 }))
       expect(check('daterange', { start: 1 }, {})).toBe(TranslateService.get('TL_INVALID_DATE_RANGE'))
+    })
+  })
+
+  describe('geopoint', () => {
+    it('is built by its own component', () => {
+      expect(mapper.geopoint.type).toBe('GeopointField')
+    })
+
+    it('says when a required point is missing', () => {
+      expect(check('geopoint', undefined, { required: true })).toBe(REQUIRED())
+      expect(check('geopoint', undefined, {})).toBe(true)
+    })
+
+    it('takes a latitude and a longitude, and refuses what is not a point', () => {
+      expect(check('geopoint', { lat: 48.8566, lng: 2.3522 }, {})).toBe(true)
+      expect(check('geopoint', { lat: 0, lng: 0 }, { required: true })).toBe(true)
+      expect(check('geopoint', { lat: 91, lng: 0 }, {})).toBe(TranslateService.get('TL_INVALID_GEOPOINT'))
+      expect(check('geopoint', { lat: 0, lng: -181 }, {})).toBe(TranslateService.get('TL_INVALID_GEOPOINT'))
+      expect(check('geopoint', '48.8, 2.3', {})).toBe(TranslateService.get('TL_INVALID_GEOPOINT'))
     })
   })
 

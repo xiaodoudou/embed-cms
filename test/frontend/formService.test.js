@@ -33,7 +33,7 @@ describe('FormService (how each input type is built and checked)', () => {
     it('knows every input type the documentation lists', () => {
       expect(Object.keys(mapper).sort()).toEqual([
         'checkbox', 'code', 'color', 'cropimage', 'date', 'daterange', 'datetime', 'double', 'duration', 'email', 'file', 'geopoint', 'group', 'image', 'imagemap', 'integer', 'json', 'markdown', 'money', 'multiselect',
-        'number', 'object', 'paragraph', 'password', 'phone', 'pillbox', 'rating', 'select', 'string', 'text', 'time', 'transliterate', 'url', 'wysiwyg'
+        'number', 'object', 'paragraph', 'password', 'phone', 'pillbox', 'radio', 'rating', 'segmented', 'select', 'string', 'text', 'time', 'transliterate', 'url', 'wysiwyg'
       ])
     })
 
@@ -215,6 +215,26 @@ describe('FormService (how each input type is built and checked)', () => {
       expect(check('daterange', { start: day('2026-10-01'), end: day('2026-10-02') }, { minDays: 3 })).toBe(TranslateService.get('TL_DATE_RANGE_TOO_SHORT', { min: 3 }))
       expect(check('daterange', { start: 1 }, {})).toBe(TranslateService.get('TL_INVALID_DATE_RANGE'))
     })
+  })
+
+  describe('radio and segmented', () => {
+    it('are built by the same component', () => {
+      expect(mapper.radio.type).toBe('ChoiceField')
+      expect(mapper.segmented.type).toBe('ChoiceField')
+    })
+
+    for (const input of ['radio', 'segmented']) {
+      it(`say when a required ${input} has no choice`, () => {
+        expect(check(input, undefined, { required: true, source: ['a', 'b'] })).toBe(REQUIRED())
+        expect(check(input, 'a', { required: true, source: ['a', 'b'] })).toBe(true)
+        expect(check(input, undefined, { source: ['a', 'b'] })).toBe(true)
+      })
+
+      it(`refuse a value that is not one of the choices of a ${input}`, () => {
+        expect(check(input, 'c', { source: ['a', 'b'] })).toBe(TranslateService.get('TL_CHOICE_UNKNOWN', { value: 'c' }))
+        expect(check(input, 2, { source: [1, 2] })).toBe(true)
+      })
+    }
   })
 
   describe('geopoint', () => {

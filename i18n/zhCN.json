@@ -265,6 +265,7 @@
     "TL_GEOPOINT_STAGE": "地图",
     "TL_GEOPOINT_HINT": "点击地图或拖动图钉来放置位置。",
     "TL_GEOPOINT_NO_POINT": "尚未选择位置",
+    "TL_CHOICE_UNKNOWN": "“{{ value }}”不是可选项之一",
     "TL_MARKDOWN_WRITE": "编辑",
     "TL_MARKDOWN_PREVIEW": "预览",
     "TL_MARKDOWN_TOOLBAR": "格式",

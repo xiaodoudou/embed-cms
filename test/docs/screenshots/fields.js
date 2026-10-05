@@ -911,4 +911,50 @@ add('geopoint-map', 'places', (c) => openMap(c, '48.8584, 2.2945'), MODAL)
 add('geopoint-map-dark', 'places', (c) => openMap(c, '48.8584, 2.2945'), { ...MODAL, theme: 'dark' })
 add('geopoint-states', 'places', (c) => [c.field('readOnlyLocation'), c.field('disabledLocation')])
 
+// ---------------------------------------------------------------- segmented and radio
+/** Presses the choice with this text in the field `model` */
+const pressChoice = async (c, model, text) => {
+  await c.field(model).locator('.choice-item').filter({ hasText: text }).first().click()
+  await c.page.waitForTimeout(300)
+}
+add('segmented-default', 'choice_buttons', async (c) => {
+  await pressChoice(c, 'status', 'review')
+  return c.field('status')
+})
+add('segmented-default-dark', 'choice_buttons', async (c) => {
+  await pressChoice(c, 'status', 'review')
+  return c.field('status')
+}, { theme: 'dark' })
+add('segmented-labels', 'choice_buttons', async (c) => {
+  await pressChoice(c, 'priority', 'Medium')
+  await pressChoice(c, 'columns', '3')
+  return [c.field('priority'), c.field('columns')]
+})
+add('segmented-required-error', 'choice_buttons', async (c) => {
+  await c.type('name', 'Name')
+  return refuse(c, 'requiredStatus')
+})
+add('segmented-states', 'choice_buttons', (c) => [c.field('readOnlySegment'), c.field('disabledSegment')])
+add('radio-default', 'choice_buttons', async (c) => {
+  await pressChoice(c, 'plan', 'team')
+  return c.field('plan')
+})
+add('radio-default-dark', 'choice_buttons', async (c) => {
+  await pressChoice(c, 'plan', 'team')
+  return c.field('plan')
+}, { theme: 'dark' })
+add('radio-descriptions', 'choice_buttons', async (c) => {
+  await pressChoice(c, 'planWithHelp', 'Team')
+  return c.field('planWithHelp')
+})
+add('radio-inline', 'choice_buttons', async (c) => {
+  await pressChoice(c, 'inlineChoice', 'Maybe')
+  return c.field('inlineChoice')
+})
+add('radio-required-error', 'choice_buttons', async (c) => {
+  await c.type('name', 'Name')
+  return refuse(c, 'requiredPlan')
+})
+add('radio-states', 'choice_buttons', (c) => [c.field('readOnlyRadio'), c.field('disabledRadio')])
+
 module.exports = { specs }

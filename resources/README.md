@@ -17,6 +17,7 @@ real project: copy the field you need into your own resource.
 | Place | `places` | geopoint (a latitude and a longitude, with a map to pick on) |
 | Choice | `choice_boolean` | checkbox |
 | Choice | `choice_select` | select (static, labelled, resource) |
+| Choice | `choice_buttons` | radio, segmented |
 | Choice | `choice_multi` | multiselect, pillbox |
 | Choice | `choice_color` | color |
 | Media | `media_images` | image |

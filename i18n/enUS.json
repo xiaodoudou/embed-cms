@@ -272,6 +272,7 @@
     "TL_GEOPOINT_STAGE": "Map",
     "TL_GEOPOINT_HINT": "Click the map or drag the pin to place the point.",
     "TL_GEOPOINT_NO_POINT": "No point yet",
+    "TL_CHOICE_UNKNOWN": "\"{{ value }}\" is not one of the choices",
     "TL_MARKDOWN_WRITE": "Write",
     "TL_MARKDOWN_PREVIEW": "Preview",
     "TL_MARKDOWN_TOOLBAR": "Formatting",

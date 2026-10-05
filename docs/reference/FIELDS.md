@@ -24,6 +24,8 @@ Every field in a resource's schema has an `input` type, and it's the input that 
 | `datetime` | `CustomDatetimePicker` | timestamp in ms | [datetime](fields/datetime.md) |
 | `pillbox` | `CustomInputTag` | array of strings | [pillbox](fields/pillbox.md) |
 | `select` | `CustomMultiSelect` | string, or record `_id` | [select](fields/select.md) |
+| `radio` | `ChoiceField` | the chosen value of `source` | [radio](fields/radio.md) |
+| `segmented` | `ChoiceField` | the chosen value of `source` | [segmented](fields/segmented.md) |
 | `multiselect` | `CustomMultiSelect` | array of strings or record `_id`s | [multiselect](fields/multiselect.md) |
 | `json` | `CustomTreeView` | any JSON (viewer only) | [json](fields/json.md) |
 | `code` | `CustomCode` | string | [code](fields/code.md) |

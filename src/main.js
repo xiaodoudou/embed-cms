@@ -39,6 +39,7 @@ import CustomTreeView from '@c/fields/CustomTreeView.vue'
 import CustomCode from '@c/fields/CustomCode.vue'
 import ColorPicker from '@c/fields/ColorPicker.vue'
 import RatingField from '@c/fields/RatingField.vue'
+import ChoiceField from '@c/fields/ChoiceField.vue'
 import DateRangeField from '@c/fields/DateRangeField.vue'
 import GeopointField from '@c/fields/GeopointField.vue'
 import DurationField from '@c/fields/DurationField.vue'
@@ -110,6 +111,7 @@ app.use(router)
   .component('CustomCode', CustomCode)
   .component('ColorPicker', ColorPicker)
   .component('RatingField', RatingField)
+  .component('ChoiceField', ChoiceField)
   .component('DateRangeField', DateRangeField)
   .component('GeopointField', GeopointField)
   .component('DurationField', DurationField)

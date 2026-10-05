@@ -23,6 +23,8 @@ const KIND_BY_INPUT = {
   imagemap: 'image',
   file: 'file',
   select: 'select',
+  radio: 'select',
+  segmented: 'select',
   multiselect: 'multi',
   pillbox: 'multi',
   wysiwyg: 'richtext',
@@ -487,6 +489,24 @@ export function formatNumberValue (value) {
     return _.toString(value)
   }
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(Number(value))
+}
+
+/**
+ * @param {Object} raw the field, as the resource declares it
+ * @param {*} value a value of its static list (`source`: values, or `{ value, text }`)
+ * @param {string} locale the language the labels are read in
+ * @returns {string} what the value is called: its `text`, else its label (in the options of the field, or beside them; a text, or one per language), else the value itself
+ */
+export function staticOptionLabel (raw, value, locale) {
+  const entry = _.find(_.isArray(_.get(raw, 'source')) ? raw.source : [], (item) => _.isObject(item) && item.value === value)
+  if (entry) {
+    return _.toString(entry.text || entry.value)
+  }
+  const label = _.get(raw, ['options', 'labels', value], _.get(raw, ['labels', value]))
+  if (label) {
+    return _.toString(_.isObject(label) ? _.get(label, locale, _.first(_.values(label))) : label)
+  }
+  return _.toString(value)
 }
 
 /** Chips of a multi value cell: at most `max` shown, the rest counted for a "+n" chip */

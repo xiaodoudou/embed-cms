@@ -6,6 +6,7 @@ import { validateDuration } from '@u/duration'
 import { validateMoney } from '@u/money'
 import { validateDateRange } from '@u/dateRange'
 import { validateGeopoint } from '@u/geopoint'
+import { validateChoice } from '@u/choice'
 import { validatePhone } from '@u/phone'
 
 const TranslateService = window.TranslateService || TranslateServiceLib
@@ -140,6 +141,8 @@ const customValidators = {
    */
   daterange: (value, field) => validateDateRange(field, value) || true,
   geopoint: (value, field) => validateGeopoint(field, value) || true,
+  radio: (value, field) => validateChoice(field, value) || true,
+  segmented: (value, field) => validateChoice(field, value) || true,
   /**
    * @param {*} value an international number, +442071838750
    * @param {Object} field
@@ -363,6 +366,15 @@ const typeMapper = {
   daterange: {
     type: 'DateRangeField',
     validator: customValidators.daterange
+  },
+  // one value chosen from a short list that is all in view, as radio buttons or as joined buttons (see utils/choice.js)
+  radio: {
+    type: 'ChoiceField',
+    validator: customValidators.radio
+  },
+  segmented: {
+    type: 'ChoiceField',
+    validator: customValidators.segmented
   },
   // a place, kept as { lat, lng } in degrees (see utils/geopoint.js)
   geopoint: {

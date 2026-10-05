@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   fieldKind, columnAlign, buildColumns, defaultHiddenKeys, applyPrefs, orderedColumns, loadPrefs, savePrefs, clearPrefs,
-  compareValues, sortRows, sortValue, nextSort, richTextToPlain, attachmentOf
+  compareValues, sortRows, sortValue, nextSort, richTextToPlain, attachmentOf, staticOptionLabel
 } from '../../src/utils/tableModel.js'
 
 const resource = {
@@ -57,6 +57,8 @@ describe('buildColumns (locale derivation)', () => {
     expect(fieldKind('markdown')).toBe('markdown')
     expect(fieldKind('daterange')).toBe('daterange')
     expect(fieldKind('geopoint')).toBe('geopoint')
+    expect(fieldKind('radio')).toBe('select')
+    expect(fieldKind('segmented')).toBe('select')
     const [column] = buildColumns([{ originalModel: 'avatar', model: 'avatar', localised: false }], { locales: [], schema: [{ field: 'avatar', input: 'cropimage' }] })
     expect(column).toMatchObject({ kind: 'image', input: 'cropimage', sortable: false })
   })
@@ -199,5 +201,30 @@ describe('attachmentOf (image and file cells)', () => {
   it('finds nothing when there is no file', () => {
     expect(attachmentOf({ photo: [] }, { model: 'photo', originalModel: 'photo' })).toBe(undefined)
     expect(attachmentOf({}, { model: 'photo', originalModel: 'photo' })).toBe(undefined)
+  })
+})
+
+describe('staticOptionLabel', () => {
+  const field = { source: ['low', 'high'], options: { labels: { low: 'Low', high: { enUS: 'High', zhCN: '高' } } } }
+
+  it('calls a value by its label, in the options of the field or beside them', () => {
+    expect(staticOptionLabel(field, 'low', 'enUS')).toBe('Low')
+    expect(staticOptionLabel({ source: ['a'], labels: { a: 'Alpha' } }, 'a', 'enUS')).toBe('Alpha')
+  })
+
+  it('reads the label in the language, else the first one there is', () => {
+    expect(staticOptionLabel(field, 'high', 'zhCN')).toBe('高')
+    expect(staticOptionLabel(field, 'high', 'fr')).toBe('High')
+  })
+
+  it('calls a value that is written { value, text } by its text', () => {
+    expect(staticOptionLabel({ source: [{ value: 'a', text: 'Alpha' }, { value: 'b' }] }, 'a', 'enUS')).toBe('Alpha')
+    expect(staticOptionLabel({ source: [{ value: 'b' }] }, 'b', 'enUS')).toBe('b')
+  })
+
+  it('calls a value that has no label by itself, a number as text', () => {
+    expect(staticOptionLabel(field, 'medium', 'enUS')).toBe('medium')
+    expect(staticOptionLabel({ source: [1, 2] }, 3, 'enUS')).toBe('3')
+    expect(staticOptionLabel({}, 'x', 'enUS')).toBe('x')
   })
 })

@@ -70,7 +70,7 @@ declare namespace EmbedCMS {
   type FieldInput =
     | 'string' | 'transliterate' | 'text' | 'password' | 'email' | 'url'
     | 'number' | 'integer' | 'double'
-    | 'checkbox' | 'color' | 'rating' | 'duration' | 'money' | 'phone' | 'markdown'
+    | 'checkbox' | 'radio' | 'segmented' | 'color' | 'rating' | 'duration' | 'money' | 'phone' | 'markdown'
     | 'date' | 'daterange' | 'time' | 'datetime' | 'geopoint'
     | 'pillbox' | 'select' | 'multiselect'
     | 'json' | 'object' | 'code' | 'wysiwyg'
@@ -97,7 +97,7 @@ declare namespace EmbedCMS {
     max?: number
     /** Pattern for the text types, or one per locale */
     regex?: FieldRegex | { [locale: string]: FieldRegex }
-    /** `select` and `multiselect`: a readable label per static value, `{ low: { enUS: 'Low', zhCN: '低' } }` */
+    /** `select`, `multiselect`, `radio` and `segmented`: a readable label per static value, `{ low: { enUS: 'Low', zhCN: '低' } }` */
     labels?: Record<string, Translatable>
     /** `select` and `multiselect`: a Mustache template that labels a record of the source resource, e.g. `'{{name}}'` */
     customLabel?: string
@@ -117,7 +117,7 @@ declare namespace EmbedCMS {
     color?: 'primary' | 'info' | 'success' | 'warning' | 'error'
     /** `rating`: half steps */
     half?: boolean
-    /** `rating`: whether the rating can be taken away (true by default) */
+    /** `rating`, `radio` and `segmented`: whether the choice can be taken away (true by default, never for a required field) */
     clearable?: boolean
     /** `duration`: the boxes to show, largest first whatever the order (hours and minutes by default); `min` and `max` are in seconds */
     units?: Array<'days' | 'hours' | 'minutes' | 'seconds'>
@@ -135,6 +135,10 @@ declare namespace EmbedCMS {
     /** `daterange`: the fewest and the most days a range has, the first and the last included */
     minDays?: number
     maxDays?: number
+    /** `radio`: a line of help under each choice, a string or one per locale, by value */
+    descriptions?: Record<string, Translatable>
+    /** `radio`: the choices in a row instead of a column */
+    inline?: boolean
     /** `geopoint`: the decimals kept in the latitude and the longitude, 0 to 10 (6 by default) */
     precision?: number
     /** `geopoint`: how far the map is zoomed in when it shows no point yet, 1 to 20 (12 by default) */

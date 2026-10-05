@@ -96,7 +96,7 @@
   import { getRecordLabel, getResourceLabel, recordMessage } from '@u/recordLabel'
   import {
     buildColumns, fieldsFromSchema, applyPrefs, loadPrefs, savePrefs, clearPrefs, toggleColumn, moveColumn, nextSort, sortRows, sortValue, matchesSearch,
-    visibleLocales, richTextToPlain, isColumnHidden, attachmentOf, DENSITIES
+    visibleLocales, richTextToPlain, isColumnHidden, attachmentOf, staticOptionLabel, DENSITIES
   } from '@u/tableModel'
   import { readChoice, writePreference } from '@u/preferences'
   import VueTableGenerator from '@c/records/VueTableGenerator.vue'
@@ -354,15 +354,7 @@
           }
           return getRecordLabel(ResourceService.getSchema(raw.source), related, this.locale) || _.toString(value)
         }
-        const source = _.find(_.isArray(raw.source) ? raw.source : [], (item) => _.isObject(item) && item.value === value)
-        if (source) {
-          return _.toString(source.text || source.value)
-        }
-        const label = _.get(raw, ['labels', value])
-        if (label) {
-          return _.toString(_.isObject(label) ? _.get(label, this.locale, _.first(_.values(label))) : label)
-        }
-        return _.toString(value)
+        return staticOptionLabel(raw, value, this.locale)
       },
       /**
        * @param {Object} record

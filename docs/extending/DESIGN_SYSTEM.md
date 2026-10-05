@@ -198,6 +198,8 @@ On a phone (under 600px wide) the record editor keeps its room for the form: the
 
 In a paragraph field, on a phone the type of block and the Add button share one row (Add multiple goes to a row of its own), the sticky bar stays one line over the blocks, and on a touch screen the bar of a block and its grip are 44px (the Reorder button moves blocks without dragging).
 
+In an image or file field the previews are 200px cards; in an editor under 480px wide (a phone, a tablet beside the list) each takes the whole line instead of leaving the rest of it empty, and on a touch screen the grip that drags a preview is a 44px target and the line of the preview is as tall as a button. A finger rests 150ms on the grip before it drags, so a swipe over it scrolls the page.
+
 ## Design choices
 
 - The dropdown type-ahead is the field's own input: there is no separate search box inside the menu.

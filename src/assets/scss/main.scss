@@ -337,13 +337,26 @@
 
 // While a block, an image or a file is dragged (DragList sets the class): the drag selects no text on its way, and the hand stays
 // closed whatever is under the pointer; the copy that follows the pointer is only to be seen
-body.cms-dragging {
-  user-select: none;
-  -webkit-user-select: none;
+// Only for a mouse: a finger has no pointer to show, and the grip it drags by selects nothing. A property that every element under the body inherits, or a rule on every
+// element under it, makes the browser restyle the whole page when the class is added and when it is taken away, and that took 65ms of a phone's time at the start of a drag and
+// 50 at its end.
+@media (hover: hover) and (pointer: fine) {
+  body.cms-dragging {
+    user-select: none;
+    -webkit-user-select: none;
 
-  &,
-  * {
-    cursor: grabbing;
+    &,
+    * {
+      cursor: grabbing;
+    }
+  }
+}
+// What a dragged list restyles on its way is only what changes under the copy that follows the pointer: no transition on the previews and the blocks, which the hover that
+// the copy passes over would start at every move (the list animates its own moves, see DragList)
+body.cms-dragging {
+  .preview-attachment,
+  .v-card.item {
+    transition: none;
   }
 }
 
@@ -478,4 +491,10 @@ body.cms-dragging {
       padding: var(--cms-space-2) var(--cms-space-3);
     }
   }
+}
+
+// The copy that follows the pointer or the finger in a drag (see DragList): its own layer and its own layout, so that moving it costs a composite and not a pass over the form around it.
+.sortable-fallback {
+  will-change: transform;
+  contain: layout;
 }

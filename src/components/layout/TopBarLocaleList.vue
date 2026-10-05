@@ -125,11 +125,13 @@
       },
       // a dot or a count on a button changes its width
       dirtyLocales () {
+        this.measure()
         this.$nextTick(this.moveIndicator)
       },
       missing: {
         deep: true,
         handler () {
+          this.measure()
           this.$nextTick(this.moveIndicator)
         }
       }
@@ -169,7 +171,7 @@
        */
       measure (width) {
         const bar = this.$el && this.$el.parentElement
-        this.narrow = !tabsFit(_.size(this.locales), _.isUndefined(width) ? _.get(bar, 'clientWidth', 0) : width)
+        this.narrow = !tabsFit(_.map(this.locales, (item) => ({ dirty: this.isDirty(item), missing: this.missingCount(item) })), _.isUndefined(width) ? _.get(bar, 'clientWidth', 0) : width)
       },
       /** @returns {boolean} the screen is a phone's (see utils/phoneLayout.js) */
       onPhone () {

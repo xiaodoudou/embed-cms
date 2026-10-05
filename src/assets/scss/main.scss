@@ -98,6 +98,11 @@
   }
 
   .editor-status {
+    // the two pills (unsaved, missing) are centred on one line, and not on the baseline of the text they would sit in
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--cms-space-2);
     flex: 1 1 auto;
     min-width: 0;
     font-size: var(--cms-fs-sm);
@@ -117,7 +122,6 @@
       display: inline-flex;
       align-items: center;
       gap: var(--cms-space-1);
-      margin-left: var(--cms-space-2);
       padding: 3px var(--cms-space-3);
       border: 1px solid var(--cms-error);
       border-radius: var(--cms-radius-pill);

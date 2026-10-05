@@ -44,6 +44,7 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ### Fixed
 
+- **The search box of the map of a geopoint field was flagged by the browser's accessibility check ("No label associated with a form field"):** it was a text field with a floating label that is for no input. It has a real label, hidden from sight, like the other fields, and a test checks that its label and the element its name points at are there.
 - **The longitude box of a geopoint field was named by an element that was not there:** the browser's accessibility check listed an `aria-labelledby` that matched no id for every geopoint field. The box has its label now, and a test checks that every label a geopoint field points at exists.
 - **The table showed the stored value of a select whose labels are in `options.labels`,** not the label (the form and the list showed the label). The table now reads the labels where the form does.
 - **Switching between the light and the dark theme was laggy:** the click waited for the server to save the theme before anything changed, so on a slow connection nothing happened for a moment, and then every colour of the page faded over a tenth of a second at once. The theme now changes at once, the server is asked to keep it in the background (the page goes back to the other theme when it cannot), and the fades are turned off for the two frames the switch is drawn in. `LoginService.changeTheme(theme)` takes the theme to keep, and no longer replaces the classes of the page body.

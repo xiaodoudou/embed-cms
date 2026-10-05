@@ -525,7 +525,32 @@
       grid-template-columns: minmax(0, 1fr);
     }
     .crop-stage {
-      height: 46vh;
+      height: 36vh;
+      min-height: 180px;
+    }
+  }
+  // a phone on its side (375px high): the picture beside the tools again, and the tools scroll inside their column (under the picture they were below the fold, out of reach of a finger
+  // that drags the crop)
+  @media (pointer: coarse) and (max-height: 500px) {
+    .crop-title {
+      padding: var(--cms-space-2) var(--cms-space-4);
+    }
+    .crop-body {
+      grid-template-columns: minmax(0, 1fr) 260px;
+      grid-template-rows: minmax(0, 1fr);
+      overflow: hidden;
+      padding: var(--cms-space-2) var(--cms-space-4);
+    }
+    .crop-stage {
+      height: auto;
+      min-height: 0;
+    }
+    .crop-tools {
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .crop-foot {
+      padding: var(--cms-space-2) var(--cms-space-4);
     }
   }
 }

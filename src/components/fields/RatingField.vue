@@ -52,7 +52,8 @@
       },
       /** @returns {number} the size of an icon, in pixels */
       size () {
-        return 28
+        // a finger: larger icons, so that the half of a heart is wider than a fingertip's slip (18px)
+        return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(pointer: coarse)').matches ? 36 : 28
       },
       /** @returns {number} the rating of the record, 0 when there is none */
       current () {
@@ -210,6 +211,30 @@
     }
     &:disabled {
       cursor: default;
+    }
+  }
+  // a finger: icons of 36px a button's width apart (a half step is 22px wide), and ten of them wrap onto a second line on a narrow screen instead of leaving the tenth outside
+  @media (pointer: coarse) {
+    .rating-row {
+      flex-wrap: wrap;
+    }
+    .rating-items {
+      flex-wrap: wrap;
+      gap: var(--cms-space-2);
+    }
+    .rating-item {
+      width: 36px;
+      height: 36px;
+      .rating-step {
+        left: calc(var(--cms-space-1) * -1);
+        right: calc(var(--cms-space-1) * -1);
+      }
+      &.has-half .rating-step.is-left {
+        right: 50%;
+      }
+      &.has-half .rating-step:not(.is-left) {
+        left: 50%;
+      }
     }
   }
   .rating-text {

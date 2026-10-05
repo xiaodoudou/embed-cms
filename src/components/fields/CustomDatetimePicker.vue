@@ -292,6 +292,34 @@
   }
 }
 
+// a finger: the buttons of the popup are button-sized, and a popup taller than the screen scrolls (a range with a time is 650px tall: on a 568px screen its top and its Select
+// button were out of reach)
+@media (pointer: coarse) {
+  .dp--menu {
+    max-height: calc(100dvh - var(--cms-space-4) * 2);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  // Cancel and Select stay at the foot of the popup while the calendar scrolls under them
+  .dp--action-row {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    background: var(--dp-background-color);
+  }
+  .dp--action-button {
+    min-height: var(--cms-touch-target);
+    padding: 0 var(--cms-space-4);
+  }
+  .dp--arrow-btn-nav {
+    width: var(--cms-touch-target);
+    height: var(--cms-touch-target);
+  }
+  .dp--inc-dec-button-inline {
+    height: var(--cms-space-8);
+  }
+}
+
 .dp--action-cancel {
   background: transparent;
   color: var(--cms-primary);

@@ -416,7 +416,7 @@ body.cms-dragging {
 // ---- Phones: the editor keeps its room -----------------------------------------------------------------------------------
 // The breadcrumb, the margin of the card and a bar of three lines leave little of the screen to the form, and nothing at all with the
 // keyboard up: the breadcrumb goes (the Back button and the title say where you are), the card is the page, the bar is two lines.
-@media (max-width: 599.98px) {
+@media #{$phone-compact-query} {
   .cms-content:has(.records.has-selection:not(.full-width)) > .cms-crumbs {
     display: none;
   }
@@ -452,6 +452,30 @@ body.cms-dragging {
     .status-dot {
       width: 10px;
       height: 10px;
+    }
+  }
+}
+
+// ---- A phone on its side ------------------------------------------------------------------------------------------------------
+// 375px of height, and the keyboard takes most of it: the breadcrumb goes everywhere (the title of the list and the drawer say where you are), and the title of the list
+// shares its row with the search instead of standing above it.
+@media (pointer: coarse) and (max-height: 500px) {
+  .cms-crumbs {
+    display: none;
+  }
+
+  .record-list .record-list-top-bar {
+    display: flex;
+    align-items: center;
+
+    .resource-selector {
+      flex: 0 1 auto;
+      width: auto;
+      max-width: 40%;
+    }
+    .search {
+      flex: 1 1 auto;
+      padding: var(--cms-space-2) var(--cms-space-3);
     }
   }
 }

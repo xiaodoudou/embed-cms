@@ -134,7 +134,7 @@
 
   // Wide screens open the sidebar, narrower ones start as a rail, phones use the off-canvas drawer
   const WIDE_QUERY = '(min-width: 1280px)'
-  const DRAWER_QUERY = '(max-width: 767.98px)'
+  const DRAWER_QUERY = '(max-width: 767.98px), (pointer: coarse) and (max-height: 500px)'
 
   export default {
     components: {
@@ -1086,7 +1086,7 @@
 }
 
 // Phones: the navigation is an off-canvas drawer (wider screens keep the sidebar or the rail).
-@media (max-width: 767.98px) {
+@media #{$phone-query} {
   .cms-layout {
     .cms-nav {
       position: fixed;
@@ -1119,7 +1119,7 @@
 }
 
 // Phones: list and editor are two steps of one flow.
-@media (max-width: 767.98px) {
+@media #{$phone-query} {
   .cms-layout .records:not(.full-width) {
     &.has-selection .record-list {
       display: none;

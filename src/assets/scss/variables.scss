@@ -158,3 +158,10 @@ $date-time-color: $cms-text;
 $date-time-active-color: $cms-on-primary;
 $date-time-active-background: $cms-primary;
 $date-time-hover-color: $cms-primary;
+
+// ---- The phone layout ------------------------------------------------------------------------------------------------------
+// The screens under 768px wide, and a phone on its side: a touch screen under 500px high has the width of a tablet and not the height for one (the list and the editor side
+// by side left 150px to the form). The first is also DRAWER_QUERY in App.vue, which a test keeps in step with it.
+$phone-query: '(max-width: 767.98px), (pointer: coarse) and (max-height: 500px)';
+// where the editor gives its whole screen to the form
+$phone-compact-query: '(max-width: 599.98px), (pointer: coarse) and (max-height: 500px)';

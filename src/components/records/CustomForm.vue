@@ -147,14 +147,21 @@ $gapBetweenFields: 16px;
   align-content: flex-start;
   align-items: flex-start;
   gap: $gapBetweenFields;
-  @for $nbSlots from 1 through $maxColumns {
-    @for $nbFields from 1 through $maxColumns {
-      &.nb-fields-#{$nbFields} {
-        &.slots-#{$nbSlots} {
-          >.field-wrapper {
-            @for $i from 1 through $maxColumns {
-              &.width-#{$i} {
-                width: calc(100% / #{$nbSlots} * #{$i} - (#{$gapBetweenFields} / #{$nbFields} * (#{$nbFields} - 1)));
+  // fields side by side only where the editor is wide enough for them: on a phone every field is a whole line
+  >.field-wrapper {
+    flex: 1 1 100%;
+  }
+  @container (min-width: 480px) {
+    @for $nbSlots from 1 through $maxColumns {
+      @for $nbFields from 1 through $maxColumns {
+        &.nb-fields-#{$nbFields} {
+          &.slots-#{$nbSlots} {
+            >.field-wrapper {
+              @for $i from 1 through $maxColumns {
+                &.width-#{$i} {
+                  flex: 0 0 auto;
+                  width: calc(100% / #{$nbSlots} * #{$i} - (#{$gapBetweenFields} / #{$nbFields} * (#{$nbFields} - 1)));
+                }
               }
             }
           }

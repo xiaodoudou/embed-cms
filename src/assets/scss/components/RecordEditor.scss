@@ -1,6 +1,9 @@
 @use "../variables.scss" as *;
 
 .record-editor {
+  // the lines of a form layout ask how wide the editor is (CustomForm.vue), not how wide the screen is
+  container-type: inline-size;
+
   .vue-form-generator > fieldset {
     border: none;
     margin: 0;

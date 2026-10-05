@@ -214,7 +214,7 @@
        * @returns {string}
        */
       localeLabel (locale) {
-        return TranslateService.get(`TL_${_.toUpper(locale)}`)
+        return TranslateService.localeName(locale)
       },
       // Real heights are measured (touch devices enlarge the rows), the constants are only the first guess
       measure () {

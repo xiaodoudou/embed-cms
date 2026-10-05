@@ -26,7 +26,7 @@
             </v-list-item>
           </v-list>
         </v-menu>
-        <v-btn v-if="isDirty" elevation="0" variant="outlined" class="discard" @click="discardChanges">{{ $filters.translate('TL_DISCARD') }}</v-btn>
+        <v-btn v-if="isDirty" elevation="0" variant="outlined" class="discard" :aria-label="$filters.translate('TL_DISCARD')" :title="$filters.translate('TL_DISCARD')" @click="discardChanges"><v-icon class="discard-icon" icon="$undoVariant" /><span class="discard-text">{{ $filters.translate('TL_DISCARD') }}</span></v-btn>
         <v-btn v-if="editingRecord._id" elevation="0" class="delete" icon variant="outlined" color="error" :aria-label="$filters.translate('TL_DELETE')" :title="$filters.translate('TL_DELETE')" @click="deleteRecord"><v-icon icon="$trashCanOutline" /></v-btn>
         <v-btn elevation="0" class="update" :class="{blinking: blinkButton}" :disabled="!canCreateUpdate" @click="createUpdateClicked">{{ getActionText() }}</v-btn>
       </div>

@@ -225,7 +225,7 @@
   }
 }
 
-@media (max-width: 767.98px) {
+@media #{$phone-query} {
   .nav-bar-wrapper .nav-toggle {
     display: inline-flex;
   }

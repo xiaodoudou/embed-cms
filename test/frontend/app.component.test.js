@@ -359,7 +359,7 @@ describe('App', () => {
 
     it('on a narrow screen, Ctrl+B opens the drawer and Escape closes it', async () => {
       const matchMedia = window.matchMedia
-      window.matchMedia = (query) => ({ ...matchMedia(query), matches: query === '(max-width: 767.98px)' })
+      window.matchMedia = (query) => ({ ...matchMedia(query), matches: query === '(max-width: 767.98px), (pointer: coarse) and (max-height: 500px)' })
       try {
         await mountApp('/')
         expect(navMode()).toBe('mode-drawer')

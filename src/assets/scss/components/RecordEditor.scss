@@ -50,7 +50,7 @@
   }
 }
 
-@media (max-width: 767.98px) {
+@media #{$phone-query} {
   .record-editor:not(.full-width) button.back {
     display: inline-flex;
   }

@@ -194,6 +194,8 @@ To re-theme: change values in `tokens.scss` and the two colour maps at the top o
 
 WCAG AA text contrast, visible `:focus-visible` rings everywhere, forced-colors fallback, skip link, `aria-label`s on icon buttons, `aria-pressed`/`aria-expanded`/`aria-current` on toggles and navigation, labelled inputs, `role="alert"` login errors, `prefers-reduced-motion` disables animations and the spinner rotation, 44px touch targets on coarse pointers (every button, including the icon buttons of the app bar, the toggles, the sort and copy-id buttons, the locale buttons, the search boxes and the date boxes; the breadcrumb links grow their hit area without moving), and 16px text in every input on coarse pointers, so that iOS does not zoom in on focus (`src/assets/scss/main.scss`, the touch block at its end).
 
+On a phone (under 600px wide) the record editor keeps its room for the form: the breadcrumb is hidden (the Back button, the title and the app bar say where you are), the card has no margin and no border, and the action bar is two lines, with "Unsaved changes" shortened to its dot (the text stays for screen readers). The form gets 636px of an 812px screen, where it had 520px, and 224px of a 400px one (the keyboard up), where it had 148px. Tablets and computers keep the card.
+
 ## Design choices
 
 - The dropdown type-ahead is the field's own input: there is no separate search box inside the menu.

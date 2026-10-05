@@ -19,9 +19,19 @@ describe('the options shared by the sortable lists (blocks, images, files)', () 
     expect(first).not.toBe(second)
   })
 
-  it('lists are disabled for nobody by default, and animate', () => {
+  it('lists are disabled for nobody by default, and animate for a mouse', () => {
     expect(options.disabled).toBe(false)
     expect(options.animation).toBeGreaterThan(0)
+  })
+
+  it('do not slide the others aside on a touch screen, where the slide measures every item at each swap and takes a fifth of the drop', () => {
+    const original = window.matchMedia
+    window.matchMedia = (query) => ({ matches: query === '(pointer: coarse)', media: query, addEventListener () {}, removeEventListener () {} })
+    try {
+      expect(DragList.data().dragOptions.animation).toBe(0)
+    } finally {
+      window.matchMedia = original
+    }
   })
 
   describe('what a drag does to the page', () => {

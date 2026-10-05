@@ -1063,6 +1063,14 @@
 .sortable-fallback .item-main-wrapper {
   display: none;
 }
+// While a block is carried the forms of the others are folded away only for a moment, and `display: none` throws their boxes away: showing them again at the drop built every box
+// of every editor again (75ms of a phone's time with four blocks). `content-visibility: hidden` keeps the boxes and skips drawing them, so the drop only shows what is kept.
+@supports (content-visibility: hidden) {
+  .paragraph-view.is-dragging .item-main-wrapper {
+    display: flex;
+    content-visibility: hidden;
+  }
+}
 .sortable-fallback {
   height: auto;
 }

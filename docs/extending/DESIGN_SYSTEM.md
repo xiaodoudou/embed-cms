@@ -200,7 +200,7 @@ A phone on its side has the width of a tablet and 375px of height, so it gets th
 
 In a paragraph field, on a phone the type of block and the Add button share one row (Add multiple goes to a row of its own), the sticky bar stays one line over the blocks, and on a touch screen the bar of a block and its grip are 44px (the Reorder button moves blocks without dragging).
 
-In an image or file field the previews are 200px cards; in an editor under 480px wide (a phone, a tablet beside the list) each takes the whole line instead of leaving the rest of it empty, and on a touch screen the grip that drags a preview is a 44px target and the line of the preview is as tall as a button. A finger rests 150ms on the grip before it drags, so a swipe over it scrolls the page.
+In an image or file field the previews are 200px cards; in an editor under 480px wide (a phone, a tablet beside the list) each takes the whole line instead of leaving the rest of it empty, and on a touch screen the grip that drags a preview is a 44px target and the line of the preview is as tall as a button. A finger drags as soon as it moves from the grip (the grip has `touch-action: none`, so a swipe on it never scrolls the page, and there is nothing to wait for); the blocks, the images and the files share the options in `src/mixins/DragList.js`. While one is dragged the page is not restyled as a whole: the grabbing cursor and the ban on selecting text are for a mouse only, and the previews and the blocks have no transition.
 
 ## Design choices
 

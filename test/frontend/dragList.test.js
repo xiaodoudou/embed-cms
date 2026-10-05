@@ -4,9 +4,11 @@ import DragList from '../../src/mixins/DragList.js'
 describe('the options shared by the sortable lists (blocks, images, files)', () => {
   const options = DragList.data().dragOptions
 
-  it('a mouse drags as soon as it moves from the handle, and only a finger waits (a quick drag started nothing with the delay on both)', () => {
-    expect(options.delayOnTouchOnly).toBe(true)
-    expect(options.delay).toBeGreaterThan(0)
+  it('a finger drags as soon as it moves from the handle, as a mouse does (a wait of 150ms, and a move of 10px that cancelled it, made a quick drag, a natural one and a drifting finger start nothing)', () => {
+    expect(options.delay).toBe(0)
+    expect(options).not.toHaveProperty('delayOnTouchOnly')
+    expect(options.touchStartThreshold).toBeLessThanOrEqual(3)
+    expect(options.fallbackTolerance).toBeLessThanOrEqual(3)
   })
 
   it('names no group: every list names its own, and a shared one here let a block, an image or a file be dragged into another field', () => {

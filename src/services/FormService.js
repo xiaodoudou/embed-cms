@@ -5,6 +5,7 @@ import { ratingOptions, normaliseRating } from '@u/rating'
 import { validateDuration } from '@u/duration'
 import { validateMoney } from '@u/money'
 import { validateDateRange } from '@u/dateRange'
+import { validateGeopoint } from '@u/geopoint'
 import { validatePhone } from '@u/phone'
 
 const TranslateService = window.TranslateService || TranslateServiceLib
@@ -138,6 +139,7 @@ const customValidators = {
    * @returns {true|string}
    */
   daterange: (value, field) => validateDateRange(field, value) || true,
+  geopoint: (value, field) => validateGeopoint(field, value) || true,
   /**
    * @param {*} value an international number, +442071838750
    * @param {Object} field
@@ -361,6 +363,11 @@ const typeMapper = {
   daterange: {
     type: 'DateRangeField',
     validator: customValidators.daterange
+  },
+  // a place, kept as { lat, lng } in degrees (see utils/geopoint.js)
+  geopoint: {
+    type: 'GeopointField',
+    validator: customValidators.geopoint
   },
   time: {
     type: 'CustomDatetimePicker',

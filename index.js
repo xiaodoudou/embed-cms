@@ -35,6 +35,7 @@ const { ensureStrongSecrets } = require('./lib/util/secrets')
 const csrfGuard = require('./lib/util/csrf')
 const cookieNames = require('./lib/util/cookieNames')
 const securityHeaders = require('./lib/util/securityHeaders')
+const { normalizeMaps } = require('./lib/util/maps')
 const sendError = require('./lib/plugins/rest/sendError')
 
 /**
@@ -266,7 +267,7 @@ class CMS {
       this._app.set('trust proxy', options.trustProxy)
     }
     if (this.security.headers) {
-      this._app.use(securityHeaders({ contentSecurityPolicy: this.security.contentSecurityPolicy }))
+      this._app.use(securityHeaders({ contentSecurityPolicy: this.security.contentSecurityPolicy, maps: normalizeMaps(options.maps) }))
     } else {
       this._app.use(helmet.dnsPrefetchControl())
       this._app.use(helmet.expectCt())

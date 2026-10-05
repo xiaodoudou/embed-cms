@@ -614,6 +614,52 @@ describe('authentication hardening (security)', () => {
       }
     })
 
+    it('gives the map of the geopoint field to a logged in admin only, and never through /admin/config (its address can hold a key)', async () => {
+      const maps = { tiles: { url: 'https://tiles.example.com/{z}/{x}/{y}.png?key=tilekey0123456789' }, search: false }
+      const app = await startApp(hardened({ maps }))
+      try {
+        const anonymous = await request(app.url).get('/admin/maps')
+        expect(anonymous.status).to.be.oneOf([401, 403])
+        expect(JSON.stringify(anonymous.body)).to.not.include('tilekey0123456789')
+        const admin = await createUser(app)
+        const login = await request(app.url).post('/admin/login').send({ username: admin.username, password: admin.password })
+        const cookie = login.headers['set-cookie'].map(c => c.split(';')[0]).join('; ')
+        const res = await request(app.url).get('/admin/maps').set('Cookie', cookie)
+        expect(res.status).to.equal(200)
+        expect(res.body.enabled).to.equal(true)
+        expect(res.body.tiles.url).to.equal(maps.tiles.url)
+        expect(res.body.search).to.equal(null)
+        expect(res.headers['cache-control']).to.include('no-store')
+        expect(res.headers['content-security-policy']).to.include('https://tiles.example.com')
+        const config = await request(app.url).get('/admin/config')
+        expect(JSON.stringify(config.body)).to.not.include('tilekey0123456789')
+      } finally {
+        await app.close()
+      }
+    })
+
+    it('tells a logged in admin the map of OpenStreetMap by default, and that there is none when it is turned off', async () => {
+      const ask = async (overrides) => {
+        const app = await startApp(hardened(overrides))
+        try {
+          const admin = await createUser(app)
+          const login = await request(app.url).post('/admin/login').send({ username: admin.username, password: admin.password })
+          const cookie = login.headers['set-cookie'].map(c => c.split(';')[0]).join('; ')
+          const res = await request(app.url).get('/admin/maps').set('Cookie', cookie)
+          return { body: res.body, csp: res.headers['content-security-policy'] }
+        } finally {
+          await app.close()
+        }
+      }
+      const normal = await ask({})
+      expect(normal.body.enabled).to.equal(true)
+      expect(normal.body.tiles.url).to.equal('https://tile.openstreetmap.org/{z}/{x}/{y}.png')
+      expect(normal.csp).to.include('https://tile.openstreetmap.org')
+      const off = await ask({ maps: false })
+      expect(off.body).to.deep.equal({ enabled: false })
+      expect(off.csp).to.not.include('openstreetmap')
+    })
+
     it('requires a login for /admin/_groups', async () => {
       const app = await startApp(hardened())
       try {

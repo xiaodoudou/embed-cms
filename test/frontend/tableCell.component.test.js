@@ -28,6 +28,15 @@ describe('TableCell', () => {
     expect(cell('daterange', {}, { field: {} }).find('.cell-empty').exists()).toBe(true)
   })
 
+  it('shows a point as its latitude and longitude, with the decimals of the field', () => {
+    const value = { lat: 48.856601, lng: 2.352222 }
+    const wrapper = cell('geopoint', { value }, { field: {} })
+    expect(wrapper.get('.cell-number').text()).toBe('48.856601, 2.352222')
+    expect(wrapper.get('.cell-number').attributes('title')).toBe('48.856601, 2.352222')
+    expect(cell('geopoint', { value }, { field: { options: { precision: 2 } } }).text()).toBe('48.86, 2.35')
+    expect(cell('geopoint', {}, { field: {} }).find('.cell-empty').exists()).toBe(true)
+  })
+
   it('shows markdown as what it says, without the signs', () => {
     const wrapper = cell('markdown', { value: '# Title\n\nSome **bold** and [a link](https://x.co).' }, { field: {} })
     expect(wrapper.text()).toBe('Title Some bold and a link.')

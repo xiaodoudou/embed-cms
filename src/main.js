@@ -40,6 +40,7 @@ import CustomCode from '@c/fields/CustomCode.vue'
 import ColorPicker from '@c/fields/ColorPicker.vue'
 import RatingField from '@c/fields/RatingField.vue'
 import DateRangeField from '@c/fields/DateRangeField.vue'
+import GeopointField from '@c/fields/GeopointField.vue'
 import DurationField from '@c/fields/DurationField.vue'
 import MarkdownField from '@c/fields/MarkdownField.vue'
 import MaskedField from '@c/fields/MaskedField.vue'
@@ -110,6 +111,7 @@ app.use(router)
   .component('ColorPicker', ColorPicker)
   .component('RatingField', RatingField)
   .component('DateRangeField', DateRangeField)
+  .component('GeopointField', GeopointField)
   .component('DurationField', DurationField)
   .component('MarkdownField', MarkdownField)
   .component('MaskedField', MaskedField)

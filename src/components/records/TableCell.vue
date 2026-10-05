@@ -28,6 +28,7 @@
     <a v-if="phoneHref" class="cell-link cell-number" :href="phoneHref" :title="text" tabindex="-1" @click.stop>{{ text }}</a>
     <span v-else class="cell-text cell-number">{{ text }}</span>
   </template>
+  <span v-else-if="kind === 'geopoint'" class="cell-text cell-number" :title="text">{{ text }}</span>
   <span v-else-if="kind === 'money'" class="cell-text cell-number" :title="text">{{ text }}</span>
   <span v-else-if="kind === 'rating'" class="cell-rating" :title="text"><v-icon :icon="ratingIcon" size="14" /><span class="cell-text">{{ text }}</span></span>
   <span v-else-if="kind === 'date' || kind === 'datetime' || kind === 'time'" class="cell-text cell-date">{{ text }}</span>
@@ -41,6 +42,7 @@
   import { ICONS, ratingOptions, ratingText } from '@u/rating'
   import { durationOptions, formatDuration } from '@u/duration'
   import { formatMoney } from '@u/money'
+  import { formatGeopoint, geopointOptions } from '@u/geopoint'
   import { formatPhone, splitE164 } from '@u/phone'
   import { markdownToPlain } from '@u/markdown'
   import { formatDateRange } from '@u/dateRange'
@@ -105,6 +107,7 @@
           case 'duration': return formatDuration(value, durationOptions(this.column.field).units, localeTag(TranslateService.locale))
           case 'phone': return formatPhone(value)
           case 'markdown': return markdownToPlain(value)
+          case 'geopoint': return formatGeopoint(value, geopointOptions(this.column.field).precision)
           case 'daterange': return formatDateRange(value, _.get(this.column, 'field.options.time') === true)
           case 'money': return formatMoney(value, localeTag(TranslateService.locale))
           case 'rating': return ratingText(value, ratingOptions(this.column.field).max)

@@ -16,6 +16,7 @@ const KIND_BY_INPUT = {
   date: 'date',
   datetime: 'datetime',
   daterange: 'daterange',
+  geopoint: 'geopoint',
   time: 'time',
   image: 'image',
   cropimage: 'image',
@@ -46,6 +47,7 @@ const WIDTHS = {
   date: { width: 124 },
   datetime: { width: 164 },
   daterange: { width: 236 },
+  geopoint: { width: 176 },
   time: { width: 92 },
   image: { width: 104 },
   color: { width: 96 },
@@ -504,6 +506,9 @@ export function sortValue (record, column, options = {}) {
   }
   if (column.kind === 'daterange') {
     return _.get(value, 'start')
+  }
+  if (column.kind === 'geopoint') {
+    return _.get(value, 'lat')
   }
   if (_.isFunction(options.labelOf) && (column.kind === 'select' || column.kind === 'multi')) {
     const label = options.labelOf(column)

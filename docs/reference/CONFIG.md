@@ -49,6 +49,35 @@ The CMS reads its configuration once, at start-up, so restart the process after 
 | `ns` | `[]` | Extra path segments between `data` and the resource folders, to keep several sites in one data folder. |
 | `dbEngine` | none: LevelDB on disk | Which store keeps the records: `leveldb`, `sqlite`, `jsondown`, `mongodb` or `postgres`. See [Storage engines](#storage-engines). |
 
+## Maps
+
+The [geopoint](fields/geopoint.md) field is two boxes (latitude and longitude) and a **Pick on map** button, which opens a map where the point is clicked or the pin dragged, and an address can be searched. The map is [Leaflet](https://leafletjs.com) (bundled with the admin, loaded when a map is opened) drawing the tiles of [OpenStreetMap](https://www.openstreetmap.org), and the search is [Nominatim](https://nominatim.org). Nothing needs a key and nothing needs to be configured.
+
+The `maps` option points the map at other servers, or turns it off:
+
+```json
+{
+  "maps": {
+    "tiles": { "url": "https://tiles.example.com/{z}/{x}/{y}.png?key=your-key", "attribution": { "text": "© Example Maps", "url": "https://example.com/legal" }, "maxZoom": 18 },
+    "search": { "url": "https://search.example.com/find" }
+  }
+}
+```
+
+| Option | Default | What it does |
+|---|---|---|
+| `maps` | not set | Not set: OpenStreetMap, as above. `false`: no map, the field is its two boxes, and the policy below lets nothing through. |
+| `maps.tiles.url` | `https://tile.openstreetmap.org/{z}/{x}/{y}.png` | The tile server: an https address (or http on this machine) with `{z}`, `{x}` and `{y}` in it. A key can be part of the address. |
+| `maps.tiles.attribution` | the one of OpenStreetMap | What the corner of the map says: a text, or `{ text, url }` for a link. A tile server of your own has its own: without one the corner says nothing. |
+| `maps.tiles.maxZoom` | `19` | The closest zoom the tiles have, 1 to 22. |
+| `maps.search.url` | `https://nominatim.openstreetmap.org/search` | A search that answers like Nominatim (`?format=jsonv2&limit=1&q=...`, a list of places with `lat` and `lon`). `false` removes the search box. |
+
+- The map is for a person editing a record, not for a site with many visitors: the tile servers and the search of OpenStreetMap ask to be used lightly (see their [tile usage policy](https://operations.osmfoundation.org/policies/tiles/) and [Nominatim policy](https://operations.osmfoundation.org/policies/nominatim/)). A search is made only when Enter is pressed. For heavier use, name a tile server of your own or of a provider.
+- The browser sends the address of the admin (its origin, nothing more) with each tile and each search, which the OpenStreetMap servers ask for.
+- The address of a tile server can hold a key, so the map is given to people who are logged in to the admin (`GET /admin/maps`) and is not part of `/admin/config`. A value that is not right is left out, the OpenStreetMap one is used instead, and the log says so.
+- The content security policy lets through the tile server as an image source and the search as a connection, and nothing else; no script comes from another server. With `maps: false` it lets through neither. A `security.contentSecurityPolicy` that you write is used as it is: add the two addresses to it.
+- The point is stored in WGS-84, the system of the tiles and of GPS.
+
 ## Features you can switch
 
 | Option | Default | What it does |

@@ -290,6 +290,11 @@ declare module 'embed-cms' {
       wsRecordUpdates?: boolean
       /** `true` (the default): the login page and the admin are always light */
       disableDarkMode?: boolean
+      /** The map of the `geopoint` field: OpenStreetMap by default, the tile server and the search you name, or `false` for no map (the field is then its two boxes). */
+      maps?: false | {
+        tiles?: { url: string; attribution?: string | { text: string; url?: string }; maxZoom?: number }
+        search?: false | { url: string }
+      }
       admin?: { language?: { defaultLocale?: string; locales?: string[] }; [setting: string]: any }
       /** Text of the admin's top bar */
       toolbarTitle?: EmbedCMS.Translatable

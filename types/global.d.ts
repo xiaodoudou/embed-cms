@@ -71,7 +71,7 @@ declare namespace EmbedCMS {
     | 'string' | 'transliterate' | 'text' | 'password' | 'email' | 'url'
     | 'number' | 'integer' | 'double'
     | 'checkbox' | 'color' | 'rating' | 'duration' | 'money' | 'phone' | 'markdown'
-    | 'date' | 'daterange' | 'time' | 'datetime'
+    | 'date' | 'daterange' | 'time' | 'datetime' | 'geopoint'
     | 'pillbox' | 'select' | 'multiselect'
     | 'json' | 'object' | 'code' | 'wysiwyg'
     | 'image' | 'cropimage' | 'imagemap' | 'file' | 'paragraph'
@@ -135,6 +135,12 @@ declare namespace EmbedCMS {
     /** `daterange`: the fewest and the most days a range has, the first and the last included */
     minDays?: number
     maxDays?: number
+    /** `geopoint`: the decimals kept in the latitude and the longitude, 0 to 10 (6 by default) */
+    precision?: number
+    /** `geopoint`: how far the map is zoomed in when it shows no point yet, 1 to 20 (12 by default) */
+    zoom?: number
+    /** `geopoint`: where that map is centred */
+    center?: { lat: number; lng: number }
     /** `markdown`: the buttons of the toolbar, in the order of the toolbar (`'bold'`, `'italic'`, `'strike'`, `'heading'`, `'quote'`, `'ul'`, `'ol'`, `'code'`, `'link'`); `false` for none, all by default */
     toolbar?: boolean | Array<'bold' | 'italic' | 'strike' | 'heading' | 'quote' | 'ul' | 'ol' | 'code' | 'link'>
     /** `markdown`: where the preview is: in a tab (by default), beside the box, or `false` for none */

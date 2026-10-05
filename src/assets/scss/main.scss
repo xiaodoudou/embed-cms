@@ -412,3 +412,46 @@ body.cms-dragging {
     inset: calc(var(--cms-space-2) * -1) 0;
   }
 }
+
+// ---- Phones: the editor keeps its room -----------------------------------------------------------------------------------
+// The breadcrumb, the margin of the card and a bar of three lines leave little of the screen to the form, and nothing at all with the
+// keyboard up: the breadcrumb goes (the Back button and the title say where you are), the card is the page, the bar is two lines.
+@media (max-width: 599.98px) {
+  .cms-content:has(.records.has-selection:not(.full-width)) > .cms-crumbs {
+    display: none;
+  }
+
+  .record-editor:not(.full-width) {
+    align-self: stretch;
+    max-height: none;
+    margin: 0;
+    border-width: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .record-editor .top-bar {
+    min-height: 0;
+    padding: var(--cms-space-2) var(--cms-space-3);
+    gap: var(--cms-space-2);
+
+    // "Unsaved changes" is only its dot here: the Discard button and the dot on the language say the rest
+    .editor-status {
+      flex: 0 0 auto;
+    }
+    .status-saved {
+      display: none;
+    }
+    .status-dirty {
+      gap: 0;
+      padding: 0;
+      border: 0;
+      background: none;
+      font-size: 0;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+    }
+  }
+}

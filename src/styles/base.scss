@@ -952,29 +952,37 @@ a {
   border-radius: var(--cms-radius-md);
 }
 
+/* the box is the first line of the menu: no band, no box, no tint around it, only a line under it. It is 36px tall, the text and the magnifier start where the rows' text does */
 .v-menu .outline-search {
-  padding: var(--cms-space-2);
   border-bottom: 1px solid var(--cms-border);
 }
 
-/* a small box, not the 40px of a form field: it sits over a list of rows 32px tall */
 .v-menu .outline-search .v-input {
-  --v-input-control-height: 30px;
+  --v-input-control-height: 36px;
 }
 
-/* (the magnifier is over the text of the rows: the box is inset by the padding of the band, and the field gives back what is left of the 12px of a row) */
-.v-menu .outline-search .v-field {
-  --v-field-padding-start: var(--cms-space-1);
-  --v-field-padding-end: var(--cms-space-2);
-  --v-input-padding-top: 0px;
+.v-menu .outline-search .v-field,
+.v-menu .outline-search .v-field--focused {
+  --v-field-padding-start: var(--cms-space-3);
+  --v-field-padding-end: var(--cms-space-3);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   font-size: var(--cms-fs-sm);
   font-weight: var(--cms-fw-regular);
 }
 
 .v-menu .outline-search .v-field__input {
-  min-height: 30px;
+  min-height: 36px;
   padding-top: 0;
   padding-bottom: 0;
+}
+
+.v-menu .outline-search .v-field__prepend-inner,
+.v-menu .outline-search .v-field__clearable {
+  align-items: center;
+  padding-top: 0;
 }
 
 .v-menu .outline-search .v-field__prepend-inner > .v-icon,

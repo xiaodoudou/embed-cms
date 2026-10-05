@@ -52,6 +52,6 @@ A field named in a line that is not in the `schema` is ignored, and the console 
 
 ## What it changes
 
-The layout is how the admin draws the form: nothing is stored differently, the REST API and the JavaScript API do not see it, and the order of the fields in lists and in the records does not change. The fields of a line keep their share of the width on small screens too, so keep a line to what fits on a phone: two or three short fields.
+The layout is how the admin draws the form: nothing is stored differently, the REST API and the JavaScript API do not see it, and the order of the fields in lists and in the records does not change. A line keeps its fields side by side only where the editor is at least 480px wide. In a narrower editor (a phone, and a tablet beside the list) every field of the line takes a whole line of its own, in the order of the line, so nothing is squeezed to a few letters. Computers keep the columns.
 
 For paragraph blocks side by side, see [Dynamic layout](DYNAMIC_LAYOUT.md).

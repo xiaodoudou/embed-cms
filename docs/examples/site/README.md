@@ -15,6 +15,8 @@ cd docs/examples/site
 node server.js
 ```
 
+`PORT=8080 node server.js` serves on another port, and `STATE_DIR` keeps the data of the CMS and the kept pages somewhere other than this folder.
+
 Open `http://localhost:3000` for the site and `http://localhost:3000/admin` for the editors (`localAdmin` / `localAdmin` on a development machine). **The first start loads four articles** from `content.json` with the [ContentLoader](../../operations/CONTENT_LOADER.md); the next starts find them in place and change nothing.
 
 Now try the loop that is the point of the example:

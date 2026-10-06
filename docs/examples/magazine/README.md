@@ -19,6 +19,8 @@ cd docs/examples/magazine
 node server.js
 ```
 
+`PORT=8080 node server.js` serves on another port, and `STATE_DIR` keeps the data of the CMS and the kept pages somewhere other than this folder.
+
 Open `http://localhost:3000` for the site and `http://localhost:3000/admin` for the editors (`localAdmin` / `localAdmin` on a development machine). **The first start loads the content** from `content.json` and `files/` with the [ContentLoader](../../operations/CONTENT_LOADER.md): the settings, three authors with photos, four categories and thirteen articles with covers (one is a draft). The next starts find it all in place and change nothing. Edit an article in the admin, reload the page, and it is there.
 
 | File | What it does |

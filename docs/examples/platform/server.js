@@ -13,9 +13,11 @@ const platform = require('./platform')
 
 const PUBLIC_PORT = Number(process.env.PORT) || 3000
 const ADMIN_PORT = Number(process.env.ADMIN_PORT) || 3001
+// where the data of the CMS and the kept pages are put: this folder, unless STATE_DIR says another (a test, a second copy)
+const STATE = process.env.STATE_DIR || __dirname
 
 // No `anonymousRead`: nothing of the CMS is open to a visitor. Whoever reaches the admin port has to sign in.
-const cms = new CMS({ mid: 'webnode1', resources: path.join(__dirname, 'resources'), data: path.join(__dirname, 'data') })
+const cms = new CMS({ mid: 'webnode1', resources: path.join(__dirname, 'resources'), data: path.join(STATE, 'data') })
 
 // the CMS has its own application, on its own port, on this machine only: a proxy that publishes the site does not publish this
 const admin = express()
@@ -26,7 +28,7 @@ const adminServer = admin.listen(ADMIN_PORT, '127.0.0.1', async () => {
   await new CMS.ContentLoader(cms).load(path.join(__dirname, 'content.json'))
 
   // the site first: it puts a hook on the members that turns a password into a hash, and the member below must pass through it
-  const { app } = platform(cms, { secret: process.env.SESSION_SECRET, cache: path.join(__dirname, '.page-cache') })
+  const { app } = platform(cms, { secret: process.env.SESSION_SECRET, cache: path.join(STATE, '.page-cache') })
 
   // a member to try the site with: made when there is none, with a password of its own that is shown once
   const members = cms.api()('members')

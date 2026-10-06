@@ -26,6 +26,8 @@ cd docs/examples/platform
 node server.js
 ```
 
+`PORT` and `ADMIN_PORT` choose the two ports, and `STATE_DIR` keeps the data of the CMS and the kept pages somewhere other than this folder.
+
 | Address | What it is |
 |---|---|
 | `http://localhost:3000` | The site, for everyone. |

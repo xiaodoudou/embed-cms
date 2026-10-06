@@ -30,8 +30,9 @@ This is the map: GitHub shows it when you open the `docs/` folder, so it's the o
 - [**Magazine**](examples/magazine/README.md): a tutorial on a bilingual site built with no helper: Express, `cms.api()`, relations, pictures, a search, a feed, a sitemap and a template engine of its own. Runnable.
 - [**Docs platform**](examples/platform/README.md): an advanced tutorial on a platform that hosts the docs of several products, a version at a time, whose CMS is not on the public site: pages and products for members, files that follow the page, a sign-in of its own with passwords nobody can read back, and a support form. Runnable.
 - [**Boardwalk**](examples/taskboard/README.md): an expert tutorial on a Vue 3 app over the REST API: a team task board with a login the app never sees, optimistic stores, drag and drop, real time over the websocket, and tests down to the real CMS. Runnable.
+- [**Docker**](examples/docker/README.md): a tutorial on running embed-cms in a container with every secret in a `.env`: an image that holds none, scripts that make the file, build the image (and look for the secrets in it) and run it. Runnable.
 
-The four share an [overview](examples/README.md): what they have in common and the few ideas a project needs.
+The sites and the app share an [overview](examples/README.md): what they have in common and the few ideas a project needs.
 
 ## Operations (`operations/`)
 
@@ -64,6 +65,7 @@ Each topic is written once, on the page that owns it.
 | Putting the CMS in your own Express app | [GETTING_STARTED.md](start/GETTING_STARTED.md) |
 | Every option of `cms.json` (except security) | [CONFIG.md](reference/CONFIG.md) |
 | The security options and the production configuration | [SECURITY.md](../SECURITY.md) |
+| Running it in a container, with the secrets in a `.env` | [the Docker example](examples/docker/README.md) |
 | What an input type is and each of its options | [FIELDS.md](reference/FIELDS.md) and [`fields/`](reference/fields/) |
 | Fields side by side in a form, blocks side by side | [FORM_LAYOUT.md](reference/FORM_LAYOUT.md), [DYNAMIC_LAYOUT.md](reference/DYNAMIC_LAYOUT.md) |
 | The REST routes, the record shape, the JavaScript API, hooks | [API.md](reference/API.md) |

@@ -7,7 +7,7 @@ const request = require('supertest')
 const { expect } = require('chai')
 const CMS = require('../../')
 const { startApp } = require('../helpers/app')
-const { examples, ROOT } = require('../helpers/examples')
+const { examples, deployments, ROOT } = require('../helpers/examples')
 const { crawl } = require('../helpers/crawl')
 
 // Every example project of docs/examples held to the same bar, so that no change of the CMS can break one without a test saying so: its resources are the CMS's, its content loads and loads
@@ -274,9 +274,12 @@ describe('the example projects (unit)', () => {
     })
   })
 
-  it('has every example in the list: one for each folder of docs/examples that has a server.js', () => {
-    const folders = fs.readdirSync(ROOT, { withFileTypes: true }).filter((entry) => entry.isDirectory() && fs.existsSync(path.join(ROOT, entry.name, 'server.js'))).map((entry) => entry.name)
+  it('has every example in the list: one for each folder of docs/examples that has a server.js (the deployments have a test of their own)', () => {
+    const folders = fs.readdirSync(ROOT, { withFileTypes: true }).filter((entry) => entry.isDirectory() && fs.existsSync(path.join(ROOT, entry.name, 'server.js')) && !deployments.includes(entry.name)).map((entry) => entry.name)
     expect(examples.map((example) => path.basename(example.dir)).sort()).to.deep.equal(folders.sort())
+    for (const name of deployments) {
+      expect(fs.existsSync(path.join(__dirname, `example${name[0].toUpperCase()}${name.slice(1)}.test.js`)), `the test of the ${name} deployment`).to.equal(true)
+    }
   })
 
   it('has for every example a README, a content file, a folder of resources and a screenshots script', () => {

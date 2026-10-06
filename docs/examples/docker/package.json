@@ -1,0 +1,17 @@
+{
+  "name": "embed-cms-docker-example",
+  "version": "1.0.0",
+  "private": true,
+  "description": "embed-cms in a container: every secret in a .env file, an image with none, and scripts to make the file, build the image and run it",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "embed-cms": "^3.0.4",
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": "^22.12.0"
+  }
+}

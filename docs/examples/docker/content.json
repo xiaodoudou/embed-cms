@@ -1,0 +1,6 @@
+{
+  "notes": [
+    { "slug": "container", "title": "It runs in a container", "text": "This note was loaded the first time the container started, from content.json." },
+    { "slug": "secrets", "title": "Its secrets are not in the image", "text": "They are in .env, on the machine that runs it." }
+  ]
+}

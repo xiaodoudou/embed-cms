@@ -54,19 +54,28 @@ The two share an [overview](examples/README.md): what they have in common and th
 
 ## Who owns what
 
-| Topic | Owner |
+Each topic is written once, on the page that owns it.
+
+| If you want to know | Read |
 |---|---|
-| Options of `cms.json` (except security) | [CONFIG.md](reference/CONFIG.md) |
-| Security options, production configuration | [SECURITY.md](../SECURITY.md) |
+| What a word means: resource, field, locale, paragraph, view | [CONCEPTS.md](start/CONCEPTS.md) |
+| Putting the CMS in your own Express app | [GETTING_STARTED.md](start/GETTING_STARTED.md) |
+| Every option of `cms.json` (except security) | [CONFIG.md](reference/CONFIG.md) |
+| The security options and the production configuration | [SECURITY.md](../SECURITY.md) |
+| What an input type is and each of its options | [FIELDS.md](reference/FIELDS.md) and [`fields/`](reference/fields/) |
+| Fields side by side in a form, blocks side by side | [FORM_LAYOUT.md](reference/FORM_LAYOUT.md), [DYNAMIC_LAYOUT.md](reference/DYNAMIC_LAYOUT.md) |
+| The REST routes, the record shape, the JavaScript API, hooks | [API.md](reference/API.md) |
+| The REST middlewares in your own routes | [REST_HELPER.md](reference/REST_HELPER.md) |
+| The pages of a public site, rendered and kept | [PAGE_HELPER.md](reference/PAGE_HELPER.md) |
+| Content and files loaded from a JSON file, `cms-load` | [CONTENT_LOADER.md](operations/CONTENT_LOADER.md) |
+| Resizing and smart cropping of images | [API.md](reference/API.md#attachments), [SMART_CROPPING.md](reference/SMART_CROPPING.md) |
+| Type definitions and editor autocomplete | [TYPESCRIPT.md](reference/TYPESCRIPT.md) |
 | Where records are stored, engine speed and safety | [STORAGE.md](operations/STORAGE.md) |
-| Type definitions, autocomplete | [TYPESCRIPT.md](reference/TYPESCRIPT.md) |
-| Field types and their options | [FIELDS.md](reference/FIELDS.md) and [`fields/`](reference/fields/) |
-| Routes, record shape, JavaScript methods, hooks | [API.md](reference/API.md) |
-| Words and ideas | [CONCEPTS.md](start/CONCEPTS.md) |
+| Replication, sync between servers, importers (and the sample files of the importers in `examples/`) | [REPLICATION.md](operations/REPLICATION.md), [SYNC.md](operations/SYNC.md), [IMPORT.md](operations/IMPORT.md) |
+| How to build a whole site, step by step | the two tutorials: [blog](examples/site/README.md), [magazine](examples/magazine/README.md) |
+| Your own plugin or admin page | [PLUGINS.md](extending/PLUGINS.md), [PLUGIN_UI_KIT.md](extending/PLUGIN_UI_KIT.md) |
+| Design tokens and UI rules of the admin | [DESIGN_SYSTEM.md](extending/DESIGN_SYSTEM.md) |
 | How the code fits together | [ARCHITECTURE.md](contributing/ARCHITECTURE.md) |
-| Test commands and CI | [CONTRIBUTING.md](../CONTRIBUTING.md) (commands), [TESTING.md](contributing/TESTING.md) (how the tests work) |
-| Design tokens and UI rules | [DESIGN_SYSTEM.md](extending/DESIGN_SYSTEM.md) |
-| A plugin's own options | its page: [REPLICATION.md](operations/REPLICATION.md), [SYNC.md](operations/SYNC.md), [IMPORT.md](operations/IMPORT.md) |
-
-`examples/` also holds the sample configuration files of the importers (`cms-import-remote`, see [IMPORT.md](operations/IMPORT.md)).
-
+| The commands for tests and CI, branches and releases | [CONTRIBUTING.md](../CONTRIBUTING.md) |
+| How the tests are built | [TESTING.md](contributing/TESTING.md) |
+| What changed in each version | [CHANGELOG.md](../CHANGELOG.md) |

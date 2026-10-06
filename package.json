@@ -46,6 +46,7 @@
     "docs:site-screenshots": "node test/docs/screenshots/site.js",
     "docs:magazine-screenshots": "node test/docs/screenshots/magazine.js",
     "docs:platform-screenshots": "node test/docs/screenshots/platform.js",
+    "docs:taskboard-screenshots": "node test/docs/screenshots/taskboard.js",
     "bench:engines": "node --expose-gc test/bench/engines.js",
     "migrate-store": "node scripts/migrateStore.js"
   },

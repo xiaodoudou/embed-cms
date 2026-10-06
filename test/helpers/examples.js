@@ -56,6 +56,20 @@ const examples = [
     // the site only: the CMS is not in it
     build: (cms) => require(path.join(ROOT, 'platform', 'platform'))(cms, { secret: SECRET, cache: false }).app
   }
+  ,
+  {
+    name: 'task board',
+    dir: path.join(ROOT, 'taskboard'),
+    // the login page and its cookie, and the websocket: what the server.js of the example sets
+    options: { disableAuthentication: true, disableJwtLogin: false, wsRecordUpdates: true },
+    resources: ['people', 'projects', 'tasks', 'comments'],
+    start: ['/'],
+    ready: /Boardwalk is at/,
+    // a single-page app: the page is one page for any address, and what is crawled is what it loads
+    spa: true,
+    // it is built when it first starts, which is the slow part
+    startupSeconds: 120
+  }
 ]
 
 module.exports = { examples, ROOT, SECRET }

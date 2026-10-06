@@ -1,0 +1,23 @@
+{
+  "people": [
+    { "username": "ada", "name": "Ada Reader", "color": "#6c5ce7" },
+    { "username": "grace", "name": "Grace Hopper", "color": "#e17055" },
+    { "username": "linus", "name": "Linus Berg", "color": "#00b894" }
+  ],
+  "projects": [
+    { "key": "WEB", "name": "Website", "description": "The public site and its docs." },
+    { "key": "OPS", "name": "Operations", "description": "Servers, backups and what wakes us up." }
+  ],
+  "tasks": [
+    { "ref": "WEB-1", "project": "projects://WEB", "title": "Write the home page", "status": "done", "position": 1000, "assignee": "people://ada", "labels": ["content"], "description": "The first screen: what it is, who it is for, one picture." },
+    { "ref": "WEB-2", "project": "projects://WEB", "title": "Choose the colours", "status": "review", "position": 1000, "assignee": "people://grace", "labels": ["design"], "description": "Three colours and their dark variants." },
+    { "ref": "WEB-3", "project": "projects://WEB", "title": "Build the pricing page", "status": "doing", "position": 1000, "assignee": "people://ada", "labels": ["content", "design"], "due": "2026-10-20", "description": "Three plans, their prices, and what each one includes." },
+    { "ref": "WEB-4", "project": "projects://WEB", "title": "Fix the broken link in the footer", "status": "todo", "position": 1000, "assignee": "people://linus", "labels": ["bug"] },
+    { "ref": "WEB-5", "project": "projects://WEB", "title": "Add a search box", "status": "todo", "position": 2000, "labels": ["feature"], "description": "A box in the header that goes to /search." },
+    { "ref": "WEB-6", "project": "projects://WEB", "title": "Translate the docs", "status": "todo", "position": 3000, "assignee": "people://grace", "labels": ["content"], "due": "2026-11-15" },
+    { "ref": "OPS-1", "project": "projects://OPS", "title": "Restore a backup on a clean machine", "status": "doing", "position": 1000, "assignee": "people://linus", "labels": ["backup"], "due": "2026-10-12" },
+    { "ref": "OPS-2", "project": "projects://OPS", "title": "Rotate the keys", "status": "todo", "position": 1000, "assignee": "people://linus", "labels": ["security"] },
+    { "ref": "OPS-3", "project": "projects://OPS", "title": "Write the on-call guide", "status": "todo", "position": 2000, "labels": ["content"] },
+    { "ref": "OPS-4", "project": "projects://OPS", "title": "Move the logs to a bigger disk", "status": "done", "position": 1000, "assignee": "people://ada", "labels": ["servers"] }
+  ]
+}

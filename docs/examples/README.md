@@ -1,8 +1,8 @@
 ← [Documentation](../README.md)
 
-# Examples: three sites built on embed-cms
+# Examples: three sites and an app built on embed-cms
 
-The three examples are runnable sites in this folder. Each is one Express application: the CMS (the admin for editors, the API for files) and the public pages your visitors see, side by side. Each has its own README written as a tutorial, to read with the code beside it. Start one, open it, change an article in the admin, reload the page, and you have seen the whole loop.
+Three of the examples are runnable sites in this folder. Each is one Express application: the CMS (the admin for editors, the API for files) and the public pages your visitors see, side by side. The fourth, [Boardwalk](taskboard/README.md), is an application: a Vue 3 single-page app that uses the CMS as its backend. Each has its own README written as a tutorial, to read with the code beside it. Start one, open it, change something in the admin, reload the page, and you have seen the whole loop.
 
 | | [Blog](site/README.md) | [Magazine](magazine/README.md) | [Docs platform](platform/README.md) (advanced) |
 |---|---|---|---|
@@ -21,6 +21,8 @@ They open on `http://localhost:3000`. The blog and the magazine have the admin o
 - [**The blog**](site/README.md): the shortest way to a site. The tutorial builds it in seven steps (a resource, the CMS and the site in one application, the first content, the templates, a route and its loader, the 404 and error pages) and ends with the sitemap and how a request becomes a page. Every option of the helper is in [PageHelper](../reference/PAGE_HELPER.md).
 - [**The magazine**](magazine/README.md): what a site with relations, pictures, two languages, a search and a feed asks for. The tutorial builds it in ten steps, each with the code of the file it is about, and has the sitemap of all its pages.
 - [**The docs platform**](platform/README.md): the advanced one. A platform that hosts the documentation of several products, a version at a time (`/tidewater/latest/…` goes to the current one, an old version says so, a switcher keeps you on the page), whose CMS is **not** on the public site: a second port for the editors, the site reading in its own process, products and pages that are public or for members (text, diagram and PDF alike, by one rule), a sign-in of its own with passwords nobody can read back, and a support form that names the page it is about. It is the one to read before you put private content on embed-cms.
+
+- [**Boardwalk**](taskboard/README.md): not a site but an app. A team task board in **Vue 3** (single-file components, Vue Router, Vite, no state library, no TypeScript) over the REST API of the CMS: a login whose cookie the app never sees, one small client, one generic store for the records of a resource (optimistic writes that are taken back, writes kept in order, answers that come late), real time as the CMS really says it (a removal has no id, a file is announced by its own id), drag and drop with one write, a filter in the address, a card that others change while you edit it, and hooks of the CMS that number the cards and sign the comments. It has about 270 tests, down to the real CMS with a real websocket.
 
 Each tutorial has a few screenshots, only to show what the code makes.
 
@@ -124,6 +126,10 @@ An address no route answered gets a 404 page; a route that threw gets an error p
 ### 9. Private content: keep the CMS off the public site
 
 `anonymousRead` opens a resource **and every file of it**, drafts included: a visitor who guesses the address of a draft's cover can fetch it. That is fine for the pictures of a magazine and wrong for content that is private. The [docs platform](platform/README.md) shows the other way: the CMS has its own application on its own port, for the editors; the public site has no `/api`, reads the CMS in its own process (`cms.api()`), and streams each file from a route of its own, after the one question it asks of every page, text, diagram and PDF alike: *may this visitor read this page?*
+
+### 10. An app is not a site: the front end gets the REST API, and listens
+
+When the front end is an application, the pages are made in the browser and the CMS is reached over `/api`: with a cookie that the app cannot read, a client that is the only place that talks HTTP, records held by id and written optimistically, and the websocket of the CMS to hear about changes. What the REST API gives, and does not give (no sort, a removal with no id, a file announced by its own id), shapes the stores. [Boardwalk](taskboard/README.md) is that, step by step.
 
 ## Where to go next
 

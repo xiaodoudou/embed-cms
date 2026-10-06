@@ -4,6 +4,8 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ## [Unreleased]
 
+## [3.0.4] - 2026-10-06
+
 ### Added
 
 - **An examples section in the docs** (`docs/examples/README.md`): the blog and the magazine side by side in one table, a tutorial README for each (the blog had none), the sitemap of each as a graph, a few screens of each, and the eight ideas a project needs (the resource files, the CMS and the site in one Express application, the first content in `content.json`, reading with `cms.api()`, the two ways to make a page, keeping what is costly, pictures, the 404 and error pages). The magazine is listed there and no longer under Reference, and the phone screenshot of the magazine is gone.
@@ -192,7 +194,8 @@ The release that turned node-cms into a project that stands on its own: the firs
 - The bugs the component tests found: a new record opens a blank editor again, a refused request is not logged as a server error, record names and labels after the mustache 4 update, a record whose id overlaps the machine id can be changed and removed, and `remove` and `update` throw instead of failing silently.
 - A delete goes to the replication peers right away again, `cms-import` prints no empty progress bars into logs, the xlsx import answers `400` without a file.
 
-[Unreleased]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.3...HEAD
+[Unreleased]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.4...HEAD
+[3.0.4]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.3...v3.0.4
 [3.0.3]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.2...v3.0.3
 [3.0.2]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.1...v3.0.2
 [3.0.1]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.0...v3.0.1

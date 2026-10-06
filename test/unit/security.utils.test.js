@@ -231,10 +231,17 @@ describe('security utilities (unit)', () => {
 
     it('guards the GET routes that change state', () => {
       const headers = { host: 'cms.local:9990', cookie: 'connect.sid=abc', 'sec-fetch-site': 'cross-site' }
-      for (const route of ['/importFromRemote/execute', '/import/execute', '/admin/changeTheme/dark']) {
+      for (const route of ['/importFromRemote/execute', '/import/execute', '/admin/changeTheme/dark', '/admin/logout']) {
         expect(run({ method: 'GET', path: route, headers }).status, route).to.equal(403)
       }
       expect(run({ method: 'GET', path: '/api/articles', headers }).passed).to.equal(true)
+    })
+
+    it('guards them whatever the case of the letters of the address, since the router does not tell them apart', () => {
+      const headers = { host: 'cms.local:9990', cookie: 'connect.sid=abc', 'sec-fetch-site': 'cross-site' }
+      for (const route of ['/Admin/changeTheme/dark', '/ADMIN/CHANGETHEME/dark', '/admin/changetheme/dark', '/admin/changeTheme/dark/', '/Import/Execute', '/IMPORT/EXECUTE/', '/Admin/Logout', '/admin/logout/', '/importfromremote/execute', '/ImportFromRemote/Execute']) {
+        expect(run({ method: 'GET', path: route, headers }).status, route).to.equal(403)
+      }
     })
   })
 

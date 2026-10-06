@@ -39,7 +39,7 @@ const server = app.listen(3000, () => cms.bootstrap(server))
 | Middleware | Use it as | What it does |
 |---|---|---|
 | `mw.find_resource(ctx)` | a factory | Answers `404` if `:resource` isn't a declared resource; otherwise sets `req.resource`. |
-| `mw.authorize(ctx)` | a factory (returns two middlewares) | Identifies the caller (Basic header, or a JWT in `token`, `x-access-token` or the `embedCmsJwt-<mid>` cookie; anonymous otherwise) and checks the right that matches the HTTP method: `GET` read, `POST` create, `PUT` update, `DELETE` remove, and `attachments` for writes to an `/attachments` URL. Answers `401` when the group lacks it. Sets `req.body._updatedBy`. |
+| `mw.authorize(ctx)` | a factory (returns two middlewares) | Identifies the caller (Basic header, or a JWT in `token`, `x-access-token` or the `embedCmsJwt-<mid>` cookie; anonymous otherwise) and checks the right that matches the HTTP method: `GET` read, `POST` create, `PUT` update, `DELETE` remove, and `attachments` for writes to the attachments routes (`/:resource/:id/attachments...`: the route that matched decides, not the text of the address, so a query such as `?x=/attachments` changes nothing). Answers `401` when the group lacks it. Sets `req.body._updatedBy`. |
 | `mw.parse_query` | as is | Parses `?query=` as JSON, refuses operators outside the allowed list, and copies the other query parameters (as strings) into `req.options`. |
 | `mw.list_resources(ctx)` | a factory, as a handler | Answers the declaration of every resource (schema, locales and so on, with `title` and `mid`). |
 

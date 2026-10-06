@@ -8,10 +8,14 @@ const express = require('express')
 const CMS = require('../../../')
 const magazine = require('./magazine')
 
+const PORT = Number(process.env.PORT) || 3000
+// where the data of the CMS and the kept pages are put: this folder, unless STATE_DIR says another (a test, a second copy)
+const STATE = process.env.STATE_DIR || __dirname
+
 const cms = new CMS({
   mid: 'webnode1',
   resources: path.join(__dirname, 'resources'),
-  data: path.join(__dirname, 'data'),
+  data: path.join(STATE, 'data'),
   // what a visitor's browser may read over /api: the pictures of the pages come from there. Nothing else is open, and nothing can be written.
   anonymousRead: ['settings', 'authors', 'categories', 'articles']
 })
@@ -21,8 +25,8 @@ const app = express()
 app.use(cms.express())
 app.use(magazine(cms))
 
-const server = app.listen(3000, async () => {
+const server = app.listen(PORT, async () => {
   await cms.bootstrap(server)
   const report = await new CMS.ContentLoader(cms).load(path.join(__dirname, 'content.json'))
-  console.log(`The magazine is at http://localhost:3000 (content: ${report.created} created, ${report.updated} updated, ${report.unchanged} unchanged)`)
+  console.log(`The magazine is at http://localhost:${PORT} (content: ${report.created} created, ${report.updated} updated, ${report.unchanged} unchanged)`)
 })

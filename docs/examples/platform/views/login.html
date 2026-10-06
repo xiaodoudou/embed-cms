@@ -1,0 +1,12 @@
+{{> header}}
+<h1>Sign in</h1>
+<p class="lede">The pages marked “Members” are for members.</p>
+{{#error}}<p class="alert" role="alert">{{error}}</p>{{/error}}
+<form class="stack" method="post" action="/login">
+  <input type="hidden" name="_csrf" value="{{csrf}}">
+  <input type="hidden" name="next" value="{{next}}">
+  <label>Email <input type="email" name="email" value="{{email}}" autocomplete="username" required maxlength="200"></label>
+  <label>Password <input type="password" name="password" autocomplete="current-password" required maxlength="200"></label>
+  <button class="button primary" type="submit">Sign in</button>
+</form>
+{{> footer}}

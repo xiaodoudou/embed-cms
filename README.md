@@ -85,6 +85,7 @@ Two things in this quick start are only fit for your laptop. The `localAdmin` ac
 - [Field types](docs/reference/FIELDS.md): every input type, with screenshots.
 - [Configuration](docs/reference/CONFIG.md) and [API](docs/reference/API.md): the references.
 - [Storage engines](docs/operations/STORAGE.md): LevelDB, SQLite, JSON file, MongoDB or PostgreSQL, with benchmarks and what a crash loses.
+- [Examples](docs/examples/README.md): three runnable sites to learn from, each a tutorial: a [blog](docs/examples/site/README.md) (the shortest site), a bilingual [magazine](docs/examples/magazine/README.md) and a [docs platform](docs/examples/platform/README.md) with products, versions and pages for members, and a CMS that stays off the public site.
 
 ## Contributing, security, license
 

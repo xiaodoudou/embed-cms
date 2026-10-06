@@ -245,7 +245,7 @@ const imageUrl = (resource, record, file, width) =>
 <img src="<%- image('articles', article, 'cover', 960) %>" srcset="<%- srcset('articles', article, 'cover') %>" sizes="(min-width: 48rem) 46rem, 100vw" alt="">
 ```
 
-The pictures are public because `server.js` lets the anonymous visitor **read** the four resources (`anonymousRead`); nothing can be written.
+The pictures are public because `server.js` lets the anonymous visitor **read** the four resources (`anonymousRead`); nothing can be written. That opens every file of those resources, drafts included: for content that is private, read the [docs platform](../platform/README.md), which serves its files itself.
 
 ### 8. The browser's cache
 

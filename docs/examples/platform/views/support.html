@@ -1,0 +1,15 @@
+{{> header}}
+<h1>Ask the team</h1>
+<p class="lede">A question, a mistake in a page, a page that is missing? Write to us.</p>
+{{#about}}<p class="meta">About the page <code>{{about}}</code></p>{{/about}}
+{{#hasErrors}}<ul class="alert" role="alert">{{#errors}}<li>{{.}}</li>{{/errors}}</ul>{{/hasErrors}}
+<form class="stack" method="post" action="/support">
+  <input type="hidden" name="_csrf" value="{{csrf}}">
+  <input type="hidden" name="page" value="{{about}}">
+  <label>Your name <input name="name" value="{{values.name}}" required maxlength="100"></label>
+  <label>Your email <input type="email" name="email" value="{{values.email}}" required maxlength="200"></label>
+  <label>Your message <textarea name="text" rows="6" required maxlength="3000">{{values.text}}</textarea></label>
+  <div class="trap" aria-hidden="true"><label>Leave this empty <input name="website" tabindex="-1" autocomplete="off"></label></div>
+  <button class="button primary" type="submit">Send</button>
+</form>
+{{> footer}}

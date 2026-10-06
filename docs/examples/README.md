@@ -1,31 +1,32 @@
 ← [Documentation](../README.md)
 
-# Examples: two sites built on embed-cms
+# Examples: three sites built on embed-cms
 
-Both examples are runnable sites in this folder. Each is one Express application: the CMS (the admin for editors, the API for files) and the public pages your visitors see, side by side. Each has its own README written as a tutorial, to read with the code beside it. Start one, open it, change an article in the admin, reload the page, and you have seen the whole loop.
+The three examples are runnable sites in this folder. Each is one Express application: the CMS (the admin for editors, the API for files) and the public pages your visitors see, side by side. Each has its own README written as a tutorial, to read with the code beside it. Start one, open it, change an article in the admin, reload the page, and you have seen the whole loop.
 
-| | [Blog](site/README.md) | [Magazine](magazine/README.md) |
-|---|---|---|
-| What it is | The shortest site: four articles, a list, a 404 and an error page | A bilingual magazine: authors, categories, pictures, a search, a feed, a sitemap |
-| How the pages are made | The [PageHelper](../reference/PAGE_HELPER.md) renders [Mustache](https://mustache.github.io/mustache.5.html) templates and keeps the finished pages | Express routes, `cms.api()` and a template engine of its own (thirty lines around `_.template`) |
-| Resources | 1 (`articles`) | 4 (`settings`, `authors`, `categories`, `articles`) with relations between them |
-| Languages | 1 | 2 (`/en`, `/zh`) |
-| Pictures | none | covers and photos, resized by the CMS |
-| Read it to learn | How little code a site needs | What a site with relations, pictures and two languages asks for |
-| Run it | `cd docs/examples/site && node server.js` | `cd docs/examples/magazine && node server.js` |
+| | [Blog](site/README.md) | [Magazine](magazine/README.md) | [Docs platform](platform/README.md) (advanced) |
+|---|---|---|---|
+| What it is | The shortest site: four articles, a list, a 404 and an error page | A bilingual magazine: authors, categories, pictures, a search, a feed, a sitemap | A platform that hosts the docs of several products, a version at a time, some of it for members: a sign-in, private files, a support form |
+| How the pages are made | The [PageHelper](../reference/PAGE_HELPER.md) renders [Mustache](https://mustache.github.io/mustache.5.html) templates and keeps the finished pages | Express routes, `cms.api()` and a template engine of its own (thirty lines around `_.template`) | The PageHelper for the public pages, Express routes for the rest |
+| Resources | 1 (`articles`) | 4 (`settings`, `authors`, `categories`, `articles`) with relations between them | 5 (`products`, `versions`, `pages`, `members`, `messages`), a tree of three levels |
+| Languages | 1 | 2 (`/en`, `/zh`) | 1 |
+| Pictures and files | none | covers and photos, resized by the CMS, public | diagrams and PDFs, streamed by the site, public or for members |
+| Read it to learn | How little code a site needs | What a site with relations, pictures and two languages asks for | How to keep the CMS off the public site, and decide in code who sees what |
+| Run it | `cd docs/examples/site && node server.js` | `cd docs/examples/magazine && node server.js` | `cd docs/examples/platform && node server.js` |
 
-Both open on `http://localhost:3000`, with the admin on `/admin` (`localAdmin` / `localAdmin` on a development machine). The first start loads the content from `content.json`; the next ones change nothing.
+They open on `http://localhost:3000`. The blog and the magazine have the admin on `/admin` of the same address; the platform has it on `http://127.0.0.1:3001/admin`, on another port (`localAdmin` / `localAdmin` on a development machine). The first start loads the content from `content.json`; the next ones change nothing.
 
-## The two tutorials
+## The three tutorials
 
 - [**The blog**](site/README.md): the shortest way to a site. The tutorial builds it in seven steps (a resource, the CMS and the site in one application, the first content, the templates, a route and its loader, the 404 and error pages) and ends with the sitemap and how a request becomes a page. Every option of the helper is in [PageHelper](../reference/PAGE_HELPER.md).
 - [**The magazine**](magazine/README.md): what a site with relations, pictures, two languages, a search and a feed asks for. The tutorial builds it in ten steps, each with the code of the file it is about, and has the sitemap of all its pages.
+- [**The docs platform**](platform/README.md): the advanced one. A platform that hosts the documentation of several products, a version at a time (`/tidewater/latest/…` goes to the current one, an old version says so, a switcher keeps you on the page), whose CMS is **not** on the public site: a second port for the editors, the site reading in its own process, products and pages that are public or for members (text, diagram and PDF alike, by one rule), a sign-in of its own with passwords nobody can read back, and a support form that names the page it is about. It is the one to read before you put private content on embed-cms.
 
 Each tutorial has a few screenshots, only to show what the code makes.
 
-## What the two have in common: the core of using the CMS in a project
+## What they have in common: the core of using the CMS in a project
 
-These are the few ideas a project needs. Each one is the same in both examples, so learn them once.
+These are the few ideas a project needs. Each one is the same in all three examples (the platform changes the second, and says why), so learn them once.
 
 ```mermaid
 flowchart LR
@@ -119,6 +120,10 @@ The blog keeps whole pages, made again when a template file or a record it read 
 ### 8. A 404 and an error are pages too
 
 An address no route answered gets a 404 page; a route that threw gets an error page that **says nothing of the error** (it is logged). The error page must not need the CMS: it is what is shown when the CMS failed.
+
+### 9. Private content: keep the CMS off the public site
+
+`anonymousRead` opens a resource **and every file of it**, drafts included: a visitor who guesses the address of a draft's cover can fetch it. That is fine for the pictures of a magazine and wrong for content that is private. The [docs platform](platform/README.md) shows the other way: the CMS has its own application on its own port, for the editors; the public site has no `/api`, reads the CMS in its own process (`cms.api()`), and streams each file from a route of its own, after the one question it asks of every page, text, diagram and PDF alike: *may this visitor read this page?*
 
 ## Where to go next
 

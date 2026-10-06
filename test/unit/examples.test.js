@@ -47,10 +47,11 @@ function run (example, env) {
     const child = spawn(process.execPath, ['server.js'], { cwd: example.dir, env: { ...process.env, LOG_LEVEL: 'error', ...env } })
     let output = ''
     const exited = new Promise((done) => child.once('exit', done))
+    const seconds = example.startupSeconds || 60
     const timer = setTimeout(() => {
       child.kill()
-      reject(new Error(`${example.name}: server.js was not ready in 60 s. Output:\n${output}`))
-    }, 60000)
+      reject(new Error(`${example.name}: server.js was not ready in ${seconds} s. Output:\n${output}`))
+    }, seconds * 1000)
     const listen = (chunk) => {
       output += chunk
       if (example.ready.test(output)) {
@@ -108,7 +109,11 @@ describe('the example projects (unit)', () => {
         })
       })
 
-      describe('as a site', () => {
+      // a single-page app is one page for every address: what is checked of it is what that page loads (in 'as a program')
+      describe('as a site', function () {
+        if (example.spa) {
+          return
+        }
         let app, server
         before(async () => {
           app = await startApp({ resources: path.join(example.dir, 'resources'), ...example.options })
@@ -176,8 +181,21 @@ describe('the example projects (unit)', () => {
             const html = await res.text()
             expect(html).to.match(/<title>[^<]+<\/title>/)
             // the content is in it: more than the frame of a page
-            expect(html.length).to.be.above(800)
-            expect((await get(`${base()}/nowhere-at-all`)).status).to.equal(404)
+            expect(html.length).to.be.above(example.spa ? 200 : 800)
+            // a single-page app answers every address with its page: the router of the browser says what is there
+            expect((await get(`${base()}/nowhere-at-all`)).status).to.equal(example.spa ? 200 : 404)
+            if (example.spa) {
+              // everything the page loads is there: the scripts and the stylesheets, with the type of what they are
+              const assets = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)].map((match) => match[1])
+              expect(assets.length, 'what the page loads').to.be.above(1)
+              for (const asset of assets) {
+                const res = await get(`${base()}${asset}`)
+                expect(res.status, asset).to.equal(200)
+                expect(res.headers.get('content-type'), asset).to.match(/javascript|css/)
+              }
+              // the CMS is in the same program, and asks for a sign-in
+              expect((await get(`${base()}/api/tasks`)).status).to.equal(401)
+            }
           } finally {
             await running.stop()
           }

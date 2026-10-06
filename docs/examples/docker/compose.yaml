@@ -1,0 +1,38 @@
+# How the image is run. The secrets are not in this file: `env_file` hands the whole of .env to the container, so a value is written in one
+# place only, and this file can be committed. (`docker compose config` prints the file with .env put in it, secrets included: do not paste its output.)
+name: embed-cms-docker
+
+services:
+  cms:
+    # scripts/build.sh builds it (and checks that it holds no secret); `build` here is for `docker compose build`, and for a `up` with no image yet.
+    # No `args` and no `environment` with a secret in them: a build argument stays in the layers of the image.
+    image: ${IMAGE:-embed-cms-docker}:${TAG:-latest}
+    build: .
+    # AUTH_SECRET, SESSION_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD, LOG_LEVEL: all of .env. The file has to be there (scripts/env.sh makes it).
+    env_file: .env
+    restart: unless-stopped
+    # published on this machine only: a reverse proxy does the https for everybody else
+    ports:
+      - "127.0.0.1:${HOST_PORT:-3000}:3000"
+    # the one place the program writes: the records and the files. The container can be replaced, the volume stays.
+    volumes:
+      - data:/data
+    # nothing can be written but the volume and /tmp, the program has no power of its own and cannot get one, and an init reaps its processes
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    # `docker stop` sends SIGTERM, and the program has this long to close its databases
+    stop_grace_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  data:

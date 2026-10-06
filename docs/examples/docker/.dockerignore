@@ -1,0 +1,12 @@
+# What does not go to the build: the secrets above all, then everything the image has no use for
+.env
+.env.*
+!.env.example
+node_modules
+data
+.git
+.gitignore
+.dockerignore
+README.md
+scripts
+compose.yaml

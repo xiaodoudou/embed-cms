@@ -2,7 +2,7 @@
 
 # Examples: three sites and an app built on embed-cms
 
-Three of the examples are runnable sites in this folder. Each is one Express application: the CMS (the admin for editors, the API for files) and the public pages your visitors see, side by side. The fourth, [Boardwalk](taskboard/README.md), is an application: a Vue 3 single-page app that uses the CMS as its backend. Each has its own README written as a tutorial, to read with the code beside it. Start one, open it, change something in the admin, reload the page, and you have seen the whole loop.
+Three of the examples are runnable sites in this folder. Each is one Express application: the CMS (the admin for editors, the API for files) and the public pages your visitors see, side by side. The fourth, [Boardwalk](taskboard/README.md), is an application: a Vue 3 single-page app that uses the CMS as its backend. Each has its own README written as a tutorial, to read with the code beside it. Start one, open it, change something in the admin, reload the page, and you have seen the whole loop. A fifth folder, [Docker](docker/README.md), is not an example of a site but of how to **run one in a container**, with every secret in a `.env`.
 
 | | [Blog](site/README.md) | [Magazine](magazine/README.md) | [Docs platform](platform/README.md) (advanced) |
 |---|---|---|---|
@@ -23,6 +23,8 @@ They open on `http://localhost:3000`. The blog and the magazine have the admin o
 - [**The docs platform**](platform/README.md): the advanced one. A platform that hosts the documentation of several products, a version at a time (`/tidewater/latest/…` goes to the current one, an old version says so, a switcher keeps you on the page), whose CMS is **not** on the public site: a second port for the editors, the site reading in its own process, products and pages that are public or for members (text, diagram and PDF alike, by one rule), a sign-in of its own with passwords nobody can read back, and a support form that names the page it is about. It is the one to read before you put private content on embed-cms.
 
 - [**Boardwalk**](taskboard/README.md): not a site but an app. A team task board in **Vue 3** (single-file components, Vue Router, Vite, no state library, no TypeScript) over the REST API of the CMS: a login whose cookie the app never sees, one small client, one generic store for the records of a resource (optimistic writes that are taken back, writes kept in order, answers that come late), real time as the CMS really says it (a removal has no id, a file is announced by its own id), drag and drop with one write, a filter in the address, a card that others change while you edit it, and hooks of the CMS that number the cards and sign the comments. It has about 270 tests, down to the real CMS with a real websocket.
+
+- [**Docker**](docker/README.md): how to run embed-cms in a container that is safe to share. The image holds the program and no secret; every secret is in a `.env` on the host, which three scripts make (with random values), check, and hand to the container; the script that builds the image looks for those secrets in what it built, and a `compose.yaml` runs the container read-only, as a user that is not root, on this machine's address only. The app is the smallest one that shows it, and the folder is made to be copied under your own project.
 
 Each tutorial has a few screenshots, only to show what the code makes.
 

@@ -72,4 +72,8 @@ const examples = [
   }
 ]
 
-module.exports = { examples, ROOT, SECRET }
+// The folders of docs/examples that are not a site or an app on the content of the CMS but a way to deploy one (a Dockerfile, scripts): they are not held to the bar of the others
+// (no screenshots, no crawl), and have a test of their own.
+const deployments = ['docker']
+
+module.exports = { examples, deployments, ROOT, SECRET }

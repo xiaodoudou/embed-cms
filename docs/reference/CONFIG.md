@@ -34,7 +34,7 @@ const cms = new CMS({
 })
 ```
 
-The CMS reads its configuration once, at start-up, so restart the process after you edit `cms.json`. (The admin never edits this file.) Run the CMS under a supervisor (systemd, pm2, Docker) that starts it again when it stops.
+The CMS reads its configuration once, at start-up, so restart the process after you edit `cms.json`. (The admin never edits this file.) Run the CMS under a supervisor (systemd, pm2, Docker) that starts it again when it stops. In a container the secrets are given as environment variables and `cms.json` is part of the image: see the [Docker example](../examples/docker/README.md).
 
 ## Core
 

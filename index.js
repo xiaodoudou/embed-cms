@@ -802,3 +802,9 @@ CMS.RestHelper = require('./lib/plugins/rest/RestHelper')
  * @type {PageHelper}
  */
 CMS.PageHelper = require('./lib/PageHelper')
+
+/**
+ * Export ContentLoader to put content and files into the CMS from a JSON description
+ * @type {ContentLoader}
+ */
+CMS.ContentLoader = require('./lib/ContentLoader')

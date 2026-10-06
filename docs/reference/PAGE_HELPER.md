@@ -271,4 +271,4 @@ cd docs/examples/site
 node server.js
 ```
 
-The pictures of this page are made by `npm run docs:site-screenshots`. Then add an article in the admin at `http://localhost:3000/admin` (`localAdmin`, `localAdmin` on a development machine), tick **Published**, and open `http://localhost:3000`. Change `views/card.html` and reload: the new template shows at once. Open `/articles/nothing` for the 404 page.
+The pictures of this page are made by `npm run docs:site-screenshots`. The first start loads the four articles of `content.json` with the [ContentLoader](../operations/CONTENT_LOADER.md), so the home page already has something to show. Add an article in the admin at `http://localhost:3000/admin` (`localAdmin`, `localAdmin` on a development machine), tick **Published**, and reload `http://localhost:3000`. Change `views/card.html` and reload: the new template shows at once. Open `/articles/nothing` for the 404 page.

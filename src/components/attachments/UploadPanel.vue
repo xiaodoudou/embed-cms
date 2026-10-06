@@ -65,12 +65,15 @@
       }
     },
     computed: {
+      /** @returns {boolean} */
       allDone () {
         return this.items.length > 0 && _.every(this.items, (item) => item.status === 'done')
       },
+      /** @returns {boolean} whether any item is no longer uploading */
       hasFinished () {
         return _.some(this.items, (item) => item.status !== 'uploading')
       },
+      /** @returns {string} the header line: uploads in progress, else failures, else complete */
       summary () {
         const uploading = _.filter(this.items, { status: 'uploading' }).length
         const failed = _.filter(this.items, (item) => item.status === 'error').length
@@ -107,12 +110,14 @@
         const height = panel ? Math.ceil(panel.getBoundingClientRect().height) + 8 : 0
         document.documentElement.style.setProperty('--cms-upload-panel-h', `${height}px`)
       },
+      /** Starts the auto-clear countdown over. */
       startCountdown () {
         this.stopCountdown()
         this.countdown = { ms: AUTO_CLEAR_MS, paused: false }
         this.remaining = AUTO_CLEAR_MS
         this.schedule()
       },
+      /** Arms the timer for what remains of the countdown. */
       schedule () {
         this.startedAt = Date.now()
         this.timer = setTimeout(() => UploadService.clearFinished(), this.remaining)
@@ -122,6 +127,7 @@
         this.timer = null
         this.countdown = null
       },
+      /** Hover: keeps what remains of the countdown. */
       pause () {
         if (!this.countdown || this.countdown.paused) {
           return
@@ -137,24 +143,36 @@
         this.countdown.paused = false
         this.schedule()
       },
+      /** @param {Array<Object>} items the queue of UploadService */
       onChange (items) {
         this.items = items
       },
+      /**
+       * @param {{status: string}} item
+       * @returns {string} a Vuetify colour: error, success or primary
+       */
       barColor (item) {
         return item.status === 'error' ? 'error' : item.status === 'done' ? 'success' : 'primary'
       },
+      /**
+       * @param {number} bytes
+       * @returns {string} B, KB or MB with one decimal
+       */
       formatSize (bytes) {
         if (bytes < 1024) {
           return `${bytes} B`
         }
         return bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`
       },
+      /** @param {string} id an upload */
       retry (id) {
         UploadService.retry(id)
       },
+      /** @param {string} id an upload */
       cancel (id) {
         UploadService.cancel(id)
       },
+      /** @param {string} id an upload */
       dismiss (id) {
         UploadService.dismiss(id)
       },
@@ -176,7 +194,7 @@
   right: var(--cms-space-4);
   bottom: var(--cms-space-4);
   z-index: var(--cms-z-toast);
-  width: min(360px, calc(100vw - 32px));
+  width: var(--cms-toast-width);
   // never taller than this: the list inside scrolls
   max-height: min(50vh, 420px);
   display: flex;

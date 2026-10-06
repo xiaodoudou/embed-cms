@@ -11,25 +11,35 @@
   import _ from 'lodash'
   import { ref, watch } from 'vue'
   import { useTheme } from 'vuetify'
-  import { applyThemeToDocument } from '@u/theme'
+  import { applyThemeToDocument, withoutTransitions } from '@u/theme'
   const theme = useTheme()
   const currentTheme = ref(theme.global.name.value)
 
+  /** @returns {boolean} */
   function isDark () {
     return currentTheme.value === 'dark'
   }
 
+  /** @param {string} name the theme to show, right now */
+  function show (name) {
+    withoutTransitions(() => {
+      theme.change(name)
+      currentTheme.value = name
+      applyThemeToDocument(name)
+    })
+  }
+
+  /** Shows the other theme at once, and has the server keep it; when the server cannot, the page goes back (the click is not made to wait for the answer). */
   async function toggleTheme () {
-    if (_.isFunction(theme.change)) {
-      const newTheme = await LoginService.changeTheme()
-      if (!newTheme) {
-        return
-      }
-      theme.change(newTheme)
-      currentTheme.value = newTheme
-      applyThemeToDocument(newTheme)
-    } else {
+    if (!_.isFunction(theme.change)) {
       console.error(`Cannot call theme change:`, theme)
+      return
+    }
+    const before = currentTheme.value
+    const wanted = before === 'dark' ? 'light' : 'dark'
+    show(wanted)
+    if (!(await LoginService.changeTheme(wanted))) {
+      show(before)
     }
   }
 

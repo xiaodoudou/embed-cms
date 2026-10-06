@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import FieldLabel from '@c/fields/FieldLabel.vue'
 import Group from '@c/fields/Group.vue'
@@ -92,6 +92,65 @@ describe('Group (fields that belong together)', () => {
     expect(wrapper.vm.debouncedValidate()).toBe('debounced')
     expect(wrapper.vm.clearValidationErrors()).toBe('cleared')
   })
+
+  describe('that opens and closes', () => {
+    const body = () => wrapper.get('.group-content')
+    const shown = () => body().element.style.display !== 'none'
+
+    it('is always open, with no button, when the resource does not say otherwise', () => {
+      group()
+      expect(wrapper.find('button').exists()).toBe(false)
+      expect(wrapper.classes()).not.toContain('collapsible')
+      expect(shown()).toBe(true)
+    })
+
+    it('has its title for a button that says whether it is expanded and what it controls', async () => {
+      group({}, { collapsible: true })
+      const button = wrapper.get('button.group-toggle')
+      expect(button.text()).toBe('SEO')
+      expect(button.attributes('type')).toBe('button')
+      expect(button.attributes('aria-expanded')).toBe('true')
+      expect(button.attributes('aria-controls')).toBe(body().attributes('id'))
+      expect(wrapper.classes()).toContain('collapsible')
+      expect(shown()).toBe(true)
+      await button.trigger('click')
+      expect(button.attributes('aria-expanded')).toBe('false')
+      expect(wrapper.classes()).toContain('is-collapsed')
+      expect(shown()).toBe(false)
+      await button.trigger('click')
+      expect(button.attributes('aria-expanded')).toBe('true')
+      expect(shown()).toBe(true)
+    })
+
+    it('starts closed when it is collapsed, and keeps its fields mounted', () => {
+      group({}, { collapsible: true, collapsed: true })
+      expect(wrapper.get('button.group-toggle').attributes('aria-expanded')).toBe('false')
+      expect(shown()).toBe(false)
+      expect(wrapper.findComponent({ name: 'CustomForm' }).exists()).toBe(true)
+    })
+
+    it('does not close when it cannot be collapsed, whatever it says', () => {
+      group({}, { collapsible: false, collapsed: true })
+      expect(wrapper.find('button').exists()).toBe(false)
+      expect(shown()).toBe(true)
+    })
+
+    it('opens when a field in it is revealed', async () => {
+      group({}, { collapsible: true, collapsed: true })
+      wrapper.get('.group-content').element.dispatchEvent(new CustomEvent('cms-reveal-group', { bubbles: true }))
+      await wrapper.vm.$nextTick()
+      expect(shown()).toBe(true)
+      expect(wrapper.get('button.group-toggle').attributes('aria-expanded')).toBe('true')
+    })
+
+    it('opens when its form is not valid', async () => {
+      group({}, { collapsible: true, collapsed: true })
+      CustomForm.methods.validate.mockResolvedValueOnce(['error'])
+      await expect(wrapper.vm.validate()).rejects.toThrow('group validation error')
+      await wrapper.vm.$nextTick()
+      expect(shown()).toBe(true)
+    })
+  })
 })
 
 describe('CustomTreeView (a read only view of a value)', () => {
@@ -129,6 +188,8 @@ describe('CustomTreeView (a read only view of a value)', () => {
 })
 
 describe('CustomCode (a code editor)', () => {
+  // the editor library writes "resize 100% 100%" to the console each time it is sized (a debugging line it left in)
+  beforeEach(() => { vi.spyOn(console, 'log').mockImplementation(() => {}) })
   const code = async (model, schema = {}) => {
     wrapper = mountField(CustomCode, { model, schema: { model: 'script', label: 'Script', ...schema }, attachTo: document.body })
     await flushPromises()
@@ -147,14 +208,14 @@ describe('CustomCode (a code editor)', () => {
     expect(wrapper.find('.CodeMirror').classes()).toContain('cm-s-cms')
   })
 
-  it('says it is read-only with an eye after the label, and disabled with a lock', async () => {
+  it('says it is read-only with a lock after the label, and disabled with no icon', async () => {
     await code({ script: 'a' }, { readonly: true })
     expect(wrapper.classes()).toContain('is-readonly')
     expect(wrapper.find('.field-label .cms-field-readonly').exists()).toBe(true)
     wrapper.unmount()
     await code({ script: 'a' }, { disabled: true })
     expect(wrapper.classes()).toContain('is-disabled')
-    expect(wrapper.find('.field-label .cms-field-lock').exists()).toBe(true)
+    expect(wrapper.find('.field-label .cms-field-readonly').exists()).toBe(false)
   })
 
   it('writes the edits into the model', async () => {

@@ -12,6 +12,10 @@ const TranslateService = window.TranslateService || TranslateServiceLib
 export default {
   mixins: [Notification],
   methods: {
+    /**
+     * @param {string} id the record
+     * @param {Array<Object>} attachments uploaded one by one; the failures are reported together
+     */
     async uploadAttachments (id, attachments) {
       this.$loading.start('uploadAttachments')
       const url = `../api/${this.resource.title}/${id}/attachments`
@@ -30,6 +34,9 @@ export default {
             if (_.get(attachment, 'cropOptions', false)) {
               log.debug('detected cropOptions, will add it to the request')
               data.append('cropOptions', JSON.stringify(attachment.cropOptions))
+            }
+            if (_.get(attachment, 'imageMap', false)) {
+              data.append('imageMap', JSON.stringify(attachment.imageMap))
             }
             if (_.get(attachment, 'orderUpdated', false) && _.get(attachment, 'order', false)) {
               log.debug('detected orderUpdated, will add it to the request')
@@ -54,9 +61,18 @@ export default {
       }
       this.$loading.stop('uploadAttachments')
     },
-    formatAttachments(attachments, fieldsToKeep = ['_id', 'cropOptions', 'order', '_name']) {
+    /**
+     * @param {Array<Object>} attachments
+     * @param {Array<string>} fieldsToKeep
+     * @returns {Array<Object>}
+     */
+    formatAttachments(attachments, fieldsToKeep = ['_id', 'cropOptions', 'imageMap', 'order', '_name']) {
       return _.map(attachments, (attachment)=> _.pick(attachment, fieldsToKeep))
     },
+    /**
+     * @param {string} id the record
+     * @param {Array<Object>} attachments
+     */
     async updateAttachments (id, attachments) {
       this.$loading.start('updateAttachments')
       try {
@@ -66,6 +82,10 @@ export default {
       }
       this.$loading.stop('updateAttachments')
     },
+    /**
+     * @param {string} id the record
+     * @param {Array<Object>} attachments
+     */
     async removeAttachments (id, attachments) {
       this.$loading.start('remove-attachments')
       try {
@@ -75,22 +95,35 @@ export default {
       }
       this.$loading.stop('remove-attachments')
     },
-    getTypePrexix (type) {
+    /**
+     * @param {string} type create, update or delete
+     * @returns {string} the translated "error on record" message
+     */
+    recordErrorMessage (type) {
       return TranslateService.get(`TL_ERROR_ON_RECORD_${_.toUpper(type)}`)
     },
+    /**
+     * @param {Error|Object} error a 400 adds its message
+     * @param {string} type create, update or delete
+     * @param {Object} record
+     */
     manageError (error, type, record) {
-      let errorMessage = this.getTypePrexix(type)
+      let errorMessage = this.recordErrorMessage(type)
       if (_.get(error, 'code', 500) === 400 && _.get(error, 'message', false)) {
         errorMessage += `: ${_.get(error, 'message', TranslateService.get('TL_UNKNOWN_ERROR'))}`
       }
       console.error(errorMessage, record)
       this.notify(errorMessage, 'error')
     },
+    /**
+     * @param {Object} schema
+     * @returns {Object} the schema with its fields placed on layout.lines; as it is without a layout
+     */
     formatSchemaLayout (schema) {
       if (!_.get(schema, 'layout.lines', false)) {
         return schema
       }
-      const alreadyPlacedFields = []
+      const alreadyPlaced = new Set()
       _.each(schema.layout.lines, (line) => {
         line.slots = line.slots || _.get(line, 'fields.length', 1)
         _.each(line.fields, (field) => {
@@ -98,23 +131,28 @@ export default {
           if (_.isUndefined(field.schema)) {
             field.schema = _.find(schema.fields, {originalModel: field.model})
           }
+          // a group of nested fields (`address.city`) is named by its first part, `address`
+          if (_.isUndefined(field.schema)) {
+            field.schema = _.find(schema.fields, {type: 'group', key: field.model})
+          }
           if (_.isUndefined(field.schema)) {
             console.error(`Couldn't find schema for field ${field.model}`)
           } else {
-            alreadyPlacedFields.push(field.model)
+            alreadyPlaced.add(field.schema)
           }
         })
       })
       _.each(schema.fields, (field) => {
-        if (!_.includes(alreadyPlacedFields, field.model) && !_.includes(alreadyPlacedFields, field.originalModel)) {
-          console.warn(`not placed field ${field.model} in layout, placing at the end`)
-          schema.layout.lines.push({fields: [{model: field.model, schema: field}]})
+        if (!alreadyPlaced.has(field)) {
+          console.warn(`not placed field ${field.model || field.key} in layout, placing at the end`)
+          schema.layout.lines.push({fields: [{model: field.model || field.key, schema: field}]})
         } else {
           log.debug(`field ${field.model} already placed in layout, skipping`)
         }
       })
       return schema
     },
+    /** Builds the form schema of the resource; the fields are disabled on a record that is not local. */
     async updateSchema () {
       try {
         const disabled = !(this.record && this.record._local)

@@ -1,16 +1,16 @@
 <template>
   <div class="attachment-view">
     <form enctype="multipart/form-data">
-      <field-label :schema="schema" :disabled="disabled" />
+      <field-label :schema="schema" :disabled="disabled" :input-id="isFieldDisabled() ? '' : inputId" />
       <v-card
         v-if="!isFieldDisabled()"
         :theme="theme"
-        class="file-input-card" elevation="0" :class="{ 'drag-and-drop': dragover }"
-        @drop.prevent="onDrop($event)" @dragover.prevent="dragover = true" @dragenter.prevent="dragover = true" @dragleave.prevent="dragover = false"
+        class="file-input-card" elevation="0"
+        @drop.prevent="onDrop($event)" @dragover.prevent @dragenter.prevent
       >
         <v-file-input
-          ref="input"
-          :theme="theme" flat :rules="getRules()" prepend-icon="" prepend-inner-icon="$upload" :placeholder="getPlaceholder()" :clearable="false" hide-details="auto"
+          :id="inputId" ref="input" v-model="boxFiles"
+          :name="schema.model" :theme="theme" flat :rules="getRules()" prepend-icon="" prepend-inner-icon="$upload" :placeholder="getPlaceholder()" :clearable="false" hide-details="auto"
           density="compact" :variant="getVariant()" rounded persistent-placeholder single-line :multiple="isForMultipleImages()" :accept="schema.accept"
           @change="onUploadChanged" @update:focused="onFieldFocus"
         >
@@ -19,7 +19,7 @@
       </v-card>
     </form>
     <preview-multiple
-      :attachments="getAttachments()" :schema="schema" :theme="theme" :is-image="isImage" :disabled="isLocked()" :on-end-drag="onEndDrag" :image-size="imageSize" :get-image-src="getImageSrc"
+      :attachments="getAttachments()" :move-attachment="moveAttachment" :schema="schema" :theme="theme" :is-image="isImage" :disabled="isLocked()" :on-end-drag="onEndDrag" :image-size="imageSize" :get-image-src="getImageSrc"
       :remove-image="removeImage"
     />
     <file-input-errors file-type="file" :schema="schema" :is-for-multiple-images="isForMultipleImages" :get-max-count="getMaxCount" />

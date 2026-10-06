@@ -5,9 +5,6 @@ import NotificationsService from '@s/NotificationsService'
 import { mountComponent } from './helpers/mountField.js'
 import { groupedList, products, orders, pages, syslog } from './helpers/navFixtures.js'
 
-// the shortcut directive of vue3-shortkey is registered by the app
-const shortkey = { mounted () {}, updated () {} }
-
 let wrapper
 let selectResource
 let statuses
@@ -18,7 +15,6 @@ const omnibar = async (props = {}) => {
   selectResource = vi.fn()
   wrapper = mountComponent(Omnibar, {
     props: { groupedList: menu(), selectedItem: {}, selectResourceCallback: selectResource, ...props },
-    global: { directives: { shortkey } },
     attachTo: document.body
   })
   await flushPromises()
@@ -29,6 +25,11 @@ const open = async () => {
   await flushPromises()
 }
 const field = () => document.body.querySelector('#omnibar input[name=search]')
+const press = (init, target = document) => {
+  const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init })
+  target.dispatchEvent(event)
+  return event
+}
 const typeText = async (text) => {
   field().value = text
   field().dispatchEvent(new Event('input', { bubbles: true }))
@@ -94,19 +95,16 @@ describe('Omnibar (the quick switcher)', () => {
       expect(visible()).toBe(false)
     })
 
-    it('opens with Ctrl+P while it is closed, and leaves the shortcut to the field once it is open', async () => {
+    it('opens and closes with Ctrl+K or Cmd+K, from a field too', async () => {
       await omnibar()
-      expect(wrapper.vm.getShortcuts()).toEqual({ open: ['ctrl', 'p'] })
-      wrapper.vm.interactiveSearch({ srcKey: 'open' })
+      const input = document.createElement('input')
+      document.body.appendChild(input)
+      input.focus()
+      expect(press({ key: 'k', ctrlKey: true }, input).defaultPrevented).toBe(true)
       await flushPromises()
       expect(visible()).toBe(true)
-      expect(wrapper.vm.getShortcuts()).toEqual({})
-    })
-
-    it('closes with Ctrl+P typed in its field', async () => {
-      await omnibar()
-      await open()
-      await key('p', { ctrlKey: true })
+      press({ key: 'K', metaKey: true })
+      await flushPromises()
       expect(visible()).toBe(false)
     })
   })

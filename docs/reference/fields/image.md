@@ -2,7 +2,7 @@
 
 # image
 
-Image upload with thumbnail previews, drag and drop, reordering and per-file remove. Component: `ImageView` (`src/components/fields/ImageView.vue`) with the shared upload logic of `src/mixins/FileInputField.js`. [file](file.md) is the same control for any file type.
+Image upload with thumbnail previews, drag and drop, reordering and per-file remove. Component: `ImageView` (`src/components/fields/ImageView.vue`) with the shared upload logic of `src/mixins/FileInputField.js`. [file](file.md) is the same control for any file type, [cropimage](cropimage.md) is this field with a crop tool, and [imagemap](imagemap.md) with areas laid over the picture.
 
 Catalogue: `resources/media_images.js` (group **Media**, resource **Images**), fields `gallery`, `cover`, `icon`, `photo`, `localisedBanner`, `readOnlyImage`, `disabledImage`. Test images: any JPG, PNG or SVG.
 

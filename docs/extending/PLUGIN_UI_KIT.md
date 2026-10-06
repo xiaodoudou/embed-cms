@@ -109,7 +109,7 @@ The record grid of the admin is `cms-table`, so the table of the kit is `cms-dat
 | Class | What it does |
 |---|---|
 | `cms-field` | A label above a control, with a hint and an error under it. Parts: `cms-label`, `cms-hint`, `cms-error` |
-| `cms-label[data-state="readonly"]`, `[data-state="disabled"]` | The eye and the lock after the label, drawn as CSS masks of the Material Design Icons eye and lock, like the admin's fields |
+| `cms-label[data-state="readonly"]`, `[data-state="disabled"]` | `readonly` draws the lock after the label, as a CSS mask of the Material Design Icons lock, like the admin's fields. `disabled` draws no icon: the field is greyed out with a dashed border |
 | `cms-input`, `cms-select`, `cms-textarea` | The control: field surface, strong border, hover, the focus ring, and the read-only, disabled and error looks from `:disabled`, `[readonly]` and `[aria-invalid="true"]` |
 | `cms-check`, `cms-switch` | A checkbox and the admin's switch (`cms-check` exists) |
 

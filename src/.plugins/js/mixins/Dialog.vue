@@ -11,12 +11,15 @@
       window.DialogService.events.off('dialog:confirm', this.onGetRecordEditionConfirm)
     },
     methods: {
+      /** @param {*} data logged */
       onGetRecordEdition(data) {
         console.warn(`onGetRecordEdition`, data)
       },
+      /** @param {*} data logged */
       onGetRecordEditionShowDialog(data) {
         console.warn(`onGetRecordEditionShowDialog`, data)
       },
+      /** @param {*} data logged */
       onGetRecordEditionConfirm(data) {
         console.warn(`onGetRecordEditionConfirm`, data)
       }

@@ -94,7 +94,9 @@ describe('CMS class (unit)', () => {
       expect(plugins()).to.deep.equal([])
       expect(plugins({ disableREST: false })).to.deep.equal(['rest'])
     })
-    it('maps every flag to its plugin', () => {
+    it('maps every flag to its plugin', function () {
+      // every plugin is loaded: slow on a WSL mount (the xlsx plugin alone takes 8s there), instant on a native disk
+      this.timeout(60000)
       const all = plugins({ disableREST: false, disableAdmin: false, disableReplication: false, importFromRemote: true, import: {}, sync: {}, xlsx: true, anonymousRead: ['x'] })
       expect(all).to.have.members(['rest', 'import', 'importFromRemote', 'admin', 'replicator', 'sync', 'xlsx', 'anonymousRead'])
     })
@@ -136,6 +138,17 @@ describe('CMS class (unit)', () => {
       const cms = build({}, { 'f.js': 'module.exports = { schema: [{ field: \'photo\', input: \'image\' }, { field: \'doc\', input: \'file\' }, { field: \'name\', input: \'string\' }] }' })
       expect(cms._resources.f.options._attachments).to.have.members(['photo', 'doc'])
       expect(Object.keys(cms._attachmentFields.f)).to.have.length(2)
+    })
+    it('records a crop image field and an image map field as attachment fields, in a resource and in a block', () => {
+      const cms = build({}, {
+        'f.js': 'module.exports = { schema: [{ field: \'avatar\', input: \'cropimage\' }, { field: \'plan\', input: \'imagemap\' }, { field: \'blocks\', input: \'paragraph\', options: { types: [\'hero\'] } }] }',
+        'paragraphs/hero.js': 'module.exports = { schema: [{ field: \'banner\', input: \'cropimage\' }] }'
+      })
+      const found = Object.keys(cms._attachmentFields.f).join(' ')
+      expect(Object.keys(cms._attachmentFields.f)).to.have.length(3)
+      expect(found).to.include('avatar')
+      expect(found).to.include('plan')
+      expect(found).to.include('banner')
     })
     it('records relations only to resources that exist', () => {
       const cms = build({}, {

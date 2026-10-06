@@ -142,18 +142,23 @@
       }
     },
     computed: {
+      /** @returns {Array<string>} */
       ids () {
         return _.map(this.rows, '_id')
       },
+      /** @returns {string} none, some or all (tableModel) */
       selectionState () {
         return selectionState(this.selected, this.ids)
       },
+      /** @returns {{start: number, end: number}} the rows in view */
       windowState () {
         return rowWindow({ scrollTop: this.scrollTop, viewportHeight: this.viewportHeight, rowHeight: this.rowHeight, total: this.rows.length })
       },
+      /** @returns {Array<Object>} */
       visibleRows () {
         return this.rows.slice(this.windowState.start, this.windowState.end)
       },
+      /** @returns {number} */
       activeRow () {
         return this.active.row
       },
@@ -161,6 +166,7 @@
       isNarrow () {
         return this.viewportWidth > 0 && this.viewportWidth < NARROW_WIDTH
       },
+      /** @returns {Array<number>} the column widths, the first one kept short on phones */
       widths () {
         const widths = distributeWidths(this.columns, this.viewportWidth, this.checkWidth + this.actionsWidth)
         if (this.isNarrow && widths.length > 0) {
@@ -168,9 +174,11 @@
         }
         return widths
       },
+      /** @returns {number} */
       firstWidth () {
         return _.get(this.widths, '[0]', 0)
       },
+      /** @returns {number} */
       totalWidth () {
         return this.checkWidth + _.sum(this.widths) + this.actionsWidth
       }
@@ -201,8 +209,12 @@
       }
     },
     methods: {
+      /**
+       * @param {string} locale
+       * @returns {string}
+       */
       localeLabel (locale) {
-        return TranslateService.get(`TL_${_.toUpper(locale)}`)
+        return TranslateService.localeName(locale)
       },
       // Real heights are measured (touch devices enlarge the rows), the constants are only the first guess
       measure () {
@@ -222,6 +234,7 @@
         this.headHeight = head ? head.getBoundingClientRect().height || this.headHeight : this.headHeight
         this.updateScrollState()
       },
+      /** Measures the viewport and the row height from the scroller. */
       updateScrollState () {
         const scroller = this.$refs.scroller
         if (!scroller) {
@@ -239,9 +252,17 @@
       sortEntry (column) {
         return _.find(this.sortBy, { key: column.key })
       },
+      /**
+       * @param {Object} column
+       * @returns {number} its rank in the sort, 0 when unsorted
+       */
       sortRank (column) {
         return _.findIndex(this.sortBy, { key: column.key }) + 1
       },
+      /**
+       * @param {Object} column
+       * @returns {string|undefined} ascending, descending or none; undefined when not sortable
+       */
       ariaSort (column) {
         if (!column.sortable) {
           return undefined
@@ -249,6 +270,10 @@
         const entry = this.sortEntry(column)
         return !entry ? 'none' : entry.order === 'asc' ? 'ascending' : 'descending'
       },
+      /**
+       * @param {Object} column
+       * @returns {string} the title of its header
+       */
       sortHint (column) {
         return `${TranslateService.get('TL_SORT_BY')}: ${column.label} (${TranslateService.get('TL_SORT_SHIFT_HINT')})`
       },
@@ -256,14 +281,23 @@
       isSelected (row) {
         return _.includes(this.selected, row._id)
       },
+      /** @returns {Array<string>} the selection with every row, or none */
       toggleAll () {
         return toggleAllIds(this.selected, this.ids)
       },
+      /**
+       * @param {MouseEvent} event shift selects the range from the last checked
+       * @param {Object} row
+       */
       onCheck (event, row) {
         const next = event.shiftKey && this.lastChecked ? selectRange(this.selected, this.ids, this.lastChecked, row._id) : toggleId(this.selected, row._id)
         this.lastChecked = row._id
         this.$emit('update:selected', next)
       },
+      /**
+       * @param {MouseEvent} event a click on a control of the row is theirs
+       * @param {Object} row
+       */
       onRowClick (event, row) {
         if (event.target.closest('a, button, input, .col-check')) {
           return
@@ -279,6 +313,10 @@
       isActive (row, col) {
         return this.active.row === row && this.active.col === col
       },
+      /**
+       * @param {HTMLElement} target
+       * @returns {{row: number, col: number}|null} the cell the element is in
+       */
       positionOf (target) {
         const tr = target && target.closest ? target.closest('tr[data-row]') : null
         if (!tr) {
@@ -287,12 +325,14 @@
         const td = target.closest('td[data-cell]')
         return { row: Number(tr.dataset.row), col: td ? Number(td.dataset.cell) : -1 }
       },
+      /** @param {FocusEvent} event the focused cell becomes the active one */
       onFocusIn (event) {
         const position = this.positionOf(event.target)
         if (position) {
           this.active = position
         }
       },
+      /** @param {{row: number, col: number}} position scrolled into view, then focused */
       async focusPosition (position) {
         const scroller = this.$refs.scroller
         this.active = position
@@ -308,6 +348,7 @@
           element.focus()
         }
       },
+      /** @param {KeyboardEvent} event arrows move between the cells; Home, End, PageUp and PageDown jump */
       onKeydown (event) {
         const position = this.positionOf(event.target)
         if (!position) {

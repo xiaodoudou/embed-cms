@@ -23,9 +23,11 @@ async function seed (base, user, password, files) {
     return res.json()
   }
   const post = (resource, body) => send(resource, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-  const attach = async (resource, id, field, file) => {
+  // `extra` are the other parts of the upload: the crop (cropOptions) and the areas of an image map (imageMap) go as JSON
+  const attach = async (resource, id, field, file, extra = {}) => {
     const form = new FormData()
     form.append(field, new Blob([fs.readFileSync(files[file])]), file)
+    for (const [key, value] of Object.entries(extra)) form.append(key, JSON.stringify(value))
     return send(`${resource}/${id}/attachments`, { method: 'POST', body: form })
   }
   const ids = {}
@@ -35,8 +37,15 @@ async function seed (base, user, password, files) {
 
   // the records the selects and multiselects list (the label of the zhCN list is the Chinese name)
   const items = [['Alpha', '阿尔法'], ['Beta', '贝塔'], ['Gamma', '伽玛'], ['Delta', '德尔塔']]
+  const itemIds = []
   for (const [en, zh] of items) {
-    await post('reference_items', { name: { enUS: en, zhCN: zh }, description: { enUS: `${en} item` }, active: true })
+    const item = await post('reference_items', { name: { enUS: en, zhCN: zh }, description: { enUS: `${en} item` }, active: true })
+    itemIds.push(item._id)
+  }
+
+  // the people of the second resource of the selects of several resources
+  for (const [en, zh, role] of [['Ann', '安', 'chief'], ['Bob', '鲍勃', 'editor'], ['Cleo', '克莉奥', 'writer']]) {
+    await post('reference_people', { name: { enUS: en, zhCN: zh }, role })
   }
 
   // a JSON document, with a different document per locale
@@ -58,6 +67,33 @@ async function seed (base, user, password, files) {
   await attach('media_images', image._id, 'gallery', 'icon.svg')
   await attach('media_images', image._id, 'gallery', 'man.jpg')
   ids.images = image._id
+
+  // pictures that already have a crop (man.jpg is 360 x 240): a square, a round one and a banner
+  const cropped = await post('media_crop', { name: 'Cropped pictures' })
+  await attach('media_crop', cropped._id, 'photo', 'man.jpg', { cropOptions: { left: 70, top: 10, width: 220, height: 220, ratio: '1:1' } })
+  await attach('media_crop', cropped._id, 'avatar', 'man.jpg', { cropOptions: { left: 20, top: 0, width: 240, height: 240, shape: 'circle', output: { maxWidth: 256, format: 'png' }, ratio: '1:1' } })
+  await attach('media_crop', cropped._id, 'banner', 'man.jpg', { cropOptions: { left: 0, top: 60, width: 360, height: 120, output: { width: 1200, height: 400 } } })
+  ids.cropped = cropped._id
+
+  // maps with areas on the same picture: an address, a record, records of one resource, values, and all three
+  const areas = {
+    kitchen: { id: 'kitchen', shape: 'rect', coords: [0.6, 0.5, 0.9, 0.88], title: 'Kitchen', href: '/kitchen', target: '_self' },
+    lamp: { id: 'lamp', shape: 'circle', coords: [0.333, 0.458, 0.14], title: 'Lamp', href: 'https://example.com/lamp', target: '_blank' },
+    door: { id: 'door', shape: 'poly', coords: [0.17, 0.7, 0.53, 0.7, 0.53, 1, 0.17, 1], title: 'Door', href: '/door', target: '_self' }
+  }
+  const record = (id, shape, coords, ref) => ({ id, shape, coords, ref, target: '_self' })
+  const room = (id, shape, coords, value) => ({ id, shape, coords, value, target: '_self' })
+  const maps = await post('media_map', { name: 'Floor plans' })
+  await attach('media_map', maps._id, 'floorPlan', 'man.jpg', { imageMap: { areas: [areas.kitchen, areas.lamp, areas.door] } })
+  await attach('media_map', maps._id, 'catalogue', 'man.jpg', { imageMap: { areas: [areas.kitchen, record('lamp', 'circle', [0.333, 0.458, 0.14], { resource: 'reference_items', id: itemIds[0] })] } })
+  await attach('media_map', maps._id, 'productMap', 'man.jpg', {
+    imageMap: { areas: [record('lamp', 'circle', [0.333, 0.458, 0.14], { resource: 'reference_items', id: itemIds[1] }), record('shelf', 'rect', [0.6, 0.5, 0.9, 0.88], { resource: 'reference_items', id: itemIds[2] })] }
+  })
+  await attach('media_map', maps._id, 'roomMap', 'man.jpg', { imageMap: { areas: [room('lamp', 'circle', [0.333, 0.458, 0.14], 'room-12'), room('door', 'poly', [0.17, 0.7, 0.53, 0.7, 0.53, 1, 0.17, 1], 'room-14')] } })
+  await attach('media_map', maps._id, 'everything', 'man.jpg', {
+    imageMap: { areas: [areas.kitchen, record('lamp', 'circle', [0.333, 0.458, 0.14], { resource: 'reference_items', id: itemIds[0] }), room('door', 'poly', [0.17, 0.7, 0.53, 0.7, 0.53, 1, 0.17, 1], 'door-7')] }
+  })
+  ids.maps = maps._id
 
   // the list and the table of the screenshots of the interface: nine formatted strings (the newest first in the list) and a
   // table of fifty-six records
@@ -92,6 +128,41 @@ async function seed (base, user, password, files) {
       featured: n % 3 === 0
     })
   }
+  // a record with tiles for the pictures of the dynamic layout: 2 by 2, 3 by 3 and a mixed row
+  const tiles = (type, titles) => titles.map((title) => ({ _type: type, title, text: 'A short text under the title.' }))
+  const grid = await post('structured_grid', {
+    name: 'Home page',
+    twoByTwo: tiles('tile_half', ['News', 'Events', 'Shop', 'About']),
+    threeByThree: tiles('tile_third', ['Spring', 'Summer', 'Autumn', 'Winter', 'North', 'East', 'South', 'West', 'Centre']),
+    fourByTwo: tiles('tile_quarter', ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight']),
+    mixed: [...tiles('tile_half', ['Wide']), ...tiles('tile_quarter', ['Small', 'Small']), ...tiles('tile_third', ['Third', 'Third', 'Third'])]
+  })
+  ids.grid = grid._id
+  // a record for the picture of the form layout
+  const layout = await post('structured_layout', {
+    name: 'Ana Moreau',
+    firstName: 'Ana',
+    lastName: 'Moreau',
+    email: 'ana.moreau@example.com',
+    phone: '+33 1 23 45 67 89',
+    street: 'Rue des Lilas',
+    number: '12',
+    city: 'Lyon',
+    postcode: '69003',
+    country: 'France',
+    notes: 'Prefers to be contacted by email.',
+    reference: 'CUST-0042'
+  })
+  ids.layout = layout._id
+  // a record for the picture of the groups of fields
+  const groups = await post('structured_groups', {
+    name: 'Ana Moreau',
+    contact: { email: 'ana.moreau@example.com', phone: '+33 1 23 45 67 89' },
+    address: { street: 'Rue des Lilas', number: '12', city: 'Lyon', postcode: '69003', country: 'France' },
+    social: { website: 'https://example.com', blog: 'https://blog.example.com', profiles: { github: 'anamoreau', linkedin: 'ana-moreau' } },
+    notes: 'Prefers to be contacted by email.'
+  })
+  ids.groups = groups._id
   return ids
 }
 

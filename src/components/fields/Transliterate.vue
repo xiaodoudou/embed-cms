@@ -1,7 +1,7 @@
 <template>
   <div class="transliterate-field">
     <v-text-field
-      ref="input"
+      :id="inputId" ref="input"
       :theme="theme"
       :class="[schema.labelClasses]"
       :model-value="_value"
@@ -16,8 +16,7 @@
       hide-details
       @update:model-value="onChangeData"
     >
-      <template #prepend><field-label :schema="schema" :disabled="disabled" /></template>
-      <template #label />
+      <template #prepend><field-label :schema="schema" :disabled="disabled" :input-id="inputId" /></template>
     </v-text-field>
     <div v-if="showHint()" class="help-block">
       <v-icon size="small" icon="$information" />
@@ -48,7 +47,6 @@
       sourceValue() {
         const sourceField = this.getOpt('valueFrom')
         if (!sourceField) {
-          console.warn('Transliterate field requires options.valueFrom to be specified')
           return ''
         }
         const raw = _.get(this.model, sourceField, '')
@@ -98,7 +96,14 @@
         }
       }
     },
+    created () {
+      // said once, when the field is made: the source is read again at each change of the record, and the warning came with each of them (hundreds in a form)
+      if (!this.getOpt('valueFrom')) {
+        console.warn(`Transliterate field ${this.schema.model || ''} requires options.valueFrom to be specified`)
+      }
+    },
     methods: {
+      /** @param {string} data typed by hand: the field no longer follows its source */
       onChangeData(data) {
         // Mark that user has manually edited the field
         if (!this.isReadonly) {

@@ -4,7 +4,7 @@
 
 Pick **several** values from a list; chosen values are shown as removable chips. Same list sources and label options as [select](select.md). Component: `CustomMultiSelect` (`src/components/fields/CustomMultiSelect.vue`).
 
-Catalogue: `resources/choice_multi.js` (group **Choice**, resource **Multiple choice**), fields `flags`, `requiredFlags`, `channels`, `items`, `localisedItems`, `readOnlyItems`, `disabledItems`. The resource-backed examples need records in **Reference items**.
+Catalogue: `resources/choice_multi.js` (group **Choice**, resource **Multiple choice**), fields `flags`, `requiredFlags`, `channels`, `items`, `linkedMany`, `localisedItems`, `readOnlyItems`, `disabledItems`. The resource-backed examples need records in **Reference items**.
 
 ## Declaration
 
@@ -14,7 +14,7 @@ Catalogue: `resources/choice_multi.js` (group **Choice**, resource **Multiple ch
 
 ## Options
 
-Same as [select](select.md) (`source`, `options.labels`, `options.customLabel`, `options.extraSources`, `options.subtitle`, `options.groupBy`, `options.hint`, `options.readonly`, `options.disabled`, `required`, `localised`), plus:
+Same as [select](select.md) (`source`, `sources`, `options.labels`, `options.customLabel`, `options.extraSources`, `options.subtitle`, `options.groupBy`, `options.hint`, `options.readonly`, `options.disabled`, `required`, `localised`), plus:
 
 | Option | Type | Default | Description |
 |---|---|---|---|
@@ -48,6 +48,12 @@ Behaviour that differs from `select`: several chips, each with a remove button; 
 
 ![Resource list](img/multiselect-resource-open.png) ![Selected records](img/multiselect-filled-labels.png)
 
+### Records of several resources
+
+`resources/choice_multi.js`, field `linkedMany` (`sources: ['reference_items', { resource: 'reference_people', customLabel: '{{name}} ({{role}})', title: 'People' }]`): the records of several resources in one list, in groups, as for [select](select.md#records-of-several-resources). The value is an array of references, `[{ "resource": "reference_people", "id": "mus3k2…" }]`. Select all chooses every record of every resource.
+
+![Several resources](img/multiselect-sources-open.png) ![Chosen](img/multiselect-sources-filled.png)
+
 ### Localised
 
 `resources/choice_multi.js`, field `localisedItems`: one selection per locale. The list labels follow the current locale.
@@ -68,7 +74,7 @@ Behaviour that differs from `select`: several chips, each with a remove button; 
 
 ## Stored value
 
-An array of values (strings from `source`, or record `_id`s); localised: one array per locale.
+An array of values (strings from `source`, record `_id`s, or `{ resource, id }` references for `sources`); localised: one array per locale.
 
 ```json
 {

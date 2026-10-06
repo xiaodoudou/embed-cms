@@ -1,0 +1,164 @@
+const { expect } = require('chai')
+const { startApp } = require('../helpers/app')
+
+// cms.api()('pages', 'tags'): the records come with the records their relations point to, instead of ids
+describe('resource API: resolving relations (unit)', () => {
+  describe('with blocks', () => {
+    let A, api, red, green
+    const page = (slug, extra) => api('pages').create({ slug, ...extra })
+
+    before(async () => {
+      A = await startApp({ resources: './test/fixtures/syncResources', disableJwtLogin: true })
+      api = A.cms.api()
+      red = await api('tags').create({ name: 'red' })
+      green = await api('tags').create({ name: 'green' })
+    })
+    after(() => A.close())
+
+    it('resolves a select, in list, find by id, find by query, create and update', async () => {
+      const made = await api('pages', 'tags').create({ slug: 'one', topic: red._id })
+      expect(made.topic).to.include({ _id: red._id, name: 'red' })
+      expect((await api('pages', 'tags').find(made._id)).topic).to.include({ name: 'red' })
+      expect((await api('pages', 'tags').find({ slug: 'one' })).topic).to.include({ name: 'red' })
+      expect((await api('pages', 'tags').list({ slug: 'one' }))[0].topic).to.include({ name: 'red' })
+      const updated = await api('pages', 'tags').update(made._id, { topic: green._id })
+      expect(updated.topic).to.include({ name: 'green' })
+      // the stored record keeps the id
+      expect((await api('pages').find(made._id)).topic).to.equal(green._id)
+    })
+
+    it('leaves the ids when the API is asked for no resource, or for another one', async () => {
+      const made = await page('plain', { topic: red._id })
+      expect((await api('pages').find(made._id)).topic).to.equal(red._id)
+      expect((await api('pages', 'pages').find(made._id)).topic).to.equal(red._id)
+    })
+
+    it('resolves the select and the multiselect of a block, and of a block inside a block', async () => {
+      const made = await page('blocks', {
+        content: [
+          { _type: 'block_rel', title: 'top', tag: red._id, tags: [green._id, red._id] },
+          { _type: 'block_group', label: 'group', children: [{ _type: 'block_rel', title: 'nested', tag: green._id, tags: [red._id] }] }
+        ]
+      })
+      const found = await api('pages', 'tags').find(made._id)
+      expect(found.content[0].tag).to.include({ name: 'red' })
+      expect(found.content[0].tags.map(tag => tag.name)).to.deep.equal(['green', 'red'])
+      expect(found.content[1].children[0].tag).to.include({ name: 'green' })
+      expect(found.content[1].children[0].tags.map(tag => tag.name)).to.deep.equal(['red'])
+      expect(found.content[0].title).to.equal('top')
+    })
+
+    it('gives undefined, in its place, for an id no record has, and leaves a relation that is not set', async () => {
+      const made = await page('gone', { topic: 'musxxxxxxxxxxxxxxxxxxxxx', content: [{ _type: 'block_rel', title: 'no tag', tags: ['musxxxxxxxxxxxxxxxxxxxxx', red._id] }] })
+      const found = await api('pages', 'tags').find(made._id)
+      expect(found).to.have.property('topic', undefined)
+      expect(found.content[0]).to.not.have.property('tag')
+      // the list keeps its positions
+      expect(found.content[0].tags).to.have.length(2)
+      expect(found.content[0].tags[0]).to.equal(undefined)
+      expect(found.content[0].tags[1]).to.include({ name: 'red' })
+    })
+
+    it('gives undefined for the language whose id no record has, and keeps the others', async () => {
+      const A2 = await startApp({ disableJwtLogin: true })
+      try {
+        const api2 = A2.cms.api()
+        const article = await api2('articles').create({ string: { enUS: 'kept' } })
+        const author = await api2('authors').create({ article: { enUS: article._id, zhCN: 'musxxxxxxxxxxxxxxxxxxxxx' }, name: { enUS: 'A' } })
+        const found = await api2('authors', 'articles').find(author._id)
+        expect(found.article).to.have.all.keys('enUS', 'zhCN')
+        expect(found.article.zhCN).to.equal(undefined)
+        expect(found.article.enUS).to.include({ _id: article._id })
+      } finally {
+        await A2.close()
+      }
+    })
+
+    it('gives each record its own copy of the related record', async () => {
+      await page('copy-a', { topic: red._id })
+      await page('copy-b', { topic: red._id })
+      const [a, b] = await api('pages', 'tags').list({ slug: { $in: ['copy-a', 'copy-b'] } })
+      a.topic.name = 'changed by a caller'
+      expect(b.topic.name).to.equal('red')
+      expect((await api('tags').find(red._id)).name).to.equal('red')
+    })
+  })
+
+  describe('a field of several resources', () => {
+    let A, api, red, fresh
+    before(async () => {
+      A = await startApp({ resources: './test/fixtures/syncResources', disableJwtLogin: true })
+      api = A.cms.api()
+      red = await api('tags').create({ name: 'red' })
+      fresh = await api('labels').create({ name: 'new' })
+    })
+    after(() => A.close())
+
+    const ref = (resource, record) => ({ resource, id: record._id })
+
+    it('keeps the references as they are stored, and replaces them by the records, each with its resource, for the resources asked for', async () => {
+      const made = await api('pages').create({ slug: 'multi', related: ref('tags', red), relatedMany: [ref('labels', fresh), ref('tags', red)] })
+      expect(made.related).to.deep.equal(ref('tags', red))
+      const found = await api('pages', 'tags', 'labels').find(made._id)
+      expect(found.related).to.include({ _id: red._id, name: 'red', _resource: 'tags' })
+      expect(found.relatedMany.map(one => [one._resource, one.name])).to.deep.equal([['labels', 'new'], ['tags', 'red']])
+      expect((await api('pages').find(made._id)).relatedMany).to.deep.equal([ref('labels', fresh), ref('tags', red)])
+    })
+
+    it('leaves the references to the resources that were not asked for', async () => {
+      const made = await api('pages').create({ slug: 'partly', relatedMany: [ref('labels', fresh), ref('tags', red)] })
+      const found = await api('pages', 'tags').find(made._id)
+      expect(found.relatedMany[0]).to.deep.equal(ref('labels', fresh))
+      expect(found.relatedMany[1]).to.include({ name: 'red', _resource: 'tags' })
+    })
+
+    it('gives undefined, in its place, for a record that is not there, keeping the positions', async () => {
+      const made = await api('pages').create({ slug: 'gone-multi', related: { resource: 'tags', id: 'musxxxxxxxxxxxxxxxxxxxxx' }, relatedMany: [{ resource: 'tags', id: 'musxxxxxxxxxxxxxxxxxxxxx' }, ref('tags', red)] })
+      const found = await api('pages', 'tags').find(made._id)
+      expect(found).to.have.property('related', undefined)
+      expect(found.relatedMany[0]).to.equal(undefined)
+      expect(found.relatedMany[1]).to.include({ name: 'red' })
+    })
+
+    it('gives each record its own copy of the related record', async () => {
+      await api('pages').create({ slug: 'copy-m-a', related: ref('tags', red) })
+      await api('pages').create({ slug: 'copy-m-b', related: ref('tags', red) })
+      const [a, b] = await api('pages', 'tags').list({ slug: { $in: ['copy-m-a', 'copy-m-b'] } })
+      a.related.name = 'changed by a caller'
+      expect(b.related.name).to.equal('red')
+    })
+
+    it('is a relation of the resource, as long as one of its resources is there', () => {
+      const relations = A.cms.resource('pages').options._relations
+      expect(Object.values(relations).map(field => field.field)).to.include.members(['topic', 'related', 'relatedMany'])
+    })
+  })
+
+  describe('with languages, and relations of the related records', () => {
+    let A, api, article, other, author
+    before(async () => {
+      A = await startApp({ disableJwtLogin: true })
+      api = A.cms.api()
+      article = await api('articles').create({ string: { enUS: 'An article', zhCN: '一篇文章' } })
+      other = await api('articles').create({ string: { enUS: 'Another', zhCN: '另一篇' } })
+      author = await api('authors').create({ article: { enUS: article._id, zhCN: other._id }, name: { enUS: 'Ann', zhCN: '安' } })
+    })
+    after(() => A.close())
+
+    it('resolves a value per language, language by language', async () => {
+      const found = await api('authors', 'articles').find(author._id)
+      expect(found.article.enUS).to.include({ _id: article._id })
+      expect(found.article.enUS.string).to.deep.equal({ enUS: 'An article', zhCN: '一篇文章' })
+      expect(found.article.zhCN).to.include({ _id: other._id })
+    })
+
+    it('resolves the relations of the related records too, when their resource is asked for', async () => {
+      const comment = await api('comments').create({ author: author._id, title: { enUS: 'Nice' } })
+      const withAuthor = await api('comments', 'authors').find(comment._id)
+      expect(withAuthor.author).to.include({ _id: author._id })
+      expect(withAuthor.author.article.enUS).to.equal(article._id)
+      const deeper = await api('comments', 'authors', 'articles').find(comment._id)
+      expect(deeper.author.article.enUS).to.include({ _id: article._id })
+    })
+  })
+})

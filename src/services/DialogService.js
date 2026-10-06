@@ -5,10 +5,12 @@ class DialogService {
     this.events = new Emitter()
   }
 
+  /** @param {boolean} isEditing emitted as dialog */
   send (isEditing) {
     this.events.emit('dialog', isEditing)
   }
 
+  /** @param {Object} data the dialog: event, title, message, callback, onCancel */
   show (data) {
     /*
       {
@@ -33,6 +35,7 @@ class DialogService {
     })
   }
 
+  /** @param {Object} data emitted as dialog:confirm */
   confirm (data) {
     this.events.emit('dialog:confirm', data)
   }

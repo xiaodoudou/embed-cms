@@ -29,6 +29,7 @@ module.exports = {
     { field: 'item', input: 'select', label: 'Linked item', localised: false, source: 'reference_items', options: { hint: 'One record from the Reference items resource' } },
     // Custom label built from the target record
     { field: 'itemWithLabel', input: 'select', label: 'Linked item (custom label)', localised: false, source: 'reference_items', options: { customLabel: '{{name}}', hint: 'Same list, label built from the record name' } },
+    { field: 'linked', input: 'select', label: 'Linked record (several resources)', localised: false, sources: ['reference_items', { resource: 'reference_people', customLabel: '{{name}} ({{role}})', title: 'People' }], options: { hint: 'One record from the Reference items or the Reference people resource, in groups; kept as { resource, id }' } },
     { field: 'localisedChoice', input: 'select', label: 'Choice per locale', source: ['one', 'two', 'three'], options: { hint: 'One value per locale' } },
     { field: 'readOnlySelect', input: 'select', label: 'Read-only select', localised: false, source: ['a', 'b'], options: { readonly: true, hint: 'Read-only: visible, not editable' } },
     { field: 'disabledSelect', input: 'select', label: 'Disabled select', localised: false, source: ['a', 'b'], options: { disabled: true, hint: 'Disabled: greyed out and not focusable' } }

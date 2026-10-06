@@ -1,0 +1,9 @@
+{{> header}}
+<h1>Latest articles</h1>
+{{#articles}}
+  {{> card}}
+{{/articles}}
+{{^articles}}
+  <p>No articles yet.</p>
+{{/articles}}
+{{> footer}}

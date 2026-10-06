@@ -1,8 +1,28 @@
-import { describe, it, expect } from 'vitest'
-import { pickTheme, savedUserTheme } from '@u/theme'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { pickTheme, savedUserTheme, withoutTransitions } from '@u/theme'
 
 // The login page and the admin decide their theme the same way: with dark mode turned off (disableDarkMode, the default),
 // both are light; otherwise each follows the preference it has (the system's on the login page, the user's in the admin).
+describe('withoutTransitions', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    document.documentElement.classList.remove('theme-switching')
+  })
+
+  it('turns the transitions off while the change is made, and back on two frames later', () => {
+    const frames = []
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => { frames.push(callback); return frames.length })
+    let during
+    withoutTransitions(() => { during = document.documentElement.classList.contains('theme-switching') })
+    expect(during).toBe(true)
+    expect(document.documentElement.classList.contains('theme-switching')).toBe(true)
+    frames.shift()()
+    expect(document.documentElement.classList.contains('theme-switching')).toBe(true)
+    frames.shift()()
+    expect(document.documentElement.classList.contains('theme-switching')).toBe(false)
+  })
+})
+
 describe('pickTheme', () => {
   it('is light whatever the preference when dark mode is turned off', () => {
     expect(pickTheme({ disableDarkMode: true }, 'dark')).toBe('light')

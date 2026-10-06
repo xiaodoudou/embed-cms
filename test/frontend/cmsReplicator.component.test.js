@@ -89,9 +89,9 @@ describe('Replicator page', () => {
     await mountPage()
     await wrapper.vm.syncResource('articles')
     expect(lastToast()).toMatchObject({ type: 'warn', message: 'Nothing synced for articles: no peer accepts its direction' })
-    RequestService.post.mockRejectedValueOnce({ error: "Resource 'nope' not found" })
+    RequestService.post.mockRejectedValueOnce({ error: 'Resource \'nope\' not found' })
     await wrapper.vm.syncResource('nope')
-    expect(lastToast()).toMatchObject({ type: 'error', message: "Sync failed for nope: Resource 'nope' not found" })
+    expect(lastToast()).toMatchObject({ type: 'error', message: 'Sync failed for nope: Resource \'nope\' not found' })
   })
 
   it('syncs one record by id', async () => {

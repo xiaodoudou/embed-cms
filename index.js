@@ -17,12 +17,14 @@ const express = require('express')
 const helmet = require('helmet')
 const _ = require('lodash')
 const fsExtra = require('fs-extra')
+const { isAttachmentInput } = require('./lib/util/inputTypes')
+const { isMultiSource, sourcesOf } = require('./lib/util/fieldSources')
 const session = require('express-session')
 const UUID = require('./lib/util/uuid')
 const SyslogManager = require('./lib/SyslogManager')
 const SystemManager = require('./lib/SystemManager')
 const UpdatesManager = require('./lib/UpdatesManager')
-const escapeRegExp = require('./lib/util/escapeRegExp')
+const { fieldPathPattern, BLOCK_WILDCARD } = require('./lib/util/fieldPathPattern')
 const Resource = require('./lib/Resource')
 const ResourceAPIWrapper = require('./lib/ResourceAPIWrapper')
 const OSSHelper = require('./lib/util/OSSHelper')
@@ -33,6 +35,7 @@ const { ensureStrongSecrets } = require('./lib/util/secrets')
 const csrfGuard = require('./lib/util/csrf')
 const cookieNames = require('./lib/util/cookieNames')
 const securityHeaders = require('./lib/util/securityHeaders')
+const { normalizeMaps } = require('./lib/util/maps')
 const sendError = require('./lib/plugins/rest/sendError')
 
 /**
@@ -124,7 +127,7 @@ class CMS {
     this.isExiting = false
     this.requiredKeyLength = 16
     this.fieldFileTypes = ['file', 'img', 'image', 'imageView', 'attachmentView']
-    const configPath = path.resolve((options != null ? options.config : undefined) || './cms.json')
+    const configPath = path.resolve(_.get(options, 'config') || './cms.json')
     if (options) {
       delete options.config
     }
@@ -264,7 +267,7 @@ class CMS {
       this._app.set('trust proxy', options.trustProxy)
     }
     if (this.security.headers) {
-      this._app.use(securityHeaders({ contentSecurityPolicy: this.security.contentSecurityPolicy }))
+      this._app.use(securityHeaders({ contentSecurityPolicy: this.security.contentSecurityPolicy, maps: normalizeMaps(options.maps) }))
     } else {
       this._app.use(helmet.dnsPrefetchControl())
       this._app.use(helmet.expectCt())
@@ -292,7 +295,7 @@ class CMS {
       }
       // resave and saveUninitialized default to what express-session does without them (true), said out loud: left out,
       // it prints a deprecation warning at every start
-      let sessionOptions = _.extend({ cookie: {}, resave: true, saveUninitialized: true }, this.options.session, { name: this.cookieNames.session })
+      const sessionOptions = _.extend({ cookie: {}, resave: true, saveUninitialized: true }, this.options.session, { name: this.cookieNames.session })
       // sameSite and secure follow the security settings, a cookie option written in the configuration still wins
       sessionOptions.cookie = _.pickBy({ sameSite: this.security.cookies.sameSite, secure: this.security.cookies.secure, httpOnly: this.security.cookies.httpOnly }, value => value !== false)
       _.extend(sessionOptions.cookie, _.get(this.options, 'session.cookie'))
@@ -431,6 +434,10 @@ class CMS {
     logger.warn('<!> All embed-cms databases are now closed. <!>')
   }
 
+  /**
+   * @param {string} signal
+   * @returns {function(Error=): void} the handler: logs, closes the databases, exits once
+   */
   shutdown (signal) {
     return (err) => {
       logger.warn(`${ signal }...`)
@@ -448,42 +455,57 @@ class CMS {
     }
   }
 
+  /** Records, per resource, the file and image fields with their path patterns (`_attachmentFields`), the ones of the blocks included. */
   _processAttachmentFields = () => {
     _.each(this._resources, (resource, resourceKey) => {
       const schema = _.get(resource, 'options.schema', [])
       _.each(schema, fieldItem => {
         const rootPath = `${fieldItem.field}`
-        if (_.includes(['file', 'image'], fieldItem.input)) {
+        if (isAttachmentInput(fieldItem.input)) {
           const field = _.cloneDeep(fieldItem)
           field.path = rootPath
-          _.set(this._resources, `["${resourceKey}"].options._attachmentFields["${escapeRegExp(rootPath)}"]`, field)
-          _.set(this._attachmentFields, `${resourceKey}["${escapeRegExp(rootPath)}"]`, field)
+          _.set(this._resources, [resourceKey, 'options', '_attachmentFields', fieldPathPattern(rootPath)], field)
+          _.set(this._attachmentFields, [resourceKey, fieldPathPattern(rootPath)], field)
         } else if (fieldItem.input === 'paragraph') {
           this._processAttachmentFieldsParagraph(fieldItem, resourceKey, rootPath)
         }
       })
     })
   }
+  /**
+   * Records the file fields of the blocks of a paragraph field (blocks inside blocks followed).
+   * @param {object} fieldItem the paragraph field
+   * @param {string} resourceKey
+   * @param {string} rootPath the path of the field, with `{{*}}` for the index of a block
+   */
   _processAttachmentFieldsParagraph = (fieldItem, resourceKey, rootPath) => {
     const paragraphTypes = _.get(fieldItem, 'options.types', [])
     _.each(paragraphTypes, paragraphType => {
       const schema = _.get(this._paragraphs, `["${paragraphType}"].schema`, [])
       _.each(schema, paragraphFieldItem => {
-        const paragraphRootPath = `${rootPath}.{{*}}.${paragraphFieldItem.field}`
-        if (_.includes(['file', 'image'], paragraphFieldItem.input)) {
+        const paragraphRootPath = `${rootPath}.${BLOCK_WILDCARD}.${paragraphFieldItem.field}`
+        if (isAttachmentInput(paragraphFieldItem.input)) {
           const field = _.cloneDeep(paragraphFieldItem)
           field.path = paragraphRootPath
-          _.set(this._resources, `["${resourceKey}"].options._attachmentFields["${escapeRegExp(paragraphRootPath, field.localised)}"]`, field)
-          _.set(this._attachmentFields,  `${resourceKey}["${escapeRegExp(paragraphRootPath)}"]`, field)
+          _.set(this._resources, [resourceKey, 'options', '_attachmentFields', fieldPathPattern(paragraphRootPath, field.localised)], field)
+          _.set(this._attachmentFields, [resourceKey, fieldPathPattern(paragraphRootPath)], field)
         } else if (paragraphFieldItem.input === 'paragraph') {
           this._processAttachmentFieldsParagraph(paragraphFieldItem, resourceKey, paragraphRootPath)
         }
       })
     })
   }
+  /**
+   * @param {object} field
+   * @returns {boolean} a select or a multiselect pointing at a resource that exists (at one of the resources that exist, for a field of several)
+   */
   isValidRelation = (field) => {
+    if (isMultiSource(field)) {
+      return _.some(sourcesOf(field), source => _.includes(this._resourceNames, source.resource))
+    }
     return _.includes(['select', 'multiselect'], field.input) && _.includes(this._resourceNames, field.source)
   }
+  /** Records, per resource, the relations with their path patterns (`_relations`), the ones of the blocks included. */
   _processSourceFields = () => {
     _.each(this._resources, (resource, resourceKey) => {
       const schema = _.get(resource, 'options.schema', [])
@@ -492,35 +514,53 @@ class CMS {
         if (this.isValidRelation(fieldItem)) {
           const field = _.cloneDeep(fieldItem)
           field.path = rootPath
-          _.set(this._resources, `["${resourceKey}"].options._relations["${escapeRegExp(rootPath)}"]`, field)
-          _.set(this._relations, `${resourceKey}["${escapeRegExp(rootPath)}"]`, field)
+          _.set(this._resources, [resourceKey, 'options', '_relations', fieldPathPattern(rootPath)], field)
+          _.set(this._relations, [resourceKey, fieldPathPattern(rootPath)], field)
         } else if (fieldItem.input === 'paragraph') {
           this._processSourceFieldsParagraph(fieldItem, resourceKey, rootPath)
         }
       })
     })
   }
+  /**
+   * Records the relations of the blocks of a paragraph field (blocks inside blocks followed).
+   * @param {object} fieldItem the paragraph field
+   * @param {string} resourceKey
+   * @param {string} rootPath the path of the field, with `{{*}}` for the index of a block
+   */
   _processSourceFieldsParagraph = (fieldItem, resourceKey, rootPath) => {
     const paragraphTypes = _.get(fieldItem, 'options.types', [])
     _.each(paragraphTypes, paragraphType => {
       const schema = _.get(this._paragraphs, `["${paragraphType}"].schema`, [])
       _.each(schema, paragraphFieldItem => {
-        const paragraphRootPath = `${rootPath}.{{*}}.${paragraphFieldItem.field}`
+        const paragraphRootPath = `${rootPath}.${BLOCK_WILDCARD}.${paragraphFieldItem.field}`
         if (this.isValidRelation(paragraphFieldItem)) {
           const field = _.cloneDeep(paragraphFieldItem)
           field.path = paragraphRootPath
-          _.set(this._resources, `["${resourceKey}"].options._relations["${escapeRegExp(paragraphRootPath)}"]`, field)
-          _.set(this._relations,  `${resourceKey}["${escapeRegExp(paragraphRootPath)}"]`, field)
+          _.set(this._resources, [resourceKey, 'options', '_relations', fieldPathPattern(paragraphRootPath)], field)
+          _.set(this._relations, [resourceKey, fieldPathPattern(paragraphRootPath)], field)
         } else if (paragraphFieldItem.input === 'paragraph') {
           this._processSourceFieldsParagraph(paragraphFieldItem, resourceKey, paragraphRootPath)
         }
       })
     })
   }
+  /**
+   * @param {string} name a resource or a block type
+   * @param {string} key schema, locales, and so on
+   * @param {boolean} [forParagraph=false]
+   * @returns {string} the path of the key in the map: `[name]options.schema` for a resource, `[name].schema` for a block type
+   */
   getKeyFor = (name, key, forParagraph = false) => {
     return `[${name}]${!forParagraph ? 'options' : ''}.${key}`
   }
 
+  /**
+   * Prepares a schema in place: `localised` defaulted from the locales, the list of its attachment fields (`_attachments`).
+   * @param {object} resourcesList the map of resources, or of block types
+   * @param {string} name
+   * @param {boolean} [forParagraph=false]
+   */
   formatSchema = (resourcesList, name, forParagraph = false) => {
     const schemaKey = this.getKeyFor(name, 'schema', forParagraph)
     const schema = _.get(resourcesList, schemaKey, [])
@@ -538,6 +578,7 @@ class CMS {
     _.set(resourcesList, attachmentsKey, attachmentFields)
   }
 
+  /** @param {object} msg sent to the connected admins over the websocket, when `wsRecordUpdates` is on */
   broadcast = (msg) => {
     if (_.get(this.options, 'wsRecordUpdates', false)) {
       UpdatesManager.broadcast(msg, this)
@@ -555,6 +596,13 @@ class CMS {
     }
   }
 
+  /**
+   * Declares a resource, or gives a declared one; with `resolves`, a copy whose API resolves the relations to those resources (docs/reference/API.md).
+   * @param {string} name
+   * @param {object} [config] the declaration
+   * @param {string[]} [resolves]
+   * @returns {Resource}
+   */
   resource = (name, config, resolves) => {
     resolves = _.intersection(resolves, this._resourceNames)
     if (_.isEmpty(resolves)) {
@@ -748,3 +796,15 @@ CMS.ResourceAPIWrapper = ResourceAPIWrapper
  * @type {RestHelper}
  */
 CMS.RestHelper = require('./lib/plugins/rest/RestHelper')
+
+/**
+ * Export PageHelper to render the pages of a public site from the content (Mustache templates, kept pages)
+ * @type {PageHelper}
+ */
+CMS.PageHelper = require('./lib/PageHelper')
+
+/**
+ * Export ContentLoader to put content and files into the CMS from a JSON description
+ * @type {ContentLoader}
+ */
+CMS.ContentLoader = require('./lib/ContentLoader')

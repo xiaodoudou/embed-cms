@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
-  fieldKind, buildColumns, defaultHiddenKeys, applyPrefs, orderedColumns, loadPrefs, savePrefs, clearPrefs,
-  compareValues, sortRows, nextSort, richTextToPlain, attachmentOf
+  fieldKind, columnAlign, buildColumns, defaultHiddenKeys, applyPrefs, orderedColumns, loadPrefs, savePrefs, clearPrefs,
+  compareValues, sortRows, sortValue, nextSort, richTextToPlain, attachmentOf, staticOptionLabel
 } from '../../src/utils/tableModel.js'
 
 const resource = {
@@ -47,6 +47,29 @@ describe('buildColumns (locale derivation)', () => {
     expect(cover).toMatchObject({ kind: 'image', sortable: false })
     expect(fieldKind('unknown')).toBe('text')
   })
+  it('shows a crop image like an image: the picture of its first file, and no sorting', () => {
+    expect(fieldKind('cropimage')).toBe('image')
+    expect(fieldKind('imagemap')).toBe('image')
+    expect(fieldKind('rating')).toBe('rating')
+    expect(fieldKind('duration')).toBe('duration')
+    expect(fieldKind('money')).toBe('money')
+    expect(fieldKind('phone')).toBe('phone')
+    expect(fieldKind('markdown')).toBe('markdown')
+    expect(fieldKind('daterange')).toBe('daterange')
+    expect(fieldKind('geopoint')).toBe('geopoint')
+    expect(fieldKind('radio')).toBe('select')
+    expect(fieldKind('segmented')).toBe('select')
+    const [column] = buildColumns([{ originalModel: 'avatar', model: 'avatar', localised: false }], { locales: [], schema: [{ field: 'avatar', input: 'cropimage' }] })
+    expect(column).toMatchObject({ kind: 'image', input: 'cropimage', sortable: false })
+  })
+  it('aligns a duration to the right, like a number', () => {
+    expect(columnAlign('duration')).toBe('right')
+    expect(columnAlign('money')).toBe('right')
+    expect(columnAlign('number')).toBe('right')
+    expect(columnAlign('text')).toBe('left')
+    expect(columnAlign('duration', 'left')).toBe('left')
+  })
+
   it('ignores groups and fields without a model', () => {
     expect(buildColumns([{ type: 'group' }, { model: 'x' }], resource)).toEqual([])
   })
@@ -115,6 +138,45 @@ describe('sorting', () => {
   })
 })
 
+describe('sorting date ranges', () => {
+  it('sorts by the start, with the rows that have no range last', () => {
+    const rows = [{ r: { start: 30, end: 40 } }, {}, { r: { start: 10, end: 90 } }, { r: { start: 20, end: 25 } }]
+    const get = (row) => sortValue(row, { model: 'r', kind: 'daterange' })
+    expect(sortRows(rows, [{ key: 'r', order: 'asc' }], get).map((row) => row.r && row.r.start)).toEqual([10, 20, 30, undefined])
+    expect(sortRows(rows, [{ key: 'r', order: 'desc' }], get).map((row) => row.r && row.r.start)).toEqual([30, 20, 10, undefined])
+  })
+})
+
+describe('sorting geopoints', () => {
+  it('sorts by the latitude, with the rows that have no point last', () => {
+    const rows = [{ p: { lat: 10, lng: 5 } }, {}, { p: { lat: -20, lng: 100 } }, { p: { lat: 48, lng: 2 } }]
+    const get = (row) => sortValue(row, { model: 'p', kind: 'geopoint' })
+    expect(sortRows(rows, [{ key: 'p', order: 'asc' }], get).map((row) => row.p && row.p.lat)).toEqual([-20, 10, 48, undefined])
+    expect(sortRows(rows, [{ key: 'p', order: 'desc' }], get).map((row) => row.p && row.p.lat)).toEqual([48, 10, -20, undefined])
+  })
+})
+
+describe('sorting markdown', () => {
+  it('sorts by what the text says, not by its signs', () => {
+    const rows = [{ body: '**banana**' }, { body: '# apple' }, { body: '[cherry](https://x.co)' }, {}]
+    const column = { model: 'body', kind: 'markdown' }
+    const get = (row) => sortValue(row, column)
+    expect(sortRows(rows, [{ key: 'body', order: 'asc' }], get).map((r) => r.body)).toEqual(['# apple', '**banana**', '[cherry](https://x.co)', undefined])
+  })
+})
+
+describe('sorting money', () => {
+  it('sorts by the amount, whatever the currency, with the rows that have none last', () => {
+    const rows = [
+      { price: { amount: 30, currency: 'EUR' } }, { }, { price: { amount: 5, currency: 'JPY' } }, { price: { amount: 12.5, currency: 'USD' } }
+    ]
+    const column = { model: 'price', kind: 'money' }
+    const get = (row) => sortValue(row, column)
+    expect(sortRows(rows, [{ key: 'price', order: 'asc' }], get).map((r) => r.price && r.price.amount)).toEqual([5, 12.5, 30, undefined])
+    expect(sortRows(rows, [{ key: 'price', order: 'desc' }], get).map((r) => r.price && r.price.amount)).toEqual([30, 12.5, 5, undefined])
+  })
+})
+
 describe('richTextToPlain', () => {
   it('strips tags and entities', () => {
     expect(richTextToPlain('<p>Hello&nbsp;<strong>world</strong></p><p>Second &amp; last</p>')).toBe('Hello world Second & last')
@@ -139,5 +201,30 @@ describe('attachmentOf (image and file cells)', () => {
   it('finds nothing when there is no file', () => {
     expect(attachmentOf({ photo: [] }, { model: 'photo', originalModel: 'photo' })).toBe(undefined)
     expect(attachmentOf({}, { model: 'photo', originalModel: 'photo' })).toBe(undefined)
+  })
+})
+
+describe('staticOptionLabel', () => {
+  const field = { source: ['low', 'high'], options: { labels: { low: 'Low', high: { enUS: 'High', zhCN: '高' } } } }
+
+  it('calls a value by its label, in the options of the field or beside them', () => {
+    expect(staticOptionLabel(field, 'low', 'enUS')).toBe('Low')
+    expect(staticOptionLabel({ source: ['a'], labels: { a: 'Alpha' } }, 'a', 'enUS')).toBe('Alpha')
+  })
+
+  it('reads the label in the language, else the first one there is', () => {
+    expect(staticOptionLabel(field, 'high', 'zhCN')).toBe('高')
+    expect(staticOptionLabel(field, 'high', 'fr')).toBe('High')
+  })
+
+  it('calls a value that is written { value, text } by its text', () => {
+    expect(staticOptionLabel({ source: [{ value: 'a', text: 'Alpha' }, { value: 'b' }] }, 'a', 'enUS')).toBe('Alpha')
+    expect(staticOptionLabel({ source: [{ value: 'b' }] }, 'b', 'enUS')).toBe('b')
+  })
+
+  it('calls a value that has no label by itself, a number as text', () => {
+    expect(staticOptionLabel(field, 'medium', 'enUS')).toBe('medium')
+    expect(staticOptionLabel({ source: [1, 2] }, 3, 'enUS')).toBe('3')
+    expect(staticOptionLabel({}, 'x', 'enUS')).toBe('x')
   })
 })

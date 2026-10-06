@@ -65,7 +65,7 @@
 
       <section class="cms-card ds-section" aria-labelledby="ds-forms">
         <h2 id="ds-forms">Form controls</h2>
-        <p class="ds-note">One state system for every control: editable (field surface, strong border, hover darkens it, focus adds the accent border and ring), read-only (tinted, no border, an eye after the label, still copyable), disabled (page colour, dashed border, muted text, a lock after the label), error (red border, icon and message).</p>
+        <p class="ds-note">One state system for every control: editable (field surface, strong border, hover darkens it, focus adds the accent border and ring), read-only (tinted, no border, a lock after the label, still copyable), disabled (page colour, dashed border, muted text, no icon), error (red border, icon and message).</p>
         <div class="ds-forms">
           <div v-for="state in formStates" :key="state.name" class="ds-form-col">
             <h3>{{ state.name }}<small>{{ state.hint }}</small></h3>
@@ -73,12 +73,10 @@
             <v-text-field
               v-bind="fieldProps(state)" persistent-placeholder aria-label="Text"
               :placeholder="state.name === 'Editable' ? 'Placeholder' : ''" :model-value="state.empty ? '' : 'Nordic oak chair'"
-            >
-              <template #label />
-            </v-text-field>
-            <v-textarea v-bind="fieldProps(state)" :rows="2" no-resize model-value="A sturdy chair with a solid oak frame." aria-label="Text area"><template #label /></v-textarea>
-            <v-autocomplete v-bind="fieldProps(state)" :items="['Chairs', 'Tables']" model-value="Chairs" menu-icon="$chevronDown" aria-label="Select"><template #label /></v-autocomplete>
-            <v-autocomplete v-bind="fieldProps(state)" :items="['new', 'sale', 'oak']" :model-value="['new', 'oak']" multiple chips closable-chips menu-icon="$chevronDown" aria-label="Multiple select"><template #label /></v-autocomplete>
+            />
+            <v-textarea v-bind="fieldProps(state)" :rows="2" no-resize model-value="A sturdy chair with a solid oak frame." aria-label="Text area" />
+            <v-autocomplete v-bind="fieldProps(state)" :items="['Chairs', 'Tables']" model-value="Chairs" menu-icon="$chevronDown" aria-label="Select" />
+            <v-autocomplete v-bind="fieldProps(state)" :items="['new', 'sale', 'oak']" :model-value="['new', 'oak']" multiple chips closable-chips menu-icon="$chevronDown" aria-label="Multiple select" />
             <div class="date-picker-wrapper" :class="{'is-readonly': state.readonly, 'is-disabled': state.disabled}">
               <div class="date-row">
                 <div class="date-control">
@@ -140,8 +138,8 @@
           { name: 'Editable', hint: 'hover darkens the border' },
           { name: 'Focus', hint: 'accent border and ring', focused: true },
           { name: 'Error', hint: 'red border, icon, message', error: true },
-          { name: 'Read-only', hint: 'tinted, eye, copyable', readonly: true },
-          { name: 'Disabled', hint: 'dashed, muted, lock', disabled: true }
+          { name: 'Read-only', hint: 'tinted, lock, copyable', readonly: true },
+          { name: 'Disabled', hint: 'dashed, muted, no icon', disabled: true }
         ],
         options: ['articles', 'authors', 'admin settings', 'config', 'groups'],
         variants: [
@@ -154,6 +152,10 @@
       }
     },
     methods: {
+      /**
+       * @param {{focused?: boolean, readonly?: boolean, disabled?: boolean}} state
+       * @returns {Object} the props of a sample field
+       */
       fieldProps (state) {
         return {
           variant: 'solo-filled', flat: true, rounded: true, density: 'compact', 'hide-details': 'auto',
@@ -161,13 +163,19 @@
           'error-messages': state.error ? ['This field is required'] : []
         }
       },
+      /**
+       * @param {Date|string|number} date
+       * @returns {string} YYYY-MM-DD
+       */
       formatDate (date) {
         return new Date(date).toISOString().slice(0, 10)
       },
+      /** @param {string} type success, info, warn or error */
       showToast (type) {
         const messages = { success: 'Region A saved', info: 'Import started...', warn: '2 fields need attention', error: 'Save failed: network error' }
         NotificationsService.send(messages[type], type, type === 'error' ? { actionLabel: 'Retry', action: () => {} } : { detail: 'mukx1234' })
       },
+      /** @param {string} type destructive, or anything else */
       openDialog (type) {
         window.DialogService.show({
           event: 'designSystem',

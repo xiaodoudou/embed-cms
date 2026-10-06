@@ -38,12 +38,15 @@
       getMaxCount: { type: Function, default: () => {} }
     },
     computed: {
+      /** @returns {boolean} whether the schema sets a width and a height */
       hasSizeOptions () {
         return _.get(this.schema, 'options.width', false) && _.get(this.schema, 'options.height', false)
       },
+      /** @returns {string} */
       maxCountMsg () {
         return TranslateService.get(`TL_MAX_NUMBER_OF_${_.toUpper(this.fileType)}S`, { num: this.getMaxCount() })
       },
+      /** @returns {string} */
       unlimitedMsg() {
         return TranslateService.get(`TL_UNLIMITED_NUMBER_OF_${_.toUpper(this.fileType)}S`)
       }

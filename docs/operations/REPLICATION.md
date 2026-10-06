@@ -94,7 +94,7 @@ Two things to know. First, only resources whose `type` isn't `normal` sync autom
 
 ## Starting a sync by hand
 
-When replication runs, the admin has a **Replicator** page in the System menu (for the `admins` group, which gets it by default). It lists the resources with their type and peers, syncs a resource or one record, and says which peers failed. The same is available over HTTP to any logged-in user (the routes are in `routesToAuth`), and from code:
+When replication runs, the admin has a **Replicator** page in the System menu (for the `admins` group, which gets it by default whenever replication runs). It lists the resources with their type and peers, syncs a resource or one record, and says which peers failed. The same is available over HTTP to any logged-in user (the routes are in `routesToAuth`), and from code:
 
 | Route | What it does |
 |---|---|

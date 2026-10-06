@@ -1,5 +1,6 @@
 import _ from 'lodash'
 import dayjs from 'dayjs'
+import { markdownToPlain } from '@u/markdown'
 
 /**
  * Pure logic behind the table view: column derivation (which locales are shown),
@@ -14,10 +15,16 @@ const KIND_BY_INPUT = {
   double: 'number',
   date: 'date',
   datetime: 'datetime',
+  daterange: 'daterange',
+  geopoint: 'geopoint',
   time: 'time',
   image: 'image',
+  cropimage: 'image',
+  imagemap: 'image',
   file: 'file',
   select: 'select',
+  radio: 'select',
+  segmented: 'select',
   multiselect: 'multi',
   pillbox: 'multi',
   wysiwyg: 'richtext',
@@ -27,7 +34,12 @@ const KIND_BY_INPUT = {
   paragraph: 'paragraph',
   url: 'link',
   email: 'link',
-  color: 'color'
+  color: 'color',
+  rating: 'rating',
+  duration: 'duration',
+  money: 'money',
+  phone: 'phone',
+  markdown: 'markdown'
 }
 
 // Fixed or flexible widths per kind (px). Flexible text columns have a min and a max and truncate.
@@ -36,9 +48,15 @@ const WIDTHS = {
   number: { width: 116 },
   date: { width: 124 },
   datetime: { width: 164 },
+  daterange: { width: 236 },
+  geopoint: { width: 176 },
   time: { width: 92 },
   image: { width: 104 },
   color: { width: 96 },
+  rating: { width: 116 },
+  duration: { width: 116 },
+  money: { width: 132 },
+  phone: { width: 168 },
   select: { min: 140, max: 240 },
   multi: { min: 160, max: 280 },
   link: { min: 160, max: 280 },
@@ -46,6 +64,7 @@ const WIDTHS = {
   json: { min: 140, max: 240 },
   paragraph: { min: 120, max: 180 },
   richtext: { min: 180, max: 340 },
+  markdown: { min: 180, max: 340 },
   text: { min: 160, max: 340 }
 }
 
@@ -67,15 +86,24 @@ export function attachmentOf (record, column) {
   })
 }
 
+/**
+ * @param {string} input
+ * @returns {string} text by default
+ */
 export function fieldKind (input) {
   return KIND_BY_INPUT[input] || 'text'
 }
 
+/**
+ * @param {string} kind
+ * @param {string} [rawAlign] wins
+ * @returns {string}
+ */
 export function columnAlign (kind, rawAlign) {
   if (rawAlign) {
     return rawAlign
   }
-  return kind === 'number' ? 'right' : 'left'
+  return kind === 'number' || kind === 'duration' || kind === 'money' ? 'right' : 'left'
 }
 
 /**
@@ -152,6 +180,11 @@ export function defaultHiddenKeys (columns, visibleCount = 8) {
 
 const PREF_PREFIX = 'embed-cms.table.columns.'
 
+/**
+ * @param {Storage} storage
+ * @param {string} resourceName
+ * @returns {Object}
+ */
 export function loadPrefs (storage, resourceName) {
   try {
     const parsed = JSON.parse(storage.getItem(PREF_PREFIX + resourceName))
@@ -161,6 +194,12 @@ export function loadPrefs (storage, resourceName) {
   }
 }
 
+/**
+ * @param {Storage} storage
+ * @param {string} resourceName
+ * @param {Object} prefs hidden, order, showAllLocales, sortBy
+ * @returns {boolean}
+ */
 export function savePrefs (storage, resourceName, prefs) {
   try {
     storage.setItem(PREF_PREFIX + resourceName, JSON.stringify(_.pick(prefs, ['hidden', 'order', 'showAllLocales', 'sortBy'])))
@@ -170,6 +209,10 @@ export function savePrefs (storage, resourceName, prefs) {
   }
 }
 
+/**
+ * @param {Storage} storage
+ * @param {string} resourceName
+ */
 export function clearPrefs (storage, resourceName) {
   try {
     storage.removeItem(PREF_PREFIX + resourceName)
@@ -198,6 +241,12 @@ export function orderedColumns (columns, prefs = {}) {
   })
 }
 
+/**
+ * @param {Array<Object>} columns
+ * @param {Object} prefs
+ * @param {string} key
+ * @returns {boolean} by the saved hidden keys, else the default hidden ones
+ */
 export function isColumnHidden (columns, prefs, key) {
   const hidden = _.has(prefs, 'hidden') ? prefs.hidden : defaultHiddenKeys(columns)
   return _.includes(hidden, key)
@@ -205,6 +254,10 @@ export function isColumnHidden (columns, prefs, key) {
 
 const collator = typeof Intl !== 'undefined' ? new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' }) : null
 
+/**
+ * @param {*} value
+ * @returns {*} a value for sorting; undefined for empty
+ */
 function comparable (value) {
   if (_.isNil(value) || value === '') {
     return undefined
@@ -322,6 +375,11 @@ export function selectionState (selected, ids) {
   return count === 0 ? 'none' : count === ids.length ? 'all' : 'some'
 }
 
+/**
+ * @param {Array<string>} selected
+ * @param {string} id
+ * @returns {Array<string>}
+ */
 export function toggleId (selected, id) {
   return _.includes(selected, id) ? _.without(selected, id) : [...selected, id]
 }
@@ -422,11 +480,33 @@ export function formatDateValue (value, kind = 'date') {
   return parsed.format(kind === 'datetime' ? 'YYYY-MM-DD HH:mm' : kind === 'time' ? 'HH:mm' : 'YYYY-MM-DD')
 }
 
+/**
+ * @param {*} value
+ * @returns {string} as it is when not a number
+ */
 export function formatNumberValue (value) {
   if (isEmptyValue(value) || !_.isFinite(Number(value))) {
     return _.toString(value)
   }
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(Number(value))
+}
+
+/**
+ * @param {Object} raw the field, as the resource declares it
+ * @param {*} value a value of its static list (`source`: values, or `{ value, text }`)
+ * @param {string} locale the language the labels are read in
+ * @returns {string} what the value is called: its `text`, else its label (in the options of the field, or beside them; a text, or one per language), else the value itself
+ */
+export function staticOptionLabel (raw, value, locale) {
+  const entry = _.find(_.isArray(_.get(raw, 'source')) ? raw.source : [], (item) => _.isObject(item) && item.value === value)
+  if (entry) {
+    return _.toString(entry.text || entry.value)
+  }
+  const label = _.get(raw, ['options', 'labels', value], _.get(raw, ['labels', value]))
+  if (label) {
+    return _.toString(_.isObject(label) ? _.get(label, locale, _.first(_.values(label))) : label)
+  }
+  return _.toString(value)
 }
 
 /** Chips of a multi value cell: at most `max` shown, the rest counted for a "+n" chip */
@@ -441,9 +521,21 @@ export function sortValue (record, column, options = {}) {
   if (column.kind === 'richtext') {
     return richTextToPlain(value)
   }
+  if (column.kind === 'markdown') {
+    return markdownToPlain(value)
+  }
+  if (column.kind === 'daterange') {
+    return _.get(value, 'start')
+  }
+  if (column.kind === 'geopoint') {
+    return _.get(value, 'lat')
+  }
   if (_.isFunction(options.labelOf) && (column.kind === 'select' || column.kind === 'multi')) {
     const label = options.labelOf(column)
     return _.isArray(value) ? _.map(value, label).join(', ') : label(value)
+  }
+  if (column.kind === 'money') {
+    return _.get(value, 'amount')
   }
   if (column.kind === 'json') {
     return _.isEmpty(value) ? undefined : _.size(value)

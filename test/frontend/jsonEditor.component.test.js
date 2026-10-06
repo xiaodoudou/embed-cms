@@ -33,7 +33,7 @@ const editor = async (jsonEditorOptions = SETTINGS, model = {}, schema = {}, pro
   return wrapper
 }
 const root = () => wrapper.get('.json-editor').element
-const inputOf = (name) => root().querySelector(`[name="root[${name}]"]`)
+const inputOf = (name) => root().querySelector(`[name="${wrapper.vm.inputId}[${name}]"]`)
 const labels = () => [...root().querySelectorAll('.json-editor-input-label')].map((label) => label.textContent.trim())
 const change = (input, value) => {
   input.value = value

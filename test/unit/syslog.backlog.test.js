@@ -103,7 +103,7 @@ describe('SyslogManager backlog and capture (unit)', () => {
   describe('very long logs', () => {
     it('cuts a line longer than syslog.maxLineLength, and says how much is missing', () => {
       sys.options = { syslog: { maxLineLength: 20 } }
-      sys.injectDataToSyslogData('INFO ' + 'x'.repeat(1000))
+      sys.addLogOutput('INFO ' + 'x'.repeat(1000))
       const [item] = sys.syslogData
       expect(item.line.startsWith('INFO ' + 'x'.repeat(15))).to.equal(true)
       expect(item.line).to.contain('line cut, 985 more characters')

@@ -1,13 +1,13 @@
 <template>
   <div class="multiselect-wrapper">
     <v-autocomplete
-      :id="selectOptions.id"
-      ref="input"
+      :id="selectOptions.id || inputId" ref="input"
       v-model:search="searchText"
+      :name="schema.model"
       :theme="theme"
       :chips="getSelectOpt('chips')"
       :menu-props="menuProps"
-      :model-value="objectValue || _value" :items="listItems" :closable-chips="getSelectOpt('deletableChips') || getSelectOpt('multiple')" :hide-selected="getSelectOpt('hideSelected')"
+      :model-value="selection" :items="listItems" :closable-chips="getSelectOpt('deletableChips') || getSelectOpt('multiple')" :hide-selected="getSelectOpt('hideSelected')"
       :disabled="disabled || schema.disabled" :readonly="!!schema.readonly" :aria-readonly="schema.readonly ? 'true' : undefined" :placeholder="schema.placeholder" :multiple="getSelectOpt('multiple')" :ripple="false" :flat="get('flat')" :rules="[validateField]"
       :item-title="customLabel" :item-value="getValue"
       menu-icon="$chevronDown" :clearable="isClearable" clear-icon="$close" :variant="getVariant()" :density="get('density')" rounded hide-details="auto" validate-on="blur" :aria-label="schema.label"
@@ -15,7 +15,7 @@
       @update:focused="onFieldFocus"
     >
       <template #prepend>
-        <field-label :schema="schema" :disabled="disabled" :label="getLabel()" />
+        <field-label :schema="schema" :disabled="disabled" :label="getLabel()" :input-id="selectOptions.id || inputId" />
         <span v-if="getSelectOpt('multiple') && selectedCount > 0" class="selected-count" aria-live="polite">{{ $filters.translate('TL_N_SELECTED', { num: selectedCount }) }}</span>
         <v-btn v-if="schema.listBox" variant="tonal" size="small" rounded elevation="0" @click="onChangeSelectAll">{{ $filters.translate(allOptionsSelected() ? 'TL_DESELECT_ALL' : 'TL_SELECT_ALL') }}</v-btn>
       </template>
@@ -26,7 +26,6 @@
           @contextmenu.stop.prevent="copyToClipboard(item.value)"
         />
       </template>
-      <template #label />
       <template #append />
       <template #item="{props, item}">
         <v-list-item density="compact" v-bind="props" :subtitle="subtitleOf(item)">
@@ -52,9 +51,11 @@
   import Notification from '@m/Notification'
   import Mustache from 'mustache'
   import { highlightSegments, withGroupHeadings } from '@u/highlight'
+  import { keyRef, toKey } from '@u/sources'
 
   export default {
     mixins: [AbstractField, Notification],
+    emits: ['input'],
     data () {
       return {
         searchText: '',
@@ -76,8 +77,23 @@
         }
         return !this.getSelectOpt('multiple') && !this.schema.required && !this.schema.readonly && !this.disabled
       },
+      /** @returns {boolean} the records of several resources (`sources`): the choices are grouped by resource and what is kept is `{ resource, id }` */
+      multiSource () {
+        return !!this.schema.multiSource
+      },
+      /** @returns {*} what the list shows as chosen: the choices by their keys for a field of several resources, the value as it is for the others */
+      selection () {
+        const value = this.objectValue || this._value
+        if (!this.multiSource) {
+          return value
+        }
+        return _.isArray(value) ? _.compact(_.map(value, toKey)) : toKey(value)
+      },
       // options.groupBy names a field of the option records that becomes the group heading
       listItems () {
+        if (this.multiSource) {
+          return withGroupHeadings(this.options, (item) => item._title)
+        }
         const groupBy = _.get(this.schema, 'options.groupBy', false)
         const options = this.options
         if (!groupBy || !_.isArray(options)) {
@@ -85,21 +101,34 @@
         }
         return withGroupHeadings(options, (item) => _.get(item, groupBy))
       },
+      /** @returns {number} */
       selectedCount () {
         return _.size(this.objectValue || this._value)
       },
+      /** @returns {Object} schema.selectOptions, or {} */
       selectOptions () {
         return this.schema.selectOptions || {}
       },
+      /** @returns {Array} schema.values, called with the model and the schema when it is a function */
       options () {
-        let values = this.schema.values
+        const values = this.schema.values
         if (_.isFunction(values)) {
           return values.apply(this, [this.model, this.schema])
+        }
+        if (this.multiSource) {
+          // a reference to a record that is gone is still shown, by its id, so that the value is not lost without being seen
+          const value = this.objectValue || this._value
+          const missing = _.filter(_.map(_.isArray(value) ? value : [value], toKey), key => key && !_.some(values, { _id: key }))
+          return _.concat(values || [], _.map(missing, key => ({ _id: key, _label: `${keyRef(key).id} (${TranslateService.get('TL_MAP_RECORD_MISSING')})`, _title: '', missing: true })))
         }
         return values
       }
     },
     methods: {
+      /**
+       * @param {string} text
+       * @returns {Array} the text cut into segments, the ones matching the search text flagged (highlightSegments)
+       */
       highlight (text) {
         return highlightSegments(text, this.searchText)
       },
@@ -114,15 +143,28 @@
           const rendered = Mustache.render(template, raw)
           return _.includes(rendered, '[object Object]') ? undefined : rendered
         }
+        if (this.multiSource) {
+          // the groups say what kind of record it is; a search leaves their headings out, so the kind is said under the record then
+          return this.searchText ? _.get(raw, '_title') || undefined : undefined
+        }
         return _.isString(this.schema.source) ? _.get(raw, '_id') : undefined
       },
+      /**
+       * @param {*} val
+       * @returns {boolean} null, undefined, an empty string or an empty array
+       */
       valEmpty(val) {
         return _.isNull(val) || _.isUndefined(val) || val === '' || (_.isArray(val) && val.length === 0)
       },
+      /** @param {string} value */
       copyToClipboard(value) {
         navigator.clipboard.writeText(value)
         this.notify('Value has been copied.')
       },
+      /**
+       * @param {*} val
+       * @returns {true|string} true, or the message: required when empty, invalid format when the validator of the schema refuses it
+       */
       validateField (val) {
         if (this.valEmpty(val)) {
           return this.schema.required ? TranslateService.get('TL_FIELD_IS_REQUIRED') : true
@@ -131,12 +173,24 @@
         }
         return true
       },
+      /**
+       * @param {Object|*} item an option, or Vuetify's {raw}
+       * @returns {*} its _id, else its _value, else itself
+       */
       getValue (item) {
         const val = _.get(item, 'raw', item)
         return _.get(val, '_id', _.get(val, '_value', val))
       },
+      /**
+       * @param {Object|*} item an option, or Vuetify's {raw}
+       * @returns {string} its label: options.labels for a plain value (a string, or one per locale), the field of a record in the locale, its text, else selectOptions.customLabel
+       */
       customLabel (item) {
         const val = _.get(item, 'raw', item)
+        if (this.multiSource) {
+          // (the headings of the groups are entries of the list too: they have a title)
+          return _.toString(_.get(val, '_label', _.get(val, 'title', '')))
+        }
         // plain values can carry a readable label: a string, or one string per locale
         const label = _.isObject(val) ? undefined : _.get(this.schema, ['options', 'labels', val])
         if (_.isString(label)) {
@@ -153,16 +207,24 @@
         }
         return this.schema.selectOptions.customLabel(val)
       },
+      /**
+       * @param {string} key
+       * @returns {*} selectOptions[key], false when unset
+       */
       getSelectOpt (key) {
         return _.get(this.selectOptions, key, false)
       },
+      /** @returns {boolean} */
       allOptionsSelected () {
         return _.get(this.options, 'length', 0) === _.get(this.objectValue || this._value, 'length', 0)
       },
+      /** Deselects everything when all is selected, else selects every option. */
       onChangeSelectAll () {
         const allSelected = this.allOptionsSelected()
         if (allSelected) {
           this.objectValue = []
+        } else if (this.multiSource) {
+          this.objectValue = _.map(_.reject(this.options, 'missing'), '_id')
         } else {
           let allValues = _.compact(_.map(this.options, '_value'))
           if (_.get(allValues, 'length', 0) === 0) {
@@ -170,29 +232,43 @@
           }
           this.objectValue = allValues
         }
-        this._value = this.objectValue
+        this._value = this.multiSource ? _.compact(_.map(this.objectValue, keyRef)) : this.objectValue
         this.$emit('input', this._value, this.schema.model)
       },
+      /** @returns {string} selectOptions.label, else the label of the schema; empty when disabled */
       getLabel () {
         if (this.disabled) {
           return ''
         }
         return !_.isString(this.selectOptions.label) ? this.schema.label : this.selectOptions.label
       },
+      /** @param {Array|Object|string} value the selection; stored by selectOptions.key when there is one */
       updateSelected (value) {
         this.objectValue = value
+        if (this.multiSource) {
+          this.$emit('input', _.isArray(value) ? _.compact(_.map(value, keyRef)) : (_.isNil(value) ? value : keyRef(value)), this.schema.model)
+          return
+        }
         const key = _.get(this.schema, 'selectOptions.key', false)
         if (key) {
           value = _.isString(value) ? value : _.get(value, key, value)
         }
         this.$emit('input', value, this.schema.model)
       },
+      /**
+       * @param {string} newTag
+       * @param {string} id the field; both handed to selectOptions.onNewTag when there is one
+       */
       addTag (newTag, id) {
         const onNewTag = this.selectOptions.onNewTag
         if (_.isFunction(onNewTag)) {
           onNewTag(newTag, id, this.options, this.objectValue)
         }
       },
+      /**
+       * @param {string} searchQuery
+       * @param {string} id the field; both handed to selectOptions.onSearch when there is one
+       */
       onSearchChange (searchQuery, id) {
         const onSearch = this.selectOptions.onSearch
         if (_.isFunction(onSearch)) {

@@ -86,7 +86,8 @@ describe('sync plugin: push after a change (unit)', () => {
   })
 
   it('follows the saved settings: no call for a resource that is not selected', async () => {
-    await configure({ resources: [] })
+    // the settings choose another resource (an empty choice would fall back to the list of cms.json, which has cities)
+    await configure({ resources: ['countries'] })
     await cities.create({ key: 'unselected', name: { en: 'Unselected' } })
     await sleep(300)
     expect(calls).to.have.length(0)

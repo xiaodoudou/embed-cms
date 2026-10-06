@@ -70,11 +70,11 @@ declare namespace EmbedCMS {
   type FieldInput =
     | 'string' | 'transliterate' | 'text' | 'password' | 'email' | 'url'
     | 'number' | 'integer' | 'double'
-    | 'checkbox' | 'color'
-    | 'date' | 'time' | 'datetime'
+    | 'checkbox' | 'radio' | 'segmented' | 'color' | 'rating' | 'duration' | 'money' | 'phone' | 'markdown'
+    | 'date' | 'daterange' | 'time' | 'datetime' | 'geopoint'
     | 'pillbox' | 'select' | 'multiselect'
     | 'json' | 'object' | 'code' | 'wysiwyg'
-    | 'image' | 'file' | 'paragraph'
+    | 'image' | 'cropimage' | 'imagemap' | 'file' | 'paragraph'
 
   /** A pattern for the text types */
   interface FieldRegex {
@@ -92,12 +92,12 @@ declare namespace EmbedCMS {
     readonly?: boolean
     /** Greyed out and not focusable */
     disabled?: boolean
-    /** Length of a text, value of a number */
+    /** Length of a text, value of a number, how many icons of a `rating` (1 to 10, 5 by default), seconds of a `duration` */
     min?: number
     max?: number
     /** Pattern for the text types, or one per locale */
     regex?: FieldRegex | { [locale: string]: FieldRegex }
-    /** `select` and `multiselect`: a readable label per static value, `{ low: { enUS: 'Low', zhCN: '低' } }` */
+    /** `select`, `multiselect`, `radio` and `segmented`: a readable label per static value, `{ low: { enUS: 'Low', zhCN: '低' } }` */
     labels?: Record<string, Translatable>
     /** `select` and `multiselect`: a Mustache template that labels a record of the source resource, e.g. `'{{name}}'` */
     customLabel?: string
@@ -111,11 +111,96 @@ declare namespace EmbedCMS {
     maxCount?: number
     /** `image` and `file`: the largest file, in bytes */
     limit?: number
+    /** `rating`: what it is made of, star by default */
+    icon?: 'star' | 'heart' | 'thumb' | 'flame' | 'bolt' | 'circle'
+    /** `rating`: the colour of the filled icons, a colour of the theme */
+    color?: 'primary' | 'info' | 'success' | 'warning' | 'error'
+    /** `rating`: half steps */
+    half?: boolean
+    /** `rating`, `radio` and `segmented`: whether the choice can be taken away (true by default, never for a required field) */
+    clearable?: boolean
+    /** `duration`: the boxes to show, largest first whatever the order (hours and minutes by default); `min` and `max` are in seconds */
+    units?: Array<'days' | 'hours' | 'minutes' | 'seconds'>
+    /** `money`: the one currency it takes (an ISO 4217 code, 'EUR'); `min` and `max` are amounts */
+    currency?: string
+    /** `money`: the currencies it offers, when there is more than one (the common ones by default) */
+    currencies?: string[]
+    /** `daterange`: the moments have a time as well as a day */
+    time?: boolean
+    /** `daterange`: how the two moments are written in the box (dayjs tokens, `YYYY/MM/DD` by default) */
+    format?: string
+    /** `daterange`: the first and the last day it takes, a date (`'2026-10-05'`), a number of milliseconds, or `'today'` */
+    minDate?: string | number
+    maxDate?: string | number
+    /** `daterange`: the fewest and the most days a range has, the first and the last included */
+    minDays?: number
+    maxDays?: number
+    /** `radio`: a line of help under each choice, a string or one per locale, by value */
+    descriptions?: Record<string, Translatable>
+    /** `radio`: the choices in a row instead of a column */
+    inline?: boolean
+    /** `geopoint`: the decimals kept in the latitude and the longitude, 0 to 10 (6 by default) */
+    precision?: number
+    /** `geopoint`: how far the map is zoomed in when it shows no point yet, 1 to 20 (12 by default) */
+    zoom?: number
+    /** `geopoint`: where that map is centred */
+    center?: { lat: number; lng: number }
+    /** `markdown`: the buttons of the toolbar, in the order of the toolbar (`'bold'`, `'italic'`, `'strike'`, `'heading'`, `'quote'`, `'ul'`, `'ol'`, `'code'`, `'link'`); `false` for none, all by default */
+    toolbar?: boolean | Array<'bold' | 'italic' | 'strike' | 'heading' | 'quote' | 'ul' | 'ol' | 'code' | 'link'>
+    /** `markdown`: where the preview is: in a tab (by default), beside the box, or `false` for none */
+    preview?: 'tabs' | 'split' | false
+    /** `markdown`: the height of the box in lines (8 by default), and how many it grows to before it scrolls */
+    rows?: number
+    maxRows?: number
+    /** `string`: a template the box keeps while it is typed in: `_` or `#` a digit, `A` a letter, `*` a letter or a digit, a backslash makes the next character itself, the rest is written for you (`'(___) ___-____'`, `'F__-AAAA'`) */
+    mask?: string
+    /** `duration`: the template of the box, written like a mask with digits only (`'__:__'`, `'_h __m'`, `'___ days'`); its parts give the units */
+    template?: string
+    /** `phone`: the countries it takes, ISO 3166 codes (every one by default); `country` is the one it starts with */
+    countries?: string[]
+    country?: string
+    /** `imagemap`: the resources a record link can be from, by name or `{ resource, label, title }` (`label` is a Mustache template that names a record, `title` what the kind of record is called) */
+    references?: Array<string | { resource: string, label?: string, title?: Translatable }>
+    /** `imagemap`: what an area can link to: an address, a record (needs `references`), a value the person types */
+    links?: 'url' | 'record' | 'value' | Array<'url' | 'record' | 'value'>
+    /** `imagemap`: asks where a record opens (an address always does) */
+    openIn?: boolean
+    /** `imagemap`: the words of the three kinds of link */
+    labels?: { url?: Translatable, record?: Translatable, value?: Translatable }
+    /** `cropimage`: the one ratio the crop may have, `1.5`, `'3:2'` or `'16/9'` */
+    aspectRatio?: number | string
+    /** `cropimage`: the shapes to choose from, ratios (`1.5`, `'3:2'`, `[3, 2]`, `{ ratio: '4:5', label: 'Portrait' }`) and `'free'` and `'original'` */
+    aspectRatios?: Array<number | string | [number, number] | { ratio: number | string, label?: string } | 'free' | 'original'>
+    /** `cropimage`: `'circle'` leaves the corners of the result transparent; fixes the shape, with no choice for the person */
+    shape?: 'rect' | 'circle'
+    /** `cropimage`: what the result starts with, changeable in the tool unless `width` and `height` fix the size */
+    output?: { maxWidth?: number, maxHeight?: number, format?: 'jpeg' | 'png' | 'webp', quality?: number }
+    /** `cropimage` and `image`: with `height`, the size of the result (`cropimage`), or the size the picture is resized to on upload (`image`) */
+    width?: number
+    height?: number
     /** `wysiwyg`: the buttons of the toolbar */
     buttons?: string[]
     /** `code`: the CodeMirror mode, e.g. `'text/javascript'`, `'htmlmixed'`, `'css'` */
     mode?: string
     [option: string]: any
+  }
+
+  /** A line of a form layout: the fields on it share its `slots` (see docs/reference/FORM_LAYOUT.md) */
+  interface LayoutLine {
+    slots?: number
+    fields: Array<{ model: string, width?: number }>
+  }
+
+  /** What a resource says of a group of nested fields, in its `groups` (see docs/reference/FIELDS.md#groups) */
+  interface GroupDefinition {
+    /** The title of the group; the first part of the key when left out */
+    label?: Translatable
+    /** The title opens and closes the group. `true` when `collapsed` is, unless this says `false`. */
+    collapsible?: boolean
+    /** The group starts closed (every time the record is opened); it opens when a field in it is wrong */
+    collapsed?: boolean
+    /** Its fields side by side, named by their key inside the group (`city` for `address.city`) */
+    layout?: { lines: LayoutLine[] }
   }
 
   /** One entry of a resource's `schema` */
@@ -133,6 +218,8 @@ declare namespace EmbedCMS {
     localised?: boolean
     /** `select` and `multiselect`: the values, or the name of the resource the options come from */
     source?: string[] | string
+    /** `select` and `multiselect`: the records of several resources in one list, in groups, by name or `{ resource, customLabel, title }`; the value kept is `{ resource, id }` */
+    sources?: Array<string | { resource: string, customLabel?: string, title?: Translatable }>
     /** `pillbox`: fewest and most tags */
     min?: number
     max?: number
@@ -160,8 +247,8 @@ declare namespace EmbedCMS {
     /** The most records it holds. With `1` the admin opens the single record directly. */
     maxCount?: number
     type?: ResourceDirection
-    /** Titles of the nested fields, keyed by prefix: `{ address: { label: 'Address' } }` */
-    groups?: Record<string, { label?: Translatable }>
+    /** What each group of nested fields (`address.city`) looks like, keyed by the path of the group: `{ address: { label: 'Address', collapsible: true } }` */
+    groups?: Record<string, GroupDefinition>
     /** The user groups that see it in the admin menu (the API does not enforce this: use the rights of the groups) */
     allowed?: string[]
     schema: FieldDefinition[]

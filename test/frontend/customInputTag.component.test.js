@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import CustomInputTag from '@c/fields/CustomInputTag.vue'
+import ResourceService from '@s/ResourceService'
 import { mountField } from './helpers/mountField.js'
 
 const tags = (model = {}, schema = {}) => mountField(CustomInputTag, { model, schema: { model: 'tags', label: 'Tags', ...schema }, attachTo: document.body })
@@ -59,5 +60,25 @@ describe('CustomInputTag (the pillbox)', () => {
   it('is not editable when read-only', () => {
     const wrapper = tags({ tags: ['a'] }, { readonly: true })
     expect(wrapper.get('input:not([type=hidden])').attributes('readonly')).toBeDefined()
+  })
+
+  it('offers the plugin pages of the admin when the field suggests them', () => {
+    window.plugins = [{ displayname: 'Syslog' }, { displayname: 'Dashboard' }, { displayname: 'Syslog' }, {}]
+    try {
+      expect(tags({}, { options: { suggest: 'adminPlugins' } }).vm.suggestions).toEqual(['Syslog', 'Dashboard'])
+      expect(tags().vm.suggestions).toEqual([])
+    } finally {
+      delete window.plugins
+    }
+  })
+
+  it('offers the resources of the CMS the person can see, in order, without the system ones, when the field suggests them', () => {
+    ResourceService.setSchemas([{ title: 'products' }, { title: '_users' }, { title: 'articles' }, { title: '_sync' }, {}])
+    try {
+      expect(tags({}, { options: { suggest: 'resources' } }).vm.suggestions).toEqual(['articles', 'products'])
+    } finally {
+      ResourceService.setSchemas(undefined)
+    }
+    expect(tags({}, { options: { suggest: 'resources' } }).vm.suggestions).toEqual([])
   })
 })

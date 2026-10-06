@@ -5,7 +5,7 @@
       <div
         v-if="maxCount != 1"
         v-shortkey="getShortcuts()" class="search"
-        :class="{'is-query': sift.isQuery, 'is-valid': sift.isQuery && sift.isValid == true, 'is-invalid': sift.isQuery && sift.isValid == false}" @shortkey="interactiveSearch"
+        :class="{'is-query': sift.isQuery, 'is-valid': sift.isQuery && sift.isValid == true, 'is-invalid': sift.isQuery && sift.isValid == false}" @shortkey="focusSearch"
       >
         <search-field ref="search" v-model="search" :placeholder="$filters.translate('TL_SEARCH')" :aria-label="$filters.translate('TL_SEARCH')" name="search" />
         <v-btn v-if="maxCount <= 0 || listCount < maxCount" elevation="0" icon class="new-record" :class="{active: isCreatingNewRecord()}" :aria-label="$filters.translate('TL_NEW_RECORD')" :title="$filters.translate('TL_NEW_RECORD')" @click="onClickNew">
@@ -83,7 +83,7 @@
                 <div v-if="item" class="main">
                   <v-tooltip location="right" eager :open-on-focus="false">
                     <template #activator="{ props }">
-                      <span v-bind="props" v-html="renderBaseOnSearch(getName(item))" />
+                      <span v-bind="props" v-html="highlightSearch(getName(item))" />
                     </template>
                     <span v-html="sanitizeHtml(getName(item))" /><span v-if="isCompact && item._id" class="tooltip-id">{{ item._id }}</span>
                   </v-tooltip>
@@ -92,13 +92,13 @@
                   <v-icon v-if="item._id && !item._local" class="meta-lock" size="12" icon="$lockOutline" role="img" :aria-label="$filters.translate('TL_READ_ONLY')" :title="$filters.translate('TL_READ_ONLY')" />
                   <span v-if="!hidesAuthor(item) || !item._id" class="update">{{ $filters.translate('TL_UPDATED_BY', {user: getUpdatedBy(item)}) }}</span>
                   <!-- compact rows: the id takes the place of the author when only the records of the person are shown (it is known), and on the selected row -->
-                  <span v-if="isCompact && item._id && hidesAuthor(item)" class="id id-lead" v-html="renderBaseOnSearch(item._id)" />
+                  <span v-if="isCompact && item._id && hidesAuthor(item)" class="id id-lead" v-html="highlightSearch(item._id)" />
                   <template v-if="item._id">
                     <span v-if="!hidesAuthor(item) || isCompact" class="separator" aria-hidden="true"> &middot; </span>
                     <span class="time-ago">{{ getTimeAgo(item) }}</span>
                   </template>
                 </div>
-                <div v-if="!isCompact && item._id" class="id" v-html="renderBaseOnSearch(item._id)" />
+                <div v-if="!isCompact && item._id" class="id" v-html="highlightSearch(item._id)" />
               </div>
               <button
                 v-if="item._id" type="button" class="cms-icon-btn copy-id" tabindex="-1" :aria-label="$filters.translate('TL_COPY_ID')" :title="$filters.translate('TL_COPY_ID')"
@@ -148,6 +148,7 @@
       multiselect: { type: Boolean, default: false },
       multiselectItems: { type: [Array, Boolean], default: () => [] }
     },
+    emits: ['changeMultiselectItems', 'selectMultiselect', 'selectItem'],
     data () {
       return {
         get: _.get,
@@ -178,6 +179,7 @@
       }
     },
     computed: {
+      /** @returns {boolean} */
       isCompact () {
         return this.density === 'compact'
       },
@@ -185,18 +187,23 @@
       itemSize () {
         return this.isCompact ? 44 : 68
       },
+      /** @returns {Object|undefined} the group of the current resource */
       selectedResourceGroup () {
         return _.find(this.groupedList, (resourceGroup) => this.groupSelected(resourceGroup))
       },
+      /** @returns {string} */
       currentSortLabel () {
         return _.get(_.find(this.sortOptions, { value: this.sortMode }), 'title', '')
       },
+      /** @returns {number} 0 when unlimited */
       maxCount () {
         return _.get(this.resource, 'maxCount', 0)
       },
+      /** @returns {number} */
       listCount () {
         return _.get(this.list, 'length', 0)
       },
+      /** @returns {Array<Object>} the records matching the search on the searchable fields (the first field when none is) */
       filteredList () {
         let fields = this.getSearchableFields()
         if (fields.length === 0) {
@@ -221,7 +228,7 @@
           for (const queryKey in this.query) {
             const queryValue = this.query[queryKey]
             qItems = qItems + 1
-            let value = _.get(item, queryKey)
+            const value = _.get(item, queryKey)
             if (_.isUndefined(value) === false && (_.isArray(value) && _.includes(value, queryValue)) || (!_.isArray(value) && value === queryValue)) {
               qValues = qValues + 1
             }
@@ -281,29 +288,11 @@
     mounted () {
       this.sortMode = _.get(_.first(this.sortOptions), 'value', '_updatedAt')
       NotificationsService.events.on('omnibar-display-status', this.onGetOmnibarDisplayStatus)
-      document.addEventListener('keydown', this.onDocumentKeydown)
     },
     beforeUnmount () {
       NotificationsService.events.off('omnibar-display-status', this.onGetOmnibarDisplayStatus)
-      document.removeEventListener('keydown', this.onDocumentKeydown)
     },
     methods: {
-      // "/" jumps to the search field from anywhere outside a text field
-      onDocumentKeydown (event) {
-        if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey || this.omnibarDisplayed) {
-          return
-        }
-        const target = event.target
-        const tag = _.toLower(_.get(target, 'tagName', ''))
-        if (_.includes(['input', 'textarea', 'select'], tag) || _.get(target, 'isContentEditable', false)) {
-          return
-        }
-        const search = _.get(this.$refs, 'search', false)
-        if (search && _.isFunction(search.focus)) {
-          event.preventDefault()
-          search.focus()
-        }
-      },
       // Up/Down move between rows (the list is virtualised, so scroll first), Home/End jump to the ends
       async onListKeydown (event) {
         const keys = { ArrowDown: 1, ArrowUp: -1, Home: 'first', End: 'last' }
@@ -329,6 +318,7 @@
           elem.focus()
         }
       },
+      /** Saved as a preference. */
       toggleDensity () {
         this.density = this.isCompact ? 'comfortable' : 'compact'
         writePreference('list.density', this.density)
@@ -337,6 +327,10 @@
       hidesAuthor (item) {
         return this.onlyMine || (this.isCompact && this.isItemSelected(item))
       },
+      /**
+       * @param {Object} item
+       * @returns {string} the username of _updatedBy, API without one
+       */
       getUpdatedBy(item) {
         return _.last(_.get(item, '_updatedBy', '~API').split('~'))
       },
@@ -345,7 +339,11 @@
         return _.last(_.get(item, '_createdBy', '').split('~')) || false
       },
       sanitizeHtml,
-      renderBaseOnSearch(value) {
+      /**
+       * @param {string} value a record value, escaped
+       * @returns {string} html with the matches of the search marked
+       */
+      highlightSearch(value) {
         // record values are user content: escape first, then add our own highlight markup
         const result = escapeHtml(value)
         if (_.isEmpty(this.search)) {
@@ -354,9 +352,10 @@
         const search = escapeHtml(this.search)
         return result.split(search).join(`<strong>${search}</strong>`)
       },
-      getFirstKey(record) {
-        return _.get([_.first(_.keys(_.get(record, '[0]', false)))])
-      },
+      /**
+       * @param {Array<Object>} list
+       * @returns {Array<Object>} ordered by name, accents and case ignored
+       */
       orderedList(list) {
         const collator = new Intl.Collator('en', {
           sensitivity: 'base',
@@ -366,25 +365,35 @@
           return collator.compare(this.getName(a), this.getName(b))
         })
       },
+      /** @param {string} value */
       onChangeSort(value) {
         this.sortMode = value
       },
+      /**
+       * @param {Object} item
+       * @returns {string} relative to its _updatedAt
+       */
       getTimeAgo (item) {
         return Dayjs().to(Dayjs(_.get(item, '_updatedAt', 0)))
       },
+      /** @param {boolean} status */
       onGetOmnibarDisplayStatus (status) {
         this.omnibarDisplayed = status
       },
+      // Ctrl+/ and "/" jump to the search field from anywhere outside a text field, while the switcher is closed
       getShortcuts () {
-        return this.omnibarDisplayed ? {} : {open: ['ctrl', '/']}
+        return this.omnibarDisplayed ? {} : { open: ['ctrl', '/'], jump: ['/'] }
       },
+      /** @returns {Array<string>} */
       getSelectedRecordIds () {
         return _.map(this.localMultiselectItems, '_id')
       },
+      /** @returns {boolean} whether every filtered record is selected */
       allRecordsSelected () {
         const ids = this.getSelectedRecordIds()
         return _.get(_.filter(this.filteredList, (record) => !_.includes(ids, record._id)), 'length', 0) === 0
       },
+      /** Adds the filtered records not selected yet. */
       onClickSelectAll () {
         const ids = this.getSelectedRecordIds()
         _.each(this.filteredList, (record) => {
@@ -397,14 +406,17 @@
       onClickDeselectAll () {
         this.$emit('changeMultiselectItems', [])
       },
+      /** Enters or leaves multiselect, the selection cleared. */
       toggleViewMode () {
         this.localMultiselectItems = []
         this.$emit('changeMultiselectItems', this.localMultiselectItems)
         this.$emit('selectMultiselect', !this.multiselect)
       },
+      /** @returns {boolean} a selected item without an id */
       isCreatingNewRecord () {
         return this.selectedItem && !_.get(this.selectedItem, '_id', false)
       },
+      /** @param {string} id */
       async copyIdToClipboard (id) {
         try {
           await navigator.clipboard.writeText(id)
@@ -415,18 +427,32 @@
           this.notify(TranslateService.get('TL_COPY_ID_FAILED'), 'error')
         }
       },
+      /** @returns {boolean} judged on the whole list, not the filtered one */
       hasEditableRecords () {
         // judged on the whole list: a filter that matches nothing must not remove the controls needed to undo it
         return this.onlyMine || _.some(this.list, (item) => _.get(item, '_local', false))
       },
+      /**
+       * @param {Object} item
+       * @returns {boolean} in the multiselect, or the selected item
+       */
       isItemSelected (item) {
         return (this.multiselect && _.includes(_.map(this.localMultiselectItems, '_id'), item._id)) || item === this.selectedItem
       },
-      getTypePrefix (type) {
+      /**
+       * @param {string} type create, update or delete
+       * @returns {string} the translated "error on record" message
+       */
+      recordErrorMessage (type) {
         return TranslateService.get(`TL_ERROR_ON_RECORD_${_.toUpper(type)}`)
       },
+      /**
+       * @param {Error|Object} error a 400 adds its message
+       * @param {string} type create, update or delete
+       * @param {Object} record
+       */
       manageError (error, type, record) {
-        let typePrefix = this.getTypePrefix(type)
+        const typePrefix = this.recordErrorMessage(type)
         let errorMessage = typePrefix
         if (_.get(error, 'code', 500) === 400) {
           errorMessage = `${typePrefix}: ${_.get(error, 'message', TranslateService.get('TL_UNKNOWN_ERROR'))}`
@@ -434,6 +460,10 @@
         console.error(errorMessage, record)
         this.notify(errorMessage, 'error')
       },
+      /**
+       * @param {Object} resourceGroup
+       * @returns {boolean} whether the current resource is in it
+       */
       groupSelected (resourceGroup) {
         if (!this.resource) {
           return false
@@ -445,12 +475,17 @@
         }
         return groupName === selectedItemGroup
       },
+      /**
+       * @param {Object} resource
+       * @returns {string}
+       */
       getResourceTitle (resource) {
         if (!resource) {
           return ''
         }
         return getResourceLabel(resource)
       },
+      /** Selects every filtered record, or none when all are. */
       selectAll () {
         if (this.localMultiselectItems.length === this.filteredList.length) {
           this.localMultiselectItems = []
@@ -459,11 +494,16 @@
         }
         this.$emit('changeMultiselectItems', this.localMultiselectItems)
       },
+      /**
+       * @param {string} currentKey the path so far
+       * @param {Object|Array} into
+       * @param {Object} target receives every leaf by its dotted path
+       */
       dive (currentKey, into, target) {
-        for (let i in into) {
+        for (const i in into) {
           if (i in into) {
             let newKey = i
-            let newVal = into[i]
+            const newVal = into[i]
             if (currentKey.length > 0) {
               newKey = currentKey + '.' + i
             }
@@ -475,19 +515,26 @@
           }
         }
       },
+      /**
+       * @param {Object|Array} arr
+       * @returns {Object} the leaves by dotted path
+       */
       flatten (arr) {
-        let newObj = {}
+        const newObj = {}
         this.dive('', arr, newObj)
         return newObj
       },
-      async interactiveSearch (event) {
-        const action = _.get(event, 'srcKey', false)
-        const elem = _.get(this.$refs, '[\'search\']', false)
-        if (!action || !elem) {
-          return
+      focusSearch () {
+        const elem = _.get(this.$refs, 'search', false)
+        if (elem) {
+          elem.focus()
         }
-        return elem.focus()
       },
+      /**
+       * @param {MouseEvent} event shift extends the selection, ctrl toggles
+       * @param {Object} item
+       * @param {boolean} clickedCheckbox the click stays on the checkbox
+       */
       select (event, item, clickedCheckbox = false) {
         if (clickedCheckbox) {
           event.stopPropagation()
@@ -512,12 +559,20 @@
         }
         this.$emit('changeMultiselectItems', this.localMultiselectItems)
       },
-      checkIndex (index) {
+      /**
+       * @param {number} index
+       * @returns {number} the end of a slice up to it, -1 past the list
+       */
+      rangeEnd (index) {
         if (index + 1 <= this.filteredList.length) {
           return index + 1
         }
         return -1
       },
+      /**
+       * @param {Object} item the other end of the range from the last selected
+       * @param {boolean} ctrlPressed
+       */
       selectTo (item, ctrlPressed = false) {
         if (!this.multiselect) {
           return
@@ -537,7 +592,7 @@
         const start = _.findIndex(this.filteredList, (i) => i._id === item._id)
         const end = _.findIndex(this.filteredList, (i) => i._id === this.lastSelectedItem)
         const firstIndex = start <= end ? start : end
-        const lastIndex = this.checkIndex(start <= end ? end : start)
+        const lastIndex = this.rangeEnd(start <= end ? end : start)
         const selectedItems = _.slice(this.filteredList, firstIndex, lastIndex)
         if (state === 'check') {
           _.each(selectedItems, (i) => {
@@ -552,15 +607,22 @@
         this.lastSelectedItem = item._id
         this.$emit('changeMultiselectItems', this.localMultiselectItems)
       },
+      /** Leaves multiselect and starts a new record. */
       onClickNew () {
         this.localMultiselectItems = []
         this.$emit('changeMultiselectItems', this.localMultiselectItems)
         this.$emit('selectMultiselect', false)
         this.$emit('selectItem', { _local: true })
       },
+      /** @returns {Array<Object>} */
       getSearchableFields () {
         return _.filter(this.resource.schema, item => item.searchable === true)
       },
+      /**
+       * @param {string} search
+       * @param {Array<string>} values
+       * @returns {string|undefined} the first value matching the search, case-insensitive
+       */
       doesMatch (search, values) {
         return _.find(values, (value) => !!new RegExp(this.search, 'i').test(value))
       }

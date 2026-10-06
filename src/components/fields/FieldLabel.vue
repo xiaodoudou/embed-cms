@@ -1,9 +1,9 @@
 <template>
-  <div class="field-label">
+  <!-- a real label when the input has an id: it points at the input, and carries the id Vuetify's aria-labelledby expects -->
+  <component :is="inputId ? 'label' : 'div'" :id="inputId ? `${inputId}-label` : undefined" :for="inputId || undefined" class="field-label">
     <span v-if="schema.required" class="required-mark" aria-hidden="true">* </span>{{ schema.label }}<span v-if="schema.required" class="cms-visually-hidden"> ({{ $filters.translate('TL_REQUIRED') }})</span>
-    <v-icon v-if="state === 'disabled'" class="cms-field-lock" size="14" icon="$lockOutline" :title="$filters.translate('TL_DISABLED')" />
-    <v-icon v-else-if="state === 'readonly'" class="cms-field-readonly" size="14" icon="$eyeOutline" :title="$filters.translate('TL_READ_ONLY')" />
-  </div>
+    <v-icon v-if="state === 'readonly'" class="cms-field-readonly" size="14" icon="$lockOutline" :title="$filters.translate('TL_READ_ONLY')" />
+  </component>
 </template>
 
 <script>
@@ -14,9 +14,11 @@
       schema: { type: Object, default: () => {} },
       // the field is disabled by its parent (a locked group), whatever its own schema says
       disabled: { type: Boolean, default: false },
+      // the id of the input this label is for (AbstractField.inputId); without it the label is a plain div
+      inputId: { type: String, default: '' }
     },
     computed: {
-      // disabled: greyed out, lock icon. Read-only: shown and copyable, eye icon
+      // read-only: shown and copyable, lock icon after the label. Disabled: greyed out with a dashed border, no icon (it wins over read-only)
       state () {
         if (this.disabled || this.schema.disabled) {
           return 'disabled'
@@ -25,6 +27,7 @@
       }
     },
     methods: {
+      /** @returns {string} schema.hint */
       getHint () {
         return _.get(this.schema, 'hint', '')
       }
@@ -45,7 +48,6 @@
     color: var(--cms-error);
     font-weight: var(--cms-fw-bold);
   }
-  .cms-field-lock,
   .cms-field-readonly {
     margin-left: var(--cms-space-1);
     vertical-align: -2px;

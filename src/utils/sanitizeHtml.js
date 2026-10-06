@@ -12,7 +12,7 @@ const SANITIZE_OPTIONS = {
  * @returns {string} safe HTML
  */
 export function sanitizeHtml (html) {
-  return DOMPurify.sanitize(html == null ? '' : String(html), SANITIZE_OPTIONS)
+  return DOMPurify.sanitize(String(html ?? ''), SANITIZE_OPTIONS)
 }
 
 /**
@@ -21,7 +21,7 @@ export function sanitizeHtml (html) {
  * @returns {string}
  */
 export function escapeHtml (value) {
-  return String(value == null ? '' : value)
+  return String(value ?? '')
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')

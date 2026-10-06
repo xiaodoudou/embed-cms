@@ -66,6 +66,7 @@
   import { getResourceLabel } from '@u/recordLabel'
   import NotificationsService from '@s/NotificationsService'
   import ResourceService from '@s/ResourceService'
+  import { shortcutLabel } from '@u/platform'
   import {
     railSections, groupSettingsName, groupKey, groupHoldsItem, groupInitials, groupTint, orderResources, moveInList, flyoutPosition
   } from '@u/navModel'
@@ -97,20 +98,25 @@
       }
     },
     computed: {
+      /** @returns {{groups: Array<Object>, loose: Array<Object>}} the sections of the rail (navModel) */
       sections () {
         return railSections(this.groupedList)
       },
+      /** @returns {Array<Object>} the resources outside any group, ordered by title */
       loose () {
         return orderResources(this.sections.loose, this.resourceTitle)
       },
+      /** @returns {Object|null} the group whose flyout is open */
       openGroup () {
         return _.find(this.sections.groups, (group) => groupKey(group) === this.openKey) || null
       },
+      /** @returns {Array<Object>} the resources of the open group, ordered by title */
       items () {
         return this.openGroup ? orderResources(_.get(this.openGroup, 'list', []), this.resourceTitle) : []
       },
+      /** @returns {string} the rail shortcut as the platform writes it */
       shortcutLabel () {
-        return /Mac|iPhone|iPad/.test(window.navigator.platform || '') ? '⌘ B' : 'Ctrl B'
+        return shortcutLabel('B')
       }
     },
     mounted () {
@@ -125,9 +131,17 @@
     },
     methods: {
       keyOf: groupKey,
+      /**
+       * @param {Object} group
+       * @returns {string} its translated name
+       */
       titleOf (group) {
         return TranslateService.get(group.name)
       },
+      /**
+       * @param {Object} group
+       * @returns {string} the aria label: the title and the count of resources
+       */
       groupLabel (group) {
         return `${this.titleOf(group)}, ${TranslateService.get(_.size(group.list) === 1 ? 'TL_N_RESOURCES_ONE' : 'TL_N_RESOURCES', { num: _.size(group.list) })}`
       },
@@ -135,25 +149,46 @@
       iconUrl (group) {
         return this.menuIcons[groupSettingsName(group)]
       },
+      /** @param {string} resource the settings saved: the menu icons follow */
       onResourceCached (resource) {
         if (resource === '_settings') {
           this.menuIcons = ResourceService.menuIcons()
         }
       },
+      /**
+       * @param {Object} group
+       * @returns {string}
+       */
       initialsOf (group) {
         return groupInitials(this.titleOf(group))
       },
       initialsOfName: groupInitials,
+      /**
+       * @param {Object} group
+       * @returns {string} a colour derived from its title
+       */
       tintOf (group) {
         return groupTint(this.titleOf(group))
       },
       tintOfName: groupTint,
+      /**
+       * @param {Object} resource
+       * @returns {string}
+       */
       resourceTitle (resource) {
         return getResourceLabel(resource)
       },
+      /**
+       * @param {Object} group
+       * @returns {boolean} whether the selected item is in it
+       */
       holdsItem (group) {
         return groupHoldsItem(group, this.selectedItem)
       },
+      /**
+       * @param {Object} resource a resource, or a plugin (compared by component)
+       * @returns {boolean}
+       */
       isSelected (resource) {
         if (_.get(resource, 'type', false) === 'plugin') {
           return _.get(resource, 'pluginComponent', false) === _.get(this.selectedItem, 'pluginComponent', false)
@@ -170,6 +205,7 @@
         this.pinnedKey = groupKey(group)
         await this.showFlyout(group, badge)
       },
+      /** Closes the flyout and opens the omnibar. */
       openSwitcher () {
         this.closeFlyout(false)
         NotificationsService.openOmnibar()
@@ -186,6 +222,10 @@
           this.position = flyoutPosition(badge.getBoundingClientRect(), window.innerHeight, flyout.offsetHeight)
         }
       },
+      /**
+       * @param {Object} group a page (a group of one) has no flyout
+       * @param {MouseEvent} event
+       */
       onEnter (group, event) {
         if (this.isPage(group)) {
           this.closeFlyout(false)
@@ -196,6 +236,10 @@
         const badge = event.currentTarget
         this.openTimer = setTimeout(() => this.showFlyout(group, badge), this.openKey ? 0 : HOVER_OPEN_DELAY)
       },
+      /**
+       * @param {Object} group
+       * @param {FocusEvent} event only a visible focus (keyboard) opens the flyout
+       */
       onFocus (group, event) {
         // keyboard focus previews the group; the pointer path (mouseenter, click) handles itself
         if (!this.skipFocusOpen && !this.isPage(group) && event.currentTarget.matches(':focus-visible')) {
@@ -208,6 +252,10 @@
       isPage (group) {
         return _.size(group.list) === 1
       },
+      /**
+       * @param {Object} group a page is chosen at once, a group opens or closes its flyout
+       * @param {Event} event
+       */
       onToggle (group, event) {
         if (this.isPage(group)) {
           this.choose(_.first(group.list))
@@ -220,6 +268,10 @@
         this.pinnedKey = groupKey(group)
         this.showFlyout(group, event.currentTarget)
       },
+      /**
+       * @param {Object} group a page is chosen at once
+       * @param {HTMLElement} badge the anchor of the flyout, whose first item takes the focus
+       */
       async openWithFocus (group, badge) {
         if (this.isPage(group)) {
           this.choose(_.first(group.list))
@@ -229,6 +281,7 @@
         await this.showFlyout(group, badge)
         this.focusItem(_.max([0, _.findIndex(this.items, (resource) => this.isSelected(resource))]))
       },
+      /** Closes the flyout after a delay, unless it is pinned. */
       scheduleClose () {
         clearTimeout(this.openTimer)
         clearTimeout(this.closeTimer)
@@ -240,6 +293,7 @@
       cancelClose () {
         clearTimeout(this.closeTimer)
       },
+      /** @param {boolean} returnFocus give the focus back to the anchor */
       closeFlyout (returnFocus) {
         clearTimeout(this.openTimer)
         clearTimeout(this.closeTimer)
@@ -254,10 +308,12 @@
           setTimeout(() => { this.skipFocusOpen = false }, 0)
         }
       },
+      /** @param {Object} resource selected, the flyout closed */
       choose (resource) {
         this.closeFlyout(false)
         this.selectResourceCallback(resource)
       },
+      /** @param {PointerEvent} event a press outside the flyout and its anchor closes it */
       onOutsidePointer (event) {
         if (!this.openKey) {
           return
@@ -268,6 +324,7 @@
           this.closeFlyout(false)
         }
       },
+      /** @param {FocusEvent} event the focus leaving the flyout and its anchor closes it */
       onFlyoutFocusOut (event) {
         const next = event.relatedTarget
         const inside = next && ((this.$refs.flyout && this.$refs.flyout.contains(next)) || next === this.anchor)
@@ -279,12 +336,14 @@
       flyoutButtons () {
         return this.$refs.flyout ? Array.from(this.$refs.flyout.querySelectorAll('button.rail-flyout-item')) : []
       },
+      /** @param {number} index of a button of the flyout */
       focusItem (index) {
         const buttons = this.flyoutButtons()
         if (buttons[index]) {
           buttons[index].focus()
         }
       },
+      /** @param {KeyboardEvent} event arrows move between the items, Home and End jump, Escape and ArrowLeft close */
       onFlyoutKeydown (event) {
         const buttons = this.flyoutButtons()
         const current = buttons.indexOf(document.activeElement)

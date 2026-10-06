@@ -32,7 +32,7 @@ describe('admins group plugins (unit)', () => {
     }
   })
 
-  it('gives the admins group the Replicator plugin by default (the page only shows when replication runs)', () => {
+  it('gives the admins group the Replicator plugin only when replication runs', () => {
     // src/utils/pluginPages.js: ['CmsReplicator', 'Replicator']
     expect(authentication().adminsGroup.plugins).to.include('Replicator')
   })
@@ -44,5 +44,20 @@ describe('admins group plugins (unit)', () => {
     await new Promise((resolve, reject) => app.cms.bootstrapFunctions[0](error => error ? reject(error) : resolve()))
     const group = await auth.groups.find({ name: 'admins' })
     expect(group.plugins).to.include.members(['Syslog', 'Replicator', 'Sync Resource'])
+  })
+
+  describe('without replication', () => {
+    let plain
+    before(async () => { plain = await startApp({ disableReplication: true }) })
+    after(async () => { await plain.close() })
+
+    it('does not give the admins group the Replicator plugin, and takes it away at the next start', async () => {
+      const auth = plain.cms.$authentication
+      expect(auth.adminsGroup.plugins).to.deep.equal(['Syslog'])
+      await auth.groups.update(auth.adminsGroup._id, { plugins: ['Syslog', 'Replicator', 'Sync Resource'] })
+      await new Promise((resolve, reject) => plain.cms.bootstrapFunctions[0](error => error ? reject(error) : resolve()))
+      const group = await auth.groups.find({ name: 'admins' })
+      expect(group.plugins).to.have.members(['Syslog', 'Sync Resource'])
+    })
   })
 })

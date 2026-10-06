@@ -384,7 +384,8 @@ a {
 }
 
 @media (pointer: coarse) {
-  .v-btn {
+  .v-btn,
+  .v-btn--icon.v-btn--size-default {
     --cms-btn-h: var(--cms-touch-target);
   }
 }
@@ -534,8 +535,8 @@ a {
   cursor: default;
 }
 
-/* lock icon at the right of a read-only control */
-.cms-field-lock {
+/* the lock icon after the label of a read-only field */
+.cms-field-readonly {
   display: inline-flex;
   align-items: center;
   color: var(--cms-text-muted);
@@ -841,6 +842,7 @@ a {
    which cut the list's rounded border and doubled its shadow) */
 .v-overlay-container .v-menu > .v-overlay__content,
 .v-overlay-container .v-select__content,
+.v-overlay-container .v-combobox__content,
 .v-overlay-container .v-autocomplete__content {
   border-radius: var(--cms-radius-md);
   box-shadow: var(--cms-shadow-2);
@@ -848,6 +850,7 @@ a {
 
 .v-menu > .v-overlay__content > .v-list,
 .v-select__content .v-list,
+.v-combobox__content .v-list,
 .v-autocomplete__content .v-list {
   /* items run edge to edge: no padding, the list itself clips them to its rounded corners */
   padding: 0;
@@ -861,18 +864,28 @@ a {
 
 .v-menu .v-list-item,
 .v-select__content .v-list-item,
+.v-combobox__content .v-list-item,
 .v-autocomplete__content .v-list-item {
-  min-height: 40px;
-  /* room above and below: a one-line item stays 40px, a two-line one (name over id) breathes */
-  padding: var(--cms-space-2) var(--cms-space-3);
+  min-height: 32px;
+  /* compact: a one-line item is 32px, a two-line one (name over id) grows with its second line */
+  padding: var(--cms-space-1) var(--cms-space-3);
   border-radius: 0;
   color: var(--cms-text);
   font-size: var(--cms-fs-base);
   background: transparent;
 }
 
+/* a hairline between the items, so that a run of selected (tinted) items still reads as separate rows */
+.v-menu .v-list-item + .v-list-item,
+.v-select__content .v-list-item + .v-list-item,
+.v-combobox__content .v-list-item + .v-list-item,
+.v-autocomplete__content .v-list-item + .v-list-item {
+  border-top: 1px solid color-mix(in srgb, var(--cms-text) 28%, transparent);
+}
+
 .v-menu .v-list-item:hover,
 .v-select__content .v-list-item:hover,
+.v-combobox__content .v-list-item:hover,
 .v-autocomplete__content .v-list-item:hover {
   background: var(--cms-surface-2);
 }
@@ -880,6 +893,7 @@ a {
 .v-menu .v-list-item--highlighted,
 .v-menu .v-list-item:focus-visible,
 .v-select__content .v-list-item--highlighted,
+.v-combobox__content .v-list-item--highlighted,
 .v-autocomplete__content .v-list-item--highlighted {
   background: var(--cms-primary-soft);
   box-shadow: inset 3px 0 0 var(--cms-primary);
@@ -887,13 +901,152 @@ a {
 
 .v-menu .v-list-item--active,
 .v-select__content .v-list-item--active,
+.v-combobox__content .v-list-item--active,
 .v-autocomplete__content .v-list-item--active {
   background: var(--cms-primary-soft);
   color: var(--cms-on-primary-soft);
   font-weight: var(--cms-fw-semibold);
 }
 
+/* "Jump to": the place a row points at lights up for a moment (RecordEditor adds the class, and takes it away after 1.2s) */
+.jump-flash {
+  border-radius: var(--cms-radius-md);
+  animation: jumpFlash 1.2s ease-out;
+}
+
+/* room above and below a field or a block that the menu scrolls to, so its halo is not cut by the bar above the form */
+.record-editor-form .field-wrapper,
+.record-editor-form .item {
+  scroll-margin-block: 24px;
+}
+
+/* one tint of the primary colour over the whole field, and 5px past its edges (the shadow is outside the box, so it does not paint over the
+   field twice): the label and the hint have room inside it. It fades out */
+@keyframes jumpFlash {
+  from {
+    background-color: color-mix(in srgb, var(--cms-primary) 14%, transparent);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--cms-primary) 14%, transparent);
+  }
+  to {
+    background-color: transparent;
+    box-shadow: 0 0 0 5px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* no fade: the tint stays while the class does */
+  .jump-flash {
+    animation: none;
+    background-color: color-mix(in srgb, var(--cms-primary) 14%, transparent);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--cms-primary) 14%, transparent);
+  }
+}
+
+/* "Jump to": a search box over the rows, which scroll under it; the row the arrows are on has the tint of a hovered row, and the letters typed are marked */
+.v-menu .outline-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 260px;
+  max-width: min(420px, calc(100vw - var(--cms-space-8)));
+  background: var(--cms-surface);
+  border-radius: var(--cms-radius-md);
+}
+
+/* the box is the first line of the menu: no band, no box, no tint around it, only a line under it. It is 36px tall, the text and the magnifier start where the rows' text does */
+.v-menu .outline-search {
+  border-bottom: 1px solid var(--cms-border);
+}
+
+.v-menu .outline-search .v-input {
+  --v-input-control-height: 36px;
+}
+
+.v-menu .outline-search .v-field,
+.v-menu .outline-search .v-field--focused {
+  --v-field-padding-start: var(--cms-space-3);
+  --v-field-padding-end: var(--cms-space-3);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--cms-fs-sm);
+  font-weight: var(--cms-fw-regular);
+}
+
+.v-menu .outline-search .v-field__input {
+  min-height: 36px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* the magnifier is over the text of the rows (12px in), with 8px before the box; the clear button has the same 12px at the other end */
+.v-menu .outline-search .v-field__prepend-inner {
+  align-items: center;
+  padding: 0 var(--cms-space-2) 0 var(--cms-space-3);
+}
+
+.v-menu .outline-search .v-field__clearable {
+  align-items: center;
+  padding: 0 var(--cms-space-3) 0 var(--cms-space-2);
+}
+
+.v-menu .outline-search .v-field__input {
+  padding-inline: 0;
+}
+
+.v-menu .outline-search .v-field__prepend-inner > .v-icon,
+.v-menu .outline-search .v-field__clearable > .v-icon {
+  font-size: 16px;
+}
+
+.v-menu .outline-list {
+  padding-block: 0;
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.v-menu .outline-list .v-list-item.highlighted {
+  background: var(--cms-surface-2);
+}
+
+.v-menu .outline-list mark {
+  background: transparent;
+  color: var(--cms-primary);
+  font-weight: var(--cms-fw-bold);
+}
+
+.v-menu .outline-list .outline-empty {
+  padding: var(--cms-space-3) var(--cms-space-4);
+  color: var(--cms-text-muted);
+  font-size: var(--cms-fs-sm);
+}
+
+/* "Jump to": the blocks of a paragraph field sit under it, and the fields of a block under the block, each level indented and quieter */
+.v-menu .outline-list .v-list-item.outline-block {
+  padding-inline-start: var(--cms-space-8);
+  color: var(--cms-text-muted);
+  font-size: var(--cms-fs-sm);
+}
+
+/* a row that changed since the record was loaded: the amber dot of the unsaved label marker */
+.v-menu .outline-list .outline-dirty {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-inline-start: var(--cms-space-2);
+  border-radius: var(--cms-radius-pill);
+  background: var(--cms-warning);
+}
+
+.v-menu .outline-list .v-list-item.outline-field {
+  padding-inline-start: var(--cms-space-12);
+  color: var(--cms-text-muted);
+  font-size: var(--cms-fs-xs);
+}
+
 .v-select__content .v-list-item--active::after,
+.v-combobox__content .v-list-item--active::after,
 .v-autocomplete__content .v-list-item--active::after {
   content: '\2713';
   margin-left: auto;
@@ -909,6 +1062,7 @@ a {
 /* title and subtitle: the base size over a smaller muted line, */
 .v-menu .v-list-item-title,
 .v-select__content .v-list-item-title,
+.v-combobox__content .v-list-item-title,
 .v-autocomplete__content .v-list-item-title {
   font-size: var(--cms-fs-base);
   line-height: var(--cms-lh-base);
@@ -916,6 +1070,7 @@ a {
 
 .v-menu .v-list-item .v-list-item-subtitle,
 .v-select__content .v-list-item-subtitle,
+.v-combobox__content .v-list-item-subtitle,
 .v-autocomplete__content .v-list-item-subtitle {
   margin-top: 2px;
   color: var(--cms-text-muted);
@@ -925,6 +1080,7 @@ a {
 }
 
 .v-autocomplete__content .v-list-item-title mark,
+.v-combobox__content .v-list-item-title mark,
 .v-select__content .v-list-item-title mark {
   background: transparent;
   color: inherit;
@@ -935,6 +1091,7 @@ a {
 @media (pointer: coarse) {
   .v-menu .v-list-item,
   .v-select__content .v-list-item,
+  .v-combobox__content .v-list-item,
   .v-autocomplete__content .v-list-item {
     min-height: var(--cms-touch-target);
   }
@@ -973,4 +1130,12 @@ a {
   color: var(--cms-error);
   font-size: var(--cms-fs-sm);
   font-weight: var(--cms-fw-medium);
+}
+
+/* ---- The frame a theme is switched in -------------------------------------------------------------------------------- */
+/* Every colour of the page changes at once: nothing fades (utils/theme.js withoutTransitions puts the class on for two frames). */
+html.theme-switching body *,
+html.theme-switching body *::before,
+html.theme-switching body *::after {
+  transition: none;
 }

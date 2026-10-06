@@ -106,6 +106,27 @@ describe('Transliterate (a slug made from another field)', () => {
     })
   })
 
+  it('says once that it has no source, and not at each change of the record', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const model = { title: 'a' }
+    field(model, { options: {} })
+    await flushPromises()
+    for (const title of ['b', 'c', 'd', 'e']) {
+      model.title = title
+      await wrapper.setProps({ model: { ...model } })
+    }
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain('slug')
+    expect(warn.mock.calls[0][0]).toContain('options.valueFrom')
+  })
+
+  it('says nothing when it has its source', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    field({ title: 'x' })
+    await flushPromises()
+    expect(warn).not.toHaveBeenCalled()
+  })
+
   it('shows its hint', async () => {
     field({ title: 'x' }, { options: { valueFrom: 'title', hint: 'Used in the address' } })
     await flushPromises()

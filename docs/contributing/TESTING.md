@@ -62,7 +62,7 @@ Setting `LOG_LEVEL` does the same (`LOG_LEVEL=debug` shows even the refused requ
 |---|---|
 | `test/unit/` | The backend, one `<subject>.test.js` per module or plugin (mocha, in-process) |
 | `test/security/` | One `<area>.security.test.js` per finding of the security audit (mocha, in-process) |
-| `test/frontend/` | The admin app (vitest and jsdom): `<subject>.test.js` for pure logic, `<component>.component.test.js` for mounted components, `helpers/` for the mount helpers and the setup file |
+| `test/frontend/` | The admin app (vitest and jsdom): `<subject>.test.js` for pure logic, `<component>.component.test.js` for mounted components, `helpers/` for the mount helpers and the setup file. A test that fails is run again, twice, before it counts as failed (`retry` in `vitest.config.mjs`): a few tests of overlays and focus depend on how soon jsdom gets to a timer, and on a machine with many busy cores one of them fails about one run in five. If a test passes only on the second try, the report says so: look at it |
 | `test/integration/` | The older HTTP suite that `npm test` runs against one server (`server.js` starts it, `runTests.js` lists the suites) |
 | `test/helpers/` | What the backend tests share: `app.js` boots a CMS, `cmsInstance.js` holds the shared options, `engines.js` the storage engines of the contract suite, `quiet.js` the log level |
 | `test/fixtures/` | Data the tests read: the `resources/` of the shared CMS, `contractResources/` for the contract suite, `ossResources/` for the OSS tests, `man.jpg` and the `smartCrop/` reference pictures |
@@ -77,6 +77,9 @@ Setting `LOG_LEVEL` does the same (`LOG_LEVEL=debug` shows even the refused requ
 | `test/unit/replicator.attachments*`, `sync*` | Attachment download between peers, the low-level store sync |
 | `test/unit/rest.attachments*`, `ossHelper*`, `admin*`, `updates*`, `syslog.system*` | REST attachment routes, attachments kept in Alibaba Cloud OSS (the client stood in for), admin plugin, websocket updates, log and system streams |
 | `test/unit/xlsx*`, `sync*`, `import*`, `importFromRemote*`, `replicator*` | The plugins, each checked through its real routes |
+| `test/unit/pageHelper*` | The [PageHelper](../reference/PAGE_HELPER.md): the templates read and checked at the start, each way a kept page can be old (a template, a record, the age, a damaged file), the memory and the folder, errors and 404 pages, many requests at once. `pageHelper.edge.test.js` stands a small CMS in for the real one, so that each failure is made on purpose |
+| `test/unit/contentLoader*` | The [ContentLoader](../operations/CONTENT_LOADER.md) and `cms-load`: every problem it reports, relations, dates, files (a path, an object, a buffer, a stream, a language), blocks, a second load, a dry run; `contentLoader.cli.test.js` runs the real executable in a project folder and checks its output and exit codes, `contentLoader.resources.test.js` uses resources of its own (blocks, localised fields, nested fields) |
+| `test/unit/exampleMagazine*` | The example [magazine](../examples/magazine/README.md): its content loaded from `content.json`, each page and language, the search, the feed, the sitemap, the dates the browser is told, 404 and error pages, and the template engine |
 | `test/unit/cms.class*` | Configuration, secrets, plugin loading, resources, paragraphs, lifecycle |
 | `test/frontend/` | `validators`, `sanitizeHtml`, the request/translate/login/resource/config services |
 

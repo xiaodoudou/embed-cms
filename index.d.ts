@@ -45,10 +45,13 @@ declare module 'embed-cms' {
 
     /**
      * Resource API: a function that gives the API of a resource, with the rights of the code (no user, no group check).
+     * The resources named after the resource are resolved: the records come with the records their `select` and
+     * `multiselect` fields point to (inside paragraph blocks too), instead of their ids.
      * @example
      * const api = cms.api()
      * const groups = await api('_groups').list()
      * const user = await api('_users').find('user-id')
+     * const comment = await api('comments', 'authors').find('comment-id')   // comment.author is the record
      */
     api(): (resourceName: string, ...resolves: string[]) => CMS.ResourceAPI
 
@@ -78,6 +81,9 @@ declare module 'embed-cms' {
     /** Send a message to every admin that listens on the update websocket */
     broadcast(message: { action: string; data?: any; [key: string]: any }): void
 
+    /** The sync plugin, when the `sync` option is on: run a push or a pull from your own code, see docs/operations/SYNC.md */
+    readonly $sync?: CMS.SyncPlugin
+
     /** Add a heading to the admin menu (a resource's `group` does this by itself) */
     addMenuGroupName(group: string): void
 
@@ -86,7 +92,7 @@ declare module 'embed-cms' {
 
     /** The class of the API wrapper that `cms.api()` returns, for IDE support */
     static ResourceAPIWrapper: any
-    // `CMS.RestHelper` (the middlewares of the REST API, to build your own routes: docs/reference/REST_HELPER.md) is declared in the namespace below
+    // `CMS.RestHelper` (the middlewares of the REST API, to build your own routes: docs/reference/REST_HELPER.md) and `CMS.PageHelper` (the pages of a public site: docs/reference/PAGE_HELPER.md) and `CMS.ContentLoader` (content and files from a JSON file: docs/operations/CONTENT_LOADER.md) are declared in the namespace below
   }
 
   namespace CMS {
@@ -190,8 +196,49 @@ declare module 'embed-cms' {
 
     /** `sync`: see docs/operations/SYNC.md */
     interface SyncOptions {
+      /** The resources that may be synced until some are chosen in the Sync settings of the admin, which then take over */
       resources?: string[]
+      /**
+       * When to run a push or a pull of all the resources to sync on its own: a cron expression of five fields (minute hour day-of-month
+       * month day-of-week) in the time zone of the server, such as `'0 3 * * *'` for every night at 3. A direction left out is not scheduled.
+       */
+      schedule?: { push?: string | null; pull?: string | null }
       [setting: string]: any
+    }
+
+    /** How one resource went in a sync run */
+    interface SyncResult {
+      resource: string
+      status: 'done' | 'error'
+      created?: number
+      updated?: number
+      removed?: number
+      /** Why it failed, when `status` is `'error'` */
+      error?: string
+      startedAt: number
+      finishedAt: number
+    }
+
+    /** A run of the syncs of the resources to sync, one after the other */
+    interface SyncRun {
+      direction: 'push' | 'pull'
+      /** Who started it: `'api'` (your code), `'manual'` (the admin or `cms-sync`), `'schedule'` */
+      trigger: 'api' | 'manual' | 'schedule'
+      status: 'done' | 'error'
+      startedAt: number
+      finishedAt: number
+      resources: string[]
+      results: SyncResult[]
+    }
+
+    /** `cms.$sync`: syncing from code. Only one run goes on at a time: a second one is refused with an error whose `code` is 409. */
+    interface SyncPlugin {
+      /** Sync one resource now and answer how it went, when the other CMS has finished with it. `push`: this CMS writes to the other one. `pull`: the other CMS writes here. */
+      run(resource: string, direction: 'push' | 'pull'): Promise<SyncResult>
+      /** Sync the resources to sync (or only `options.resources`), one after the other, and answer when they are all done. One that fails does not stop the others. */
+      runAll(direction: 'push' | 'pull', options?: { resources?: string[] }): Promise<SyncRun>
+      /** The resources this CMS may sync: the ones chosen in the Sync settings, else the ones of `sync.resources` */
+      syncedResources(): Promise<string[]>
     }
 
     /** `import`: the Google Sheets import, see docs/operations/IMPORT.md */
@@ -237,12 +284,19 @@ declare module 'embed-cms' {
       importFromRemote?: boolean | Record<string, any>
       /** Turn the Excel export and import routes on */
       xlsx?: boolean
+      /** The folder of the translations of your project (`frFR.json`, a flat object of `TL_KEY: "text"`), put over the ones of the CMS. Default `./i18n`. */
+      i18n?: string
       /** Resource names anyone may read without a login */
       anonymousRead?: string[]
       /** Broadcast record changes over a websocket. Default `true`. */
       wsRecordUpdates?: boolean
       /** `true` (the default): the login page and the admin are always light */
       disableDarkMode?: boolean
+      /** The map of the `geopoint` field: OpenStreetMap by default, the tile server and the search you name, or `false` for no map (the field is then its two boxes). */
+      maps?: false | {
+        tiles?: { url: string; attribution?: string | { text: string; url?: string }; maxZoom?: number }
+        search?: false | { url: string }
+      }
       admin?: { language?: { defaultLocale?: string; locales?: string[] }; [setting: string]: any }
       /** Text of the admin's top bar */
       toolbarTitle?: EmbedCMS.Translatable
@@ -337,6 +391,11 @@ declare module 'embed-cms' {
       removeAttachment(id: string, aid: string): Promise<boolean>
       /** Remove the files no record points to (only those idle for `attachmentCleanupGrace`) */
       cleanAttachment(): Promise<boolean>
+      /**
+       * Runs many writes as one: inside `work`, the writes of this resource do not wait for the disk, which is waited for once
+       * at the end. For a sync or an import of many records.
+       */
+      bulk<T>(work: () => Promise<T>): Promise<T>
       /** What an import would create, update and remove */
       getImportMap(importList: any[], query?: Record<string, any>, checkRequired?: boolean): Promise<{
         create: CMSRecord[]
@@ -388,6 +447,118 @@ declare module 'embed-cms' {
       }
       /** The built-in route handlers */
       routes: any
+    }
+
+    /** A template of a PageHelper: the path of its file, or `{ source }` for one written in the code */
+    type PageTemplate = string | { source: string }
+
+    interface PageHelperOptions {
+      /** The CMS the content comes from, read through `cms.api()` (no rights are checked: it is your server) */
+      cms: CMS
+      /** Every template, by name. A name is what `{{> name}}` and `route(name)` use. Read and checked when the helper is made. */
+      templates: Record<string, PageTemplate>
+      /** Where the finished pages are kept: a folder (they survive a restart), nothing for the memory of the process, `false` for nowhere */
+      cache?: string | false
+      /** How many pages the memory keeps (500 by default) */
+      maxPages?: number
+      /** Given to every page, under the data of the page */
+      locals?: Record<string, any>
+      /** Seconds a kept page lives at most (3600 by default, 0 for no limit) */
+      maxAge?: number
+      /** Seconds between two checks of a kept page (0, every request, by default) */
+      revalidate?: number
+      /** The template of the 404 page: it gets `status`, `title` and `url` */
+      notFound?: string
+      /** The template of the page of an error: it gets `status`, `title` and `message` (empty for a 5xx) */
+      error?: string
+    }
+
+    /** What a loader gets */
+    interface PageContext {
+      /** `cms.api()`: the resources it is used on are what the kept page depends on */
+      api: (name: string, ...rest: string[]) => ResourceAPIWrapper
+      cms: CMS
+      params: Record<string, string>
+      query: Record<string, any>
+      req: any
+      res: any
+      /** Return it to answer the 404 page */
+      notFound(): symbol
+    }
+
+    interface PageRouteOptions {
+      /** Seconds this page is kept, over the one of the helper */
+      maxAge?: number
+      /** `false`: this page is made for every request */
+      cache?: boolean
+      /** The query parameters that change the page (`['page']`): without them the query is not part of what a page is */
+      vary?: string[]
+      /** Response headers; `Cache-Control` is `no-cache` unless it is here */
+      headers?: Record<string, string>
+    }
+
+    interface ContentLoadOptions {
+      /** The folder the paths of the files are relative to: the folder of the JSON file, the current folder for an object */
+      basePath?: string
+      /** Check and report, write nothing */
+      dryRun?: boolean
+      /** The field that names a record of a resource, when it is not its first unique field: `{ articles: 'slug' }` */
+      keys?: Record<string, string>
+      /** `false`: a field the resource does not declare is kept instead of reported (`true` by default) */
+      strict?: boolean
+      /** Told what is done to each record */
+      log?: (message: string) => void
+    }
+
+    interface ContentCounts { created: number; updated: number; unchanged: number; files: { added: number; removed: number; unchanged: number } }
+
+    interface ContentReport extends ContentCounts {
+      dryRun: boolean
+      /** The same counts, for each resource of the content */
+      resources: Record<string, ContentCounts>
+    }
+
+    /** Thrown by a load when the content is wrong: every problem is in `problems`, each saying where (`articles[2].author: …`) */
+    class ContentError extends Error {
+      problems: string[]
+    }
+
+    /**
+     * Puts content and files into the CMS from a JSON description: a list of records for each resource, `"@authors/mei-lin"` for a relation, `"@attachment/files/cover.jpg"` for a file.
+     * It can be run again: records are matched by their unique field and changed only if something differs, files by their MD5. See docs/operations/CONTENT_LOADER.md.
+     * @example
+     * const report = await new CMS.ContentLoader(cms).load('./content.json')
+     */
+    class ContentLoader {
+      constructor(cms: CMS)
+      /** Loads a JSON file (its path) or an object. Everything is checked before anything is written: a wrong content throws a ContentError. */
+      load(source: string | Record<string, any>, options?: ContentLoadOptions): Promise<ContentReport>
+      static ContentError: typeof ContentError
+    }
+
+    /**
+     * Renders the pages of a public site from the content, with Mustache templates, and keeps the finished pages. See docs/reference/PAGE_HELPER.md.
+     * @example
+     * const pages = new CMS.PageHelper({ cms, templates: { home: 'views/home.html', header: 'views/header.html' }, notFound: 'notfound' })
+     * app.get('/', pages.route('home', async ({ api }) => ({ articles: await api('articles').list({ published: true }) })))
+     */
+    class PageHelper {
+      constructor(options: PageHelperOptions)
+      /** The names of the templates */
+      names(): string[]
+      has(name: string): boolean
+      /** Renders a template with data (over `locals`): only the templates are cached, since the data is yours */
+      render(name: string, data?: Record<string, any>): Promise<string>
+      /** An Express handler: runs the loader (nothing to load for a page of text), renders `name` and keeps the page */
+      route(name: string, loader?: ((context: PageContext) => Record<string, any> | symbol | Promise<Record<string, any> | symbol>) | PageRouteOptions, options?: PageRouteOptions): ExpressMiddleware
+      /** The middleware that goes after the routes: the 404 page of an address no route answered */
+      notFoundHandler(): ExpressMiddleware
+      /** The error middleware that goes after the routes: the error page of what a route or a middleware threw */
+      errorHandler(): (error: any, req: any, res: any, next: (error?: any) => void) => any
+      /** Makes the pages that read a resource old: they are made again when asked for */
+      invalidate(resource: string): void
+      /** Drops the kept pages; resolves to how many */
+      clear(): Promise<number>
     }
   }
 

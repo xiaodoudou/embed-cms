@@ -1,27 +1,22 @@
 import { get as objGet, set as objSet, join, forEach, isFunction, isString, isArray, uniq as arrayUniq, includes } from 'lodash'
 import validators from '@u/validators'
 import FieldSelectorService from '@s/FieldSelectorService'
+import { validateFieldValue } from '@u/fieldValidation'
+import { nameUnnamedInputs } from '@u/formAttrs'
 
+/**
+ * @param {string|Function} validator a name in validators, or a function
+ * @returns {Function|undefined} a wrong name is logged
+ */
 function convertValidator (validator) {
   if (isString(validator)) {
-    if (validators[validator] != null) return validators[validator]
+    if (isFunction(validators[validator])) return validators[validator]
     else {
       console.warn(`'${validator}' is not a validator function!`)
       return null // caller need to handle null
     }
   }
   return validator
-}
-
-function attributesDirective (el, binding, vnode) {
-  let attrs = objGet(vnode.context, 'schema.attributes', {})
-  let container = binding.value || 'input'
-  if (isString(container)) {
-    attrs = objGet(attrs, container) || attrs
-  }
-  forEach(attrs, (val, key) => {
-    el.setAttribute(key, val)
-  })
 }
 
 // What password managers look at to decide that a field is a credential to fill or save. The fields of a record are
@@ -41,17 +36,11 @@ function autocompleteToken (input) {
 }
 
 export default {
+  emits: ['input', 'validated'],
   props: ['model', 'schema', 'formOptions', 'disabled', 'focused', 'paragraphLevel', 'paragraphIndex', 'theme'],
   data () {
     return {
       errors: []
-    }
-  },
-  directives: {
-    attributes: {
-      bind: attributesDirective,
-      updated: attributesDirective,
-      componentUpdated: attributesDirective
     }
   },
   watch: {
@@ -73,13 +62,19 @@ export default {
     }
   },
   computed: {
+    /** @returns {string} an id for the input of the field, so the label before it can point at it (and Vuetify's aria-labelledby at the label) */
+    inputId () {
+      return `cms-field-${this.$.uid}`
+    },
     _value: {
       cache: false,
+      /** @returns {*} the value of the field, through schema.get when there is one */
       get () {
         return isFunction(objGet(this.schema, 'get')) ? this.schema.get(this.model) : objGet(this.model, this.schema.model)
       },
+      /** @param {*} newValue */
       set (newValue) {
-        let oldValue = this._value
+        const oldValue = this._value
         if (isFunction(newValue)) {
           newValue(newValue, oldValue)
         } else {
@@ -91,8 +86,18 @@ export default {
   mounted () {
     // Vuetify puts data-* attributes on the wrapper, not on the input: set them on the inputs themselves
     this.$nextTick(this.keepPasswordManagersOut)
+    this.$nextTick(this.nameInputs)
+  },
+  updated () {
+    // a widget draws its inputs when it likes (a code editor once it is ready, a file box when the field is unlocked)
+    this.nameInputs()
   },
   methods: {
+    /** Names the inputs of the widgets inside the field that have no id nor name (see formAttrs). */
+    nameInputs () {
+      nameUnnamedInputs(this.$el, this.schema && this.schema.model)
+    },
+    /** Marks the inputs so password managers leave them alone. */
     keepPasswordManagersOut () {
       const root = this.$el
       if (!root || !root.querySelectorAll) {
@@ -105,27 +110,44 @@ export default {
         })
       })
     },
+    // the rules of a text input: what the field's validation says, or true
+    validateField (val) {
+      return validateFieldValue(this.schema, val) || true
+    },
     // disabled or read-only: shown, not editable
     isLocked () {
       return !!(this.disabled || objGet(this.schema, 'disabled') || objGet(this.schema, 'readonly'))
     },
+    /** @returns {boolean} a hint and no error */
     showHint() {
       return objGet(this.schema, 'options.hint') && !this.errors.length
     },
+    /** @param {boolean} focused losing it clears the paragraph highlight */
     onFieldFocus(focused) {
       if (!focused) {
         return FieldSelectorService.highlightParagraph(-1, -1)
       }
       FieldSelectorService.highlightParagraph(this.paragraphLevel - 1, this.paragraphIndex)
     },
+    /**
+     * @param {string} key a path in the schema
+     * @param {*} defaultVal
+     * @returns {*}
+     */
     get (key, defaultVal = false) {
       return objGet(this.schema, key, defaultVal)
     },
+    /**
+     * @param {string} opt a key of schema.options
+     * @param {*} defaultVal
+     * @returns {*}
+     */
     getOpt (opt, defaultVal) {
       return objGet(this.schema, `options.${opt}`, defaultVal)
     },
+    /** @returns {string|undefined} the Vuetify variant named in the schema */
     getVariant () {
-      let variant = []
+      const variant = []
       forEach(['underlined', 'outlined', 'filled', 'solo', 'solo-inverted', 'solo-filled', 'plain'], (key) => {
         if (this.get(key)) {
           variant.push(key)
@@ -133,15 +155,20 @@ export default {
       })
       return join(variant, ' ')
     },
+    /** @param {*} data */
     onChangeData (data) {
       this._value = data
     },
+    /**
+     * @param {boolean} calledParent
+     * @returns {Promise<Array<string>>} the errors
+     */
     async validate (calledParent) {
       this.clearValidationErrors()
-      let validateAsync = objGet(this.formOptions, 'validateAsync', false)
+      const validateAsync = objGet(this.formOptions, 'validateAsync', false)
       let results = []
       if (this.schema.validator && this.schema.readonly !== true && this.disabled !== true) {
-        let validators = []
+        const validators = []
         if (!isArray(this.schema.validator)) {
           validators.push(convertValidator(this.schema.validator).bind(this))
         } else {
@@ -159,7 +186,7 @@ export default {
                 if (err) {
                   this.errors = this.errors.concat(err)
                 }
-                let isValid = this.errors.length === 0
+                const isValid = this.errors.length === 0
                 this.$emit('validated', isValid, this.errors, this)
               })
             } else if (result) {
@@ -180,7 +207,7 @@ export default {
         if (isFunction(this.schema.onValidated)) {
           this.schema.onValidated.call(this, this.model, fieldErrors, this.schema)
         }
-        let isValid = fieldErrors.length === 0
+        const isValid = fieldErrors.length === 0
         if (!calledParent) {
           this.$emit('validated', isValid, fieldErrors, this)
         }
@@ -192,6 +219,10 @@ export default {
       }
       return Promise.all(results).then(handleErrors)
     },
+    /**
+     * @param {*} newValue
+     * @param {*} oldValue
+     */
     async updateModelValue (newValue, oldValue) {
       let changed = false
       if (isFunction(this.schema.set)) {
@@ -214,6 +245,7 @@ export default {
     clearValidationErrors () {
       this.errors.splice(0)
     },
+    /** @returns {{key: string, locale?: string}} the field name and the locale of the model path */
     getKeyLocale () {
       const options = {}
       const list = this.schema.model.split('.')
@@ -223,6 +255,7 @@ export default {
       options.key = list.join('.')
       return options
     },
+    /** @returns {Array<string>} schema.fieldClasses */
     getFieldClasses () {
       return objGet(this.schema, 'fieldClasses', [])
     }

@@ -47,6 +47,31 @@ afterEach(() => {
 })
 
 describe('CustomDatetimePicker (date, time and datetime)', () => {
+  describe('on a phone', () => {
+    const original = window.matchMedia
+    const pointer = (coarse) => {
+      window.matchMedia = (query) => ({ matches: coarse && query === '(pointer: coarse)', media: query, addEventListener () {}, removeEventListener () {} })
+    }
+    afterEach(() => {
+      window.matchMedia = original
+    })
+
+    it('opens the calendar over the page, not inside the form that would clip it', () => {
+      picker('datetime')
+      expect(inner().props('teleport')).toBeTruthy()
+    })
+
+    it('opens it in the middle of the screen for a finger, and under the box for a mouse', () => {
+      pointer(true)
+      picker('date')
+      expect(inner().props('centered')).toBe(true)
+      wrapper.unmount()
+      pointer(false)
+      picker('date')
+      expect(inner().props('centered')).toBe(false)
+    })
+  })
+
   describe('the box', () => {
     it('shows the label, the required mark and the hint', () => {
       picker('date', {}, { required: true, options: { hint: 'Calendar date' } })
@@ -74,7 +99,7 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
       expect(inner().props('timePicker')).toBe(false)
       expect(inner().props('timeConfig')).toMatchObject({ enableTimePicker: false, timePickerInline: false })
       expect(wrapper.vm.enableDatePicker).toBe(true)
-      expect(wrapper.find('.date-now').exists()).toBe(false)
+      expect(wrapper.get('.date-now').text()).toBe('Today')
     })
 
     it('a time field picks a time, without a calendar', () => {
@@ -164,7 +189,7 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
     it('writes the timestamp the person picks into the record, with its path', async () => {
       const model = {}
       picker('datetime', model)
-      inner().vm.$emit('update:modelValue', LOCAL)
+      inner().vm.$emit('update:model-value', LOCAL)
       await flushPromises()
       expect(model.when).toBe(LOCAL)
       expect(wrapper.emitted('input')[0]).toEqual([LOCAL, 'when'])
@@ -173,7 +198,7 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
     it('writes nothing when the value is cleared, and the record loses it', async () => {
       const model = { when: LOCAL }
       picker('date', model)
-      inner().vm.$emit('update:modelValue', null)
+      inner().vm.$emit('update:model-value', null)
       await flushPromises()
       expect(model.when).toBe(null)
     })
@@ -199,6 +224,17 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
       expect(model.when).toBe(LOCAL)
     })
 
+    it('is Today on a date field, and sets the start of the day, as picking the day in the calendar does', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(LOCAL)
+      const model = {}
+      picker('date', model)
+      expect(wrapper.get('.date-now').text()).toBe('Today')
+      await wrapper.get('.date-now').trigger('click')
+      expect(model.when).toBe(new Date(new Date(LOCAL).setHours(0, 0, 0, 0)).getTime())
+      expect(new Date(model.when).getHours()).toBe(0)
+    })
+
     it('is not offered on a locked field', () => {
       picker('datetime', {}, { readonly: true })
       expect(wrapper.find('.date-now').exists()).toBe(false)
@@ -219,12 +255,12 @@ describe('CustomDatetimePicker (date, time and datetime)', () => {
       expect(input().element.value).toBe('2026-10-01 14:30:15')
     })
 
-    it('a disabled field is greyed out, with the lock icon', () => {
+    it('a disabled field is greyed out, with no icon', () => {
       picker('date', {}, { disabled: true })
       expect(wrapper.classes()).toContain('is-disabled')
       expect(inner().props('disabled')).toBe(true)
       expect(inner().props('inputAttrs').clearable).toBe(false)
-      expect(wrapper.find('.cms-field-lock').exists()).toBe(true)
+      expect(wrapper.find('.cms-field-readonly').exists()).toBe(false)
     })
 
     it('a field disabled by its parent is disabled too', () => {

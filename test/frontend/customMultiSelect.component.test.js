@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import CustomMultiSelect from '@c/fields/CustomMultiSelect.vue'
-import { mountField } from './helpers/mountField.js'
+import { mountField, TranslateService } from './helpers/mountField.js'
 
 // FormService prepares the schema of a select: the list of options (`values`) and the `selectOptions` the component reads.
 // These tests write that prepared schema by hand.
@@ -133,5 +133,60 @@ describe('CustomMultiSelect (select and multiselect)', () => {
 
   it('is not editable when read-only', () => {
     expect(select({ status: 'draft' }, { readonly: true }).get('input:not([type=hidden])').attributes('readonly')).toBeDefined()
+  })
+
+  describe('records of several resources', () => {
+    const ann = { _id: 'authors:a2', _label: 'Ann', _title: 'Authors', _resource: 'authors' }
+    const zoe = { _id: 'authors:a1', _label: 'Zoe', _title: 'Authors', _resource: 'authors' }
+    const eve = { _id: 'editors:e1', _label: 'Eve', _title: 'Editors', _resource: 'editors' }
+    const several = (model = {}, selectOptions = {}) => select(model, { multiSource: true, values: [ann, zoe, eve] }, selectOptions)
+
+    it('shows the record a reference points to, by its label', () => {
+      expect(several({ status: { resource: 'authors', id: 'a1' } }).find('.v-chip').text()).toBe('Zoe')
+      const wrapper = several({ status: [{ resource: 'editors', id: 'e1' }, { resource: 'authors', id: 'a2' }] }, { multiple: true })
+      expect(wrapper.findAll('.v-chip').map(chip => chip.text())).toEqual(['Eve', 'Ann'])
+      expect(wrapper.find('.selected-count').text()).toContain('2')
+    })
+
+    it('groups the choices by the kind of record, in the order of the field', () => {
+      const items = several().vm.listItems
+      expect(items.map(item => item.type === 'subheader' ? `# ${item.title}` : item._label)).toEqual(['# Authors', 'Ann', 'Zoe', '# Editors', 'Eve'])
+    })
+
+    it('names a choice by its label, and tells the kind of record under it', () => {
+      const wrapper = several()
+      expect(wrapper.vm.customLabel({ raw: eve })).toBe('Eve')
+      expect(wrapper.vm.customLabel({ raw: { type: 'subheader', title: 'Editors' } })).toBe('Editors')
+      expect(wrapper.vm.subtitleOf({ raw: eve })).toBeUndefined()
+      wrapper.vm.searchText = 'ev'
+      expect(wrapper.vm.subtitleOf({ raw: eve })).toBe('Editors')
+      expect(wrapper.vm.getValue({ raw: eve })).toBe('editors:e1')
+    })
+
+    it('keeps a reference, not the key of the choice, when one is chosen', () => {
+      const wrapper = several()
+      wrapper.vm.updateSelected('editors:e1')
+      expect(wrapper.emitted('input').at(-1)).toEqual([{ resource: 'editors', id: 'e1' }, 'status'])
+    })
+
+    it('keeps the references of a multiselect, and nothing when it is cleared', () => {
+      const wrapper = several({}, { multiple: true })
+      wrapper.vm.updateSelected(['authors:a1', 'editors:e1'])
+      expect(wrapper.emitted('input').at(-1)).toEqual([[{ resource: 'authors', id: 'a1' }, { resource: 'editors', id: 'e1' }], 'status'])
+      wrapper.vm.updateSelected(null)
+      expect(wrapper.emitted('input').at(-1)).toEqual([null, 'status'])
+    })
+
+    it('still shows a reference to a record that is gone, by its id and marked as not found', () => {
+      const wrapper = several({ status: [{ resource: 'authors', id: 'gone' }] }, { multiple: true })
+      expect(wrapper.find('.v-chip').text()).toContain('gone')
+      expect(wrapper.find('.v-chip').text()).toContain(TranslateService.get('TL_MAP_RECORD_MISSING'))
+    })
+
+    it('chooses every record of every resource with select all', () => {
+      const wrapper = several({}, { multiple: true })
+      wrapper.vm.onChangeSelectAll()
+      expect(wrapper.vm.selection).toEqual(['authors:a2', 'authors:a1', 'editors:e1'])
+    })
   })
 })

@@ -108,10 +108,12 @@
 
   const showLogoutButton = computed(() => !_.get(window, 'disableJwtLogin', false))
 
+  /** @param {boolean} editing */
   function onGetRecordEdition(editing) {
     isEditing.value = editing
   }
 
+  /** @returns {string} from the config, X.X.X when unknown */
   function getEmbedCmsVersion() {
     return _.get(properties.config, 'version', 'X.X.X')
   }
@@ -120,12 +122,13 @@
     try {
       clearTimeout(timer.value)
       if (eventSource.value) {
-        console.warn('close SSE')
+        log.debug('close SSE')
         eventSource.value.close()
       }
     } catch { /* empty */ }
   }
 
+  /** Starts over: closes the current stream and opens a new one after a short delay. */
   function connectToLogStream() {
     disconnectFromLogStream()
     firstMessage.value = true
@@ -145,17 +148,13 @@
             }
           }
           system.value = JSON.parse(event.data)
-          const instance = getCurrentInstance()
-          if (instance && instance.proxy) {
-            instance.proxy.$forceUpdate()
-          }
         } catch (error) {
           console.error('Failed to parse system info:', error)
         }
       }
       eventSource.value.addEventListener('end', () => {
         eventSource.value.close()
-        console.warn('System info stream ended')
+        log.debug('System info stream ended')
         if (!destroyed.value) {
           connectToLogStream()
         }
@@ -178,12 +177,17 @@
     }, 1000)
   }
 
+  /**
+   * @param {string} url
+   * @returns {boolean} whether it is on the host of the page
+   */
   function isActiveLink(url) {
     const urlA = new URL(window.location)
     const urlB = new URL(url)
     return urlA.host === urlB.host
   }
 
+  /** Shows the unsaved-changes dialog first while a record is being edited. */
   async function logout() {
     if (isEditing.value) {
       return window.DialogService.show({event: 'logout', callback: () => logout()})
@@ -191,6 +195,10 @@
     await LoginService.logout()
   }
 
+  /**
+   * @param {number|string} current seconds of uptime
+   * @returns {string} relative, "3 days ago"
+   */
   function timeAgo(current) {
     return Dayjs().subtract(parseInt(current, 10), 'second').fromNow()
   }
@@ -207,6 +215,10 @@
     return `${unit === 0 ? Math.round(value) : value.toFixed(value < 10 ? 1 : 0)} ${units[unit]}`
   }
 
+  /**
+   * @param {number} megaBytes
+   * @returns {string} MB, GB or TB
+   */
   function convertBytes(megaBytes) {
     const sizes = ['MB', 'GB', 'TB']
     if (megaBytes === 0) {

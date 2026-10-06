@@ -47,7 +47,7 @@ The keys a declaration can have:
 | `view` | `'table'` for a spreadsheet-like [view](#view) instead of the list. |
 | `maxCount` | The most records it may hold. With `1` it's a single record (site settings, a home page): the admin opens it directly, with no list. Once the limit is reached, a create returns the existing record instead of failing. |
 | `type` | `normal`, `downstream` or `upstream`: the direction of [replication](../operations/REPLICATION.md#directions). |
-| `groups` | Titles for nested fields, keyed by prefix: `groups: { address: { label: 'Address' } }`. |
+| `groups` | How groups of nested fields look, keyed by path: `groups: { address: { label: 'Address', collapsible: true } }` (title, `collapsible`, `collapsed`, `layout`: see [Groups](../reference/FIELDS.md#groups)). |
 | `allowed` | User groups that see the resource in the admin's menu. The API doesn't enforce it: use group rights for that. |
 | `layout` | A form layout in lines and widths for the editor. |
 | `activeField` | A boolean field of which at most one record may be `true` (say, the current campaign). |

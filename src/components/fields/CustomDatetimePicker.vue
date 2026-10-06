@@ -14,15 +14,17 @@
           :text-input="textInput"
           :placeholder="placeholder"
           :locale="locale"
-          :input-attrs="{ clearable: !isLocked }"
+          :input-attrs="{ clearable: !locked }"
           :readonly="isReadonly"
           :disabled="isDisabled"
+          teleport :centered="onTouchScreen"
           :aria-labels="{input: schema.label}"
           model-type="timestamp"
           @focus="onFieldFocus(true)" @blur="onFieldFocus(false)"
         />
       </div>
-      <v-btn v-if="enableTimePicker && !isLocked" class="date-now" variant="outlined" size="small" @click="setNow">{{ $filters.translate('TL_NOW') }}</v-btn>
+      <!-- Now on a field with a time, Today on a date-only one -->
+      <v-btn v-if="!locked" class="date-now" variant="outlined" size="small" @click="setNow">{{ $filters.translate(enableTimePicker ? 'TL_NOW' : 'TL_TODAY') }}</v-btn>
     </div>
     <div v-if="showHint()" class="help-block">
       <v-icon size="small" icon="$information" />
@@ -47,6 +49,11 @@
       customDatetimePickerOptions: { type: Object, default: () => ({}) }
     },
     computed: {
+      /** @returns {boolean} a finger, not a mouse: the calendar opens in the middle of the screen, over the page, instead of under the box */
+      onTouchScreen() {
+        return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(pointer: coarse)').matches
+      },
+      /** @returns {string} customDatetimePickerOptions.placeholder, else YYYY-MM-DD with a warning */
       placeholder() {
         const placeholder = _.get(this.schema, 'customDatetimePickerOptions.placeholder', false)
         if (!placeholder) {
@@ -71,19 +78,24 @@
         console.error(`Couldn't find field ${this.schema.originalModel} in resource schema, will show a date`, resourceSchema)
         return 'date'
       },
+      /** @returns {boolean} whether the field type names a time */
       enableTimePicker() {
         return this.fieldType.indexOf('time') !== -1
       },
+      /** @returns {boolean} whether the field type names a date */
       enableDatePicker() {
         return this.fieldType.indexOf('date') !== -1
       },
+      /** @returns {boolean} */
       isReadonly () {
         return !!this.schema.readonly
       },
+      /** @returns {boolean} the prop or the schema */
       isDisabled () {
         return !!(this.disabled || this.schema.disabled)
       },
-      isLocked () {
+      /** @returns {boolean} readonly or disabled */
+      locked () {
         return this.isReadonly || this.isDisabled
       },
       // typing and picking both work: typed text is parsed with the schema format
@@ -108,18 +120,31 @@
       this.schema.format = _.get(this.schema, 'format', 'YYYY/MM/DD h:i:s')
     },
     methods: {
+      /** The current moment; on a date-only field, the start of today (what picking the day in the calendar gives). */
       setNow () {
-        this._value = Date.now()
+        this._value = this.enableTimePicker ? Date.now() : Dayjs().startOf('day').valueOf()
       },
+      /**
+       * @param {string} toFind a token of a date format
+       * @returns {boolean} whether the format of the schema contains it
+       */
       isInFormat(toFind) {
         return this.schema.format.indexOf(toFind) !== -1
       },
+      /**
+       * @param {Date|string} date
+       * @returns {string} marked-cell for tomorrow, else empty
+       */
       getDayClass (date) {
         const tomorrow = Dayjs().startOf('day').add(1, 'day')
         if (Dayjs(date).isSame(tomorrow, 'day'))
           return 'marked-cell'
         return ''
       },
+      /**
+       * @param {Date|string} date
+       * @returns {string} in the format of the schema
+       */
       formatDateSelection (date) {
         return Dayjs(date).format(this.schema.format)
       }
@@ -173,6 +198,13 @@
       border-color: var(--cms-primary);
       box-shadow: 0 0 0 3px var(--cms-field-ring);
       outline: none;
+    }
+  }
+
+  // a finger needs the box as tall as a button
+  @media (pointer: coarse) {
+    .dp--input {
+      height: var(--cms-touch-target);
     }
   }
 
@@ -257,6 +289,34 @@
   &:hover {
     background: var(--cms-primary-hover);
     border-color: var(--cms-primary-hover);
+  }
+}
+
+// a finger: the buttons of the popup are button-sized, and a popup taller than the screen scrolls (a range with a time is 650px tall: on a 568px screen its top and its Select
+// button were out of reach)
+@media (pointer: coarse) {
+  .dp--menu {
+    max-height: calc(100dvh - var(--cms-space-4) * 2);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  // Cancel and Select stay at the foot of the popup while the calendar scrolls under them
+  .dp--action-row {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    background: var(--dp-background-color);
+  }
+  .dp--action-button {
+    min-height: var(--cms-touch-target);
+    padding: 0 var(--cms-space-4);
+  }
+  .dp--arrow-btn-nav {
+    width: var(--cms-touch-target);
+    height: var(--cms-touch-target);
+  }
+  .dp--inc-dec-button-inline {
+    height: var(--cms-space-8);
   }
 }
 

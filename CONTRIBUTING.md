@@ -8,8 +8,6 @@ Thanks for helping. This page gets you from a clone to a change that passes CI: 
 
 You need Node.js 22.12 or later (CI runs Node 22) and git.
 
-Use npm 10 or 11: npm 12 refuses by default the dependencies fetched from a URL, and `vue3-shortkey` (a fork, pinned to a commit) is one of them. It is a development dependency, only bundled into the admin, so the published package does not need it.
-
 ```sh
 git clone https://github.com/xiaodoudou/embed-cms.git embed-cms
 cd embed-cms
@@ -71,9 +69,11 @@ The pictures of `docs/reference/fields/img` (one per state of each field type) a
 
 `npm run docs:screenshots -- --only string` retakes only the pictures whose name matches the regular expression, and `--url http://127.0.0.1:9990 --seed` uses a server that is already running (seeded first) instead of a throw-away one. One picture is one entry in `test/docs/screenshots/fields.js` (the field pages) or `ui.js` (the interface): its file name, the resource, the steps that bring the form to the state the page describes, and what to crop; `lib.js` holds the browser helpers, `seed.js` the records and `fixtures.js` the files the pictures upload. A failed picture leaves a `docshot-fail-<name>.png` in the temporary folder of the system.
 
+The pictures of the example site of [PAGE_HELPER.md](docs/reference/PAGE_HELPER.md) (`docs/img/page-helper-*.png`: the home page, an article, the 404 page and the error page) are taken by their own script, `npm run docs:site-screenshots`: it boots `docs/examples/site` over a throw-away CMS with four articles and photographs its pages. The pictures of the [magazine](docs/examples/magazine/README.md) (`docs/img/magazine-*.png`) are taken the same way by `npm run docs:magazine-screenshots`.
+
 ## What CI checks
 
-`.github/workflows/test.yml` runs on every pull request and on `main`:
+`.github/workflows/test.yml` runs on every pull request and on `main` and `dev`:
 
 1. `npx eslint lib src index.js test/unit test/security test/integration test/helpers test/bench` (no `--fix`: run `npm run lint` locally to fix what can be fixed);
 2. `npm run test:unit`, `npm run test:frontend`, `npm test`;
@@ -86,7 +86,7 @@ Run the first three locally before you push. `npm run knip` finds unused files, 
 ## Project layout and naming conventions
 
 ```
-bin/            the three commands: cms.js, cmsImport.js, cmsImportRemote.js (package.json "bin")
+bin/            the four commands: cms.js, cmsSync.js, cmsImport.js, cmsImportRemote.js (package.json "bin")
 index.js        the CMS class, what require('embed-cms') gives
 lib/            the backend: the managers, Resource.js, db/ (stores and engines), util/, plugins/, importers/
 src/            the admin app (Vue 3 + Vuetify): components/, services/, mixins/, utils/, filters/, assets/, styles/
@@ -128,21 +128,49 @@ Saving is refused while a required field is empty, whatever its type
 
 The body, wrapped at about 120 characters, explains **why**: what was wrong, what the change does about it, and anything a reviewer should know (what was tried and dropped, what is left for later). The diff already says what changed line by line.
 
+## Branches
+
+`main` has **one commit per version**, each tagged (`v3.0.3`), and nobody pushes to it: the only way in is a release pull request. `dev` is where the work happens, with its commits as they were made. A change is a pull request against `dev`; a release is a pull request from `dev` to `main`, squashed into one commit.
+
+```mermaid
+gitGraph
+  commit id: "Release 3.0.2" tag: "v3.0.2"
+  branch dev
+  commit id: "a change"
+  commit id: "another change"
+  commit id: "Release 3.0.3: version and changelog"
+  checkout main
+  merge dev id: "Release 3.0.3 (squashed)" tag: "v3.0.3"
+```
+
 ## Pull requests
 
-Open them against `main`. Describe the problem, the change, and how you checked it; screenshots for UI changes, in both themes when colours are involved. CI must be green before review.
+Open them against `dev`. Describe the problem, the change, and how you checked it; screenshots for UI changes, in both themes when colours are involved. CI must be green before review.
 
 Security problems don't go in a public issue or pull request: see [SECURITY.md](SECURITY.md#reporting-a-vulnerability).
 
 ## Releasing
 
-A release is a tag. With the version of `package.json` bumped and committed on `main` (a commit named "Release 3.0.2"), tag it and push the tag:
+A release is a tag on `main`. Every change worth telling goes under **Unreleased** in `CHANGELOG.md` with the commit that makes it, in the words of the person who uses the CMS (what they can do now, what behaves differently, what was broken), not of the code.
+
+1. **On `dev`**, a last commit moves the Unreleased entries under a heading with the version and the date, adds the compare link at the bottom, and bumps the version of `package.json`. CI is green.
+2. **Open a pull request from `dev` to `main`** titled "Release 3.0.4", with the new section of the changelog as its description, and **squash-merge** it (the only way `main` accepts). `main` gets one commit, with that title and description.
+3. **Tag that commit** and push the tag:
 
 ```sh
-git tag -a v3.0.2 -m "embed-cms 3.0.2"
-git push origin v3.0.2
+git fetch origin
+git tag -a v3.0.4 -m "embed-cms 3.0.4" origin/main
+git push origin v3.0.4
 ```
 
-`.github/workflows/release.yml` then runs, in order: a check that the tag names the version of `package.json` and is on `main`, the same jobs as on every push, `npm publish`, and the GitHub release with its generated notes. A step that fails stops the next ones, so nothing is published from a red build. A tag with a prerelease suffix (`v3.1.0-rc.1`) is published under the `next` tag of npm and marked as a prerelease on GitHub.
+4. **Bring `dev` up to date with `main`**, so that the next release pull request shows only what came after. The squash commit has the same content as `dev` already has, so nothing changes in the files:
+
+```sh
+git checkout dev
+git merge -s ours origin/main -m "Release 3.0.4 is on main"
+git push origin dev
+```
+
+`.github/workflows/release.yml` runs when the tag is pushed, in order: a check that the tag names the version of `package.json` and is on `main`, the same jobs as on every push, `npm publish`, and the GitHub release with its generated notes. A step that fails stops the next ones, so nothing is published from a red build. A tag with a prerelease suffix (`v3.1.0-rc.1`) is published under the `next` tag of npm and marked as a prerelease on GitHub.
 
 One-time setup, on npmjs.com: the package page, Settings, Trusted Publisher, GitHub Actions, with the repository `xiaodoudou/embed-cms` and the workflow file name `release.yml`. There is no token to store: the run proves its identity to npm, and the package gets its provenance badge.

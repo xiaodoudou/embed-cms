@@ -32,6 +32,7 @@
   import Notification from '@m/Notification'
   import RequestService from '@s/RequestService'
   import { getRecordLabel } from '@u/recordLabel'
+  import { isScrolledToBottom } from '@u/scroll'
 
   export default {
     mixins: [RecordName, AbstractEditorView, Notification],
@@ -41,6 +42,7 @@
       multiselectItems: { type: Array, default: () => [] },
       recordList: { type: Array, default: () => [] }
     },
+    emits: ['changeMultiselectItems', 'cancel', 'updateRecordList'],
     data () {
       return {
         scrolledToBottom: false,
@@ -62,8 +64,9 @@
       window.removeEventListener('resize', this.measure)
     },
     methods: {
-      onScroll ({ target: { scrollTop, clientHeight, scrollHeight } }) {
-        this.scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 50
+      /** @param {{target: HTMLElement}} event */
+      onScroll ({ target }) {
+        this.scrolledToBottom = isScrolledToBottom(target)
       },
       // the fade that hints at more records below only shows when there are more records below
       measure () {
@@ -72,12 +75,14 @@
           return
         }
         this.scrollable = el.scrollHeight > el.clientHeight + 1
-        this.scrolledToBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 50
+        this.scrolledToBottom = isScrolledToBottom(el)
       },
+      /** @param {Object} item */
       deselectItem (item) {
         this.$emit('changeMultiselectItems', _.filter(this.multiselectItems, i => i._id !== item._id))
       },
       onClickCancel () { this.$emit('cancel') },
+      /** Asks for confirmation, the first names listed. */
       async onClickDelete () {
         const names = _.map(_.take(this.multiselectItems, 3), (item) => getRecordLabel(this.resource, item, this.locale) || item._id)
         const more = _.size(this.multiselectItems) > 3 ? ` +${_.size(this.multiselectItems) - 3}` : ''
@@ -92,6 +97,7 @@
           callback: () => this.doDelete()
         })
       },
+      /** Deletes the selected records one by one and reports the count. */
       async doDelete () {
         this.$loading.start('onDeleteMultiselectedItems')
         let deleted = 0

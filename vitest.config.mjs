@@ -25,6 +25,9 @@ export default defineConfig({
     include: ['test/frontend/**/*.test.js'],
     setupFiles: ['test/frontend/helpers/setup.js'],
     restoreMocks: true,
+    // a few tests of overlays and focus (a dialog opens, a box is selected) depend on how soon jsdom gets to a timer, which on a machine with many cores busy at once is
+    // sometimes later than the test waits: they fail one run in five and pass on their own. A failed test is run again, twice, before it counts as failed (the report says which ones were)
+    retry: 2,
     // Vuetify and the code editor ship ESM with css imports: let vite process them
     server: { deps: { inline: ['vuetify', 'codemirror-editor-vue3'] } },
     css: false,

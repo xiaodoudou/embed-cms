@@ -28,8 +28,9 @@ This is the map: GitHub shows it when you open the `docs/` folder, so it's the o
 
 - [**Blog**](examples/site/README.md): a tutorial in one folder: the shortest site on embed-cms, with the [PageHelper](reference/PAGE_HELPER.md). A resource, the CMS and the pages in one Express application, the first content from a JSON file, Mustache templates, a 404 and an error page. Runnable.
 - [**Magazine**](examples/magazine/README.md): a tutorial on a bilingual site built with no helper: Express, `cms.api()`, relations, pictures, a search, a feed, a sitemap and a template engine of its own. Runnable.
+- [**Docs platform**](examples/platform/README.md): an advanced tutorial on a platform that hosts the docs of several products, a version at a time, whose CMS is not on the public site: pages and products for members, files that follow the page, a sign-in of its own with passwords nobody can read back, and a support form. Runnable.
 
-The two share an [overview](examples/README.md): what they have in common and the few ideas a project needs.
+The three share an [overview](examples/README.md): what they have in common and the few ideas a project needs.
 
 ## Operations (`operations/`)
 
@@ -71,8 +72,8 @@ Each topic is written once, on the page that owns it.
 | Resizing and smart cropping of images | [API.md](reference/API.md#attachments), [SMART_CROPPING.md](reference/SMART_CROPPING.md) |
 | Type definitions and editor autocomplete | [TYPESCRIPT.md](reference/TYPESCRIPT.md) |
 | Where records are stored, engine speed and safety | [STORAGE.md](operations/STORAGE.md) |
-| Replication, sync between servers, importers (and the sample files of the importers in `examples/`) | [REPLICATION.md](operations/REPLICATION.md), [SYNC.md](operations/SYNC.md), [IMPORT.md](operations/IMPORT.md) |
-| How to build a whole site, step by step | the two tutorials: [blog](examples/site/README.md), [magazine](examples/magazine/README.md) |
+| Replication, sync between servers, importers | [REPLICATION.md](operations/REPLICATION.md), [SYNC.md](operations/SYNC.md), [IMPORT.md](operations/IMPORT.md) |
+| How to build a whole site, step by step | the three tutorials: [blog](examples/site/README.md), [magazine](examples/magazine/README.md), [docs platform](examples/platform/README.md) |
 | Your own plugin or admin page | [PLUGINS.md](extending/PLUGINS.md), [PLUGIN_UI_KIT.md](extending/PLUGIN_UI_KIT.md) |
 | Design tokens and UI rules of the admin | [DESIGN_SYSTEM.md](extending/DESIGN_SYSTEM.md) |
 | How the code fits together | [ARCHITECTURE.md](contributing/ARCHITECTURE.md) |

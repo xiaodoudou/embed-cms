@@ -1,0 +1,23 @@
+{{> header}}
+<h1>For members</h1>
+<p class="lede">Welcome, {{member}}. What is for you:</p>
+{{#hasProducts}}
+<h2>Products</h2>
+<ul class="entries">
+{{#products}}
+  <li class="entry"><a href="{{href}}">{{name}}</a> <span class="tag">Members</span> <span class="summary">{{summary}}</span></li>
+{{/products}}
+</ul>
+{{/hasProducts}}
+<h2>Pages</h2>
+<ul class="entries">
+{{#pages}}
+  <li class="entry"><a href="{{href}}">{{title}}</a> <span class="meta">{{product}} {{version}}</span> <span class="summary">{{summary}}</span></li>
+{{/pages}}
+</ul>
+{{^pages}}<p>There is no page for members in the public products yet.</p>{{/pages}}
+<form method="post" action="/logout">
+  <input type="hidden" name="_csrf" value="{{csrf}}">
+  <button class="button" type="submit">Sign out</button>
+</form>
+{{> footer}}

@@ -138,7 +138,7 @@ const latest = await articles.list({ published: true }, { page: 0, limit: 10 })
 const bySlug = await articles.find({ slug: 'hello' })   // one record, or null
 ```
 
-The JavaScript API doesn't check rights: it's your server's own access. [API.md](../reference/API.md) has every route and method, attachments and image resizing included.
+The JavaScript API doesn't check rights: it's your server's own access. [API.md](../reference/API.md) has every route and method, attachments and image resizing included. To turn the content into the pages of your site (Mustache templates, a 404 page, finished pages kept until a record changes), see [PAGE_HELPER.md](../reference/PAGE_HELPER.md).
 
 ## 5. Give editors their own accounts
 

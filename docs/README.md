@@ -19,6 +19,7 @@ This is the map: GitHub shows it when you open the `docs/` folder, so it's the o
 - [**Configuration**](reference/CONFIG.md): every option of `cms.json`, authentication, logs, storage engines.
 - [**API**](reference/API.md): the REST routes, querying and paging, attachments and image resizing, the JavaScript API and hooks.
 - [**RestHelper**](reference/REST_HELPER.md): the REST middlewares in your own Express routes.
+- [**ContentLoader**](operations/CONTENT_LOADER.md): content and files from a JSON file (`authors://mei-lin` for a relation, `attachment://files/cover.jpg` for a file), checked before it is written and safe to run again; `cms-load` is its command.
 - [**PageHelper**](reference/PAGE_HELPER.md): the pages of your public site, rendered from the content with Mustache templates and kept until a template or a record changes.
 - [**Smart cropping**](reference/SMART_CROPPING.md): resizes that keep the interesting part of a picture, not its centre.
 - [**Types and editor support**](reference/TYPESCRIPT.md): the type definitions that ship with embed-cms: typed options, hooks, plugins, resource declarations and the admin's globals, with autocomplete in your editor.

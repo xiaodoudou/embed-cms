@@ -2,13 +2,14 @@
 
 # Import and export
 
-Three tools move content into embed-cms in bulk. Pick by where the content lives today:
+Four tools move content into embed-cms in bulk. Pick by where the content lives today:
 
 | The content is in | Use | Turned on by |
 |---|---|---|
 | a Google Sheet, or an Excel file shaped like one | the **import** plugin (Cms Import page) | an `import` block |
 | an Excel file you exported from the CMS, edited, and want back | the **xlsx** plugin | `"xlsx": true` |
 | another embed-cms | **import from remote** | an `importFromRemote` block |
+| a JSON file you write or generate, with the files next to it | **ContentLoader** and `cms-load` ([CONTENT_LOADER.md](CONTENT_LOADER.md)) | nothing: `new CMS.ContentLoader(cms)` |
 
 All of them match records by the resource's `unique` fields: a row whose unique value already exists updates that record, a new value creates one. A resource without a `unique` field can't be imported reliably, so declare one first.
 

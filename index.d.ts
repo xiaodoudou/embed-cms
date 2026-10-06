@@ -92,7 +92,7 @@ declare module 'embed-cms' {
 
     /** The class of the API wrapper that `cms.api()` returns, for IDE support */
     static ResourceAPIWrapper: any
-    // `CMS.RestHelper` (the middlewares of the REST API, to build your own routes: docs/reference/REST_HELPER.md) and `CMS.PageHelper` (the pages of a public site: docs/reference/PAGE_HELPER.md) are declared in the namespace below
+    // `CMS.RestHelper` (the middlewares of the REST API, to build your own routes: docs/reference/REST_HELPER.md) and `CMS.PageHelper` (the pages of a public site: docs/reference/PAGE_HELPER.md) and `CMS.ContentLoader` (content and files from a JSON file: docs/operations/CONTENT_LOADER.md) are declared in the namespace below
   }
 
   namespace CMS {
@@ -495,6 +495,45 @@ declare module 'embed-cms' {
       vary?: string[]
       /** Response headers; `Cache-Control` is `no-cache` unless it is here */
       headers?: Record<string, string>
+    }
+
+    interface ContentLoadOptions {
+      /** The folder the paths of the files are relative to: the folder of the JSON file, the current folder for an object */
+      basePath?: string
+      /** Check and report, write nothing */
+      dryRun?: boolean
+      /** The field that names a record of a resource, when it is not its first unique field: `{ articles: 'slug' }` */
+      keys?: Record<string, string>
+      /** `false`: a field the resource does not declare is kept instead of reported (`true` by default) */
+      strict?: boolean
+      /** Told what is done to each record */
+      log?: (message: string) => void
+    }
+
+    interface ContentCounts { created: number; updated: number; unchanged: number; files: { added: number; removed: number; unchanged: number } }
+
+    interface ContentReport extends ContentCounts {
+      dryRun: boolean
+      /** The same counts, for each resource of the content */
+      resources: Record<string, ContentCounts>
+    }
+
+    /** Thrown by a load when the content is wrong: every problem is in `problems`, each saying where (`articles[2].author: …`) */
+    class ContentError extends Error {
+      problems: string[]
+    }
+
+    /**
+     * Puts content and files into the CMS from a JSON description: a list of records for each resource, `"@authors/mei-lin"` for a relation, `"@attachment/files/cover.jpg"` for a file.
+     * It can be run again: records are matched by their unique field and changed only if something differs, files by their MD5. See docs/operations/CONTENT_LOADER.md.
+     * @example
+     * const report = await new CMS.ContentLoader(cms).load('./content.json')
+     */
+    class ContentLoader {
+      constructor(cms: CMS)
+      /** Loads a JSON file (its path) or an object. Everything is checked before anything is written: a wrong content throws a ContentError. */
+      load(source: string | Record<string, any>, options?: ContentLoadOptions): Promise<ContentReport>
+      static ContentError: typeof ContentError
     }
 
     /**

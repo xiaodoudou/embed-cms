@@ -69,6 +69,8 @@ The pictures of `docs/reference/fields/img` (one per state of each field type) a
 
 `npm run docs:screenshots -- --only string` retakes only the pictures whose name matches the regular expression, and `--url http://127.0.0.1:9990 --seed` uses a server that is already running (seeded first) instead of a throw-away one. One picture is one entry in `test/docs/screenshots/fields.js` (the field pages) or `ui.js` (the interface): its file name, the resource, the steps that bring the form to the state the page describes, and what to crop; `lib.js` holds the browser helpers, `seed.js` the records and `fixtures.js` the files the pictures upload. A failed picture leaves a `docshot-fail-<name>.png` in the temporary folder of the system.
 
+The pictures of the example site of [PAGE_HELPER.md](docs/reference/PAGE_HELPER.md) (`docs/img/page-helper-*.png`: the home page, an article, the 404 page and the error page) are taken by their own script, `npm run docs:site-screenshots`: it boots `docs/examples/site` over a throw-away CMS with four articles and photographs its pages.
+
 ## What CI checks
 
 `.github/workflows/test.yml` runs on every pull request and on `main`:

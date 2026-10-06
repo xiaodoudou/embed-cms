@@ -1,0 +1,4 @@
+data/
+.page-cache/
+cms.json
+*.log

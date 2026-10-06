@@ -796,3 +796,9 @@ CMS.ResourceAPIWrapper = ResourceAPIWrapper
  * @type {RestHelper}
  */
 CMS.RestHelper = require('./lib/plugins/rest/RestHelper')
+
+/**
+ * Export PageHelper to render the pages of a public site from the content (Mustache templates, kept pages)
+ * @type {PageHelper}
+ */
+CMS.PageHelper = require('./lib/PageHelper')

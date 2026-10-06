@@ -1,0 +1,91 @@
+/* The look of the example site: one column, system fonts, the colours of the visitor's light or dark setting */
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --text: #1f2430;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --accent: #3b3fa8;
+  --card: #f7f7fb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161c;
+    --text: #e6e8ee;
+    --muted: #9aa1b2;
+    --line: #2a2e39;
+    --accent: #9aa2ff;
+    --card: #1b1e27;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.6 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+nav, main, footer {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 1rem 1.25rem;
+}
+
+nav {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+nav a {
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+nav a:hover { color: var(--accent); }
+
+main { padding-top: 2rem; padding-bottom: 3rem; }
+
+footer {
+  color: var(--muted);
+  font-size: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+h1 { margin: 0 0 1rem; font-size: 1.9rem; line-height: 1.2; }
+
+a, a:visited { color: var(--accent); }
+
+small { color: var(--muted); }
+
+code {
+  padding: 0.1rem 0.35rem;
+  background: var(--card);
+  border-radius: 0.25rem;
+}
+
+/* an article in a list */
+.card {
+  display: block;
+  margin: 0.75rem 0;
+  padding: 1rem 1.25rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.card:hover { border-color: var(--accent); }
+
+.card h2 { margin: 0 0 0.25rem; font-size: 1.15rem; }
+
+/* the article itself */
+article small { display: block; margin-bottom: 1.5rem; }
+
+article h2 { margin-top: 2rem; }

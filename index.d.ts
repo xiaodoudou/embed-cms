@@ -92,7 +92,7 @@ declare module 'embed-cms' {
 
     /** The class of the API wrapper that `cms.api()` returns, for IDE support */
     static ResourceAPIWrapper: any
-    // `CMS.RestHelper` (the middlewares of the REST API, to build your own routes: docs/reference/REST_HELPER.md) is declared in the namespace below
+    // `CMS.RestHelper` (the middlewares of the REST API, to build your own routes: docs/reference/REST_HELPER.md) and `CMS.PageHelper` (the pages of a public site: docs/reference/PAGE_HELPER.md) are declared in the namespace below
   }
 
   namespace CMS {
@@ -447,6 +447,79 @@ declare module 'embed-cms' {
       }
       /** The built-in route handlers */
       routes: any
+    }
+
+    /** A template of a PageHelper: the path of its file, or `{ source }` for one written in the code */
+    type PageTemplate = string | { source: string }
+
+    interface PageHelperOptions {
+      /** The CMS the content comes from, read through `cms.api()` (no rights are checked: it is your server) */
+      cms: CMS
+      /** Every template, by name. A name is what `{{> name}}` and `route(name)` use. Read and checked when the helper is made. */
+      templates: Record<string, PageTemplate>
+      /** Where the finished pages are kept: a folder (they survive a restart), nothing for the memory of the process, `false` for nowhere */
+      cache?: string | false
+      /** How many pages the memory keeps (500 by default) */
+      maxPages?: number
+      /** Given to every page, under the data of the page */
+      locals?: Record<string, any>
+      /** Seconds a kept page lives at most (3600 by default, 0 for no limit) */
+      maxAge?: number
+      /** Seconds between two checks of a kept page (0, every request, by default) */
+      revalidate?: number
+      /** The template of the 404 page: it gets `status`, `title` and `url` */
+      notFound?: string
+      /** The template of the page of an error: it gets `status`, `title` and `message` (empty for a 5xx) */
+      error?: string
+    }
+
+    /** What a loader gets */
+    interface PageContext {
+      /** `cms.api()`: the resources it is used on are what the kept page depends on */
+      api: (name: string, ...rest: string[]) => ResourceAPIWrapper
+      cms: CMS
+      params: Record<string, string>
+      query: Record<string, any>
+      req: any
+      res: any
+      /** Return it to answer the 404 page */
+      notFound(): symbol
+    }
+
+    interface PageRouteOptions {
+      /** Seconds this page is kept, over the one of the helper */
+      maxAge?: number
+      /** `false`: this page is made for every request */
+      cache?: boolean
+      /** The query parameters that change the page (`['page']`): without them the query is not part of what a page is */
+      vary?: string[]
+      /** Response headers; `Cache-Control` is `no-cache` unless it is here */
+      headers?: Record<string, string>
+    }
+
+    /**
+     * Renders the pages of a public site from the content, with Mustache templates, and keeps the finished pages. See docs/reference/PAGE_HELPER.md.
+     * @example
+     * const pages = new CMS.PageHelper({ cms, templates: { home: 'views/home.html', header: 'views/header.html' }, notFound: 'notfound' })
+     * app.get('/', pages.route('home', async ({ api }) => ({ articles: await api('articles').list({ published: true }) })))
+     */
+    class PageHelper {
+      constructor(options: PageHelperOptions)
+      /** The names of the templates */
+      names(): string[]
+      has(name: string): boolean
+      /** Renders a template with data (over `locals`): only the templates are cached, since the data is yours */
+      render(name: string, data?: Record<string, any>): Promise<string>
+      /** An Express handler: runs the loader (nothing to load for a page of text), renders `name` and keeps the page */
+      route(name: string, loader?: ((context: PageContext) => Record<string, any> | symbol | Promise<Record<string, any> | symbol>) | PageRouteOptions, options?: PageRouteOptions): ExpressMiddleware
+      /** The middleware that goes after the routes: the 404 page of an address no route answered */
+      notFoundHandler(): ExpressMiddleware
+      /** The error middleware that goes after the routes: the error page of what a route or a middleware threw */
+      errorHandler(): (error: any, req: any, res: any, next: (error?: any) => void) => any
+      /** Makes the pages that read a resource old: they are made again when asked for */
+      invalidate(resource: string): void
+      /** Drops the kept pages; resolves to how many */
+      clear(): Promise<number>
     }
   }
 

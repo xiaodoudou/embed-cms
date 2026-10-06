@@ -77,6 +77,7 @@ Setting `LOG_LEVEL` does the same (`LOG_LEVEL=debug` shows even the refused requ
 | `test/unit/replicator.attachments*`, `sync*` | Attachment download between peers, the low-level store sync |
 | `test/unit/rest.attachments*`, `ossHelper*`, `admin*`, `updates*`, `syslog.system*` | REST attachment routes, attachments kept in Alibaba Cloud OSS (the client stood in for), admin plugin, websocket updates, log and system streams |
 | `test/unit/xlsx*`, `sync*`, `import*`, `importFromRemote*`, `replicator*` | The plugins, each checked through its real routes |
+| `test/unit/pageHelper*` | The [PageHelper](../reference/PAGE_HELPER.md): the templates read and checked at the start, each way a kept page can be old (a template, a record, the age, a damaged file), the memory and the folder, errors and 404 pages, many requests at once. `pageHelper.edge.test.js` stands a small CMS in for the real one, so that each failure is made on purpose |
 | `test/unit/cms.class*` | Configuration, secrets, plugin loading, resources, paragraphs, lifecycle |
 | `test/frontend/` | `validators`, `sanitizeHtml`, the request/translate/login/resource/config services |
 

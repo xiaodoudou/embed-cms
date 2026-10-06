@@ -79,6 +79,7 @@ Setting `LOG_LEVEL` does the same (`LOG_LEVEL=debug` shows even the refused requ
 | `test/unit/xlsx*`, `sync*`, `import*`, `importFromRemote*`, `replicator*` | The plugins, each checked through its real routes |
 | `test/unit/pageHelper*` | The [PageHelper](../reference/PAGE_HELPER.md): the templates read and checked at the start, each way a kept page can be old (a template, a record, the age, a damaged file), the memory and the folder, errors and 404 pages, many requests at once. `pageHelper.edge.test.js` stands a small CMS in for the real one, so that each failure is made on purpose |
 | `test/unit/contentLoader*` | The [ContentLoader](../operations/CONTENT_LOADER.md) and `cms-load`: every problem it reports, relations, dates, files (a path, an object, a buffer, a stream, a language), blocks, a second load, a dry run; `contentLoader.cli.test.js` runs the real executable in a project folder and checks its output and exit codes, `contentLoader.resources.test.js` uses resources of its own (blocks, localised fields, nested fields) |
+| `test/unit/exampleMagazine*` | The example [magazine](../examples/magazine/README.md): its content loaded from `content.json`, each page and language, the search, the feed, the sitemap, the dates the browser is told, 404 and error pages, and the template engine |
 | `test/unit/cms.class*` | Configuration, secrets, plugin loading, resources, paragraphs, lifecycle |
 | `test/frontend/` | `validators`, `sanitizeHtml`, the request/translate/login/resource/config services |
 

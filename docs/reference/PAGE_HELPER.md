@@ -4,7 +4,9 @@
 
 The admin is for editors. The pages your visitors see are yours to build, and `CMS.PageHelper` is the piece that builds them from the content. You give it every template of the site and the CMS; a route names the template it shows and a loader that reads the records; the helper renders the page with [Mustache](https://mustache.github.io/mustache.5.html) and **keeps the finished page**, so the next visitor gets it without the loader or the template running again. A kept page is made again when a template file or a record it read changes. (It is typed too: see [TYPESCRIPT.md](TYPESCRIPT.md).)
 
-A runnable site that uses everything on this page is in [`docs/examples/site`](../examples/site): its resource, its eight templates, a small stylesheet, `site.js` (the routes) and `server.js` (the CMS and the pages in one Express application). This is what its home page and an article look like:
+(To see a site built on the platform **without** this helper, with relations, pictures, two languages, a search and a feed, read [the magazine example](../examples/magazine/README.md); both sites are compared on the [examples page](../examples/README.md).)
+
+A runnable site that uses everything on this page is in [`docs/examples/site`](../examples/site/README.md), a tutorial in one folder: its resource, its eight templates, a small stylesheet, `site.js` (the routes) and `server.js` (the CMS and the pages in one Express application). This is what its home page and an article look like:
 
 ![The home page of the example site, a list of articles](../img/page-helper-home.png)
 

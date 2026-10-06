@@ -1,0 +1,18 @@
+<article class="card">
+  <% var cover = image('articles', article, 'cover', 640) %>
+  <% if (cover) { %>
+    <a class="cover" href="/<%- lang.code %>/articles/<%- article.slug %>">
+      <img src="<%- cover %>" srcset="<%- srcset('articles', article, 'cover') %>" sizes="(min-width: 48rem) 20rem, 100vw" alt="" loading="lazy" width="640" height="427">
+    </a>
+  <% } %>
+  <div class="card-body">
+    <p class="meta">
+      <% _.compact(article.categories).slice(0, 1).forEach(function (category) { %>
+        <a href="/<%- lang.code %>/category/<%- category.slug %>"><%- text(category, 'name') %></a> ·
+      <% }) %>
+      <%- date(article.publishedOn) %>
+    </p>
+    <h3><a href="/<%- lang.code %>/articles/<%- article.slug %>"><%- text(article, 'title') %></a></h3>
+    <p><%- text(article, 'summary') %></p>
+  </div>
+</article>

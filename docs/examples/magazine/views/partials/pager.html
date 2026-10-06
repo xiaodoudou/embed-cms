@@ -1,0 +1,7 @@
+<% if (list.pages > 1) { %>
+  <nav class="pager" aria-label="<%- t.page %>">
+    <% if (list.hasPrevious) { %><a rel="prev" href="<%- base %>?page=<%- list.page - 1 %>">← <%- t.newer %></a><% } else { %><span></span><% } %>
+    <span><%- t.page %> <%- list.page %> <%- t.of %> <%- list.pages %><%- t.pageEnd %></span>
+    <% if (list.hasNext) { %><a rel="next" href="<%- base %>?page=<%- list.page + 1 %>"><%- t.older %> →</a><% } else { %><span></span><% } %>
+  </nav>
+<% } %>

@@ -1,0 +1,19 @@
+<%= include('partials/head') %>
+<h1 class="page-title"><%- t.search %></h1>
+<form class="search-page" action="/<%- lang.code %>/search" role="search">
+  <input type="search" name="q" value="<%- term %>" placeholder="<%- t.searchPlaceholder %>" aria-label="<%- t.search %>">
+  <button type="submit"><%- t.search %></button>
+</form>
+<% if (term) { %>
+  <h2 class="section-title"><%- t.searchFor %> “<%- term %>”</h2>
+  <% if (results.length) { %>
+    <div class="grid">
+      <% results.forEach(function (article) { %>
+        <%= include('partials/card', { article: article }) %>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <p class="empty"><%- t.noResults %></p>
+  <% } %>
+<% } %>
+<%= include('partials/foot') %>

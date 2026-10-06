@@ -1,0 +1,20 @@
+<%= include('partials/head') %>
+<section class="author-head">
+  <% var photo = image('authors', author, 'photo', 320) %>
+  <% if (photo) { %><img class="avatar" src="<%- photo %>" alt="" width="96" height="96"><% } %>
+  <div>
+    <h1 class="page-title"><%- t.articlesBy %> <%- author.name %></h1>
+    <p><%- text(author, 'bio') %></p>
+  </div>
+</section>
+<% if (list.items.length) { %>
+  <div class="grid">
+    <% list.items.forEach(function (article) { %>
+      <%= include('partials/card', { article: article }) %>
+    <% }) %>
+  </div>
+  <%= include('partials/pager', { base: '/' + lang.code + '/authors/' + author.slug }) %>
+<% } else { %>
+  <p class="empty"><%- t.noArticles %></p>
+<% } %>
+<%= include('partials/foot') %>

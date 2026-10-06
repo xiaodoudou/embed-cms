@@ -24,6 +24,13 @@ This is the map: GitHub shows it when you open the `docs/` folder, so it's the o
 - [**Smart cropping**](reference/SMART_CROPPING.md): resizes that keep the interesting part of a picture, not its centre.
 - [**Types and editor support**](reference/TYPESCRIPT.md): the type definitions that ship with embed-cms: typed options, hooks, plugins, resource declarations and the admin's globals, with autocomplete in your editor.
 
+## Examples (`examples/`)
+
+- [**Blog**](examples/site/README.md): a tutorial in one folder: the shortest site on embed-cms, with the [PageHelper](reference/PAGE_HELPER.md). A resource, the CMS and the pages in one Express application, the first content from a JSON file, Mustache templates, a 404 and an error page. Runnable.
+- [**Magazine**](examples/magazine/README.md): a tutorial on a bilingual site built with no helper: Express, `cms.api()`, relations, pictures, a search, a feed, a sitemap and a template engine of its own. Runnable.
+
+The two share an [overview](examples/README.md): what they have in common and the few ideas a project needs.
+
 ## Operations (`operations/`)
 
 - [**Storage engines**](operations/STORAGE.md): LevelDB, SQLite, JSON file, MongoDB or PostgreSQL: which to pick, real benchmarks through the whole CMS, what a crash loses, how to switch.
@@ -61,5 +68,5 @@ This is the map: GitHub shows it when you open the `docs/` folder, so it's the o
 | Design tokens and UI rules | [DESIGN_SYSTEM.md](extending/DESIGN_SYSTEM.md) |
 | A plugin's own options | its page: [REPLICATION.md](operations/REPLICATION.md), [SYNC.md](operations/SYNC.md), [IMPORT.md](operations/IMPORT.md) |
 
-`examples/` holds the sample configuration files of the importers (`cms-import-remote`, see [IMPORT.md](operations/IMPORT.md)).
+`examples/` also holds the sample configuration files of the importers (`cms-import-remote`, see [IMPORT.md](operations/IMPORT.md)).
 

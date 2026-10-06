@@ -1,0 +1,41 @@
+<%= include('partials/head') %>
+<article class="story">
+  <header>
+    <p class="meta">
+      <% _.compact(article.categories).forEach(function (category) { %>
+        <a class="pill" href="/<%- lang.code %>/category/<%- category.slug %>"><%- text(category, 'name') %></a>
+      <% }) %>
+    </p>
+    <h1><%- text(article, 'title') %></h1>
+    <p class="lede"><%- text(article, 'summary') %></p>
+    <p class="meta">
+      <% if (article.author) { %><%- t.by %> <a href="/<%- lang.code %>/authors/<%- article.author.slug %>"><%- article.author.name %></a> · <% } %>
+      <%- date(article.publishedOn) %>
+    </p>
+  </header>
+  <% var cover = image('articles', article, 'cover', 960) %>
+  <% if (cover) { %>
+    <img class="story-cover" src="<%- cover %>" srcset="<%- srcset('articles', article, 'cover') %>" sizes="(min-width: 48rem) 46rem, 100vw" alt="" width="960" height="640">
+  <% } %>
+  <% /* the body is the HTML of the rich text field an editor wrote: printed as it is, unlike every other value */ %>
+  <div class="story-body"><%= text(article, 'body') %></div>
+  <% if (article.author) { %>
+    <aside class="byline">
+      <% var photo = image('authors', article.author, 'photo', 320) %>
+      <% if (photo) { %><img class="avatar" src="<%- photo %>" alt="" width="64" height="64"><% } %>
+      <div>
+        <strong><a href="/<%- lang.code %>/authors/<%- article.author.slug %>"><%- article.author.name %></a></strong>
+        <p><%- text(article.author, 'bio') %></p>
+      </div>
+    </aside>
+  <% } %>
+</article>
+<% if (related.length) { %>
+  <h2 class="section-title"><%- t.related %></h2>
+  <div class="grid">
+    <% related.forEach(function (other) { %>
+      <%= include('partials/card', { article: other }) %>
+    <% }) %>
+  </div>
+<% } %>
+<%= include('partials/foot') %>

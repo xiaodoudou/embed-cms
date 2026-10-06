@@ -228,3 +228,5 @@ A data folder that the running server holds is the case that is easiest to meet:
 - The loader writes through `cms.api()`: the hooks of the resources run and the unique fields are checked, as for any write from code. **No rights are checked**: it is your server writing.
 - It is for content you write or generate, not for moving content between two CMS: for that, see [Import and export](IMPORT.md).
 - `attachment` is the one word that cannot be the name of a resource you point to in a reference.
+
+The example sites of [`docs/examples`](../examples) are loaded this way: the [magazine](../examples/magazine/README.md) has a `content.json` and a `files` folder next to its resources, and the [blog](../examples/site) a `content.json` of four articles.

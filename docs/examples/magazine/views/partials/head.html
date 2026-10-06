@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="<%- lang.tag %>">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%- title === siteName ? siteName : title + ' · ' + siteName %></title>
+  <link rel="alternate" type="application/rss+xml" title="<%- siteName %>" href="/<%- lang.code %>/feed.xml">
+  <link rel="stylesheet" href="/assets/magazine.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="wrap">
+    <a class="brand" href="/<%- lang.code %>"><%- siteName %></a>
+    <nav class="sections" aria-label="Sections">
+      <% categories.forEach(function (category) { %>
+        <a href="/<%- lang.code %>/category/<%- category.slug %>"><%- text(category, 'name') %></a>
+      <% }) %>
+    </nav>
+    <form class="search" action="/<%- lang.code %>/search" role="search">
+      <input type="search" name="q" placeholder="<%- t.searchPlaceholder %>" aria-label="<%- t.search %>">
+    </form>
+    <span class="languages">
+      <% languages.forEach(function (other) { %>
+        <% if (other.code === lang.code) { %>
+          <strong><%- other.name %></strong>
+        <% } else { %>
+          <a href="<%- switchTo(other.code) %>" hreflang="<%- other.tag %>"><%- other.name %></a>
+        <% } %>
+      <% }) %>
+    </span>
+  </div>
+</header>
+<main class="wrap">

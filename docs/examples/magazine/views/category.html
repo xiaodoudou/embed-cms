@@ -1,0 +1,13 @@
+<%= include('partials/head') %>
+<h1 class="page-title"><%- text(category, 'name') %></h1>
+<% if (list.items.length) { %>
+  <div class="grid">
+    <% list.items.forEach(function (article) { %>
+      <%= include('partials/card', { article: article }) %>
+    <% }) %>
+  </div>
+  <%= include('partials/pager', { base: '/' + lang.code + '/category/' + category.slug }) %>
+<% } else { %>
+  <p class="empty"><%- t.noArticles %></p>
+<% } %>
+<%= include('partials/foot') %>

@@ -141,6 +141,7 @@
       }
     },
     methods: {
+      /** Prompts for the url; an empty one removes the link, cancel keeps it. */
       setLink () {
         const previousUrl = this.editor.getAttributes('link').href
         const url = window.prompt('URL', previousUrl)

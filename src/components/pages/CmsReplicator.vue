@@ -75,12 +75,21 @@
     },
     methods: {
       directionKey,
+      /**
+       * @param {{peers: Array}} resource
+       * @returns {boolean}
+       */
       hasPeers(resource) {
         return !_.isEmpty(resource.peers)
       },
+      /**
+       * @param {{peers: Array}} resource
+       * @returns {string} their labels, comma separated
+       */
       peersOf(resource) {
         return _.map(resource.peers, peerLabel).join(', ')
       },
+      /** Loads the resources and their peers from the replicator plugin. */
       async fetchResources() {
         this.loading = true
         this.loadError = ''
@@ -114,14 +123,23 @@
           NotificationsService.send(TranslateService.get('TL_SYNC_FAILED', { name, error: errorText(error) }), 'error', { actionLabel: TranslateService.get('TL_RETRY'), action: retry })
         }
       },
+      /**
+       * @param {string} resource its name
+       * @returns {Promise}
+       */
       syncResource(resource) {
         return this.runSync(`../replicator/sync/${encodeURIComponent(resource)}`, resource, () => this.syncResource(resource))
       },
+      /** @param {string} resource opens the dialog asking for a record id */
       syncRecordPrompt(resource) {
         this.recordResource = resource
         this.showDialog = true
         this.recordId = ''
       },
+      /**
+       * Syncs the record whose id was typed; nothing without one.
+       * @returns {Promise|undefined}
+       */
       doSyncRecord() {
         if (!this.recordId) {
           return

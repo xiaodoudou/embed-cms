@@ -1,0 +1,13 @@
+{{> header}}
+<h1>All articles</h1>
+{{#articles}}
+  {{> card}}
+{{/articles}}
+{{^articles}}
+  <p>No articles on this page.</p>
+{{/articles}}
+<p>
+  {{#hasPrevious}}<a href="/articles?page={{previous}}">← Newer</a>{{/hasPrevious}}
+  {{#hasNext}}<a href="/articles?page={{next}}">Older →</a>{{/hasNext}}
+</p>
+{{> footer}}

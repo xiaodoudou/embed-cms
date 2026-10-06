@@ -51,6 +51,10 @@ export function importCounts (report) {
   return TranslateService.get('TL_IMPORT_COUNTS', counts)
 }
 
+/**
+ * @param {Object} resource
+ * @returns {string} its display name in the locale, else its title
+ */
 export function getResourceLabel (resource) {
   if (!resource) {
     return ''

@@ -54,6 +54,13 @@ add('string-pattern-per-locale-zhCN-error', 'text_strings', async (c) => {
   await c.locale('zhCN')
   return typed(c, 'patternPerLocale.zhCN', 'hello')
 })
+add('string-mask', 'text_strings', (c) => [c.field('maskPhone'), c.field('maskPlate')])
+add('string-mask-filled', 'text_strings', async (c) => {
+  await c.type('maskPhone', '5551234567')
+  await c.type('maskPlate', 'ab12')
+  await c.blur()
+  return [c.field('maskPhone'), c.field('maskPlate')]
+})
 add('string-readonly', 'text_strings', (c) => c.field('readOnly'))
 add('string-disabled', 'text_strings', (c) => c.field('disabled'))
 
@@ -218,7 +225,6 @@ add('checkbox-localised', 'choice_boolean', (c) => c.field('localisedFlag.enUS')
 add('checkbox-readonly', 'choice_boolean', (c) => c.field('readOnlyFlag'))
 add('checkbox-disabled', 'choice_boolean', (c) => c.field('disabledFlag'))
 
-
 // ---------------------------------------------------------------- color
 const canvas = (c, model) => c.field(model).locator('.v-color-picker-canvas')
 add('color-default', 'choice_color', (c) => c.field('color'))
@@ -297,6 +303,14 @@ add('select-filled-custom-label', 'choice_select', async (c) => {
   await pick(c, 'itemWithLabel', 'Gamma')
   return c.field('itemWithLabel')
 })
+add('select-sources-open', 'choice_select', async (c) => {
+  await openList(c, 'linked')
+  return c.field('linked')
+}, { crop: { height: 380 }, scroll: 'start' })
+add('select-sources-filled', 'choice_select', async (c) => {
+  await pick(c, 'linked', 'Ann')
+  return c.field('linked')
+})
 add('select-localised', 'choice_select', (c) => c.field('localisedChoice.enUS'))
 add('select-readonly', 'choice_select', (c) => c.field('readOnlySelect'))
 add('select-disabled', 'choice_select', (c) => c.field('disabledSelect'))
@@ -331,6 +345,14 @@ add('multiselect-filled-labels', 'choice_multi', async (c) => {
   await pickMany(c, 'channels', ['Website', 'Print'])
   await pickMany(c, 'items', ['Alpha', 'Gamma'])
   return [c.field('channels'), c.field('items')]
+})
+add('multiselect-sources-open', 'choice_multi', async (c) => {
+  await openList(c, 'linkedMany')
+  return c.field('linkedMany')
+}, { crop: { height: 380 }, scroll: 'start' })
+add('multiselect-sources-filled', 'choice_multi', async (c) => {
+  await pickMany(c, 'linkedMany', ['Alpha', 'Ann', 'Gamma'])
+  return c.field('linkedMany')
 })
 add('multiselect-localised-enUS', 'choice_multi', async (c) => {
   await pickMany(c, 'localisedItems.enUS', ['Beta'])
@@ -411,7 +433,6 @@ add('locale-tab-badges', 'text_long', async (c) => {
   return c.page.locator('.record-editor .top-bar').first()
 }, { crop: { width: 0, height: 72, pad: { t: 0, b: 0, l: 0, r: 0 }, clipWidth: 676 }, scroll: 'none' })
 
-
 // ---------------------------------------------------------------- file and image
 /** Gives `names` (fixture files) to the file field `model`, as a choice in the file dialog would, and waits for the previews */
 const attach = async (c, model, names) => {
@@ -481,12 +502,127 @@ add('image-readonly-saved', 'media_images', (c) => opened(c, 'readOnlyImage'), s
 add('image-disabled', 'media_images', (c) => c.field('disabledImage'))
 add('image-disabled-saved', 'media_images', (c) => opened(c, 'disabledImage'), saved('media_images', 'images'))
 
+// ---------------------------------------------------------------- cropimage and imagemap (the tools open in a modal: its card is the picture)
+/** Opens the tool of a crop or image map field (the button under its picture), waits for the picture to load, and answers the card of the modal */
+const tool = async (c, model, button, card) => {
+  await c.field(model).locator(button).click()
+  await c.page.waitForSelector(card, { timeout: 15000 })
+  await c.page.waitForTimeout(2500)
+  return c.page.locator(card)
+}
+const MODAL = { crop: { width: 0, pad: { l: 0, r: 0, t: 0, b: 0 } }, scroll: 'none' }
+/** Selects the n-th area of the list of the map tool */
+const pickArea = async (c, n) => {
+  await c.page.locator('.map-pick').nth(n).click()
+  await c.page.waitForTimeout(600)
+}
+
+add('cropimage-default', 'media_crop', (c) => c.field('photo'))
+add('cropimage-filled', 'media_crop', (c) => attach(c, 'photo', ['man.jpg']))
+add('cropimage-dialog', 'media_crop', async (c) => {
+  await attach(c, 'photo', ['man.jpg'])
+  return tool(c, 'photo', '.edit-crop', '.crop-card')
+}, MODAL)
+add('cropimage-dialog-dark', 'media_crop', async (c) => {
+  await attach(c, 'photo', ['man.jpg'])
+  return tool(c, 'photo', '.edit-crop', '.crop-card')
+}, { ...MODAL, theme: 'dark' })
+add('cropimage-dialog-ratio', 'media_crop', async (c) => {
+  await attach(c, 'photo', ['man.jpg'])
+  const card = await tool(c, 'photo', '.edit-crop', '.crop-card')
+  await c.page.locator('.crop-ratio', { hasText: '16:9' }).click()
+  await c.page.waitForTimeout(900)
+  return card
+}, MODAL)
+add('cropimage-avatar', 'media_crop', async (c) => {
+  await attach(c, 'avatar', ['man.jpg'])
+  return tool(c, 'avatar', '.edit-crop', '.crop-card')
+}, MODAL)
+add('cropimage-banner', 'media_crop', async (c) => {
+  await attach(c, 'banner', ['man.jpg'])
+  return tool(c, 'banner', '.edit-crop', '.crop-card')
+}, MODAL)
+add('cropimage-cropped', 'media_crop', async (c) => {
+  await attach(c, 'photo', ['man.jpg'])
+  await tool(c, 'photo', '.edit-crop', '.crop-card')
+  await c.page.locator('.crop-ratio', { hasText: '1:1' }).click()
+  await c.page.waitForTimeout(800)
+  await c.page.locator('.crop-apply').click()
+  await c.page.waitForTimeout(1200)
+  await c.blur()
+  return c.field('photo')
+})
+add('cropimage-saved', 'media_crop', async (c) => {
+  await c.blur()
+  return [c.field('photo'), c.field('avatar')]
+  // a tall window: both fields are in the picture, whole
+}, { ...saved('media_crop', 'cropped'), viewport: { width: 1280, height: 1100 } })
+
+add('imagemap-default', 'media_map', (c) => c.field('floorPlan'))
+add('imagemap-filled', 'media_map', (c) => attach(c, 'floorPlan', ['man.jpg']))
+add('imagemap-draw', 'media_map', async (c) => {
+  await attach(c, 'floorPlan', ['man.jpg'])
+  const card = await tool(c, 'floorPlan', '.edit-map', '.map-card')
+  const box = await c.page.locator('.map-overlay').boundingBox()
+  const at = (x, y) => [box.x + box.width * x, box.y + box.height * y]
+  const drag = async (from, to) => {
+    await c.page.mouse.move(...at(...from))
+    await c.page.mouse.down()
+    await c.page.mouse.move(...at(...to), { steps: 8 })
+    await c.page.mouse.up()
+    await c.page.waitForTimeout(400)
+  }
+  await c.page.locator('.map-tool-circle').click()
+  await drag([0.333, 0.458], [0.333 + 0.14, 0.458])
+  await c.page.locator('input[name=map-title]').fill('Lamp')
+  await c.page.locator('input[name=map-href]').fill('https://example.com/lamp')
+  await c.page.locator('.map-tool-rect').click()
+  await drag([0.6, 0.5], [0.9, 0.88])
+  await c.page.locator('input[name=map-title]').fill('Kitchen')
+  await c.page.locator('input[name=map-href]').fill('/kitchen')
+  await c.page.waitForTimeout(500)
+  return card
+}, MODAL)
+add('imagemap-saved', 'media_map', async (c) => {
+  await c.blur()
+  return c.field('floorPlan')
+}, saved('media_map', 'maps'))
+add('imagemap-dialog', 'media_map', async (c) => {
+  const card = await tool(c, 'floorPlan', '.edit-map', '.map-card')
+  await pickArea(c, 1)
+  return card
+}, { ...MODAL, ...saved('media_map', 'maps') })
+add('imagemap-dialog-dark', 'media_map', async (c) => {
+  const card = await tool(c, 'floorPlan', '.edit-map', '.map-card')
+  await pickArea(c, 1)
+  return card
+}, { ...MODAL, ...saved('media_map', 'maps'), theme: 'dark' })
+add('imagemap-record', 'media_map', async (c) => {
+  const card = await tool(c, 'catalogue', '.edit-map', '.map-card')
+  await pickArea(c, 0)
+  return card
+}, { ...MODAL, ...saved('media_map', 'maps') })
+add('imagemap-record-only', 'media_map', async (c) => {
+  const card = await tool(c, 'productMap', '.edit-map', '.map-card')
+  await pickArea(c, 0)
+  return card
+}, { ...MODAL, ...saved('media_map', 'maps') })
+add('imagemap-value', 'media_map', async (c) => {
+  const card = await tool(c, 'roomMap', '.edit-map', '.map-card')
+  await pickArea(c, 0)
+  return card
+}, { ...MODAL, ...saved('media_map', 'maps') })
+add('imagemap-everything', 'media_map', async (c) => {
+  const card = await tool(c, 'everything', '.edit-map', '.map-card')
+  await pickArea(c, 1)
+  return card
+}, { ...MODAL, ...saved('media_map', 'maps') })
+
 // ---------------------------------------------------------------- json
 add('json-default', 'structured_data', (c) => c.field('json'))
 add('json-localised', 'structured_data', (c) => c.field('localisedJson.enUS'))
 add('json-value', 'structured_data', (c) => c.field('json'), saved('structured_data', 'json'))
 add('json-localised-zhCN', 'structured_data', (c) => c.field('localisedJson.zhCN'), { ...saved('structured_data', 'json'), locale: 'zhCN' })
-
 
 // ---------------------------------------------------------------- object
 /** Sets a value of a json-editor form (`name` is the name of its input, `root[title]`) */
@@ -576,5 +712,249 @@ add('paragraph-required-error', 'structured_blocks', async (c) => {
   return refuse(c, 'requiredBlocks')
 })
 add('paragraph-localised', 'structured_blocks', (c) => c.field('localisedBlocks.enUS'))
+
+// ---------------------------------------------------------------- duration
+add('duration-template', 'numbers_quantities', async (c) => {
+  await c.type('templateDuration', '13005')
+  await c.blur()
+  return [c.field('templateDuration'), c.field('daysDuration')]
+})
+
+// ---------------------------------------------------------------- rating
+const rate = async (c, model, step) => {
+  await c.field(model).locator('.rating-step').nth(step).click()
+  await c.page.mouse.move(5, 5)
+}
+add('rating-default', 'numbers_quantities', async (c) => {
+  await rate(c, 'stars', 3)
+  // the left half of the third heart: two and a half
+  await rate(c, 'hearts', 4)
+  return [c.field('stars'), c.field('hearts')]
+})
+add('rating-scale', 'numbers_quantities', async (c) => {
+  await rate(c, 'scale', 6)
+  await rate(c, 'flames', 1)
+  return [c.field('scale'), c.field('flames')]
+})
+add('rating-required-error', 'numbers_quantities', async (c) => {
+  await named(c)
+  return refuse(c, 'requiredRating')
+})
+add('rating-states', 'numbers_quantities', (c) => [c.field('readOnlyRating'), c.field('disabledRating')])
+
+// ---------------------------------------------------------------- duration (the box keeps its template)
+add('duration-default', 'numbers_quantities', async (c) => {
+  await c.type('duration', '0130')
+  await c.type('preciseDuration', '013005')
+  await c.type('longDuration', '2:3')
+  await c.blur()
+  return [c.field('duration'), c.field('preciseDuration'), c.field('longDuration')]
+})
+add('duration-empty', 'numbers_quantities', (c) => [c.field('duration'), c.field('minutesOnly')])
+add('duration-limits-error', 'numbers_quantities', (c) => typed(c, 'minutesOnly', '2'))
+add('duration-states', 'numbers_quantities', (c) => [c.field('readOnlyDuration'), c.field('disabledDuration')])
+
+// ---------------------------------------------------------------- money
+const amount = async (c, model, text) => {
+  await c.field(model).locator('input[id$="-amount"]').fill(text)
+}
+add('money-default', 'numbers_quantities', async (c) => {
+  await amount(c, 'price', '1.234,5')
+  await c.type('euroPrice', '7')
+  await c.blur()
+  return [c.field('price'), c.field('euroPrice')]
+})
+add('money-currency-open', 'numbers_quantities', async (c) => {
+  await openList(c, 'mixedPrice')
+  return c.field('mixedPrice')
+}, { crop: { height: 300 }, scroll: 'start' })
+add('money-decimals', 'numbers_quantities', async (c) => {
+  await amount(c, 'mixedPrice', '1999.5')
+  await c.blur()
+  await pick(c, 'mixedPrice', 'KWD')
+  return c.field('mixedPrice')
+})
+add('money-limited-error', 'numbers_quantities', (c) => typed(c, 'limitedPrice', '4'))
+add('money-required-error', 'numbers_quantities', async (c) => {
+  await named(c)
+  return refuse(c, 'requiredPrice')
+})
+add('money-states', 'numbers_quantities', (c) => [c.field('readOnlyPrice'), c.field('disabledPrice')])
+
+// ---------------------------------------------------------------- phone
+const number = (c, model) => c.field(model).locator('input[id$="-number"]')
+const dial = async (c, model, text) => {
+  await number(c, model).click()
+  await number(c, model).fill(text)
+  await c.blur()
+  return c.field(model)
+}
+add('phone-default', 'text_formats', async (c) => {
+  // a number written with its country says which country it is
+  await dial(c, 'phone', '+44 20 7183 8750')
+  return c.field('phone')
+})
+add('phone-country-open', 'text_formats', async (c) => {
+  await openList(c, 'europePhone')
+  return c.field('europePhone')
+}, { crop: { height: 330 }, scroll: 'start' })
+add('phone-error', 'text_formats', (c) => dial(c, 'phone', 'call me'))
+add('phone-states', 'text_formats', (c) => [c.field('readOnlyPhone'), c.field('disabledPhone')])
+
+
+// ---------------------------------------------------------------- markdown
+const NOTES = [
+  '# Release notes',
+  '',
+  'A **bold** claim, some _emphasis_ and a [link](https://example.com).',
+  '',
+  '- first',
+  '- second',
+  '',
+  '> A quote',
+  '',
+  '```js',
+  'const a = 1',
+  '```'
+].join('\n')
+const write = async (c, model, text) => {
+  await c.input(model).click()
+  await c.input(model).fill(text)
+}
+const showPreview = async (c, model) => {
+  await c.field(model).getByRole('tab', { name: 'Preview' }).click()
+  await c.page.mouse.move(5, 5)
+}
+add('markdown-default', 'text_long', async (c) => {
+  await write(c, 'markdown.enUS', NOTES)
+  return c.field('markdown.enUS')
+})
+add('markdown-preview', 'text_long', async (c) => {
+  await write(c, 'markdown.enUS', NOTES)
+  await showPreview(c, 'markdown.enUS')
+  return c.field('markdown.enUS')
+})
+add('markdown-split', 'text_long', async (c) => {
+  await write(c, 'splitMarkdown', NOTES)
+  return c.field('splitMarkdown')
+})
+add('markdown-mini', 'text_long', async (c) => {
+  await write(c, 'miniMarkdown', 'Only **bold**, _italic_ and [links](https://example.com).')
+  return c.field('miniMarkdown')
+})
+add('markdown-plain', 'text_long', (c) => c.field('plainMarkdown'))
+add('markdown-limited-error', 'text_long', (c) => typed(c, 'limitedMarkdown', '**' + 'x'.repeat(220) + '**'))
+add('markdown-required-error', 'text_long', async (c) => {
+  await c.type('title', 'Name')
+  return refuse(c, 'requiredMarkdown.enUS')
+})
+add('markdown-states', 'text_long', (c) => [c.field('readOnlyMarkdown'), c.field('disabledMarkdown')])
+
+// ---------------------------------------------------------------- daterange
+const typedRange = async (c, model, text) => {
+  await c.input(model).click()
+  await c.input(model).fill(text)
+  await c.input(model).press('Enter')
+  await c.blur()
+  return c.field(model)
+}
+add('daterange-default', 'dates', (c) => typedRange(c, 'range', '2026/10/05 – 2026/10/09'))
+add('daterange-open', 'dates', async (c) => {
+  await c.input('range').click()
+  await c.page.mouse.move(5, 5)
+  await c.page.waitForSelector('.dp--menu', { state: 'visible' })
+  await c.page.waitForTimeout(400)
+  return c.field('range')
+}, { crop: { height: 400 }, scroll: 'start' })
+add('daterange-time', 'dates', (c) => typedRange(c, 'timeRange', '2026/10/05 09:00 – 2026/10/05 17:30'))
+add('daterange-required-error', 'dates', async (c) => {
+  await c.type('name', 'Name')
+  return refuse(c, 'requiredRange')
+})
+add('daterange-states', 'dates', (c) => [c.field('readOnlyRange'), c.field('disabledRange')])
+
+// ---------------------------------------------------------------- geopoint
+// a pair pasted in the latitude box fills both
+const pasted = async (c, model, text) => {
+  await c.input(model).click()
+  await c.input(model).fill(text)
+  await c.blur()
+  return c.field(model)
+}
+add('geopoint-default', 'places', (c) => pasted(c, 'location', '48.856601, 2.352222'))
+add('geopoint-sides', 'places', async (c) => {
+  await c.input('location').fill('33.9 S')
+  await c.field('location').locator('input').nth(1).fill('18°25\'30"E')
+  await c.blur()
+  return c.field('location')
+})
+add('geopoint-precision', 'places', (c) => pasted(c, 'roughLocation', '48.856601, 2.352222'))
+add('geopoint-error', 'places', async (c) => {
+  await c.input('location').fill('95')
+  await c.field('location').locator('input').nth(1).fill('2.35')
+  await c.blur()
+  return c.field('location')
+})
+add('geopoint-required-error', 'places', async (c) => {
+  await c.type('name', 'Name')
+  return refuse(c, 'requiredLocation')
+})
+// the map opens on the point of the field; its tiles come from OpenStreetMap, so these two need the network
+const openMap = async (c, pair) => {
+  await pasted(c, 'location', pair)
+  await c.field('location').locator('.geopoint-pick').click()
+  await c.page.waitForSelector('.geo-card .leaflet-tile-loaded', { timeout: 20000 })
+  await c.page.waitForTimeout(2500)
+  return c.page.locator('.geo-card')
+}
+add('geopoint-map', 'places', (c) => openMap(c, '48.8584, 2.2945'), MODAL)
+add('geopoint-map-dark', 'places', (c) => openMap(c, '48.8584, 2.2945'), { ...MODAL, theme: 'dark' })
+add('geopoint-states', 'places', (c) => [c.field('readOnlyLocation'), c.field('disabledLocation')])
+
+// ---------------------------------------------------------------- segmented and radio
+/** Presses the choice with this text in the field `model` */
+const pressChoice = async (c, model, text) => {
+  await c.field(model).locator('.choice-item').filter({ hasText: text }).first().click()
+  await c.page.waitForTimeout(300)
+}
+add('segmented-default', 'choice_buttons', async (c) => {
+  await pressChoice(c, 'status', 'review')
+  return c.field('status')
+})
+add('segmented-default-dark', 'choice_buttons', async (c) => {
+  await pressChoice(c, 'status', 'review')
+  return c.field('status')
+}, { theme: 'dark' })
+add('segmented-labels', 'choice_buttons', async (c) => {
+  await pressChoice(c, 'priority', 'Medium')
+  await pressChoice(c, 'columns', '3')
+  return [c.field('priority'), c.field('columns')]
+})
+add('segmented-required-error', 'choice_buttons', async (c) => {
+  await c.type('name', 'Name')
+  return refuse(c, 'requiredStatus')
+})
+add('segmented-states', 'choice_buttons', (c) => [c.field('readOnlySegment'), c.field('disabledSegment')])
+add('radio-default', 'choice_buttons', async (c) => {
+  await pressChoice(c, 'plan', 'team')
+  return c.field('plan')
+})
+add('radio-default-dark', 'choice_buttons', async (c) => {
+  await pressChoice(c, 'plan', 'team')
+  return c.field('plan')
+}, { theme: 'dark' })
+add('radio-descriptions', 'choice_buttons', async (c) => {
+  await pressChoice(c, 'planWithHelp', 'Team')
+  return c.field('planWithHelp')
+})
+add('radio-inline', 'choice_buttons', async (c) => {
+  await pressChoice(c, 'inlineChoice', 'Maybe')
+  return c.field('inlineChoice')
+})
+add('radio-required-error', 'choice_buttons', async (c) => {
+  await c.type('name', 'Name')
+  return refuse(c, 'requiredPlan')
+})
+add('radio-states', 'choice_buttons', (c) => [c.field('readOnlyRadio'), c.field('disabledRadio')])
 
 module.exports = { specs }

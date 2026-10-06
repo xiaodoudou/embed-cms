@@ -11,7 +11,7 @@ const NOT_CHECKED_FOR_LITERALS = new Set([TOKENS, path.join(SRC, 'vuetify.js')])
 // Legitimate colour data, not styling: the default value of the colour field
 const ALLOWED_LITERALS = [/#000000FF/]
 // !important is a patch. This number may only go down; lower it when you remove some.
-const IMPORTANT_BASELINE = 60
+const IMPORTANT_BASELINE = 59
 // the reset of Vuetify 3 (ress.css), kept as it was: it is not our styling
 const THIRD_PARTY = new Set([path.join(SRC, 'styles/reset.scss')])
 

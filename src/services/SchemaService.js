@@ -3,6 +3,9 @@ import Mustache from 'mustache'
 import TranslateServiceLib from '@s/TranslateService'
 import FormService from '@s/FormService'
 import ResourceService from './ResourceService'
+import { isMultiSource, sourceItems } from '@u/sources'
+import { parseMask } from '@u/mask'
+import { placeGroupLayout } from '@u/groups'
 
 const TranslateService = window.TranslateService || TranslateServiceLib
 
@@ -11,11 +14,21 @@ class SchemaService {
     this.typeMapper = FormService.typeMapper
   }
 
+  /**
+   * @param {Array<Object>} schema
+   * @param {Object} resource
+   * @param {string} locale
+   * @param {string} userLocale
+   * @param {boolean} disabled
+   * @param {Object} extraSources
+   * @param {boolean} rootView
+   * @returns {Array<Object>} the form fields
+   */
   getSchemaFields (schema, resource, locale, userLocale, disabled, extraSources, rootView) {
-    let fields = _.map(schema, (field) => {
+    const fields = _.map(schema, (field) => {
       const isLocalised = resource.locales && (field.localised || _.isUndefined(field.localised))
       const name = field.label && TranslateService.get(field.label)
-      const label = `${name || field.field}${isLocalised ? ` (${TranslateService.get(`TL_${locale.toUpperCase()}`)})` : ''}`
+      const label = `${name || field.field}${isLocalised ? ` (${TranslateService.localeName(locale)})` : ''}`
       const schema = _.extend({}, this.typeMapper[field.input], {
         input: field.input,
         label,
@@ -42,6 +55,10 @@ class SchemaService {
       }
       if (field.input === 'paragraph') {
         schema.key = field.key
+      }
+      // a text with a template (`options.mask`) is typed in a box that keeps it (see utils/mask.js)
+      if (field.input === 'string' && parseMask(_.get(field, 'options.mask'))) {
+        schema.overrideType = 'MaskedField'
       }
       if (_.get(field, 'paragraphKey', false)) {
         schema.paragraphKey = field.paragraphKey
@@ -77,6 +94,10 @@ class SchemaService {
         fields[id].values = field.source
       } else if (_.isString(field.source)) {
         this.updateFieldSchema(fields, field, id, locale, extraSources)
+      } else if (isMultiSource(field)) {
+        // the records of several resources, in groups; what is kept is { resource, id } (see utils/sources.js)
+        fields[id].multiSource = true
+        fields[id].values = sourceItems(field, locale)
       } else if (_.get(resource, 'name', false) === '_groups') {
         if (_.includes(['create', 'update', 'read', 'remove', 'attachments'], fields[id].model)) {
           fields[id].values = _.map(ResourceService.schemas, 'name')
@@ -87,6 +108,13 @@ class SchemaService {
     return fields
   }
 
+  /**
+   * @param {Array<Object>} fields
+   * @param {Object} field a select with a source: its options come from the cache
+   * @param {string} id
+   * @param {string} locale
+   * @param {Object} extraSources
+   */
   updateFieldSchema (fields, field, id, locale, extraSources) {
     const cachedData = ResourceService.get(field.source)
     // handle extra source
@@ -136,10 +164,22 @@ class SchemaService {
     }
   }
 
+  /**
+   * @param {Object} schema
+   * @returns {{key: string, locale?: string}}
+   */
   getKeyLocale (schema) {
     return FormService.getKeyLocale(schema)
   }
 
+  /**
+   * @param {Object} resource
+   * @param {Array<Object>} fields
+   * @param {number} level
+   * @param {string} path
+   * @param {string} prefix
+   * @returns {Object} the fields grouped by their model path
+   */
   getNestedGroups (resource, fields, level, path, prefix) {
     let groups = _.groupBy(fields, item => {
       let list = item.originalModel
@@ -157,14 +197,20 @@ class SchemaService {
         }
         return value
       }
-      const currentPath = _.isUndefined(path) ? key : `${path}.${key}`
+      const currentPath = _.isNil(path) ? key : `${path}.${key}`
+      // what the resource says of the group, by its dotted path (`groups: { 'address.geo': {...} }` for a group in a group)
+      const options = _.get(resource, ['groups', currentPath]) || {}
+      const items = this.getNestedGroups(resource, list, level + 1, currentPath, prefix)
+      // a group that starts closed can be opened, unless it says it cannot
+      const collapsible = !!_.get(options, 'collapsible', !!options.collapsed)
+      const layout = placeGroupLayout(items, options.layout, currentPath, prefix)
       return _.extend({}, this.typeMapper.group, {
-        label: TranslateService.get(_.get(resource, `groups.${currentPath}.label`, key)),
+        label: TranslateService.get(_.get(options, 'label', key)),
         key,
         path,
-        groupOptions: {
-          fields: this.getNestedGroups(resource, list, level + 1, path, prefix)
-        }
+        collapsible,
+        collapsed: collapsible && !!options.collapsed,
+        groupOptions: layout ? { fields: items, layout } : { fields: items }
       })
     })
     return groups

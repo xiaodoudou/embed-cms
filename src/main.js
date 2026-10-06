@@ -5,7 +5,7 @@ import * as Vue from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import JsonViewer from 'vue-json-viewer'
 import VueCookies from 'vue-cookies'
-import VueShortkey from 'vue3-shortkey'
+import shortkey from '@u/shortkey'
 import VueVirtualScroller from 'vue-virtual-scroller'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import { VueDatePicker } from '@vuepic/vue-datepicker'
@@ -38,6 +38,15 @@ import FieldLabel from '@c/fields/FieldLabel.vue'
 import CustomTreeView from '@c/fields/CustomTreeView.vue'
 import CustomCode from '@c/fields/CustomCode.vue'
 import ColorPicker from '@c/fields/ColorPicker.vue'
+import RatingField from '@c/fields/RatingField.vue'
+import ChoiceField from '@c/fields/ChoiceField.vue'
+import DateRangeField from '@c/fields/DateRangeField.vue'
+import GeopointField from '@c/fields/GeopointField.vue'
+import DurationField from '@c/fields/DurationField.vue'
+import MarkdownField from '@c/fields/MarkdownField.vue'
+import MaskedField from '@c/fields/MaskedField.vue'
+import MoneyField from '@c/fields/MoneyField.vue'
+import PhoneField from '@c/fields/PhoneField.vue'
 import JsonEditor from '@c/fields/JsonEditor.vue'
 import WysiwygField from '@c/fields/Wysiwyg.vue'
 import ParagraphView from '@c/fields/ParagraphView.vue'
@@ -60,7 +69,7 @@ import TranslateService from '@s/TranslateService'
 import RequestService from '@s/RequestService.js'
 import DialogService from '@s/DialogService.js'
 import { host } from '@s/HostService'
-import { pluginPages, replicationEnabled } from '@u/pluginPages'
+import { pluginPages } from '@u/pluginPages'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -68,6 +77,7 @@ const router = createRouter({
 })
 
 const app = createApp({
+  /** @returns {VNode} the App; without a #app element, the App alone */
   render: () => {
     const mountEl = document.querySelector('#app')
     if (!mountEl) {
@@ -100,6 +110,15 @@ app.use(router)
   .component('CustomTreeView', CustomTreeView)
   .component('CustomCode', CustomCode)
   .component('ColorPicker', ColorPicker)
+  .component('RatingField', RatingField)
+  .component('ChoiceField', ChoiceField)
+  .component('DateRangeField', DateRangeField)
+  .component('GeopointField', GeopointField)
+  .component('DurationField', DurationField)
+  .component('MarkdownField', MarkdownField)
+  .component('MaskedField', MaskedField)
+  .component('MoneyField', MoneyField)
+  .component('PhoneField', PhoneField)
   .component('JsonEditor', JsonEditor)
   .component('WysiwygField', WysiwygField)
   .component('CustomDatetimePicker', CustomDatetimePicker)
@@ -118,8 +137,15 @@ app.use(router)
   .use(VueCookies)
   .use(Loading)
   .use(VueVirtualScroller)
-  .use(VueShortkey, {prevent: ['input', 'textarea']})
+  .directive('shortkey', shortkey)
 
+/**
+ * @param {string} title
+ * @param {string} displayName
+ * @param {string} group
+ * @param {Array<string>} allowed the groups that see it
+ * @param {string} label
+ */
 function addPlugin (title, displayName, group = 'System', allowed = ['admins'], label = displayName) {
   window.plugins = window.plugins || []
   log.debug('adding plugin', displayName)
@@ -141,13 +167,8 @@ window.addEventListener('load', async function () {
     item.type = 'plugin'
   })
   window.TranslateService = TranslateService
-  const isLoginPage = document.querySelector('#app')?.getAttribute('type') === 'login'
-  const [config, replication] = await Promise.all([
-    RequestService.get(`${window.location.pathname}config`),
-    // the replicator's routes need a login: not asked from the login page
-    isLoginPage ? false : replicationEnabled((url) => RequestService.get(url), `${window.location.pathname}../replicator/resources`)
-  ])
-  _.each(pluginPages(config, { replication }), (page) => addPlugin(page.title, page.displayname, page.group, undefined, page.label))
+  const config = await RequestService.get(`${window.location.pathname}config`)
+  _.each(pluginPages(config), (page) => addPlugin(page.title, page.displayname, page.group, undefined, page.label))
   window.disableJwtLogin = _.get(config, 'disableJwtLogin', false)
   window.noLogin = window.disableJwtLogin && _.get(config, 'disableAuthentication', false)
   app.mount('#app')

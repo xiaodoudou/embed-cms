@@ -12,6 +12,68 @@ describe('TableCell', () => {
     expect(cell('boolean', { value: false }).get('[role=img]').attributes('aria-label')).toBe('No')
   })
 
+  it('shows a rating as its icon and "3 / 5", with the icon and the most of the field', () => {
+    const field = { options: { max: 10, icon: 'heart' } }
+    const wrapper = cell('rating', { value: 7 }, { field })
+    expect(wrapper.get('.cell-rating').text()).toBe('7 / 10')
+    expect(wrapper.get('.cell-rating').attributes('title')).toBe('7 / 10')
+    expect(cell('rating', { value: 2.5 }, { field: {} }).text()).toBe('2.5 / 5')
+  })
+
+  it('shows a date range as its two days, and with the times when the field has them', () => {
+    const start = new Date(2026, 9, 1, 9, 30).getTime()
+    const end = new Date(2026, 9, 5, 17, 0).getTime()
+    expect(cell('daterange', { value: { start, end } }, { field: {} }).text()).toBe('2026-10-01 → 2026-10-05')
+    expect(cell('daterange', { value: { start, end } }, { field: { options: { time: true } } }).text()).toBe('2026-10-01 09:30 → 2026-10-05 17:00')
+    expect(cell('daterange', {}, { field: {} }).find('.cell-empty').exists()).toBe(true)
+  })
+
+  it('shows a point as its latitude and longitude, with the decimals of the field', () => {
+    const value = { lat: 48.856601, lng: 2.352222 }
+    const wrapper = cell('geopoint', { value }, { field: {} })
+    expect(wrapper.get('.cell-number').text()).toBe('48.856601, 2.352222')
+    expect(wrapper.get('.cell-number').attributes('title')).toBe('48.856601, 2.352222')
+    expect(cell('geopoint', { value }, { field: { options: { precision: 2 } } }).text()).toBe('48.86, 2.35')
+    expect(cell('geopoint', {}, { field: {} }).find('.cell-empty').exists()).toBe(true)
+  })
+
+  it('shows markdown as what it says, without the signs', () => {
+    const wrapper = cell('markdown', { value: '# Title\n\nSome **bold** and [a link](https://x.co).' }, { field: {} })
+    expect(wrapper.text()).toBe('Title Some bold and a link.')
+    expect(wrapper.find('a').exists()).toBe(false)
+    expect(cell('markdown', {}, { field: {} }).find('.cell-empty').exists()).toBe(true)
+  })
+
+  it('shows a phone number in groups, as a link that calls it', () => {
+    const wrapper = cell('phone', { value: '+442071838750' }, { field: {} })
+    expect(wrapper.get('a').text()).toBe('+44 207 183 8750')
+    expect(wrapper.get('a').attributes('href')).toBe('tel:+442071838750')
+    expect(wrapper.get('a').classes()).toContain('cell-number')
+    expect(cell('phone', { value: '0207 183' }, { field: {} }).find('a').exists()).toBe(false)
+    expect(cell('phone', { value: '0207 183' }, { field: {} }).text()).toBe('0207 183')
+    expect(cell('phone', {}, { field: {} }).find('.cell-empty').exists()).toBe(true)
+  })
+
+  it('shows money with its currency in the language, right aligned like a number', () => {
+    const wrapper = cell('money', { value: { amount: 19.99, currency: 'USD' } }, { field: {} })
+    expect(wrapper.get('.cell-number').text()).toBe('$19.99')
+    expect(cell('money', { value: { amount: 1999, currency: 'JPY' } }, { field: {} }).text()).toBe('¥1,999')
+    expect(cell('money', { value: { amount: 0, currency: 'EUR' } }, { field: {} }).text()).toBe('€0.00')
+    expect(cell('money', {}, { field: {} }).find('.cell-empty').exists()).toBe(true)
+  })
+
+  it('shows a duration in the units of the field, right aligned like a number', () => {
+    const wrapper = cell('duration', { value: 5400 }, { field: { options: { units: ['hours', 'minutes'] } } })
+    expect(wrapper.get('.cell-number').text()).toBe('1h 30m')
+    expect(cell('duration', { value: 90061 }, { field: { options: { units: ['days', 'hours', 'minutes', 'seconds'] } } }).text()).toBe('1d 1h 1m 1s')
+    expect(cell('duration', { value: 0 }, { field: {} }).text()).toBe('0m')
+    expect(cell('duration', {}, { field: {} }).find('.cell-empty').exists()).toBe(true)
+  })
+
+  it('draws an empty rating as a dash', () => {
+    expect(cell('rating', {}, { field: {} }).find('.cell-empty').exists()).toBe(true)
+  })
+
   it('draws an empty value as a dash', () => {
     expect(cell('text', { value: '' }).find('.cell-empty').exists()).toBe(true)
   })

@@ -88,6 +88,6 @@ Two things in this quick start are only fit for your laptop. The `localAdmin` ac
 
 ## Contributing, security, license
 
-Setting up a development copy, running the tests and writing commits: [CONTRIBUTING.md](CONTRIBUTING.md). Reporting a vulnerability: [SECURITY.md](SECURITY.md#reporting-a-vulnerability).
+Setting up a development copy, running the tests and writing commits: [CONTRIBUTING.md](CONTRIBUTING.md). Reporting a vulnerability: [SECURITY.md](SECURITY.md#reporting-a-vulnerability). What changed in each version, and what is coming: [CHANGELOG.md](CHANGELOG.md).
 
 Authors: Edouard Durand, Hugo Barbier. Released under the [GNU GPL, version 3 only](LICENSE); versions up to 2.6.1 were MIT, and their notice is kept in the license file.

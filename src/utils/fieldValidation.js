@@ -9,13 +9,22 @@ import TranslateService from '@s/TranslateService'
  * `regex` ({ value, description } or one of those per locale) and the input type.
  */
 
-export const TEXT_INPUTS = ['string', 'text', 'password', 'transliterate', 'email', 'url']
+export const TEXT_INPUTS = ['string', 'text', 'markdown', 'password', 'transliterate', 'email', 'url']
 export const NUMBER_INPUTS = ['number', 'integer', 'double']
 
 const EMAIL = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
 
+/**
+ * @param {string} key
+ * @param {Object} [params]
+ * @returns {string}
+ */
 const t = (key, params) => TranslateService.get(key, params)
 
+/**
+ * @param {*} value
+ * @returns {boolean} nil or an empty string
+ */
 export function isEmptyValue (value) {
   return _.isNil(value) || value === ''
 }
@@ -45,6 +54,12 @@ export function regexRule (schema) {
   return _.isString(_.get(rule, 'value')) ? rule : null
 }
 
+/**
+ * @param {Object} schema
+ * @param {string} input
+ * @param {*} value
+ * @returns {true|string}
+ */
 function checkText (schema, input, value) {
   if (!_.isString(value)) {
     return t('TL_THIS_NOT_TEXT')
@@ -73,6 +88,12 @@ function checkText (schema, input, value) {
   return null
 }
 
+/**
+ * @param {Object} schema
+ * @param {string} input
+ * @param {*} value a string is parsed
+ * @returns {true|string}
+ */
 function checkNumber (schema, input, value) {
   const number = _.isString(value) ? Number(value.trim()) : value
   if (!_.isNumber(number) || !_.isFinite(number)) {

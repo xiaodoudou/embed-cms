@@ -1,0 +1,31 @@
+<%= include('partials/head') %>
+<% if (featured) { %>
+  <section class="hero">
+    <% var cover = image('articles', featured, 'cover', 1280) %>
+    <% if (cover) { %>
+      <a class="hero-cover" href="/<%- lang.code %>/articles/<%- featured.slug %>">
+        <img src="<%- cover %>" srcset="<%- srcset('articles', featured, 'cover') %>" sizes="(min-width: 64rem) 36rem, 100vw" alt="" width="1280" height="853">
+      </a>
+    <% } %>
+    <div class="hero-text">
+      <p class="kicker"><%- t.featured %></p>
+      <h1><a href="/<%- lang.code %>/articles/<%- featured.slug %>"><%- text(featured, 'title') %></a></h1>
+      <p class="lede"><%- text(featured, 'summary') %></p>
+      <p class="meta">
+        <% if (featured.author) { %><%- t.by %> <a href="/<%- lang.code %>/authors/<%- featured.author.slug %>"><%- featured.author.name %></a> · <% } %>
+        <%- date(featured.publishedOn) %>
+      </p>
+    </div>
+  </section>
+<% } %>
+<h2 class="section-title"><%- t.latest %></h2>
+<% if (latest.length) { %>
+  <div class="grid">
+    <% latest.forEach(function (article) { %>
+      <%= include('partials/card', { article: article }) %>
+    <% }) %>
+  </div>
+<% } else { %>
+  <p class="empty"><%- t.noArticles %></p>
+<% } %>
+<%= include('partials/foot') %>

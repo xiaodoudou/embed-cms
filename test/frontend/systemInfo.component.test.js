@@ -206,7 +206,10 @@ describe('SystemInfo (the system menu of the top bar)', () => {
       wrapper.unmount()
       wrapper = undefined
       expect(source.closed).toBe(true)
+      // the failure of the stream is written to the console, though nobody is looking any more
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       source.fail()
+      expect(error).toHaveBeenCalledWith('Error in SSE connection:', expect.anything())
       vi.advanceTimersByTime(60000)
       expect(FakeEventSource.instances).toHaveLength(1)
     })

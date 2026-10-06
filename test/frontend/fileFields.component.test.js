@@ -107,7 +107,7 @@ describe.each([
       field(component, { disabled: true }, { photo: [SAVED] })
       await flushPromises()
       expect(previews()).toHaveLength(1)
-      expect(wrapper.findComponent({ name: 'VChip' }).props('closable')).toBe(false)
+      expect(wrapper.find('.preview-remove').exists()).toBe(false)
     })
   })
 
@@ -183,7 +183,94 @@ describe.each([
       field(component, {}, model)
       wrapper.vm.onDrop({ dataTransfer: { files: [png('a.png'), png('b.png')] } })
       await vi.waitFor(() => expect(model.photo).toHaveLength(2))
-      expect(wrapper.vm.dragover).toBe(false)
+    })
+  })
+
+  describe('the drop area after files are chosen or dropped', () => {
+    it('keeps its hint: the files do not stay in the box (they are in the previews), and a box with a file in it shows no placeholder', async () => {
+      field(component, {}, {})
+      expect(wrapper.get('.file-input-card input[placeholder]').attributes('placeholder')).toContain('drag & drop')
+      await choose([png('a.png')])
+      await vi.waitFor(() => expect(wrapper.vm.getAttachments()).toHaveLength(1))
+      expect(wrapper.find('.file-input-card input[placeholder]').exists()).toBe(true)
+      expect(wrapper.get('.file-input-card input[placeholder]').attributes('placeholder')).toContain('drag & drop')
+    })
+
+    it('draws no drop look of its own: the field of Vuetify knows when a file is over it and when it is gone, ours was never switched off after a drop', async () => {
+      field(component, {}, {})
+      const card = wrapper.get('.file-input-card')
+      await card.trigger('dragenter')
+      await card.trigger('dragover')
+      expect(card.classes()).not.toContain('drag-and-drop')
+      expect(wrapper.vm.dragover).toBeUndefined()
+    })
+  })
+
+  describe('dropping and choosing files', () => {
+    const prevented = async (type) => {
+      const event = new Event(type, { bubbles: true, cancelable: true })
+      wrapper.get('.file-input-card').element.dispatchEvent(event)
+      await wrapper.vm.$nextTick()
+      return event.defaultPrevented
+    }
+
+    it('lets a file be dropped on the card (a drag over it is accepted), so the browser does not open the file instead', async () => {
+      field(component, {}, {})
+      expect(await prevented('dragenter')).toBe(true)
+      expect(await prevented('dragover')).toBe(true)
+      expect(await prevented('drop')).toBe(true)
+    })
+
+    it('takes the files dropped on the card itself, as it takes the ones chosen in the box', async () => {
+      const model = {}
+      field(component, {}, model)
+      const drop = new Event('drop', { bubbles: true, cancelable: true })
+      drop.dataTransfer = { files: [png('dropped.png')] }
+      wrapper.get('.file-input-card').element.dispatchEvent(drop)
+      await vi.waitFor(() => expect(model.photo).toHaveLength(1))
+      expect(model.photo[0]._filename).toBe('dropped.png')
+    })
+
+    it('empties the box once it has taken the files, so that it holds none and its hint stays', async () => {
+      field(component, {}, {})
+      await choose([png('a.png')])
+      await vi.waitFor(() => expect(wrapper.vm.getAttachments()).toHaveLength(1))
+      expect(wrapper.vm.boxFiles).toEqual([])
+    })
+
+    it('takes the same file twice in a row (the box must not still hold it, or the second choice would fire nothing)', async () => {
+      const model = {}
+      field(component, {}, model)
+      await choose([png('same.png')])
+      await vi.waitFor(() => expect(model.photo).toHaveLength(1))
+      await choose([png('same.png')])
+      await vi.waitFor(() => expect(model.photo).toHaveLength(2))
+      expect(model.photo.map((item) => item._filename)).toEqual(['same.png', 'same.png'])
+      expect(wrapper.vm.boxFiles).toEqual([])
+    })
+
+    it('has nothing to move with a single file, or none', async () => {
+      const model = { photo: [{ ...SAVED, order: 1 }] }
+      field(component, {}, model)
+      await flushPromises()
+      wrapper.vm.moveAttachment(0, 1)
+      wrapper.vm.moveAttachment(0, -1)
+      expect(model.photo.map((item) => item._id)).toEqual(['a1'])
+      expect(model.photo[0].orderUpdated).toBeUndefined()
+      wrapper.unmount()
+      field(component, {}, {})
+      expect(() => wrapper.vm.moveAttachment(0, 1)).not.toThrow()
+    })
+
+    it('numbers the files in the order they have when new ones are added after saved ones', async () => {
+      const model = { photo: [{ ...SAVED, order: 1 }, { ...SAVED, _id: 'a2', order: 2 }] }
+      field(component, {}, model)
+      await flushPromises()
+      await upload([png('new.png')])
+      await vi.waitFor(() => expect(model.photo).toHaveLength(3))
+      expect(model.photo.map((item) => item.order)).toEqual([1, 2, 3])
+      expect(model.photo[2].orderUpdated).toBe(true)
+      expect(model.photo[0].orderUpdated).toBeUndefined()
     })
   })
 
@@ -281,6 +368,21 @@ describe.each([
       expect(model.photo.every((item) => item.orderUpdated)).toBe(true)
     })
 
+    it('moves a file one place earlier or later, as dragging it there does, and not past the ends', async () => {
+      const model = { photo: [{ ...SAVED, _id: 'a1', order: 1 }, { ...SAVED, _id: 'a2', order: 2 }, { ...SAVED, _id: 'a3', order: 3 }] }
+      field(component, {}, model)
+      await flushPromises()
+      wrapper.vm.moveAttachment(0, 1)
+      expect(model.photo.map((item) => item._id)).toEqual(['a2', 'a1', 'a3'])
+      expect(model.photo.map((item) => item.order)).toEqual([1, 2, 3])
+      expect(model.photo.filter((item) => item.orderUpdated).map((item) => item._id)).toEqual(['a2', 'a1'])
+      wrapper.vm.moveAttachment(2, -1)
+      expect(model.photo.map((item) => item._id)).toEqual(['a2', 'a3', 'a1'])
+      wrapper.vm.moveAttachment(0, -1)
+      wrapper.vm.moveAttachment(2, 1)
+      expect(model.photo.map((item) => item._id)).toEqual(['a2', 'a3', 'a1'])
+    })
+
     it('leaves the files that are already in place alone', async () => {
       const model = { photo: [{ ...SAVED, order: 1 }, { ...SAVED, _id: 'a2', order: 2 }] }
       field(component, {}, model)
@@ -329,12 +431,132 @@ describe('what only the image field does', () => {
     expect(wrapper.vm.isImage({ _filename: 'blob' })).toBe(false)
   })
 
-  it('keeps the crop made on a picture, by its position', async () => {
-    const model = { photo: [SAVED, { ...SAVED, _id: 'a2' }] }
-    field(ImageView, { crop: { width: 100, height: 100 } }, model)
+  describe('the crop tool', () => {
+    const RECIPE = { left: 5, top: 6, width: 100, height: 80, rotate: 90, updated: true }
+
+    it('keeps the crop made on a picture, by its position, with the small picture of the result', async () => {
+      const model = { photo: [{ ...SAVED }, { ...SAVED, _id: 'a2' }] }
+      field(ImageView, { input: 'cropimage' }, model)
+      await flushPromises()
+      wrapper.vm.onCrop(1, RECIPE, 'data:image/jpeg;base64,DD')
+      expect(model.photo[1].cropOptions).toEqual(RECIPE)
+      expect(model.photo[1].cropPreview).toBe('data:image/jpeg;base64,DD')
+      expect(model.photo[0].cropOptions).toBeUndefined()
+    })
+
+    it('ignores a crop for a picture that is not there', async () => {
+      const model = { photo: [{ ...SAVED }] }
+      field(ImageView, { input: 'cropimage' }, model)
+      await flushPromises()
+      expect(() => wrapper.vm.onCrop(5, RECIPE, '')).not.toThrow()
+      expect(model.photo[0].cropOptions).toBeUndefined()
+    })
+
+    it('shows a crop that is not saved yet as the tool made it', async () => {
+      field(ImageView, { input: 'cropimage' }, { photo: [{ ...SAVED }] })
+      await flushPromises()
+      wrapper.vm.onCrop(0, RECIPE, 'data:image/jpeg;base64,DD')
+      expect(wrapper.vm.getImageSrc(wrapper.vm.getAttachments()[0])).toBe('data:image/jpeg;base64,DD')
+    })
+
+    it('shows a saved crop from the cut of the API, at an address of its own for each crop', async () => {
+      const cropped = (cropOptions) => wrapper.vm.getImageSrc({ ...SAVED, cropOptions })
+      field(ImageView, { input: 'cropimage' }, { photo: [{ ...SAVED }] })
+      await flushPromises()
+      const first = cropped({ left: 1, top: 2, width: 3, height: 4 })
+      expect(first).toMatch(/^\/api\/products\/1\/attachments\/a1\/cropped\?resize=autox200&v=[0-9a-z]+$/)
+      expect(cropped({ left: 1, top: 2, width: 3, height: 5 })).not.toBe(first)
+      // the flag that makes the editor send it is not part of the crop
+      expect(cropped({ left: 1, top: 2, width: 3, height: 4, updated: true })).toBe(first)
+    })
+
+    it('shows the picture itself when the crop cuts nothing, or the field has no crop tool', async () => {
+      field(ImageView, { input: 'cropimage' }, { photo: [{ ...SAVED }] })
+      await flushPromises()
+      expect(wrapper.vm.getImageSrc({ ...SAVED, cropOptions: { updated: true } })).toBe('/api/products/1/attachments/a1?resize=autox100')
+      wrapper.unmount()
+      field(ImageView, {}, { photo: [{ ...SAVED }] })
+      await flushPromises()
+      expect(wrapper.vm.getImageSrc({ ...SAVED, cropOptions: { left: 1, top: 2, width: 3, height: 4 } })).toBe('/api/products/1/attachments/a1?resize=autox100')
+    })
+
+    it('hands the tool to the preview of each picture', async () => {
+      field(ImageView, { input: 'cropimage' }, { photo: [{ ...SAVED }] })
+      await flushPromises()
+      expect(wrapper.findComponent({ name: 'PreviewMultiple' }).props('onCrop')).toBe(wrapper.vm.onCrop)
+    })
+  })
+})
+
+describe('files dropped on the paragraph field of the block', () => {
+  // the paragraph field queues the file under the paragraphKey of the field (see ParagraphView); the field takes it when it mounts
+  it('takes the files waiting under its paragraphKey when it mounts, as if they were dropped on it', async () => {
+    const { queueFiles } = await import('@u/pendingFiles')
+    queueFiles('blocks[0].picture', [png('dropped.png')])
+    field(ImageView, { paragraphKey: 'blocks[0].picture', model: '_value.picture' })
     await flushPromises()
-    wrapper.vm.onCropperChange(1, { coordinates: { left: 5, top: 6, width: 100, height: 100 } })
-    expect(model.photo[1].cropOptions).toEqual({ data: { coordinates: { left: 5, top: 6, width: 100, height: 100 } }, updated: true })
-    expect(model.photo[0].cropOptions).toBeUndefined()
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    await flushPromises()
+    expect(wrapper.vm.attachments.map((a) => a._filename)).toEqual(['dropped.png'])
+    expect(previews()).toHaveLength(1)
+  })
+
+  it('leaves the files of another field alone', async () => {
+    const { queueFiles, takeFiles } = await import('@u/pendingFiles')
+    queueFiles('blocks[1].picture', [png('other.png')])
+    field(ImageView, { paragraphKey: 'blocks[0].picture', model: '_value.picture' })
+    await flushPromises()
+    expect(wrapper.vm.attachments).toEqual([])
+    expect(takeFiles('blocks[1].picture')).toHaveLength(1)
+  })
+})
+
+describe('a required field that has nothing yet', () => {
+  // the rules run against the files that arrive, not against the box (which only knows the files picked in it)
+  it('takes the files dropped on it', async () => {
+    const model = {}
+    field(ImageView, { required: true }, model)
+    wrapper.vm.onDrop({ dataTransfer: { files: [png('first.png')] } })
+    await vi.waitFor(() => expect(model.photo).toHaveLength(1))
+  })
+
+  it('takes the file handed over by the paragraph field', async () => {
+    const { queueFiles } = await import('@u/pendingFiles')
+    queueFiles('blocks[3].picture', [png('handed.png')])
+    field(ImageView, { required: true, paragraphKey: 'blocks[3].picture', model: '_value.picture' })
+    await vi.waitFor(() => expect(wrapper.vm.attachments.map((a) => a._filename)).toEqual(['handed.png']))
+  })
+})
+
+describe('the image map field', () => {
+  const AREAS = [{ id: 'a', shape: 'rect', coords: [0.1, 0.1, 0.5, 0.5] }]
+
+  it('keeps the map made in the tool with the picture, by its position, flagged as new', async () => {
+    const model = { photo: [{ ...SAVED }, { ...SAVED, _id: 'a2' }] }
+    field(ImageView, { input: 'imagemap' }, model)
+    await flushPromises()
+    wrapper.vm.onMap(1, { areas: AREAS, updated: true })
+    expect(model.photo[1].imageMap).toEqual({ areas: AREAS, updated: true })
+    expect(model.photo[0].imageMap).toBeUndefined()
+  })
+
+  it('ignores a map for a picture that is not there', async () => {
+    const model = { photo: [{ ...SAVED }] }
+    field(ImageView, { input: 'imagemap' }, model)
+    await flushPromises()
+    expect(() => wrapper.vm.onMap(4, { areas: [], updated: true })).not.toThrow()
+    expect(model.photo[0].imageMap).toBeUndefined()
+  })
+
+  it('shows the picture as it is, not cut: a map does not crop', async () => {
+    field(ImageView, { input: 'imagemap' }, { photo: [{ ...SAVED }] })
+    await flushPromises()
+    expect(wrapper.vm.getImageSrc({ ...SAVED, cropOptions: { left: 1, top: 2, width: 3, height: 4 } })).toBe('/api/products/1/attachments/a1?resize=autox100')
+  })
+
+  it('hands the tool to the preview of each picture', async () => {
+    field(ImageView, { input: 'imagemap' }, { photo: [{ ...SAVED }] })
+    await flushPromises()
+    expect(wrapper.findComponent({ name: 'PreviewMultiple' }).props('onMap')).toBe(wrapper.vm.onMap)
   })
 })

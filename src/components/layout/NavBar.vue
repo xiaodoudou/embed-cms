@@ -37,6 +37,7 @@
   import Omnibar from '@c/layout/Omnibar.vue'
   import ResourceService from '@s/ResourceService'
   import NotificationsService from '@s/NotificationsService'
+  import { shortcutLabel } from '@u/platform'
 
   export default {
     components: { SystemInfo, BrandLogo, Omnibar },
@@ -56,9 +57,11 @@
       }
     },
     computed: {
+      /** @returns {string} the switcher shortcut as the platform writes it */
       shortcutLabel () {
-        return /Mac|iPhone|iPad/.test(window.navigator.platform || '') ? '⌘ K' : 'Ctrl K'
+        return shortcutLabel('K')
       },
+      /** @returns {string} the title of the settings, "Embed CMS" by default */
       settingsTitle () {
         return _.get(this.settingsData, 'title', 'Embed CMS')
       }
@@ -66,34 +69,25 @@
     mounted () {
       this.getSettingsData()
       ResourceService.events.on('cached', this.onResourceCached)
-      document.addEventListener('keydown', this.onGlobalKeydown)
       NotificationsService.events.on('omnibar-open', this.openOmnibar)
     },
     beforeUnmount () {
       ResourceService.events.off('cached', this.onResourceCached)
-      document.removeEventListener('keydown', this.onGlobalKeydown)
       NotificationsService.events.off('omnibar-open', this.openOmnibar)
     },
     methods: {
-      // Ctrl/Cmd+K works everywhere, including inside form fields
-      onGlobalKeydown (event) {
-        if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && _.toLower(event.key) === 'k') {
-          event.preventDefault()
-          const omnibar = _.get(this.$refs, 'omnibar', false)
-          if (omnibar) {
-            omnibar.showHideOmnibar(!omnibar.showOmnibar)
-          }
-        }
-      },
+      // the keyboard shortcuts of the switcher (Ctrl+K, Ctrl+P) are its own
       openOmnibar () {
         const omnibar = _.get(this.$refs, 'omnibar', false)
         if (omnibar) {
           omnibar.showHideOmnibar(true)
         }
       },
+      /** @returns {string|false} the url of the logo of the settings */
       getLogo () {
         return _.get(this.settingsData, 'logo[0].url', false)
       },
+      /** @returns {boolean} */
       hasLogoOrTitle () {
         return this.getLogo() || _.get(this.settingsData, 'title', false)
       },
@@ -103,6 +97,7 @@
           this.settingsData = _.first(ResourceService.get('_settings'))
         }
       },
+      /** Loads the _settings record. */
       async getSettingsData () {
         try {
           this.settingsData = _.first(await ResourceService.cache('_settings'))
@@ -110,6 +105,7 @@
           console.error('Failed to get settings data:', error)
         }
       },
+      /** @returns {string|false} the label of the resource, or the name of the plugin */
       getSelectedItemName () {
         const displayname = _.get(this.selectedItem, 'displayname', false)
         return displayname ? getResourceLabel(this.selectedItem) : _.get(this.selectedItem, 'name', false)
@@ -229,7 +225,7 @@
   }
 }
 
-@media (max-width: 767.98px) {
+@media #{$phone-query} {
   .nav-bar-wrapper .nav-toggle {
     display: inline-flex;
   }
@@ -250,8 +246,9 @@
       gap: var(--cms-space-1);
     }
     .search-trigger.v-btn {
-      width: 40px;
-      min-width: 40px;
+      // as wide as a button a finger can hit
+      width: var(--cms-touch-target);
+      min-width: var(--cms-touch-target);
       padding: 0;
       justify-content: center;
       border-radius: var(--cms-radius-pill) !important;

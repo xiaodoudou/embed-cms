@@ -2,18 +2,81 @@ import { log } from '@u/log'
 import _ from 'lodash'
 import { filesize } from 'filesize'
 import TranslateService from '@s/TranslateService'
+import { takeFiles } from '@u/pendingFiles'
+import { canCrop, cropVersion, hasCrop } from '@u/cropRecipe'
 
 export default {
   data () {
     return {
-      dragover: false,
-      attachments: []
+      attachments: [],
+      // what the box holds for a moment after files are chosen or dropped in it: taken out at once (see emptyBox)
+      boxFiles: []
     }
   },
   mounted () {
     this.attachments = _.cloneDeep(this._value) || []
+    // files dropped on the paragraph field for the block of this field (see ParagraphView): taken as if dropped here
+    const waiting = this.schema.paragraphKey ? takeFiles(this.schema.paragraphKey) : []
+    if (waiting.length) {
+      this.onUploadChanged(waiting)
+    }
   },
   methods: {
+    /**
+     * Empties the box once its files are taken: with a file left in it the box shows no hint, and a file chosen twice in a row fires no
+     * event the second time. (Vuetify clears the native input when the model is emptied.)
+     */
+    emptyBox () {
+      this.boxFiles = []
+    },
+    /**
+     * Moves the attachment at an index one place, as dragging it there does.
+     * @param {number} index
+     * @param {number} delta -1 earlier, 1 later; nothing past the ends
+     */
+    moveAttachment (index, delta) {
+      const list = this.getAttachments()
+      const to = index + delta
+      if (!list || to < 0 || to >= list.length) {
+        return
+      }
+      list.splice(to, 0, list.splice(index, 1)[0])
+      this.onEndDrag()
+    },
+    /**
+     * Keeps the crop made in the crop tool with the picture, flagged so that the record editor sends it (with a new file it goes with the
+     * upload, with a saved one it is an update of the attachment).
+     * @param {number} index of the attachment
+     * @param {Object} cropOptions the recipe (see utils/cropRecipe.js)
+     * @param {string} preview a small picture of the result, shown until the picture is saved
+     */
+    onCrop (index, cropOptions, preview) {
+      const attachments = this.getAttachments()
+      const attachment = attachments[index]
+      if (!attachment) {
+        return
+      }
+      attachment.cropOptions = cropOptions
+      attachment.cropPreview = preview
+      this.attachments = attachments
+      this._value = attachments
+    },
+    /**
+     * Keeps the image map made in the map tool with the picture, flagged so that the record editor sends it.
+     * @param {number} index of the attachment
+     * @param {{areas: Array<Object>, updated: boolean}} imageMap
+     */
+    onMap (index, imageMap) {
+      const attachments = this.getAttachments()
+      const attachment = attachments[index]
+      if (!attachment) {
+        return
+      }
+      attachment.imageMap = imageMap
+      this.attachments = attachments
+      this._value = attachments
+    },
+    /** Renumbers the order of the attachments. */
     onEndDrag () {
       const attachments = _.map(this.getAttachments(), (item, i) => {
         if (item.order !== i + 1) {
@@ -24,10 +87,22 @@ export default {
       })
       this._value = attachments
     },
+    /**
+     * @param {Object|false} attachment the first one by default
+     * @returns {string} its data url before upload, else its preview url
+     */
     getImageSrc (attachment = false) {
       const a = attachment || this.attachment()
+      // a crop that is not saved yet shows as the tool made it; the picture itself is the original
+      if (a.cropPreview && _.get(a, 'cropOptions.updated')) {
+        return a.cropPreview
+      }
       return a.data ? a.data : this.getPreviewUrl(a)
     },
+    /**
+     * @param {Object|false} attachment the first one by default
+     * @returns {boolean} by the extension of the filename, else by the content type
+     */
     isImage (attachment = false) {
       const a = attachment || this.attachment()
       const attachmentFilename = this.getAttachmentFilename(a)
@@ -44,27 +119,46 @@ export default {
       // no extension and no type: an image field holds images
       return _.isFunction(this.unknownIsImage) && this.unknownIsImage()
     },
+    /**
+     * @param {Object|false} attachment the first one by default
+     * @returns {string} its url, resized unless it is an svg
+     */
     getPreviewUrl (attachment = false) {
       const a = attachment || this.attachment()
       const contentType = _.get(a, '_contentType', false)
       if (_.isString(contentType) && contentType.indexOf('svg') !== -1) {
         return a.url
       }
+      // a picture with a crop shows its cut, an address of its own for each crop so that a browser does not keep showing the last one
+      if (a.url && canCrop(this.schema) && hasCrop(a.cropOptions)) {
+        return `${a.url}/cropped?resize=autox200&v=${cropVersion(a.cropOptions)}`
+      }
       return `${a.url}?resize=autox100`
     },
+    /** @returns {Object|undefined} the first */
     attachment () {
       return _.first(this.attachments)
     },
+    /** @returns {Array<Object>} the value of the field, else the prop */
     getAttachments () {
       return this._value || this.attachments
     },
+    /**
+     * @param {Object|false} attachment the first one by default
+     * @returns {string} human readable
+     */
     imageSize (attachment = false) {
       const a = attachment || this.attachment()
       return this.bytesToSize(_.get(a, '_size', _.get(a, 'file.size', false)))
     },
+    /**
+     * @param {number} bytes
+     * @returns {string} jedec units
+     */
     bytesToSize (bytes) {
       return filesize(bytes, {standard: 'jedec'})
     },
+    /** @returns {boolean} false when the schema fixes a width and a height, else whether more than one is allowed */
     isForMultipleImages () {
       if (this.schema.width && this.schema.height) {
         return false
@@ -72,6 +166,7 @@ export default {
       const maxCount = this.getMaxCount()
       return maxCount === -1 ? true : maxCount > 1
     },
+    /** @returns {boolean} locked, or full */
     isFieldDisabled () {
       if (this.isLocked()) {
         return true
@@ -79,9 +174,11 @@ export default {
       const maxCount = this.getMaxCount()
       return maxCount !== -1 && this.getAttachments().length >= maxCount
     },
+    /** @returns {'IMAGE'|'FILE'} */
     getFieldType () {
       return _.toUpper(_.get(this.schema, 'type', 'ImageView') === 'ImageView' ? 'image' : 'file')
     },
+    /** @returns {Array<Function>} the Vuetify rules: required, count, size */
     getRules () {
       const rules = []
       if (this.schema.required) {
@@ -173,26 +270,35 @@ export default {
       }
       return rules
     },
+    /** @returns {string} */
     getPlaceholder () {
       return TranslateService.get(`TL_CLICK_OR_DRAG_AND_DROP_TO_ADD_${this.getFieldType()}${this.isForMultipleImages() ? 'S' : ''}`)
     },
+    /** @returns {number} -1 when unlimited */
     getMaxCount () {
       return _.get(this.schema, 'options.maxCount', -1)
     },
+    /**
+     * @param {Object} attachment
+     * @returns {string|false} _filename, else _fields._filename
+     */
     getAttachmentFilename(attachment) {
       return _.get(attachment, '_filename', false) || _.get(attachment, '_fields._filename', false)
     },
+    /**
+     * @param {Object} attachment
+     * @param {number} index removed from the list
+     */
     removeImage (attachment, index) {
       _.remove(this.attachments, (val, i)=> i === index)
       this._value = this.attachments
-      this.$forceUpdate()
       // work around to force label update
       const dummy = this.schema.label
       this.schema.label = null
       this.schema.label = dummy
     },
+    /** @param {DragEvent} event its files, cut to the max count */
     onDrop (event) {
-      this.dragover = false
       const maxCount = this.getMaxCount()
       let files = _.get(event, 'dataTransfer.files', [])
       if (maxCount !== -1 && maxCount <= 1 && files.length > 1) {
@@ -203,6 +309,7 @@ export default {
       }
       this.onUploadChanged(files)
     },
+    /** @param {FileList|Array<File>} files from the input; read and added as attachments */
     async onUploadChanged (files) {
       let maxCount = this.getMaxCount()
       if (_.get(event, 'target.files.length', 0) !== 0) {
@@ -222,6 +329,8 @@ export default {
       if (!_.isArray(files)) {
         files = [files]
       }
+      // the files are in the array now: the box is emptied, so that its hint stays and the same file can be chosen again
+      this.emptyBox()
       if (!files.length) {
         return
       }
@@ -233,23 +342,27 @@ export default {
         log.debug(`Reached max number of files for ${this.schema.paragraphKey || this.schema.model}`, totalNbFiles, maxCount)
         files = _.take(files, files.length - (totalNbFiles - maxCount))
       }
-      if (_.get(this.$refs, 'input', false)) {
-        await this.$nextTick()
-        const errorMessage = await this.$refs.input.validate()
-        if (_.get(errorMessage, 'length', 0) !== 0) {
-          console.error('validation error, will not upload files:', errorMessage)
-          return
-        }
+      // the rules, against the files that arrive: the box only knows the files picked in it, not the ones dropped on it or handed
+      // over by the paragraph field, and a required field has to take its first file
+      const errors = _.reject(_.map(this.getRules(), rule => rule(files)), result => result === true)
+      if (errors.length) {
+        console.error('validation error, will not upload files:', errors)
+        return
       }
       this.attachments = await this.readAllFiles(files)
       this._value = this.attachments
     },
+    /** @returns {string} the paragraph key with the locale, else the model */
     getFieldKey() {
       if (this.schema.paragraphKey && this.schema.localised) {
         return `${this.schema.paragraphKey}.${this.schema.locale}`
       }
       return this.schema.paragraphKey || this.schema.model
     },
+    /**
+     * @param {File} file
+     * @param {Object} element the file read, with its data url
+     */
     addAttachment (file, element) {
       const { locale } = this.getKeyLocale()
       const newAttachment = {
@@ -276,6 +389,10 @@ export default {
         }
       })
     },
+    /**
+     * @param {FileList} files
+     * @returns {Promise<Array<Object>>} each one read as a data url
+     */
     async readAllFiles (files) {
       let nbFilesToRead = _.get(files, 'length', 1)
       return new Promise((resolve) => {
@@ -283,7 +400,6 @@ export default {
           const reader = new FileReader()
           if (_.get(file, 'type', false).indexOf('video/') !== -1) {
             this.addAttachment(file, {target: {result: URL.createObjectURL(file)}})
-            this.$forceUpdate()
             nbFilesToRead--
             if (nbFilesToRead === 0) {
               if (this.isForMultipleImages()) {
@@ -295,7 +411,6 @@ export default {
             const vm = this
             reader.onload = (element) => {
               vm.addAttachment(file, element)
-              vm.$forceUpdate()
               nbFilesToRead--
               if (nbFilesToRead === 0) {
                 if (this.isForMultipleImages()) {

@@ -18,7 +18,7 @@ Catalogue: `resources/text_formats.js`, fields `password` and `requiredPassword`
 |---|---|---|---|
 | `field`, `input`, `label`, `required`, `localised`, `unique` | | | As for [string](string.md). |
 | `options.hint` | string | none | Help text under the input. |
-| `options.readonly` | boolean | `false` | Not editable, an eye icon after the label. |
+| `options.readonly` | boolean | `false` | Not editable, a lock icon after the label. |
 | `options.disabled` | boolean | `false` | Greyed out, not focusable. |
 | `options.min` / `options.max` | number | none | Minimum / maximum length, as for [string](string.md). |
 | `options.regex` | object | none | Pattern the password must match, as for [string](string.md#regex). |

@@ -332,7 +332,7 @@ The script is the same as above, and the `<style>` block goes away. A plugin wri
    ```
 
    Working in a clone of the embed-cms repository instead? The admin takes its pages from `src/.plugins/` there, and `npm run serve-backend` with `npm run dev` rebuilds them as you type (see [CONTRIBUTING.md](../../CONTRIBUTING.md#running-it)).
-2. **Give a group the right.** Open **Groups** in the admin's **CMS** menu, and add `Dashboard` (the `displayname`) to the **Plugins** list of the group. The `admins` group keeps the plugins you add by hand.
+2. **Give a group the right.** Open **Groups** in the admin's **CMS** menu, and pick `Dashboard` (the `displayname`) in the **Plugins** list of the group: the list shows every page the admin has built in. The `admins` group keeps the plugins you add by hand.
 
    ![The Plugins field of the admins group, with Syslog, Replicator and Dashboard](../img/plugins-group.png)
 3. Reload the admin: **Dashboard** is in the menu under *Tools*.

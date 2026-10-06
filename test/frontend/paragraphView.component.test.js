@@ -6,6 +6,7 @@ import ParagraphView from '@c/fields/ParagraphView.vue'
 import ResourceService from '@s/ResourceService'
 import FieldSelectorService from '@s/FieldSelectorService'
 import { mountField } from './helpers/mountField.js'
+import { takeFiles } from '@u/pendingFiles'
 
 vi.mock('@s/ResourceService', () => ({
   default: { getParagraphSchema: vi.fn(), get: vi.fn(), cache: vi.fn(async () => []), getSchema: vi.fn(() => ({})) }
@@ -16,7 +17,7 @@ vi.mock('@s/SchemaService', () => ({
 }))
 
 const draggable = { props: ['list'], template: '<div class="draggable"><slot /></div>' }
-const customForm = { props: ['schema', 'model', 'paragraphIndex', 'paragraphLevel'], template: '<div class="form-stub" />' }
+const customForm = { props: ['schema', 'model', 'paragraphIndex', 'paragraphLevel', 'formId'], template: '<div class="form-stub" />' }
 const jsonViewer = { props: ['value'], template: '<pre class="json-viewer-stub" />' }
 
 const PARAGRAPHS = {
@@ -60,6 +61,16 @@ describe('ParagraphView (blocks)', () => {
       await paragraph({ options: { hint: 'Mix text and media' } })
       expect(wrapper.find('.paragraph-label').text()).toContain('Blocks')
       expect(wrapper.find('.paragraph-hint').text()).toBe('Mix text and media')
+    })
+
+    it('gives the form of every block an id of its own, so the fields of two blocks (or of two paragraph fields) never share one', async () => {
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }] })
+      const ids = wrapper.findAllComponents(customForm).map((form) => form.props('formId'))
+      expect(ids).toHaveLength(2)
+      expect(new Set(ids).size).toBe(2)
+      wrapper.unmount()
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'c' }] })
+      expect(ids).not.toContain(wrapper.findComponent(customForm).props('formId'))
     })
 
     it('marks a required field with a star', async () => {
@@ -115,6 +126,231 @@ describe('ParagraphView (blocks)', () => {
       expect(lastEmitted()[0].map((item) => item._type)).toEqual(['block_media'])
     })
 
+    it('starts a drag from the grip alone, not from the whole title bar', async () => {
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'one' }, { _type: 'block_media' }] })
+      expect(cards()[0].find('.drag-grip').exists()).toBe(true)
+      expect(wrapper.findComponent(draggable).attributes('handle')).toBe('.drag-grip')
+    })
+
+    it('puts each list of blocks in a group of its own, so a block cannot be dragged into another paragraph field', async () => {
+      const blocks = [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }]
+      await paragraph({ model: 'one' }, { one: blocks })
+      const first = wrapper.findComponent(draggable).attributes('group')
+      wrapper.unmount()
+      await paragraph({ model: 'two' }, { two: blocks })
+      const second = wrapper.findComponent(draggable).attributes('group')
+      wrapper.unmount()
+      await paragraph({ model: 'one' }, { one: blocks })
+      const again = wrapper.findComponent(draggable).attributes('group')
+      expect(first).toContain('one')
+      expect(second).toContain('two')
+      expect(new Set([first, second, again]).size).toBe(3)
+    })
+
+    it('hands the press on a grip and the end of a drag to the page and to the list: text is not selected on the way, the blocks are written back after the drop', async () => {
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }] })
+      const list = wrapper.findComponent(draggable)
+      list.vm.$emit('choose', {})
+      expect(document.body.classList.contains('cms-dragging')).toBe(true)
+      list.vm.$emit('start', {})
+      await wrapper.vm.$nextTick()
+      expect(wrapper.find('.paragraph-view').classes()).toContain('is-dragging')
+      list.vm.$emit('end', { newIndex: 0 })
+      list.vm.$emit('unchoose', {})
+      await wrapper.vm.$nextTick()
+      expect(document.body.classList.contains('cms-dragging')).toBe(false)
+      expect(wrapper.find('.paragraph-view').classes()).not.toContain('is-dragging')
+      expect(lastEmitted()[0].map((item) => item.heading)).toEqual(['a', 'b'])
+    })
+
+    it('drags a block to another place and writes the blocks in the new order', async () => {
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }, { _type: 'block_text', heading: 'c' }] })
+      // the library reorders the list it is given, then says the drag ended
+      const moved = wrapper.vm.items.splice(0, 1)[0]
+      wrapper.vm.items.splice(2, 0, moved)
+      wrapper.findComponent(draggable).vm.$emit('end', { newIndex: 2 })
+      await flushPromises()
+      expect(lastEmitted()[0].map((item) => item.heading)).toEqual(['b', 'c', 'a'])
+      expect(lastEmitted()[1]).toBe('blocks')
+    })
+
+    describe('what happens to the forms of the blocks when the blocks move', () => {
+      const blocks = () => [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }, { _type: 'block_text', heading: 'c' }]
+      const instances = () => wrapper.findAllComponents(customForm).map((form) => form.vm.$.uid)
+      const headings = () => wrapper.findAllComponents(customForm).map((form) => form.props('model')._value.heading)
+
+      it('moves the form of a block with it when it is moved with the buttons, instead of making every form again (the editors and the pictures would flash)', async () => {
+        await paragraph({}, { blocks: blocks() })
+        await wrapper.get('.reorder-toggle').trigger('click')
+        const before = instances()
+        await cards()[0].get('.move-down').trigger('click')
+        await flushPromises()
+        expect(headings()).toEqual(['b', 'a', 'c'])
+        expect(instances()).toEqual([before[1], before[0], before[2]])
+      })
+
+      it('moves the forms the same way after a drag', async () => {
+        await paragraph({}, { blocks: blocks() })
+        const before = instances()
+        const moved = wrapper.vm.items.splice(0, 1)[0]
+        wrapper.vm.items.splice(2, 0, moved)
+        wrapper.findComponent(draggable).vm.$emit('end', { newIndex: 2 })
+        await flushPromises()
+        expect(headings()).toEqual(['b', 'c', 'a'])
+        expect(instances()).toEqual([before[1], before[2], before[0]])
+      })
+
+      it('leaves the forms of the other blocks as they are when a block is removed', async () => {
+        await paragraph({}, { blocks: blocks() })
+        const before = instances()
+        await cards()[1].get('.remove-item').trigger('click')
+        await flushPromises()
+        expect(headings()).toEqual(['a', 'c'])
+        expect(instances()).toEqual([before[0], before[2]])
+      })
+
+      it('shows each form with the block it belongs to, and the new position of the block, after a move', async () => {
+        await paragraph({}, { blocks: blocks() })
+        await wrapper.get('.reorder-toggle').trigger('click')
+        await cards()[2].get('.move-up').trigger('click')
+        await flushPromises()
+        expect(wrapper.findAllComponents(customForm).map((form) => [form.props('model')._value.heading, form.props('paragraphIndex')])).toEqual([['a', 0], ['c', 1], ['b', 2]])
+        expect(cards().map((card) => card.attributes('data-block-index'))).toEqual(['0', '1', '2'])
+      })
+    })
+
+    it('scrolls the form by what the dropped block moved, so that it stays where it was dropped when the blocks unfold', async () => {
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }] })
+      const scroller = document.createElement('div')
+      scroller.className = 'scroll-wrapper'
+      wrapper.element.parentNode.insertBefore(scroller, wrapper.element)
+      scroller.appendChild(wrapper.element)
+      scroller.scrollTop = 50
+      const item = document.createElement('div')
+      document.body.appendChild(item)
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function () {
+        // folded, the dropped block was at 400; unfolded, it is at 700
+        return { top: this === item ? 400 : (this.hasAttribute && this.hasAttribute('data-block-index') ? 700 : 0) }
+      })
+      wrapper.vm.onEndDrag({ item, newIndex: 1 })
+      await flushPromises()
+      expect(scroller.scrollTop).toBe(350)
+    })
+
+    it('does not scroll when the dropped block is not where it can be measured (the drag ended without an event)', async () => {
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }] })
+      const scroller = document.createElement('div')
+      scroller.className = 'scroll-wrapper'
+      wrapper.element.parentNode.insertBefore(scroller, wrapper.element)
+      scroller.appendChild(wrapper.element)
+      scroller.scrollTop = 50
+      wrapper.vm.onEndDrag()
+      await flushPromises()
+      expect(scroller.scrollTop).toBe(50)
+    })
+
+    it('has no grip with a single block: there is nothing to put in order', async () => {
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'only' }] })
+      expect(wrapper.find('.drag-grip').exists()).toBe(false)
+      expect(wrapper.find('.reorder-toggle').exists()).toBe(false)
+      expect(wrapper.find('.paragraph-header').classes()).toContain('no-grip')
+      wrapper.unmount()
+      await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'a' }, { _type: 'block_text', heading: 'b' }] })
+      expect(wrapper.findAll('.drag-grip')).toHaveLength(2)
+      expect(wrapper.find('.paragraph-header').classes()).not.toContain('no-grip')
+    })
+
+    it('has no grip, and no way to reorder, on a field that is locked', async () => {
+      await paragraph({ disabled: true }, { blocks: [{ _type: 'block_text', heading: 'one' }, { _type: 'block_text', heading: 'two' }] })
+      expect(wrapper.find('.drag-grip').exists()).toBe(false)
+      expect(wrapper.find('.reorder-toggle').exists()).toBe(false)
+    })
+
+    describe('the compact list to reorder', () => {
+      const three = [{ _type: 'block_text', heading: 'one' }, { _type: 'block_text', heading: 'two' }, { _type: 'block_text', heading: 'three' }]
+
+      it('is offered with two blocks or more, and folds every block to its title bar, with the start of its first text', async () => {
+        await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'only' }] })
+        expect(wrapper.find('.reorder-toggle').exists()).toBe(false)
+        wrapper.unmount()
+        await paragraph({}, { blocks: three })
+        expect(wrapper.find('.paragraph-view').classes()).not.toContain('is-reordering')
+        expect(wrapper.find('.move-up').exists()).toBe(false)
+        await wrapper.get('.reorder-toggle').trigger('click')
+        expect(wrapper.find('.paragraph-view').classes()).toContain('is-reordering')
+        expect(wrapper.get('.reorder-toggle').attributes('aria-pressed')).toBe('true')
+        expect(wrapper.findAll('.paragraph-summary').map((el) => el.text())).toEqual(['one', 'two', 'three'])
+        await wrapper.get('.reorder-toggle').trigger('click')
+        expect(wrapper.find('.paragraph-view').classes()).not.toContain('is-reordering')
+      })
+
+      it('writes the start of the first text as it is, markup and runs of spaces apart', async () => {
+        await paragraph({}, { blocks: [{ _type: 'block_text', heading: 'First' }, { _type: 'block_text', heading: '<b>Second</b>   block\n of  text' }, { _type: 'block_text', heading: 'x'.repeat(100) }] })
+        await wrapper.get('.reorder-toggle').trigger('click')
+        const summaries = wrapper.findAll('.paragraph-summary').map((el) => el.text())
+        expect(summaries[0]).toBe('First')
+        expect(summaries[1]).toBe('Second block of text')
+        expect(summaries[2]).toHaveLength(60)
+      })
+
+      it('moves a block down and up with the buttons, reports the new order, and cannot go past the ends', async () => {
+        await paragraph({}, { blocks: three })
+        await wrapper.get('.reorder-toggle').trigger('click')
+        expect(cards()[0].get('.move-up').attributes('disabled')).toBeDefined()
+        expect(cards()[2].get('.move-down').attributes('disabled')).toBeDefined()
+        await cards()[0].get('.move-down').trigger('click')
+        await flushPromises()
+        expect(lastEmitted()[0].map((item) => item.heading)).toEqual(['two', 'one', 'three'])
+        expect(lastEmitted()[1]).toBe('blocks')
+        await cards()[2].get('.move-up').trigger('click')
+        await flushPromises()
+        expect(lastEmitted()[0].map((item) => item.heading)).toEqual(['two', 'three', 'one'])
+        wrapper.vm.moveItem(0, -1)
+        wrapper.vm.moveItem(2, 1)
+        expect(lastEmitted()[0].map((item) => item.heading)).toEqual(['two', 'three', 'one'])
+      })
+
+      it('tells a screen reader where the block went', async () => {
+        await paragraph({}, { blocks: three })
+        await wrapper.get('.reorder-toggle').trigger('click')
+        await cards()[0].get('.move-down').trigger('click')
+        await flushPromises()
+        expect(wrapper.get('[role=status]').text()).toBe('Text block one moved to position 2 of 3')
+      })
+
+      it('keeps the list as long as it was, and gives it the space the blocks above the lifted one lose, so the lifted block stays under the pointer', async () => {
+        await paragraph({}, { blocks: three })
+        // a layout engine measures: the lifted block is at 500 px before the others fold, and at 100 after
+        const tops = [500, 100]
+        const item = { getBoundingClientRect: () => ({ top: tops.length > 1 ? tops.shift() : tops[0] }) }
+        const content = wrapper.find('.paragraph-content').element
+        wrapper.vm.onBlockDragStart({ item })
+        expect(content.style.minHeight).not.toBe('')
+        expect(content.style.paddingTop).toBe('400px')
+        expect(wrapper.find('.paragraph-view').classes()).toContain('is-dragging')
+        wrapper.vm.onEndDrag({ item: { isConnected: false }, newIndex: 1 })
+        expect(content.style.minHeight).toBe('')
+        expect(content.style.paddingTop).toBe('')
+      })
+
+      it('adds no space when the blocks above lose nothing (the first block is lifted)', async () => {
+        await paragraph({}, { blocks: three })
+        const item = { getBoundingClientRect: () => ({ top: 300 }) }
+        wrapper.vm.onBlockDragStart({ item })
+        expect(wrapper.find('.paragraph-content').element.style.paddingTop).toBe('')
+      })
+
+      it('folds the other blocks while one is carried, and unfolds them when it is dropped', async () => {
+        await paragraph({}, { blocks: three })
+        wrapper.vm.onBlockDragStart()
+        await wrapper.vm.$nextTick()
+        expect(wrapper.find('.paragraph-view').classes()).toContain('is-dragging')
+        wrapper.vm.onEndDrag()
+        await wrapper.vm.$nextTick()
+        expect(wrapper.find('.paragraph-view').classes()).not.toContain('is-dragging')
+      })
+    })
+
     it('drops the files of a removed media block from the record', async () => {
       const model = {
         blocks: [{ _type: 'block_media', id: 'f1' }],
@@ -124,6 +360,19 @@ describe('ParagraphView (blocks)', () => {
       const media = wrapper.vm.items[0]
       wrapper.vm.onClickRemoveItem({ ...media, input: 'group', id: 'f1' })
       expect(model._attachments.map((attachment) => attachment._id)).toEqual(['a2'])
+    })
+
+    it('drops the files of a removed crop image field from the record, as it does for an image', async () => {
+      for (const input of ['image', 'cropimage', 'imagemap', 'file']) {
+        const model = {
+          blocks: [{ _type: 'block_media', id: 'f1' }],
+          _attachments: [{ _id: 'a1', _fields: { fileItemId: 'f1' } }, { _id: 'a2', _fields: { fileItemId: 'f2' } }]
+        }
+        await paragraph({}, model)
+        wrapper.vm.onClickRemoveItem({ ...wrapper.vm.items[0], input, id: 'f1' })
+        expect(model._attachments.map((attachment) => attachment._id), input).toEqual(['a2'])
+        wrapper.unmount()
+      }
     })
 
     it('does not add anything while no type is chosen', async () => {
@@ -251,20 +500,53 @@ describe('ParagraphView (blocks)', () => {
       expect(source).not.toMatch(/\[style\*=/)
     })
 
-    it('badges each block with its slots over the row\'s, explained to a screen reader', async () => {
-      await paragraph({ options: { dynamicLayout: true } }, { blocks: [{ _type: 'block_text', slots: 3 }, { _type: 'block_text' }, { _type: 'block_media', slots: 3 }] })
-      const badges = cards().map((card) => card.find('.slots-badge'))
-      expect(badges.map((badge) => badge.text())).toEqual(['3/12', '2/12', '3/12'])
-      expect(badges[0].attributes('title')).toBe('Width: 3 of 12 slots')
-      expect(badges[0].attributes('aria-label')).toBe('Width: 3 of 12 slots')
+    it('shows no width badge on the blocks: the arrangement is the information', async () => {
+      await paragraph({ options: { dynamicLayout: true } }, { blocks: [{ _type: 'block_text', slots: 3 }, { _type: 'block_text' }] })
+      expect(wrapper.find('.slots-badge').exists()).toBe(false)
+      expect(wrapper.text()).not.toMatch(/\d+\/\d+/)
       expect(cards()[0].attributes('data-index')).toBeUndefined()
     })
 
     it('is a plain list otherwise', async () => {
       await paragraph({}, { blocks: [{ _type: 'block_text' }] })
       expect(wrapper.vm.isDynamicLayoutContainer).toBe(false)
-      expect(cards()[0].find('.slots-badge').exists()).toBe(false)
       expect(wrapper.vm.getItemStyles({ slots: 6 })).toEqual({})
+    })
+  })
+
+  describe('the groups of the fields of a block', () => {
+    it('are described by the block type, not by the resource around it', async () => {
+      const SchemaService = (await import('@s/SchemaService')).default
+      PARAGRAPHS.block_text.groups = { person: { label: 'Person', collapsed: true } }
+      try {
+        await paragraph({ resource: { title: 'pages', groups: { person: { label: 'Of the page' } } } }, { blocks: [{ _type: 'block_text' }] })
+        const asked = SchemaService.getNestedGroups.mock.calls.map((call) => call[0].groups)
+        expect(asked).toContainEqual({ person: { label: 'Person', collapsed: true } })
+        expect(asked).not.toContainEqual({ person: { label: 'Of the page' } })
+      } finally {
+        delete PARAGRAPHS.block_text.groups
+      }
+    })
+  })
+
+  describe('the layout of the fields of a block', () => {
+    const group = { type: 'group', key: 'address', label: 'Address', groupOptions: { fields: [] } }
+    const field = { model: '_value.name', originalModel: 'name' }
+
+    it('places a group of nested fields where the layout names it by its first part, and shows no warning for it', async () => {
+      await paragraph()
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const result = wrapper.vm.formatSchemaLayout({ fields: [field, group], layout: { lines: [{ slots: 2, fields: [{ model: 'name' }, { model: 'address' }] }] } })
+      expect(result.layout.lines[0].fields.map((item) => item.schema)).toEqual([field, group])
+      expect(warn).not.toHaveBeenCalled()
+    })
+
+    it('says which group the layout forgot', async () => {
+      await paragraph()
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      wrapper.vm.formatSchemaLayout({ fields: [field, group], layout: { lines: [{ fields: [{ model: 'name' }] }] } })
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(warn.mock.calls[0][0]).toContain('address')
     })
   })
 
@@ -340,5 +622,45 @@ describe('ParagraphView (blocks)', () => {
     expect(wrapper.vm.getParagraphLevel()).toBe(0)
     await paragraph({}, {}, { paragraphLevel: 3 })
     expect(wrapper.vm.getParagraphLevel()).toBe(2)
+  })
+})
+
+describe('ParagraphView: a dropped file reaches the file field of its block', () => {
+  const mapping = { jpg: { _type: 'block_media', field: 'picture' } }
+  // a form whose file field takes what waits for it, as the real one does when it mounts (test/frontend/fileFields.component.test.js)
+  const taken = []
+  const takingForm = {
+    props: ['schema', 'model', 'paragraphIndex', 'paragraphLevel'],
+    template: '<div class="form-stub" />',
+    mounted () {
+      taken.push(...takeFiles(`blocks[${this.paragraphIndex}].picture`))
+    }
+  }
+
+  it('makes the block and hands the file to its field, under the key the field gets', async () => {
+    taken.length = 0
+    wrapper = mountField(ParagraphView, {
+      model: {},
+      schema: { model: 'blocks', label: 'Blocks', types: ['block_text', 'block_media'], resource: { title: 'pages' }, locale: 'enUS', userLocale: 'enUS', options: { mapping } },
+      global: { components: { draggable, CustomForm: takingForm, JsonViewer: jsonViewer } },
+      attachTo: document.body
+    })
+    await flushPromises()
+    const file = new File(['x'], 'photo.jpg')
+    await wrapper.vm.processSingleFile(file)
+    await flushPromises()
+    expect(cards()).toHaveLength(1)
+    expect(lastEmitted()[0][0]._type).toBe('block_media')
+    expect(taken).toEqual([file])
+    expect(wrapper.emitted('notify')).toBeUndefined()
+  })
+
+  it('tells the parent when the block shows no such field, and keeps no file waiting', async () => {
+    await paragraph({ options: { mapping } })
+    await wrapper.vm.processSingleFile(new File(['x'], 'photo.jpg'))
+    await flushPromises()
+    expect(cards()).toHaveLength(1)
+    expect(wrapper.emitted('notify')[0][0]).toContain('picture')
+    expect(takeFiles('blocks[0].picture')).toEqual([])
   })
 })

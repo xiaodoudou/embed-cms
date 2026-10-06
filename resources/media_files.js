@@ -5,7 +5,7 @@ module.exports = {
   locales: ['enUS', 'zhCN'],
   type: 'normal',
   schema: [
-    { field: 'name', input: 'string', label: 'Name', localised: false, required: true, options: { hint: 'Required. Names the record in lists' } },
+    { field: 'name', input: 'string', label: 'Name', localised: false, required: true, unique: true, options: { hint: 'Required and unique. Names the record in lists' } },
     // Any number of files of any type
     { field: 'attachments', input: 'file', label: 'Attachments', localised: false, options: { hint: 'Any number of files of any type' } },
     // Exactly one file

@@ -23,6 +23,14 @@
   <span v-else-if="kind === 'color'" class="cell-color"><span class="swatch" :style="{background: value}" /><span class="cell-text">{{ text }}</span></span>
   <span v-else-if="kind === 'file'" class="cell-file"><v-icon size="14" icon="$paperclip" /><span class="cell-text" @mouseenter="titleIfClipped">{{ text }}</span></span>
   <span v-else-if="kind === 'number'" class="cell-text cell-number">{{ text }}</span>
+  <span v-else-if="kind === 'duration'" class="cell-text cell-number" :title="text">{{ text }}</span>
+  <template v-else-if="kind === 'phone'">
+    <a v-if="phoneHref" class="cell-link cell-number" :href="phoneHref" :title="text" tabindex="-1" @click.stop>{{ text }}</a>
+    <span v-else class="cell-text cell-number">{{ text }}</span>
+  </template>
+  <span v-else-if="kind === 'geopoint'" class="cell-text cell-number" :title="text">{{ text }}</span>
+  <span v-else-if="kind === 'money'" class="cell-text cell-number" :title="text">{{ text }}</span>
+  <span v-else-if="kind === 'rating'" class="cell-rating" :title="text"><v-icon :icon="ratingIcon" size="14" /><span class="cell-text">{{ text }}</span></span>
   <span v-else-if="kind === 'date' || kind === 'datetime' || kind === 'time'" class="cell-text cell-date">{{ text }}</span>
   <span v-else class="cell-text" @mouseenter="titleIfClipped">{{ text }}</span>
 </template>
@@ -31,6 +39,14 @@
   import _ from 'lodash'
   import TranslateService from '@s/TranslateService'
   import { chipsFor, formatDateValue, formatNumberValue, isEmptyValue, richTextToPlain } from '@u/tableModel'
+  import { ICONS, ratingOptions, ratingText } from '@u/rating'
+  import { durationOptions, formatDuration } from '@u/duration'
+  import { formatMoney } from '@u/money'
+  import { formatGeopoint, geopointOptions } from '@u/geopoint'
+  import { formatPhone, splitE164 } from '@u/phone'
+  import { markdownToPlain } from '@u/markdown'
+  import { formatDateRange } from '@u/dateRange'
+  import { localeTag } from '@u/locale'
 
   /**
    * One table cell, rendered by column kind: check or dash for booleans, chips with "+n" for selects, thumbnails,
@@ -44,18 +60,23 @@
       helpers: { type: Object, default: () => ({}) }
     },
     computed: {
+      /** @returns {string} */
       kind () {
         return this.column.kind
       },
+      /** @returns {*} */
       value () {
         return _.get(this.record, this.column.model)
       },
+      /** @returns {string|false} */
       imageSrc () {
         return _.isFunction(this.helpers.imageUrl) ? this.helpers.imageUrl(this.record, this.column) : false
       },
+      /** @returns {string} */
       attachmentName () {
         return _.isFunction(this.helpers.fileName) ? this.helpers.fileName(this.record, this.column) : ''
       },
+      /** @returns {boolean} never for an image */
       empty () {
         if (this.kind === 'image') {
           return false
@@ -65,17 +86,31 @@
         }
         return isEmptyValue(this.value)
       },
+      /** @returns {string} "not translated" for a locale column */
       emptyLabel () {
         return TranslateService.get(this.column.locale ? 'TL_NOT_TRANSLATED' : 'TL_EMPTY_VALUE')
       },
+      /** @returns {Object} the first two labels and the count of the rest (chipsFor) */
       chips () {
         const label = (v) => (_.isFunction(this.helpers.optionLabel) ? this.helpers.optionLabel(this.column, v) : v)
         return chipsFor(_.map(_.castArray(this.value), label), 2)
       },
+      /** @returns {string} the icon a rating is made of, filled */
+      ratingIcon () {
+        return ICONS[ratingOptions(this.column.field).icon].full
+      },
+      /** @returns {string} the value as text, by kind */
       text () {
         const value = this.value
         switch (this.kind) {
           case 'number': return formatNumberValue(value)
+          case 'duration': return formatDuration(value, durationOptions(this.column.field).units, localeTag(TranslateService.locale))
+          case 'phone': return formatPhone(value)
+          case 'markdown': return markdownToPlain(value)
+          case 'geopoint': return formatGeopoint(value, geopointOptions(this.column.field).precision)
+          case 'daterange': return formatDateRange(value, _.get(this.column, 'field.options.time') === true)
+          case 'money': return formatMoney(value, localeTag(TranslateService.locale))
+          case 'rating': return ratingText(value, ratingOptions(this.column.field).max)
           case 'date':
           case 'datetime':
           case 'time': return formatDateValue(value, this.kind)
@@ -86,6 +121,10 @@
           case 'paragraph': return `${_.size(value)}`
           default: return _.isObject(value) ? JSON.stringify(value) : _.toString(value)
         }
+      },
+      /** @returns {string|false} a telephone number is a link that calls it (only an international number is) */
+      phoneHref () {
+        return splitE164(this.value) ? `tel:${this.value}` : false
       },
       // Only http(s) and mailto links are rendered as links; anything else stays plain text (no javascript: urls)
       href () {

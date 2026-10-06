@@ -47,6 +47,7 @@
   import stripAnsi from 'strip-ansi'
   import { readPreference, writePreference } from '@u/preferences'
   import { columnsFor, withRowHeights } from '@u/logWrap'
+  import { log } from '@u/log'
 
   // the page keeps this many lines; the server keeps its own backlog (syslog.max, 2000 by default)
   const MAX_LINES = 5000
@@ -90,6 +91,7 @@
       }
     },
     computed: {
+      /** @returns {Array<Object>} the lines to show, with their heights when wrapping */
       displayLines () {
         return this.wrap ? withRowHeights(this.currentDisplayableLines, this.columns, (line) => stripAnsi(_.get(line, 'line', ''))) : this.currentDisplayableLines
       }
@@ -114,6 +116,7 @@
       this.disconnectFromLogStream()
     },
     methods: {
+      /** Saved as a preference; the columns are measured again. */
       toggleWrap () {
         this.wrap = !this.wrap
         writePreference('syslog.wrap', this.wrap)
@@ -135,6 +138,7 @@
         // 74px line number, 3px border, 8px padding, and room for the scrollbar
         this.columns = columnsFor(scroller.clientWidth - 74 - 3 - 8 - 12, charWidth)
       },
+      /** @param {number} id the line selected; the autoscroll and the search stop */
       onLineNumberClick(id) {
         this.selectedLineId = id
         this.autoscroll = false
@@ -142,6 +146,10 @@
         this.shouldScrollToSelectedLine = true
         this.updateSysLog()
       },
+      /**
+       * @param {Object|string} lineOrItem
+       * @returns {string} its html (sanitised), else its text
+       */
       highlightLogLine(lineOrItem) {
         return lineOrItem ? sanitizeHtml(_.get(lineOrItem, 'html', _.get(lineOrItem, 'line', lineOrItem))) : ''
       },
@@ -155,6 +163,7 @@
           console.error(`Error disconnecting from log stream: ${error.message}`)
         }
       },
+      /** Not while a gutter click is being handled. */
       scrollToBottomIfEnabled () {
         if (this.isHandlingGutterClick) {
           return
@@ -171,6 +180,7 @@
           })
         }
       },
+      /** Opens the SSE stream of the log after a short delay; the lines arrive in batches. */
       connectToLogStream () {
         this.$loading.start('_syslog')
         this.disconnectFromLogStream()
@@ -183,7 +193,7 @@
               const json = JSON.parse(event.data)
               // the first line of the server has the id 0
               if (_.isFinite(_.get(json, 'id')) && _.get(json, 'line', false)) {
-                json.size = _.get(`${this.calculateLineNumberSpacing(json.id)} ${json.line}`, 'length', 0)
+                json.size = _.get(`${this.lineNumberPrefix(json.id)} ${json.line}`, 'length', 0)
                 if (json.size > 0) {
                   // frozen: a log line never changes, so Vue does not have to make it reactive (thousands of them)
                   this.pendingLines.push(Object.freeze(json))
@@ -198,7 +208,7 @@
           this.eventSource.addEventListener('end', () => {
             this.$loading.stop('_syslog')
             this.eventSource.close()
-            console.warn('Log stream ended')
+            log.debug('Log stream ended')
           })
           this.eventSource.onerror = (error) => {
             this.$loading.stop('_syslog')
@@ -208,7 +218,7 @@
             if (this.reconnectAttempts < this.maxReconnectAttempts) {
               this.reconnectAttempts++
               const reconnectDelay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000)
-              console.warn(`Attempting to reconnect in ${reconnectDelay}ms (attempt ${this.reconnectAttempts})`)
+              log.debug(`Attempting to reconnect in ${reconnectDelay}ms (attempt ${this.reconnectAttempts})`)
               this.timer = setTimeout(() => this.connectToLogStream(), reconnectDelay)
             } else {
               this.error = 'Failed to connect to syslog stream after multiple attempts.'
@@ -227,6 +237,7 @@
           this.flushPending()
         }, 50)
       },
+      /** Moves the lines received into the log. */
       flushPending () {
         if (this.pendingLines.length === 0) {
           return
@@ -241,14 +252,20 @@
           this.updateSysLog()
         }
       },
+      /**
+       * @param {{level?: number}} item
+       * @returns {string} level-error, level-warn, level-quiet or level-info
+       */
       levelClass (item) {
         const level = _.get(item, 'level', 0)
         return level >= 2 ? 'level-error' : level === 1 ? 'level-warn' : level < 0 ? 'level-quiet' : 'level-info'
       },
+      /** @param {number} level the minimum, as a sift query */
       filterLevel (level) {
         this.searchKey = `sift:{level: {$gte: ${level}}}`
         this.updateSysLog()
       },
+      /** A scroll by the person stops the autoscroll; one made by the page is ignored. */
       async detectScroll () {
         if (this.ignoreNextScrollEvent) {
           this.ignoreNextScrollEvent = false
@@ -275,6 +292,7 @@
           }
         }
       },
+      /** Drops the selected line and filters again. */
       onInputSearch () {
         this.selectedLineId = null
         this.updateSysLog()
@@ -295,6 +313,7 @@
         this.searchKey = ''
         this.isHandlingGutterClick = false
       },
+      /** Clears everything and connects again. */
       onClickRefresh () {
         this.error = false
         this.pendingLines = []
@@ -311,6 +330,7 @@
         this.clearFiltering()
         this.updateSysLog()
       },
+      /** @returns {boolean} autoscroll on, the scroller mounted, and lines to show */
       shouldScrollToLastLog() {
         return this.autoscroll && this.$refs.virtualScroller && _.isArray(this.currentDisplayableLines) && this.currentDisplayableLines.length > 0
       },
@@ -333,9 +353,17 @@
         this.clearFiltering()
         this.updateSysLog()
       },
-      calculateLineNumberSpacing (line) {
+      /**
+       * @param {number} line the id of the line
+       * @returns {string} eight digits and a bar
+       */
+      lineNumberPrefix (line) {
         return _.padStart(line, 8, '0') + ' |'
       },
+      /**
+       * @param {Array<Object>} lines
+       * @returns {Array<Object>} those matching the search: a sift query after "sift:", else a case-insensitive text
+       */
       filterLinesBySearch(lines) {
         const lowerSearchKey = _.toLower(this.searchKey)
         if (this.searchKey && this.searchKey.search('sift:') === 0) {
@@ -355,6 +383,7 @@
           })
         }
       },
+      /** Debounced: filters the lines and shows them. */
       async updateSysLog () {
         clearTimeout(this.processTimeout)
         this.processTimeout = setTimeout(async () => {
@@ -362,8 +391,8 @@
           const byLevel = _.groupBy(this.logLines, 'level')
           this.warningQty = _.get(byLevel, '[1].length', 0)
           this.errorQty = _.get(byLevel, '[2].length', 0)
-          let shouldPositionToTarget = this.targetLogIdAfterClear !== null
-          let targetLogId = this.targetLogIdAfterClear
+          const shouldPositionToTarget = this.targetLogIdAfterClear !== null
+          const targetLogId = this.targetLogIdAfterClear
           let selectedLogId = null
           if (shouldPositionToTarget && targetLogId !== null) {
             selectedLogId = targetLogId
@@ -377,7 +406,7 @@
           this.currentDisplayableLines = lines
           this.filterOutLines = _.get(this.logLines, 'length', 0) - _.get(this.currentDisplayableLines, 'length', 0)
           if (!this.$refs.virtualScroller) {
-            return this.$forceUpdate()
+            return
           }
           if (this.isHandlingGutterClick && !shouldPositionToTarget) {
             return
@@ -410,7 +439,6 @@
           if (!selectedLogId || !this.isHandlingGutterClick) {
             this.scrollToBottomIfEnabled()
           }
-          this.$forceUpdate()
         }, 300)
       }
     },

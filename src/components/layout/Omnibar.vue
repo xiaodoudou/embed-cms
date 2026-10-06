@@ -1,11 +1,12 @@
 <template>
   <Teleport to="body">
-    <div id="omnibar" v-shortkey="getShortcuts()" @shortkey="interactiveSearch">
+    <div id="omnibar" v-shortkey.anywhere="getShortcuts()" @shortkey="onShortkey">
       <div id="omnibar-backdrop" :class="{displayed: showOmnibar}" @click="showHideOmnibar(false)" />
       <v-card v-show="showOmnibar" elevation="0" role="dialog" aria-modal="true" :aria-label="$filters.translate('TL_SEARCH_RESOURCES')">
         <v-card-title class="search">
+          <label id="omnibar-search-label" for="omnibar-search" class="cms-visually-hidden">{{ $filters.translate('TL_INSERT_KEYWORDS') }}</label>
           <v-text-field
-            ref="search"
+            id="omnibar-search" ref="search"
             :model-value="search" clearable clear-icon="$close" class="search-bar"
             flat variant="solo-filled" hide-details prepend-inner-icon="$magnify" density="comfortable" :placeholder="$filters.translate('TL_INSERT_KEYWORDS')" :aria-label="$filters.translate('TL_INSERT_KEYWORDS')" type="text" autocomplete="off" name="search"
             role="combobox" aria-expanded="true" aria-controls="omnibar-results" :aria-activedescendant="results.length > 0 ? 'result-' + highlightedItem : undefined" @update:model-value="search = $event || ''" @keydown="onSearchKeydown"
@@ -37,6 +38,7 @@
   import { buildEntries, searchEntries, moveHighlight } from '@u/switcherModel'
   import { getResourceLabel } from '@u/recordLabel'
   import Notification from '@m/Notification'
+  import { isScrolledToBottom } from '@u/scroll'
 
   export default {
     mixins: [Notification],
@@ -52,11 +54,7 @@
         scrolledToBottom: false,
         entries: [],
         results: [],
-        highlightedItem: 0,
-        // Ctrl+K is handled by the top bar; this one opens it too while it is closed
-        shortcutsWhenClosed: {
-          'open': ['ctrl', 'p']
-        }
+        highlightedItem: 0
       }
     },
     watch: {
@@ -73,21 +71,33 @@
     },
     methods: {
       sanitizeHtml,
+      /**
+       * @param {Object} item
+       * @returns {string}
+       */
       labelOf (item) {
         return getResourceLabel(item)
       },
+      /** @returns {string} the label of the selected item, empty without one */
       currentLabel () {
         return this.selectedItem ? this.labelOf(this.selectedItem) : ''
       },
+      // Ctrl+K opens and closes the switcher from anywhere, a field included
       getShortcuts () {
-        return this.showOmnibar ? {} : this.shortcutsWhenClosed
+        return { toggle: ['ctrl', 'k'] }
       },
-      onScroll ({ target: { scrollTop, clientHeight, scrollHeight } }) {
-        this.scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 50
+      /** @param {{target: HTMLElement}} event */
+      onScroll ({ target }) {
+        this.scrolledToBottom = isScrolledToBottom(target)
       },
+      /**
+       * @param {string} type
+       * @returns {string} the cog for a plugin, the package otherwise
+       */
       getIcon (type) {
         return type === 'plugin' ? '$cogOutline' : '$package'
       },
+      /** @param {boolean} display the search is reset; opening focuses the field */
       showHideOmnibar (display) {
         this.showOmnibar = display
         this.search = ''
@@ -99,6 +109,7 @@
         }
         this.sendOmnibarDisplayStatus(display)
       },
+      /** @param {number} i the result, the highlighted one by default */
       selectResult (i = -1) {
         const result = _.get(this.results, `[${i === -1 ? this.highlightedItem : i}]`, false)
         if (!result) {
@@ -109,6 +120,7 @@
         }
         this.showHideOmnibar(false)
       },
+      /** Keeps the highlighted result in view. */
       scrollToResult () {
         const elem = document.getElementById(`result-${this.highlightedItem}`)
         if (elem) {
@@ -117,7 +129,7 @@
       },
       // keys typed in the search field: arrows move, Enter opens, Escape closes
       onSearchKeydown (event) {
-        if (event.key === 'Escape' || (event.ctrlKey && _.toLower(event.key) === 'p')) {
+        if (event.key === 'Escape') {
           event.preventDefault()
           this.showHideOmnibar(false)
         } else if (_.includes(['ArrowDown', 'ArrowUp'], event.key)) {
@@ -134,11 +146,9 @@
           this.selectResult()
         }
       },
-      // the shortcut library only opens the switcher (Ctrl+P); everything else is typed in the field
-      interactiveSearch (event) {
-        if (!this.showOmnibar && _.startsWith(_.get(event, 'srcKey', ''), 'open')) {
-          this.showHideOmnibar(true)
-        }
+      /** Toggles the omnibar. */
+      onShortkey () {
+        this.showHideOmnibar(!this.showOmnibar)
       }
     }
   }

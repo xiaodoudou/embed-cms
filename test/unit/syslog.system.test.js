@@ -37,9 +37,9 @@ describe('SyslogManager (unit)', () => {
     })
   })
 
-  describe('injectDataToSyslogData', () => {
+  describe('addLogOutput', () => {
     it('never puts raw HTML from a log line into the html field', () => {
-      sys.injectDataToSyslogData('<img src=x onerror=alert(1)> <script>alert(2)</script>')
+      sys.addLogOutput('<img src=x onerror=alert(1)> <script>alert(2)</script>')
       const [entry] = sys.syslogData
       expect(entry.html).to.not.include('<img')
       expect(entry.html).to.not.include('<script')
@@ -47,26 +47,26 @@ describe('SyslogManager (unit)', () => {
       expect(entry.line).to.include('<img')
     })
     it('keeps colours but no script injection from ansi sequences', () => {
-      sys.injectDataToSyslogData('\u001b[36mcyan\u001b[39m <b>bold</b>')
+      sys.addLogOutput('\u001b[36mcyan\u001b[39m <b>bold</b>')
       const [entry] = sys.syslogData
       expect(entry.html).to.match(/<span[^>]*>cyan<\/span>/)
       expect(entry.html).to.not.include('<b>')
     })
     it('converts the non-standard #033 colour sequence', () => {
-      sys.injectDataToSyslogData('#033[37mgray#033[39m')
+      sys.addLogOutput('#033[37mgray#033[39m')
       expect(sys.syslogData[0].html).to.match(/<span[^>]*>gray<\/span>/)
     })
     it('splits multi-line data, drops the trailing blank line and numbers entries', () => {
-      sys.injectDataToSyslogData('one\ntwo\nthree\n')
+      sys.addLogOutput('one\ntwo\nthree\n')
       expect(sys.syslogData.map(e => e.line)).to.deep.equal(['one', 'two', 'three'])
       expect(sys.syslogData.map(e => e.id)).to.deep.equal([0, 1, 2])
-      sys.injectDataToSyslogData('four')
+      sys.addLogOutput('four')
       expect(sys.syslogData[3].id).to.equal(3)
     })
     it('derives the level from the first word', () => {
-      sys.injectDataToSyslogData('warn: careful')
-      sys.injectDataToSyslogData('error: broken')
-      sys.injectDataToSyslogData('hello there')
+      sys.addLogOutput('warn: careful')
+      sys.addLogOutput('error: broken')
+      sys.addLogOutput('hello there')
       expect(sys.syslogData.map(e => e.level)).to.deep.equal([1, 2, 0])
     })
     it('understands the legacy namespace:level, [level] and CMS logger formats', () => {
@@ -80,7 +80,7 @@ describe('SyslogManager (unit)', () => {
       expect(sys.detectLevel('')).to.equal(0)
     })
     it('keeps only the newest `syslog.max` entries', () => {
-      for (let i = 0; i < 8; i++) sys.injectDataToSyslogData(`line ${i}`)
+      for (let i = 0; i < 8; i++) sys.addLogOutput(`line ${i}`)
       expect(sys.syslogData).to.have.length(5)
       expect(sys.syslogData[0].line).to.equal('line 3')
       expect(sys.syslogData[4].line).to.equal('line 7')
@@ -88,7 +88,7 @@ describe('SyslogManager (unit)', () => {
     it('pushes new lines to connected clients as SSE data events', () => {
       const written = []
       sys.logClients.push({ write: d => written.push(d) })
-      sys.injectDataToSyslogData('live')
+      sys.addLogOutput('live')
       expect(written).to.have.length(1)
       expect(written[0]).to.match(/^data: \{.*"line":"live".*\}\n\n$/)
     })
@@ -104,25 +104,25 @@ describe('SyslogManager (unit)', () => {
       const settle = () => new Promise(resolve => setTimeout(resolve, 60))
 
       it('appends captured lines to the file for the file method', async () => {
-        sys.injectDataToSyslogData('to disk')
+        sys.addLogOutput('to disk')
         await settle()
         expect(fs.readFileSync(logPath, 'utf8')).to.equal('to disk\n')
       })
       it('does not write lines that were read from the file (no feedback loop)', async () => {
-        sys.injectDataToSyslogData('from disk', true)
+        sys.addLogOutput('from disk', true)
         await settle()
         expect(fs.existsSync(logPath)).to.equal(false)
       })
     })
   })
 
-  describe('getSyslogData', () => {
+  describe('linesAfter', () => {
     it('returns everything, or only what came after the given id', () => {
-      sys.injectDataToSyslogData('a\nb\nc\nd')
-      expect(sys.getSyslogData({ id: 0 })).to.have.length(4)
-      expect(sys.getSyslogData({ id: 1 }).map(e => e.line)).to.deep.equal(['c', 'd'])
-      expect(sys.getSyslogData({ id: 3 })).to.deep.equal([])
-      expect(sys.getSyslogData({ id: 99 })).to.have.length(4)
+      sys.addLogOutput('a\nb\nc\nd')
+      expect(sys.linesAfter({ id: 0 })).to.have.length(4)
+      expect(sys.linesAfter({ id: 1 }).map(e => e.line)).to.deep.equal(['c', 'd'])
+      expect(sys.linesAfter({ id: 3 })).to.deep.equal([])
+      expect(sys.linesAfter({ id: 99 })).to.have.length(4)
     })
   })
 })
@@ -194,12 +194,12 @@ describe('system and syslog event streams (unit)', () => {
   })
 
   it('/api/_syslog replays history and delivers new lines after a heartbeat', async () => {
-    SyslogManager.injectDataToSyslogData('history line')
+    SyslogManager.addLogOutput('history line')
     const s = await stream('/api/_syslog')
     try {
       expect(await waitFor(() => s.read().includes('history line'))).to.equal(true)
       expect(await waitFor(() => s.read().includes(': heartbeat\n\n'))).to.equal(true)
-      SyslogManager.injectDataToSyslogData('fresh line')
+      SyslogManager.addLogOutput('fresh line')
       expect(await waitFor(() => /\n\ndata: \{[^\n]*fresh line[^\n]*\}\n\n$/.test(s.read()))).to.equal(true)
     } finally {
       s.close()

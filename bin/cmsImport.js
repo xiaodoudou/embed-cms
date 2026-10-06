@@ -5,6 +5,7 @@ const _ = require('lodash')
 const path = require('path')
 const fs = require('fs-extra')
 const logger = require('../lib/logger')
+const { isAttachmentInput } = require('../lib/util/inputTypes')
 const { GoogleSpreadsheet } = require('google-spreadsheet')
 const md5File = require('md5-file')
 const prompt = require('prompt')
@@ -52,9 +53,10 @@ class ImportManager {
     this.init()
   }
 
+  /** Runs the import end to end: the confirmation, the connection, the sheets, then the dummy folders (--createFolders) or the records, the binaries and the attachments. */
   async init () {
     // ---------------------- start populating ------------------------------
-    let endAllProcess = h.startProcess('Populating data to %s%s ... ... ', this.config.protocol, this.config.host)
+    const endAllProcess = h.startProcess('Populating data to %s%s ... ... ', this.config.protocol, this.config.host)
     try {
       if (!program.createFolders) {
         await this.askConfirmation()
@@ -79,11 +81,12 @@ class ImportManager {
     endAllProcess('done')
   }
 
+  /** Asks before writing, unless --yes was given. */
   async askConfirmation () {
     if (program.yes) {
       return
     }
-    let schema = {
+    const schema = {
       name: 'confirm',
       description: `Are you sure you want to seed to this environment (${program.args[0]}) to ${this.config.protocol}${this.config.host}? [yes/no]`,
       type: 'string',
@@ -103,15 +106,16 @@ class ImportManager {
     }
   }
 
+  /** Logs in to the CMS; throws when it does not answer. */
   async checkConnection () {
     logger.info('')
     logger.info('### Check Server Connection ###')
-    let endProcess = h.startProcess(`Check server connection ${this.config.protocol}${this.config.host} ... ... `)
+    const endProcess = h.startProcess(`Check server connection ${this.config.protocol}${this.config.host} ... ... `)
     // opens a session for the routes behind the admin login; Basic authentication covers the rest
     await this.api().login()
-    let resources = await this.api().resources()
+    const resources = await this.api().resources()
     _.each(resources, item => {
-      let schema = item.schema
+      const schema = item.schema
       if (_.isArray(item.locales)) {
         _.each(schema, field => {
           if (field.localised || _.isUndefined(field.localised)) {
@@ -130,16 +134,21 @@ class ImportManager {
     await this.loadDataFromCachedJson(resourceList)
   }
 
+  /** @returns {Promise<{id: string}[]>} the sheets to read, from the configuration */
   async getResourceList () {
     logger.info('')
     logger.info('### Preparing data from gsheet ###')
-    let endProcess = h.startProcess('Get populating resources list ... ... ')
+    const endProcess = h.startProcess('Get populating resources list ... ... ')
     let resourcesList = config.resources
     resourcesList = _.compact(_.map(resourcesList, key => ({ id: key })))
     endProcess('done')
     return resourcesList
   }
 
+  /**
+   * Downloads each sheet that changed since its cached copy, as JSON in `cached/`.
+   * @param {{id: string}[]} resourceList
+   */
   async downloadDataFromResourceList (resourceList) {
     // get jwt client to check file
     const jwtClient = new JWT({
@@ -153,13 +162,13 @@ class ImportManager {
     await jwtClient.authorize()
     await pAll(_.map(resourceList, sheet => {
       return async () => {
-        let endProcess = h.startProcess(`Download data from gsheet (${sheet.id}) ... ... `)
+        const endProcess = h.startProcess(`Download data from gsheet (${sheet.id}) ... ... `)
         if (_.isEmpty(config.gsheetId)) {
           throw new Error('gsheetId or gsheet is not defined in config file')
         } else if (program.skip) {
           return endProcess('skip')
         }
-        let jsonFile = path.join(__dirname, '..', 'cached', `${sheet.id}-active.json`)
+        const jsonFile = path.join(__dirname, '..', 'cached', `${sheet.id}-active.json`)
         if (!fs.existsSync(path.dirname(jsonFile))) {
           fs.mkdirpSync(path.dirname(jsonFile))
         }
@@ -183,7 +192,7 @@ class ImportManager {
         const rows = {}
         _.each(_.range(gsheet.rowCount), rowIdx => {
           _.each(_.range(gsheet.columnCount), columnIdx => {
-            let value = gsheet.getCell(rowIdx, columnIdx).formattedValue
+            const value = gsheet.getCell(rowIdx, columnIdx).formattedValue
             if (value !== null) {
               _.setWith(rows, `${rowIdx + 1}.${columnIdx + 1}`, value, Object)
             }
@@ -195,6 +204,11 @@ class ImportManager {
     }), {concurrency: 1})
   }
 
+  /**
+   * @param {string} gsheetId
+   * @param {import('google-auth-library').JWT} jwtClient
+   * @returns {Promise<string>} when the spreadsheet was last changed (the Drive API)
+   */
   async getGsheetLastModifiedDate (gsheetId, jwtClient) {
     if (_.isEmpty(jwtClient.credentials.access_token)) {
       throw new Error('jwt is not ready')
@@ -209,20 +223,24 @@ class ImportManager {
     return new Date(data.modifiedTime)
   }
 
+  /**
+   * Loads the cached JSON of each sheet into `this.data`, converted to the fields of its resource.
+   * @param {{id: string}[]} resourceList
+   */
   async loadDataFromCachedJson (resourceList) {
     return await pAll(_.map(resourceList, sheet => {
       return async () => {
-        let endProcess = h.startProcess(`Get Data from cached json ${sheet.id} ... ... `)
-        let jsonPath = path.join(__dirname, '..', 'cached', `${sheet.id}-active.json`)
+        const endProcess = h.startProcess(`Get Data from cached json ${sheet.id} ... ... `)
+        const jsonPath = path.join(__dirname, '..', 'cached', `${sheet.id}-active.json`)
         if (!fs.existsSync(jsonPath)) {
           throw new Error(`${jsonPath} not exists`)
         }
         const uniqueKeys = this.api(sheet.id).getUniqueKeys()
         let rows = fs.readJsonSync(jsonPath)
-        let schema = this.schemaMap[sheet.id]
+        const schema = this.schemaMap[sheet.id]
         const isTranspose = rows['1']['1'] === 'transpose'
         if (isTranspose) {
-          let newRows = {}
+          const newRows = {}
           _.each(rows, (row, y) => {
             _.each(row, (value, x) => {
               _.set(newRows, `${x}.${y}`, value)
@@ -230,13 +248,13 @@ class ImportManager {
           })
           rows = newRows
         }
-        let header = rows['1']
+        const header = rows['1']
         delete rows['1']
         let list = []
-        let binaryList = []
+        const binaryList = []
         _.each(rows, row => {
-          let binaryObj = {}
-          let obj = {}
+          const binaryObj = {}
+          const obj = {}
           let gsheetObj = {}
           _.each(row, (value, key) => _.set(gsheetObj, _.trim(header[key]), value))
           if (_.isEmpty(_.pick(gsheetObj, uniqueKeys))) {
@@ -245,7 +263,7 @@ class ImportManager {
           }
           if (uniqueKeys.length === 1) {
             const uniqueKey = _.first(uniqueKeys)
-            let subKeys = _.tail(gsheetObj[uniqueKey].split('.'))
+            const subKeys = _.tail(gsheetObj[uniqueKey].split('.'))
             if (!_.isEmpty(subKeys)) {
               const otherValues = _.omit(gsheetObj, uniqueKey)
               gsheetObj = {
@@ -255,8 +273,8 @@ class ImportManager {
             }
           }
           _.each(schema, item => {
-            if (_.includes(['file', 'image'], item.input)) {
-              let bv = _.get(gsheetObj, item.field)
+            if (isAttachmentInput(item.input)) {
+              const bv = _.get(gsheetObj, item.field)
               if (!_.isUndefined(bv)) {
                 _.set(binaryObj, item.field, bv)
               }
@@ -288,7 +306,7 @@ class ImportManager {
           list = _.map(map, (items, key) => {
             let newItem = {}
             _.each(items, item => {
-              let subKeys = _.tail(item[uniqueKey].split('.'))
+              const subKeys = _.tail(item[uniqueKey].split('.'))
               delete item[uniqueKey]
               if (!_.isEmpty(subKeys)) {
                 const subKeyStr = subKeys.join('.')
@@ -307,9 +325,10 @@ class ImportManager {
     }))
   }
 
+  /** Throws when two rows of a resource share their unique keys. */
   async checkDuplicatedRecord () {
-    let endProcess = h.startProcess('Check duplicated records ... ... ')
-    let duplicatedMap = {}
+    const endProcess = h.startProcess('Check duplicated records ... ... ')
+    const duplicatedMap = {}
     _.each(this.data, (data, resource) => {
       const uniqueKeys = this.api(resource).getUniqueKeys()
       let dataMap = _.countBy(data, (item) => JSON.stringify(_.pick(item, uniqueKeys)))
@@ -327,14 +346,15 @@ class ImportManager {
     endProcess('done')
   }
 
+  /** Creates the attachment folders of each record, for files to be put in by hand (--createFolders). */
   async createDummyFolders () {
     logger.info('')
     logger.info('### Create dummy folders ###')
-    let funcs = _.map(this.data, (data, resource) => {
+    const funcs = _.map(this.data, (data, resource) => {
       return async () => {
-        let endProcess = h.startProcess('Add dummy records %s ... ... ', resource)
+        const endProcess = h.startProcess('Add dummy records %s ... ... ', resource)
         const uniqueKeys = this.api(resource).getUniqueKeys()
-        const fields = _.filter(this.schemaMap[resource], item => _.includes(['image', 'file'], item.input))
+        const fields = _.filter(this.schemaMap[resource], item => isAttachmentInput(item.input))
         _.each(data, item => {
           _.each(fields, field => {
             const folderPath = path.resolve(path.join('.', resource, _.get(item, _.first(uniqueKeys)), field.field))
@@ -347,14 +367,15 @@ class ImportManager {
     return await pAll(funcs, {concurrency: 1})
   }
 
+  /** Downloads the files the sheets link to, into the folders of their records. */
   async downloadBinaries () {
     logger.info('')
     logger.info('### Download binaries ###')
-    let funcs = _.map(this.binaryMap, (data, resource) => {
+    const funcs = _.map(this.binaryMap, (data, resource) => {
       return async () => {
-        let endProcess = h.startProcess('download binaries for %s ... ... ', resource)
+        const endProcess = h.startProcess('download binaries for %s ... ... ', resource)
         const uniqueKeys = this.api(resource).getUniqueKeys()
-        let funcs2 = []
+        const funcs2 = []
         _.each(data, item => {
           _.each(_.omit(item, uniqueKeys), (link, field) => {
             if (!_.isEmpty(link)) {
@@ -391,8 +412,12 @@ class ImportManager {
     return await pAll(funcs, {concurrency: 1})
   }
 
+  /**
+   * @param {string} resource
+   * @returns {Promise<Object<string, object[]>>} the records of each resource the relations point to, by name
+   */
   async getRelationMap (resource) {
-    let schema = this.schemaMap[resource]
+    const schema = this.schemaMap[resource]
     const relationMap = {}
     const relationResources = _.uniq(_.compact(_.map(schema, item => _.isString(item.source) && item.source)))
     await pAll(_.map(relationResources, resource => {
@@ -403,8 +428,13 @@ class ImportManager {
     return relationMap
   }
 
+  /**
+   * @param {string} resource
+   * @param {Object<string, object[]>} relationMap
+   * @returns {Promise<object[]>} the records of the CMS with their relations as unique values, comparable with the rows
+   */
   async getNormalizedRecords (resource, relationMap) {
-    let schema = this.schemaMap[resource]
+    const schema = this.schemaMap[resource]
     let list = await this.api(resource).list()
     list = _.map(list, item => {
       _.each(schema, field => {
@@ -425,24 +455,28 @@ class ImportManager {
     return list
   }
 
+  /**
+   * Creates the records the sheets have and the CMS has not, with their unique keys only, so that relations can point to them.
+   * @returns {Promise<Object<string, object[]>>} the records created, by resource
+   */
   async createDummyRecords () {
     logger.info('')
     logger.info('### Create dummy new records ###')
 
     const createdListMap = {}
-    let funcs = _.map(this.data, (data, resource) => {
+    const funcs = _.map(this.data, (data, resource) => {
       return async () => {
-        let endProcess = h.startProcess('Add dummy records %s ... ... ', resource)
+        const endProcess = h.startProcess('Add dummy records %s ... ... ', resource)
         const uniqueKeys = this.api(resource).getUniqueKeys()
-        let schema = this.schemaMap[resource]
+        const schema = this.schemaMap[resource]
         const relationMap = await this.getRelationMap(resource)
         const list = await this.getNormalizedRecords(resource, relationMap)
-        let existingKeys = _.map(list, item => _.pick(item, uniqueKeys))
+        const existingKeys = _.map(list, item => _.pick(item, uniqueKeys))
         let newKeys = _.map(data, item => _.pick(item, uniqueKeys))
         newKeys = _.filter(newKeys, item => !_.find(existingKeys, item))
-        let funcs2 = _.map(newKeys, key => {
+        const funcs2 = _.map(newKeys, key => {
           return async () => {
-            let createObject = {}
+            const createObject = {}
             _.each(schema, field => {
               let value = _.get(key, field.field)
               if (!_.isUndefined(value)) {
@@ -469,22 +503,21 @@ class ImportManager {
     return createdListMap
   }
 
+  /** Removes the records of the CMS that the sheets no longer have. */
   async deleteUnusedRecords () {
     // ---------------------- Delete unused records ------------------------------
     logger.info('')
     logger.info('### Delete unused records ###')
-    let funcs = _.map(this.data, (data, resource) => {
+    const funcs = _.map(this.data, (data, resource) => {
       return async () => {
-        let endProcess = h.startProcess('remove old records %s ... ... ', resource)
+        const endProcess = h.startProcess('remove old records %s ... ... ', resource)
         const uniqueKeys = this.api(resource).getUniqueKeys()
-        let oldRecords
         const relationMap = await this.getRelationMap(resource)
         const list = await this.getNormalizedRecords(resource, relationMap)
-        let oldKeys = _.map(list, item => _.pick(item, uniqueKeys))
-        let existingKeys = _.map(data, item => _.pick(item, uniqueKeys))
-        oldKeys = _.filter(oldKeys, key => !_.find(existingKeys, key))
-        oldRecords = _.map(oldKeys, (item) => _.find(list, item))
-        let funcs2 = _.map(oldRecords, (item) => {
+        const existingKeys = _.map(data, item => _.pick(item, uniqueKeys))
+        const oldKeys = _.filter(_.map(list, item => _.pick(item, uniqueKeys)), key => !_.find(existingKeys, key))
+        const oldRecords = _.map(oldKeys, (item) => _.find(list, item))
+        const funcs2 = _.map(oldRecords, (item) => {
           return async () => {
             await this.api(resource).remove(item._id)
             logger.warn(`${item._id} (${JSON.stringify(_.pick(item, uniqueKeys))}) removed`)
@@ -497,6 +530,10 @@ class ImportManager {
     return await pAll(funcs, {concurrency: 1})
   }
 
+  /**
+   * Writes the rows over the records, then their attachments.
+   * @param {Object<string, object[]>} createdRecordsMap the records created, by resource
+   */
   async updateRecords (createdRecordsMap) {
     await this.cacheCmsRecords()
     await this.updateCmsRecords(createdRecordsMap)
@@ -505,18 +542,19 @@ class ImportManager {
     await this.deleteCmsDeleteAttachments(createdRecordsMap)
   }
 
+  /** Loads the records of the resources imported, and of the ones their relations point to, into `cmsRecordsMap`. */
   async cacheCmsRecords () {
     logger.info('')
     logger.info('### cache cms records ###')
     let cachingList = _.keys(this.data)
     _.each(cachingList, resource => {
-      let list = _.compact(_.map(this.schemaMap[resource], (item) => _.isString(item.source) && item.source))
+      const list = _.compact(_.map(this.schemaMap[resource], (item) => _.isString(item.source) && item.source))
       cachingList = _.union(cachingList, list)
     })
-    let funcs = _.map(cachingList, resource => {
+    const funcs = _.map(cachingList, resource => {
       return async () => {
-        let endProcess = h.startProcess('cache cms records %s ... ... ', resource)
-        let list = await this.api(resource).list()
+        const endProcess = h.startProcess('cache cms records %s ... ... ', resource)
+        const list = await this.api(resource).list()
         this.cmsRecordsMap[resource] = list
         endProcess(`${list.length} records cached`)
       }
@@ -525,15 +563,19 @@ class ImportManager {
     return this.cmsRecordsMap
   }
 
+  /**
+   * Writes the rows over the records, the relations turned into ids.
+   * @param {Object<string, object[]>} createdRecordsMap the records created, by resource
+   */
   async updateCmsRecords (createdRecordsMap) {
     // ---------------------- update records ------------------------------
     logger.info('')
     logger.info('### Update records ###')
-    let funcs = _.map(this.data, (data, resource) => {
+    const funcs = _.map(this.data, (data, resource) => {
       return async () => {
-        let endProcess = h.startProcess('update records %s ... ... ', resource)
+        const endProcess = h.startProcess('update records %s ... ... ', resource)
         const uniqueKeys = this.api(resource).getUniqueKeys()
-        let schema = this.schemaMap[resource]
+        const schema = this.schemaMap[resource]
         let resourceErrors = []
         _.each(data, item => {
           let errors = []
@@ -568,9 +610,9 @@ class ImportManager {
         if (!_.isEmpty(resourceErrors)) {
           _.each(resourceErrors, (error) => logger.error(error))
         }
-        let locales = _.compact(_.uniq(_.flatten(_.map(schema, 'locales'))))
+        const locales = _.compact(_.uniq(_.flatten(_.map(schema, 'locales'))))
         data = _.compact(_.map(data, excelObject => {
-          let cmsObject = _.find(this.cmsRecordsMap[resource], _.pick(excelObject, uniqueKeys))
+          const cmsObject = _.find(this.cmsRecordsMap[resource], _.pick(excelObject, uniqueKeys))
           let isUpdated = false
           _.each(locales, locale => {
             if (isUpdated) {
@@ -585,7 +627,7 @@ class ImportManager {
             })
           })
           if (!isUpdated) {
-            let tempObj = _.omit(excelObject, locales)
+            const tempObj = _.omit(excelObject, locales)
             _.each(tempObj, (value, key) => {
               if (isUpdated) {
                 return
@@ -600,7 +642,7 @@ class ImportManager {
           excelObject._id = cmsObject._id
           return excelObject
         }))
-        let funcs2 = _.map(data, item => {
+        const funcs2 = _.map(data, item => {
           return async () => {
             if (!createdRecordsMap || _.find(createdRecordsMap[resource], {_id: item._id})) {
               return await this.api(resource).update(item._id, item)
@@ -614,10 +656,11 @@ class ImportManager {
     return await pAll(funcs, {concurrency: 1})
   }
 
+  /** Reads the files of the seed folder into `attachmentMap`: which file goes with which record and field. */
   async loadAttachmentMapData () {
     logger.info('')
     logger.info('### load attachments data ###')
-    let seedDataPath = path.resolve('.')
+    const seedDataPath = path.resolve('.')
     let list = fs.readdirSync(seedDataPath)
     list = _.map(list, item => ({
       name: item,
@@ -648,7 +691,7 @@ class ImportManager {
           let fileList = fs.readdirSync(folderPath)
           fileList = _.filter(fileList, (key) => !_.includes(['.DS_Store', 'desktop.ini', 'Icon\r'], key))
           _.each(fileList, file => {
-            let filePath = path.join(seedDataPath, item.name, key, field, file)
+            const filePath = path.join(seedDataPath, item.name, key, field, file)
             if (!fs.lstatSync(filePath).isFile()) {
               return
             }
@@ -660,7 +703,7 @@ class ImportManager {
               _name: field,
               _filename: file
             })
-            let cmsObject = _.find(this.cmsRecordsMap[attachment.resource], {[uniqueKey]: attachment[uniqueKey]})
+            const cmsObject = _.find(this.cmsRecordsMap[attachment.resource], {[uniqueKey]: attachment[uniqueKey]})
             if (cmsObject) {
               attachment._id = cmsObject._id
             }
@@ -676,18 +719,22 @@ class ImportManager {
     return pAll(funcs, {concurrency: 1})
   }
 
+  /**
+   * Uploads the files of the attachment map that the records do not have yet.
+   * @param {Object<string, object[]>} createdRecordsMap the records created, by resource
+   */
   async createCmsRecordAttachments (createdRecordsMap) {
     logger.info('')
     logger.info('### create attachments ###')
     return pAll(_.map(_.keys(this.attachmentMap), resource => {
       return async () => {
-        let endProcess = h.startProcess('create attachments %s ... ... ', resource)
+        const endProcess = h.startProcess('create attachments %s ... ... ', resource)
         const uniqueKeys = this.api(resource).getUniqueKeys()
         let list = this.attachmentMap[resource]
-        let cmsRecordList = this.cmsRecordsMap[resource]
+        const cmsRecordList = this.cmsRecordsMap[resource]
         let nbCreatedAttachments = 0
         list = _.filter(list, item => {
-          let obj = _.find(cmsRecordList, _.pick(item, uniqueKeys))
+          const obj = _.find(cmsRecordList, _.pick(item, uniqueKeys))
           if (!obj) {
             return false
           }
@@ -708,18 +755,22 @@ class ImportManager {
     }), {concurrency: 5})
   }
 
+  /**
+   * Removes the attachments the records have and the attachment map does not.
+   * @param {Object<string, object[]>} createdRecordsMap the records created, by resource
+   */
   async deleteCmsDeleteAttachments (createdRecordsMap) {
     logger.info('### remove attachments ###')
-    let funcs = _.map(_.keys(this.data), resource => {
+    const funcs = _.map(_.keys(this.data), resource => {
       return async () => {
-        let endProcess = h.startProcess('remove attachments %s ... ... ', resource)
-        let list = this.attachmentMap[resource]
+        const endProcess = h.startProcess('remove attachments %s ... ... ', resource)
+        const list = this.attachmentMap[resource]
         let cmsAttachmentList = _.compact(_.flatten(_.map(this.cmsRecordsMap[resource], (item) => _.map(item._attachments, (attach) => _.extend({recordId: item._id}, attach)))))
         cmsAttachmentList = _.filter(cmsAttachmentList, item => {
-          let obj = _.find(list, _.extend({_id: item.recordId}, _.pick(item, ['_name', '_md5sum', '_filename'])))
+          const obj = _.find(list, _.extend({_id: item.recordId}, _.pick(item, ['_name', '_md5sum', '_filename'])))
           return obj ? false : true
         })
-        let funcs2 = _.map(cmsAttachmentList, (item) => {
+        const funcs2 = _.map(cmsAttachmentList, (item) => {
           return async () => {
             if (!createdRecordsMap || _.find(createdRecordsMap[resource], {_id: item._id})) {
               return await this.api(resource).removeAttachment(item.recordId, item._id)
@@ -734,7 +785,7 @@ class ImportManager {
   }
 }
 
-let config = require(path.resolve(program.args[0]))
+const config = require(path.resolve(program.args[0]))
 if (config && config.oauth && config.oauth.keyFile) {
   config.oauth.keyFile = path.resolve(config.oauth.keyFile)
 }

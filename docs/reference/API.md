@@ -49,7 +49,7 @@ A record is the object you saved, with a few fields the CMS adds. Every added fi
 
 A **localised field** holds one value per locale (`"title": { "enUS": "…", "zhCN": "…" }`); a field with `localised: false` holds the value itself. To query a localised field, name the locale: `"title.enUS"`.
 
-**Attachments** come back grouped under the name of the field they belong to (`cover` above), as an array, with a `url` to download them. A resize cache and a crop are made on request (see below).
+**Attachments** come back grouped under the name of the field they belong to (`cover` above), as an array, with a `url` to download them. A resize cache and a crop are made on request (see below). `url` is always the original; an attachment that has a crop (a [cropimage](fields/cropimage.md) field) also has a `cropUrl`, the address of the cut.
 
 ## REST
 
@@ -111,15 +111,17 @@ curl -u localAdmin:localAdmin localhost:9990/api/articles/<id>/attachments -F co
 
 The attachment keeps the name of the uploaded file (`harbour.jpg`), and its type is taken from that name. A `_filename` text part, which the admin sends, overrides it.
 
-Send one file per request: only the first file of a request is kept. Other text parts are stored in `_fields`, except `order` (a number, for sorting the files of a field) and `cropOptions` (JSON, used by `/cropped` below).
+Send one file per request: only the first file of a request is kept. Other text parts are stored in `_fields`, except `order` (a number, for sorting the files of a field), `cropOptions` (JSON, used by `/cropped` below) and `imageMap` (JSON, the areas of an [image map](fields/imagemap.md), checked before anything is written).
 
 | Method and path | What it does |
 |---|---|
 | `POST /api/:resource/:id/attachments` | Add an attachment (multipart, see above). |
 | `GET /api/:resource/:id/attachments/:aid` | Download it. Images accept `?resize=800x600`, `?resize=800xauto` or `?resize=autox600`, and `&smart=true` with [smart cropping](SMART_CROPPING.md). Resized copies are cached. |
-| `GET /api/:resource/:id/attachments/:aid/cropped` | The image cut with its stored `cropOptions` (set in the admin's crop tool). |
+| `GET /api/:resource/:id/attachments/:aid/cropped` | The image cut as its stored `cropOptions` say (set in the admin's crop tool, see [cropimage](fields/cropimage.md)): flipped, turned, cropped, sized, shaped. `?resize=300xauto` gives the cut at that size. Cuts are cached. A picture with no crop comes as it is. |
+| `GET /api/:resource/:id/attachments/:aid/crop-suggestion?aspect=3:2` | Where smart cropping would put a crop of that shape: `{ left, top, width, height }` in pixels. `aspect` is a number or `W:H`; `rotate=90`, `flipX=true` and `flipY=true` turn the picture first and the answer is in its pixels. Nothing is cut or stored. |
+| `POST /api/:resource/attachments/crop-suggestion` | The same for a picture that is not stored: multipart, the picture as the `image` part, the rest in the query. |
 | `GET /api/:resource/file/:aid` | Download by attachment id alone. |
-| `PUT /api/:resource/:id/attachments/:aid` | Change its metadata (JSON body): `_fields`, `order`, `cropOptions` and the like. |
+| `PUT /api/:resource/:id/attachments/:aid` | Change its metadata (JSON body): `_fields`, `order`, `cropOptions`, `imageMap` (replaced as a whole, `null` takes it away) and the like. |
 | `PUT /api/:resource/:id/attachments` | The same for several attachments: a JSON array of objects with an `_id`. |
 | `DELETE /api/:resource/:id/attachments/:aid` | Remove it. |
 | `DELETE /api/:resource/:id/attachments` | Remove several: a JSON array of `{ "_id": … }`. |
@@ -187,8 +189,24 @@ Note the difference between the two lookups: **`find` returns one record (or `nu
 | `findFile(aid)` | The stream of an attachment by its id alone. |
 | `updateAttachment(id, aid, data)`, `removeAttachment(id, aid)` | Change or remove an attachment. |
 | `cleanAttachment()` | Remove files no record points to (only those idle for `attachmentCleanupGrace`). |
+| `bulk(work)` | Run many writes as one: inside `work` (an async function), the writes of this resource do not wait for the disk, and the disk is waited for once at the end. A write normally waits for the disk, which is most of its time; a sync or an import of thousands of records is many times faster inside `bulk`. A power cut while it runs can lose the last records, as it can lose any write before its flush. |
 | `before(event, fn)`, `after(event, fn)` | Hooks, see below. |
 | `options` | The resource declaration. |
+
+### Resolving relations
+
+A `select` or `multiselect` field holds the id of the record it points to. Name the resources you want followed after the resource name, and the records come back with those records in place of the ids: in `list`, `find`, and in what `create` and `update` answer. The stored record keeps the ids.
+
+```js
+const comments = cms.api()('comments', 'authors')
+const one = await comments.find(id)
+one.author            // { _id, name, article: '<id>', ... } instead of '<id>'
+
+const deeper = cms.api()('comments', 'authors', 'articles')
+(await deeper.find(id)).author.article   // the article too: a related record has its own relations followed, one level down
+```
+
+A value per language is followed language by language, a multiselect gives an array of records, and the relations inside the blocks of a `paragraph` field are followed as well. An id that no record has becomes `undefined` in its place: the field, the entry of the list (the list keeps its positions) or the language. Each record gets its own copy of the related record, so changing one does not change another. Resolving lists the named resources once per call: keep it for code that needs the related records, not for a hot path over a large resource.
 
 The JavaScript API runs with full rights: there is no user and no group check, and `_updatedBy` is not set. Check rights yourself before you expose it to a request.
 

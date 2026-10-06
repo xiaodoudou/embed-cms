@@ -1,7 +1,7 @@
 // One spec per screenshot of docs/ui that the README and the documentation show: the list, the form, the table, the sidebar rail
 // and the form controls of the design-system page, in the theme and the window size their file name says.
 const specs = []
-const add = (name, viewport, run, options = {}) => specs.push({ name, resource: null, run, options: { viewport, ...options } })
+const add = (name, viewport, run, options = {}) => specs.push({ name, resource: options.resource || null, run, options: { viewport, ...options } })
 
 const D1280 = { width: 1280, height: 720 }
 const D1500 = { width: 1500, height: 900 }
@@ -76,5 +76,26 @@ for (const theme of ['light', 'dark']) {
     await card.screenshot({ path: `${c.outDir}/ds-forms-${theme}.png` })
   })
 }
+
+// the dynamic layout: blocks of one paragraph field side by side, 2 by 2, 3 by 3 and mixed sizes
+for (const [name, field] of [['layout-2x2-light', 'twoByTwo'], ['layout-3x3-light', 'threeByThree'], ['layout-4x2-light', 'fourByTwo'], ['layout-mixed-light', 'mixed']]) {
+  add(name, { width: 1280, height: 1800 }, (c) => c.field(field), { resource: 'structured_grid', record: (seeded) => seeded.grid, scroll: 'nearest', crop: { width: 0, pad: { l: 8, r: 8, t: 8, b: 8 } } })
+}
+
+// the form layout: the fields of a resource in lines, one, two, three and four slots wide
+add('form-layout-light', { width: 1280, height: 1000 }, async (c) => {
+  await c.page.locator('.record-editor-form .field-wrapper[data-model="reference"]').first().waitFor()
+  await c.page.waitForTimeout(800)
+  await c.page.locator('.record-editor-form').screenshot({ path: `${c.outDir}/form-layout-light.png` })
+}, { resource: 'structured_layout', record: (seeded) => seeded.layout })
+
+// the groups of a form: one always open, one that starts closed and is opened (with a group inside it), one that is closed
+add('form-groups-light', { width: 1280, height: 1300 }, async (c) => {
+  await c.page.locator('.record-editor-form .group-toggle').first().waitFor()
+  await c.page.locator('.record-editor-form .group-toggle', { hasText: 'Online' }).click()
+  await c.page.locator('.record-editor-form .group-toggle', { hasText: 'Address' }).click()
+  await c.page.waitForTimeout(800)
+  await c.page.locator('.record-editor-form').screenshot({ path: `${c.outDir}/form-groups-light.png` })
+}, { resource: 'structured_groups', record: (seeded) => seeded.groups })
 
 module.exports = { specs }

@@ -81,20 +81,11 @@
     img {
       max-height: 113px;
     }
-    &.can-crop {
-      min-width: initial;
-      max-width: initial;
-      img {
-        max-height: initial;
-      }
-    }
     // &.odd {
     //   background-color: rgba($color: #000000, $alpha: 0.2);
     // }
   }
   .row-handle {
-    cursor: -webkit-grab;
-    cursor: move;
     height: 100%;
     width: 100%;
     display: flex;
@@ -105,10 +96,15 @@
       width: min-content;
     }
   }
+  // the picture fills the width of the card, cropped to a fixed shape (cover), at most 140px high, and sits in the middle
   .image-wrapper {
-    max-width: 100px;
-    min-width: 100px;
+    position: relative;
+    width: 100%;
+    max-height: 140px;
     min-height: 100px;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 8px;
     .clickable {
       cursor: pointer;
     }
@@ -125,6 +121,27 @@
       border-radius:8px;
       width: 100%;
       height: auto;
+      max-height: 140px;
+      img {
+        width: 100%;
+        height: 100%;
+        max-height: none;
+        object-fit: cover;
+        object-position: center;
+      }
+    }
+    // a picture with a crop has the shape of the crop, whole: it is as high as its width says (the card's fixed shape would cut it again), and round for a circle
+    &.is-cropped {
+      max-height: none;
+      min-height: 0;
+      .v-img {
+        max-height: none;
+      }
+    }
+    &.is-round,
+    &.is-round .v-img,
+    &.is-round img {
+      border-radius: 50%;
     }
   }
   &.full-width {
@@ -133,7 +150,7 @@
 }
 
 .image-view, .attachment-view {
-  // The field container is plain: only the drop area has a dashed border
+  // The field container is plain: the drop area is a field like the others
   border: 0;
   padding: 0;
   .v-card {
@@ -151,53 +168,36 @@
 // ---- Upload area and previews -------------------------------------------------
 .image-view,
 .attachment-view {
+  // The drop area is a field like the others: the Vuetify field inside it draws the surface, the border, the radius and the hover, focus
+  // and error states (base.scss), and its hint reads like their placeholders. Only while a file is dragged over it takes the drop look
   .file-input-card {
     margin-top: var(--cms-space-1);
-    border: 2px dashed var(--cms-border-strong);
+    border: 0;
     border-radius: var(--cms-radius-md);
-    background: var(--cms-surface-2);
+    background: transparent;
     box-shadow: none;
-    transition: border-color var(--cms-motion-fast) var(--cms-ease), background-color var(--cms-motion-fast) var(--cms-ease);
+    transition: background-color var(--cms-motion-fast) var(--cms-ease);
 
-    &:hover {
-      border-color: var(--cms-primary);
-    }
-
-    &:focus-within {
-      outline: 2px solid var(--cms-focus-ring);
-      outline-offset: 2px;
-    }
-
-    &.drag-and-drop {
-      border-color: var(--cms-primary);
-      border-style: solid;
+    // Vuetify's file input knows when a file is over it, and when it was dropped or left: its class is the drop look, a dashed accent
+    // outline inside the field over a tinted surface (our own flag was never switched off after a drop, which is how it stayed)
+    .v-file-input--dragging .v-field {
       background: var(--cms-primary-soft);
-    }
-
-    // The inner field is invisible chrome: no second border, no second background
-    .v-field {
-      border: 0;
-      background: transparent;
-      box-shadow: none;
-      outline: none;
+      border-color: transparent;
+      outline: 2px dashed var(--cms-primary);
+      outline-offset: -2px;
     }
 
     .v-field__input {
-      min-height: 104px;
-      justify-content: center;
-      text-align: center;
+      min-height: 44px;
+      justify-content: flex-start;
+      text-align: left;
       cursor: pointer;
-      // Hint: body-small, regular, muted (never louder than the label)
-      font-size: var(--cms-fs-sm);
-      font-weight: var(--cms-fw-regular);
-      color: var(--cms-text-muted);
     }
 
+    // the hint is a placeholder: muted, like the one of a text field
     .v-field__input input::placeholder,
     .v-field__input .v-file-input__text,
     .v-label {
-      font-size: var(--cms-fs-sm);
-      font-weight: var(--cms-fw-regular);
       color: var(--cms-text-muted);
       opacity: 1;
     }
@@ -205,22 +205,11 @@
     .v-field__prepend-inner .v-icon {
       color: var(--cms-text-muted);
     }
-
-    // The message of a rule (File is mandatory...) sits inside the dashed area: give it room from the edge
-    .v-input__details {
-      min-height: 0;
-      padding: var(--cms-space-1) var(--cms-space-3) var(--cms-space-2);
-    }
   }
 
   // the previews start below the drop area, not against it
   .preview-multiple {
     margin-top: var(--cms-space-2);
-  }
-
-  // With files present the drop area becomes a compact "add more" strip
-  &:has(.preview-attachment) .file-input-card .v-field__input {
-    min-height: 44px;
   }
 
   .preview-attachment {
@@ -236,16 +225,175 @@
     }
   }
 
-  .row-handle {
-    cursor: grab;
-    &:active {
-      cursor: grabbing;
+  // A preview card, top to bottom: the grip (or the buttons that move the file one place, in the compact mode), the position, and the
+  // cross to remove it at the right; the picture over the whole width of the card; the name of the file and its size at the foot
+  .preview-attachment {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--cms-space-2);
+    .preview-top {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: var(--cms-space-1);
+      min-height: 28px;
     }
+    .preview-position {
+      flex: 1 1 auto;
+      color: var(--cms-text-muted);
+      font-size: var(--cms-fs-sm);
+      font-weight: var(--cms-fw-bold);
+    }
+    .preview-picture {
+      position: relative;
+      width: 100%;
+    }
+    // the bin sits in the top right corner of the picture: a small rounded square on a dark scrim, which reads on any picture and on the
+    // page alike, and turns red under the pointer (the block header has the same bin)
+    .preview-remove {
+      position: absolute;
+      top: var(--cms-space-2);
+      right: var(--cms-space-2);
+      z-index: 2;
+      width: 26px;
+      height: 26px;
+      border-radius: var(--cms-radius-sm, 6px);
+      background: var(--cms-image-control-bg);
+      color: var(--cms-on-image-control);
+      box-shadow: none;
+      transition: background-color var(--cms-motion-fast) var(--cms-ease);
+      &:hover,
+      &:focus-visible {
+        background: var(--cms-error);
+        color: var(--cms-on-error);
+      }
+    }
+    // a file with no picture: its View button and its Remove button side by side
+    .preview-picture.is-file {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--cms-space-2);
+      min-height: 44px;
+      .row-handle {
+        width: auto;
+        height: auto;
+      }
+      .preview-remove.is-text {
+        // relative, not static: the hover layer and the border of a Vuetify button are positioned inside it, and would spread over the row
+        position: relative;
+        top: auto;
+        right: auto;
+        width: auto;
+        height: auto;
+        padding: 0 var(--cms-space-3);
+        background: transparent;
+        color: var(--cms-text);
+        border: 1px solid var(--cms-border-strong);
+        text-transform: none;
+        &:hover,
+        &:focus-visible {
+          background: transparent;
+          color: var(--cms-error);
+          border-color: var(--cms-error);
+        }
+      }
+    }
+    .drag-grip {
+      flex: 0 0 auto;
+      padding: 2px;
+      display: inline-flex;
+      align-items: center;
+      color: var(--cms-text-muted);
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      &:hover {
+        color: var(--cms-text);
+      }
+      &:active {
+        cursor: grabbing;
+      }
+    }
+    .move-buttons {
+      flex: 0 0 auto;
+      display: inline-flex;
+      gap: var(--cms-space-1);
+    }
+    // the name takes the room that is left on the line and is cut with an ellipsis; the size stays whole
+    .filename {
+      width: 100%;
+      display: flex;
+      align-items: baseline;
+      gap: var(--cms-space-2);
+      min-width: 0;
+      max-width: 100%;
+      font-size: var(--cms-fs-sm);
+      .filename-text {
+        flex: 1 1 auto;
+        min-width: 0;
+        color: var(--cms-text);
+        font-weight: var(--cms-fw-medium, 500);
+        text-align: left;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .filename-size {
+        flex: 0 0 auto;
+        margin-left: auto;
+        color: var(--cms-text-muted);
+        text-align: right;
+      }
+      &.is-dirty .filename-text {
+        color: $cms-warning;
+      }
+    }
+  }
+  .reorder-bar {
+    display: flex;
+    justify-content: flex-end;
   }
 
   .file-input-errors,
   .help-block {
     color: var(--cms-text-muted);
     font-size: var(--cms-fs-sm);
+  }
+}
+
+// ---- Narrow editor and touch screens ---------------------------------------------------------------------------------------
+// The previews are 200px cards: in an editor too narrow for two of them (a phone, a tablet beside the list) one card of 200px left the rest of the
+// line empty, so each takes the whole line.
+@container (max-width: 479.98px) {
+  .image-view,
+  .attachment-view {
+    .preview-attachment,
+    .preview-single-attachment {
+      width: 100%;
+      min-width: 0;
+      max-width: none;
+      box-sizing: border-box;
+    }
+  }
+}
+
+// a finger: the line of a preview is as tall as a button, and the grip that drags it is a button-sized target (Reorder moves files without dragging)
+@media (pointer: coarse) {
+  .image-view,
+  .attachment-view {
+    .preview-attachment {
+      .preview-top {
+        min-height: var(--cms-touch-target);
+      }
+      .drag-grip {
+        justify-content: center;
+        width: var(--cms-touch-target);
+        height: var(--cms-touch-target);
+        padding: 0;
+        margin: calc((var(--cms-touch-target) - 28px) / -2) 0;
+      }
+    }
   }
 }

@@ -1,7 +1,7 @@
 import { defaults, isNil, isNumber, isInteger, isString, isArray, isFunction, isFinite } from 'lodash'
 import Dayjs from 'dayjs'
 
-let resources = {
+const resources = {
   fieldIsRequired: 'This field is required!',
   invalidFormat: 'Invalid format!',
   numberTooSmall: 'The number is too small! Minimum: {0}',
@@ -25,6 +25,12 @@ let resources = {
   invalidTextContainSpec: 'Invalid text! Cannot contains special characters'
 }
 
+/**
+ * @param {*} value
+ * @param {boolean} required
+ * @param {Object} messages
+ * @returns {Array<string>|null} null when there is a value; else the required error, or nothing
+ */
 function checkEmpty (value, required, messages = resources) {
   if (!isNil(value) && value !== '') {
     return null
@@ -32,8 +38,12 @@ function checkEmpty (value, required, messages = resources) {
   return required ? [msg(messages.fieldIsRequired)] : []
 }
 
+/**
+ * @param {string} text with {0}, {1}... placeholders
+ * @returns {string}
+ */
 function msg (text) {
-  if (text != null && arguments.length > 1) {
+  if (!isNil(text) && arguments.length > 1) {
     for (let i = 1; i < arguments.length; i++) {
       text = text.replace('{' + (i - 1) + '}', arguments[i])
     }
@@ -43,15 +53,29 @@ function msg (text) {
 
 const validators = {
   resources,
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   required (value, field, model, messages = resources) {
     return checkEmpty(value, field.required, messages)
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   number (value, field, model, messages = resources) {
-    let res = checkEmpty(value, field.required, messages)
-    if (res != null) {
+    const res = checkEmpty(value, field.required, messages)
+    if (res !== null) {
       return res
     }
-    let err = []
+    const err = []
     if (isFinite(value)) {
       if (!isNil(field.min) && value < field.min) {
         err.push(msg(messages.numberTooSmall, field.min))
@@ -64,31 +88,52 @@ const validators = {
     }
     return err
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   integer (value, field, model, messages = resources) {
-    let res = checkEmpty(value, field.required, messages)
-    if (res != null) {
+    const res = checkEmpty(value, field.required, messages)
+    if (res !== null) {
       return res
     }
-    let errs = validators.number(value, field, model, messages)
+    const errs = validators.number(value, field, model, messages)
     if (!isInteger(value)) {
       errs.push(msg(messages.invalidInteger))
     }
     return errs
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   double (value, field, model, messages = resources) {
-    let res = checkEmpty(value, field.required, messages)
-    if (res != null) {
+    const res = checkEmpty(value, field.required, messages)
+    if (res !== null) {
       return res
     } else if (!isNumber(value) || isNaN(value)) {
       return [msg(messages.invalidNumber)]
     }
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   string (value, field, model, messages = resources) {
-    let res = checkEmpty(value, field.required, messages)
-    if (res != null) {
+    const res = checkEmpty(value, field.required, messages)
+    if (res !== null) {
       return res
     }
-    let err = []
+    const err = []
     if (isString(value)) {
       if (!isNil(field.min) && value.length < field.min) {
         err.push(msg(messages.textTooSmall, value.length, field.min))
@@ -101,6 +146,13 @@ const validators = {
     }
     return err
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   array (value, field, model, messages = resources) {
     if (field.required) {
       if (!isArray(value)) {
@@ -117,62 +169,97 @@ const validators = {
       }
     }
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   date (value, field, model, messages = resources) {
-    let res = checkEmpty(value, field.required, messages)
-    if (res != null) return res
-    let m = new Date(value)
+    const res = checkEmpty(value, field.required, messages)
+    if (res !== null) return res
+    const m = new Date(value)
     if (isNaN(m.getDate())) {
       return [msg(messages.invalidDate)]
     }
-    let err = []
+    const err = []
     if (!isNil(field.min)) {
-      let min = new Date(field.min)
+      const min = new Date(field.min)
       if (m.valueOf() < min.valueOf()) {
         err.push(msg(messages.dateIsEarly, Dayjs(m).format('YYYY-MM-DD'), Dayjs(min).format('YYYY-MM-DD')))
       }
     }
     if (!isNil(field.max)) {
-      let max = new Date(field.max)
+      const max = new Date(field.max)
       if (m.valueOf() > max.valueOf()) {
         err.push(msg(messages.dateIsLate, Dayjs(m).format('YYYY-MM-DD'), Dayjs(max).format('YYYY-MM-DD')))
       }
     }
     return err
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   regexp (value, field, model, messages = resources) {
-    let res = checkEmpty(value, field.required, messages)
-    if (res != null) {
+    const res = checkEmpty(value, field.required, messages)
+    if (res !== null) {
       return res
     } else if (!isNil(field.pattern)) {
-      let re = new RegExp(field.pattern)
+      const re = new RegExp(field.pattern)
       if (!re.test(value)) {
         return [msg(messages.invalidFormat)]
       }
     }
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   email (value, field, model, messages = resources) {
-    let res = checkEmpty(value, field.required, messages)
-    if (res != null) {
+    const res = checkEmpty(value, field.required, messages)
+    if (res !== null) {
       return res
     }
-    let re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/ // eslint-disable-line no-useless-escape
+    const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/ // eslint-disable-line no-useless-escape
     if (!re.test(value)) {
       return [msg(messages.invalidEmail)]
     }
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   url (value, field, model, messages = resources) {
-    let res = checkEmpty(value, field.required, messages)
-    if (res != null) {
+    const res = checkEmpty(value, field.required, messages)
+    if (res !== null) {
       return res
     }
-    let re = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g // eslint-disable-line no-useless-escape
+    const re = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g // eslint-disable-line no-useless-escape
     if (!re.test(value)) {
       return [msg(messages.invalidURL)]
     }
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   creditCard (value, field, model, messages = resources) {
-    let res = checkEmpty(value, field.required, messages)
-    if (res != null) {
+    const res = checkEmpty(value, field.required, messages)
+    if (res !== null) {
       return res
     }
     const creditCard = /^(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|6(?:011|5[0-9][0-9])[0-9]{12}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11})$/
@@ -199,22 +286,36 @@ const validators = {
       return [msg(messages.invalidCardNumber)]
     }
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   alpha (value, field, model, messages = resources) {
-    let res = checkEmpty(value, field.required, messages)
-    if (res != null) {
+    const res = checkEmpty(value, field.required, messages)
+    if (res !== null) {
       return res
     }
-    let re = /^[a-zA-Z]*$/
+    const re = /^[a-zA-Z]*$/
     if (!re.test(value)) {
       return [msg(messages.invalidTextContainNumber)]
     }
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @param {Object} messages
+   * @returns {Array<string>} the errors
+   */
   alphaNumeric (value, field, model, messages = resources) {
-    let res = checkEmpty(value, field.required, messages)
-    if (res != null) {
+    const res = checkEmpty(value, field.required, messages)
+    if (res !== null) {
       return res
     }
-    let re = /^[a-zA-Z0-9]*$/
+    const re = /^[a-zA-Z0-9]*$/
     if (!re.test(value)) {
       return [msg(messages.invalidTextContainSpec)]
     }

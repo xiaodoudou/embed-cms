@@ -28,6 +28,7 @@ class NotificationsService {
     this.events.emit('omnibar-open')
   }
 
+  /** @param {boolean} status */
   sendOmnibarDisplayStatus (status) {
     this.events.emit('omnibar-display-status', status)
   }

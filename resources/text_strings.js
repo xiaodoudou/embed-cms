@@ -91,6 +91,14 @@ module.exports = {
       label: 'Locked slug',
       localised: false,
       options: { valueFrom: 'name', readonly: true, hint: 'Generated from the name, cannot be edited' }
-    }
+    },
+
+    // a template that stays in the box while it is typed in (options.mask)
+    { field: 'maskPhone', input: 'string', label: 'Phone (mask)', localised: false, options: { mask: '(___) ___-____', hint: 'Digits only, in the template (___) ___-____' } },
+    { field: 'maskDate', input: 'string', label: 'Date (mask)', localised: false, options: { mask: '__/__/____', hint: 'Digits only, __/__/____' } },
+    { field: 'maskPlate', input: 'string', label: 'Plate (mask)', localised: false, options: { mask: 'AA-___-AA', hint: 'Two letters, three digits, two letters: AA-___-AA' } },
+    { field: 'maskFlight', input: 'string', label: 'Flight (mask)', localised: false, options: { mask: 'F__-AAAA', hint: 'F and - are part of the template and are written for you; two digits, then four letters: F__-AAAA' } },
+    { field: 'maskCode', input: 'string', label: 'Code (mask)', localised: false, required: true, options: { mask: '****-****', hint: 'Required. Letters or digits, ****-****' } },
+    { field: 'maskLocalised', input: 'string', label: 'Reference per locale (mask)', options: { mask: '#####', hint: 'One reference per locale, five digits' } }
   ]
 }

@@ -8,7 +8,7 @@
         @confirm="confirmDialog()" @cancel="cancelDialog()"
       />
       <upload-panel v-if="user" />
-      <div v-if="user" class="cms-layout">
+      <div v-if="user" v-shortkey="getShortcuts()" class="cms-layout" @shortkey="onShortkey">
         <a class="cms-skip-link" href="#cms-main" @click.prevent="focusMain">{{ $filters.translate('TL_SKIP_TO_CONTENT') }}</a>
         <updates-notifier v-if="selectedResource && config && config.wsRecordUpdates" :selected-resource="selectedResource" :selected-record="selectedRecord" @reload-resource="reloadResource" />
         <div class="cms-inner-layout" :class="{'nav-open': navOpen}">
@@ -35,7 +35,7 @@
               />
             </div>
             <div v-if="navOpen" class="cms-nav-scrim" aria-hidden="true" @click="closeNav" />
-            <div class="cms-content">
+            <div class="cms-content" :class="{ 'editor-open': hasSelection && !(selectedResource && selectedResource.maxCount === 1) }">
               <nav v-if="selectedResource || selectedPlugin" class="cms-crumbs" :aria-label="$filters.translate('TL_YOU_ARE_HERE')">
                 <ol>
                   <li v-if="currentGroupLabel" class="crumb-item" @mouseenter="crumbHint = 'group'" @mouseleave="crumbHint = ''">
@@ -125,15 +125,17 @@
   import UploadService from '@s/UploadService'
   import { applyThemeToDocument, pickTheme, savedUserTheme } from '@u/theme'
   import { savedUserLanguage } from '@u/locale'
+  import { sourcesOf } from '@u/sources'
   import { buildPageTitle } from '@u/pageTitle'
   import { getRecordLabel, getResourceLabel } from '@u/recordLabel'
   import NavRail from '@c/layout/NavRail.vue'
   import { readPreference, writePreference, readNumber } from '@u/preferences'
+  import { PHONE_QUERY } from '@u/phoneLayout'
   import { resolveNavMode, toggledPref, clampNavWidth, resizeByKey, orderGroups, NAV_DEFAULT_WIDTH, NAV_MIN_WIDTH, NAV_MAX_WIDTH } from '@u/navModel'
 
   // Wide screens open the sidebar, narrower ones start as a rail, phones use the off-canvas drawer
   const WIDE_QUERY = '(min-width: 1280px)'
-  const DRAWER_QUERY = '(max-width: 767.98px)'
+  const DRAWER_QUERY = PHONE_QUERY
 
   export default {
     components: {
@@ -188,9 +190,11 @@
       }
     },
     computed: {
+      /** @returns {'drawer'|'rail'|'expanded'} how the navigation is shown, from the preference and the viewport (navModel) */
       navMode () {
         return resolveNavMode({ pref: this.navPref, wide: this.isWide, drawer: this.isDrawer })
       },
+      /** @returns {Object} the --cms-nav-width variable, only when the navigation is expanded */
       navStyle () {
         return this.navMode === 'expanded' ? { '--cms-nav-width': `${this.navWidth}px` } : {}
       },
@@ -201,18 +205,23 @@
         }
         return 'warning'
       },
+      /** @returns {string} the icon of the record dialog: the bin for a delete event, the warning sign otherwise */
       dialogIcon () {
         return _.startsWith(_.get(this.recordDialog, 'event', ''), 'delete') ? '$trashCanOutline' : '$alertOutline'
       },
+      /** @returns {string} the title of the record dialog, "unsaved changes" when it came without one */
       dialogTitle () {
         return _.get(this.recordDialog, 'title', false) || TranslateService.get('TL_UNSAVED_CHANGES')
       },
+      /** @returns {string} the message of the record dialog; empty when it came with a title but no message */
       dialogMessage () {
         return _.get(this.recordDialog, 'message', false) || (_.get(this.recordDialog, 'title', false) ? '' : TranslateService.get('TL_ARE_YOU_SURE_YOU_WANT_TO_DISCARD'))
       },
+      /** @returns {Object|null} the selected resource or plugin */
       currentItem () {
         return this.selectedResource || this.selectedPlugin
       },
+      /** @returns {string} the translated name of the group of the current item, empty when it belongs to none */
       currentGroupLabel () {
         const item = this.currentItem
         const group = _.find(this.groupedList, (g) => _.includes(_.get(g, 'list', []), item) || _.some(g.list, (r) => r.title === _.get(item, 'title')))
@@ -222,9 +231,11 @@
       documentTitle () {
         return buildPageTitle({ record: this.currentRecordLabel, resource: this.currentResourceLabel, site: this.siteTitle })
       },
+      /** @returns {string} the label of the current resource or plugin */
       currentResourceLabel () {
         return getResourceLabel(this.currentItem)
       },
+      /** @returns {string} the label of the selected record for the breadcrumb; empty on a list, in multiselect, or on a resource with a single record */
       currentRecordLabel () {
         // a resource with a single record is one page: the crumb ends at the resource name, not at the record id
         if (!this.selectedResource || !this.selectedRecord || this.multiselect || this.selectedResource.maxCount === 1) {
@@ -236,14 +247,16 @@
       showDesignSystem () {
         return _.get(this.$route, 'query.id', '') === 'design-system'
       },
+      /** @returns {boolean} whether one record is selected, not in multiselect */
       hasSelection () {
         return !!this.selectedRecord && !this.multiselect
       },
+      /** @returns {Array<{name: string, list: Array<Object>}>} the resources and plugins by group; resources without a group go to "others", plugins to "plugins" */
       groupedList () {
         const others = { name: 'TL_OTHERS' }
         const plugins = { name: 'TL_PLUGINS' }
         let groups = [others, plugins]
-        let list = _.union(this.resourceList, _.map(this.pluginList, (item) => _.extend(item, {type: 'plugin'})))
+        const list = _.union(this.resourceList, _.map(this.pluginList, (item) => _.extend(item, {type: 'plugin'})))
         _.each(list, (item) => {
           if (_.isEmpty(item.group)) {
             return
@@ -296,6 +309,7 @@
         groups = orderGroups(groups, (name) => TranslateService.get(name), TranslateService.locale)
         return _.filter(groups, (group) => group.list && group.list.length !== 0)
       },
+      /** @returns {Array<Object>} the plugins the user is allowed to see */
       pluginList () {
         const plugins =  _.filter(window.plugins, (item) => {
           if (_.isUndefined(item.allowed)) {
@@ -315,7 +329,7 @@
       },
       '$route': function (to, from) {
         NotificationsService.clearContextual()
-        if (this.$route.query.id != null) {
+        if (!_.isNil(this.$route.query.id)) {
           const current = _.get(this.selectedResource || this.selectedPlugin, 'title')
           if (current === this.$route.query.id) {
             // same resource: only the record changed (the browser's back and forward buttons)
@@ -340,8 +354,6 @@
       this.syncRouteRecord = _.debounce(this.writeRouteRecord, 60)
     },
     unmounted () {
-      document.removeEventListener('keydown', this.onDocumentKeydown)
-      document.removeEventListener('keydown', this.onGlobalKeydown)
       _.each([this.wideMedia, this.drawerMedia], (media) => media && media.removeEventListener('change', this.onMediaChange))
       LoadingService.events.off('has-loading', this.onLoading)
       ResourceService.events.off('cached', this.onSettingsCached)
@@ -357,7 +369,6 @@
       this.onMediaChange()
       this.wideMedia.addEventListener('change', this.onMediaChange)
       this.drawerMedia.addEventListener('change', this.onMediaChange)
-      document.addEventListener('keydown', this.onGlobalKeydown)
       LoadingService.events.on('has-loading', this.onLoading)
       this.$loading.start('init')
       LoginService.onLogout(() => {
@@ -386,7 +397,7 @@
           return _.isUndefined(resource.allowed) ||  _.includes(resource.allowed, this.user.group)
         })
         ResourceService.setSchemas(this.resourceList)
-        const routed = this.$route.query.id != null ? _.find(_.union(this.pluginList, this.resourceList), {title: this.$route.query.id}) : undefined
+        const routed = !_.isNil(this.$route.query.id) ? _.find(_.union(this.pluginList, this.resourceList), {title: this.$route.query.id}) : undefined
         if (routed) {
           this.selectResource(routed)
         } else if (!this.showDesignSystem) {
@@ -412,6 +423,7 @@
           this.reloadResource(_.get(meta, 'recordId', false))
         }
       },
+      /** Reads the two media queries again; the drawer closes when the viewport no longer uses one. */
       onMediaChange () {
         this.isWide = this.wideMedia.matches
         this.isDrawer = this.drawerMedia.matches
@@ -424,19 +436,18 @@
         this.navPref = toggledPref(this.navMode)
         writePreference('nav.mode', this.navPref)
       },
-      onGlobalKeydown (event) {
-        if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && _.toLower(event.key) === 'b') {
-          const target = event.target
-          const tag = _.toLower(_.get(target, 'tagName', ''))
-          if (_.includes(['input', 'textarea', 'select'], tag) || _.get(target, 'isContentEditable', false)) {
-            return
-          }
-          event.preventDefault()
-          if (this.navMode === 'drawer') {
-            this.toggleNav()
-          } else {
-            this.toggleRail()
-          }
+      // Ctrl+B shows or hides the sidebar (not inside a text field, where it means bold); Escape closes the drawer
+      getShortcuts () {
+        return this.navOpen ? { nav: ['ctrl', 'b'], close: ['esc'] } : { nav: ['ctrl', 'b'] }
+      },
+      /** @param {{srcKey: string}} event the shortcut fired: close closes the navigation, any other toggles it in drawer mode */
+      onShortkey (event) {
+        if (event.srcKey === 'close') {
+          this.closeNav()
+        } else if (this.navMode === 'drawer') {
+          this.toggleNav()
+        } else {
+          this.toggleRail()
         }
       },
       // Sidebar width: drag, arrow keys, double-click to reset. Remembered.
@@ -454,6 +465,7 @@
         window.addEventListener('pointermove', onMove)
         window.addEventListener('pointerup', onUp)
       },
+      /** @param {KeyboardEvent} event an arrow, Home or End on the resize handle of the navigation; other keys are ignored */
       onResizeKey (event) {
         if (!_.includes(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'], event.key)) {
           return
@@ -462,32 +474,25 @@
         this.navWidth = resizeByKey(this.navWidth, event.key)
         writePreference('nav.width', this.navWidth)
       },
+      /** Back to the default width, saved as the preference. */
       resetNavWidth () {
         this.navWidth = NAV_DEFAULT_WIDTH
         writePreference('nav.width', this.navWidth)
       },
+      /** Opens or closes the drawer; opening focuses its first button. */
       toggleNav () {
         this.navOpen = !this.navOpen
         if (this.navOpen) {
-          document.addEventListener('keydown', this.onDocumentKeydown)
           this.$nextTick(() => {
             const first = document.querySelector('#cms-nav button')
             if (first) {
               first.focus()
             }
           })
-        } else {
-          document.removeEventListener('keydown', this.onDocumentKeydown)
         }
       },
-      onDocumentKeydown (event) {
-        if (event.key === 'Escape') {
-          document.removeEventListener('keydown', this.onDocumentKeydown)
-          this.closeNav()
-        }
-      },
+      /** Closes the drawer and gives the focus back to its toggle. */
       closeNav () {
-        document.removeEventListener('keydown', this.onDocumentKeydown)
         if (this.navOpen) {
           this.navOpen = false
           this.$nextTick(() => {
@@ -498,8 +503,12 @@
           })
         }
       },
+      /**
+       * @param {Object} resource a resource or a plugin
+       * @param {boolean} force select even while a record is being edited
+       * @returns {Promise<void>}
+       */
       async selectResourceAndCloseNav (resource, force = false) {
-        document.removeEventListener('keydown', this.onDocumentKeydown)
         this.navOpen = false
         return this.selectResource(resource, force)
       },
@@ -512,20 +521,23 @@
       onBackToList () {
         this.selectRecord(null)
       },
+      /** @param {string|false} id the record to select again after the reload; the current one by default */
       async reloadResource(id = false) {
-        console.warn(`Will reload resource:${this.selectedResource.name} - id: ${id}`)
+        log.debug(`Will reload resource:${this.selectedResource.name} - id: ${id}`)
         await this.selectResource(this.selectedResource, true)
         const record = id ? _.find(this.recordList, {_id: id}) : this.selectedRecord
         await this.selectRecord(record, true)
       },
+      /** @param {boolean} isLoading */
       async onLoading(isLoading) {
         await this.$nextTick()
         this.isLoading = isLoading
-        this.$forceUpdate()
       },
+      /** @returns {Array<Object>} the plugins then the resources */
       getResourcesAndPlugins() {
         return _.union(this.pluginList, this.resourceList)
       },
+      /** Loads the logged-in user into this.user; an empty object when there is no login. */
       async getUser() {
         if (_.get(window, 'noLogin', false)) {
           this.user = {}
@@ -549,18 +561,19 @@
           if (_.isFunction(_.get(this.$vuetify, 'theme.change'))) {
             this.$vuetify.theme.change(themeName)
           }
-          this.$forceUpdate()
         } catch (error) {
           this.notify(_.get(error, 'response.data.message', error.message), 'error')
           throw error
         }
       },
+      /** @returns {string} the theme to apply, from the config and the current Vuetify theme (pickTheme) */
       getTheme () {
         return pickTheme(ConfigService.config, _.get(this.$vuetify, 'theme.global.name', 'light'))
       },
       resetNotification () {
         this.showSnackBar = false
       },
+      /** From the config, in the locale of the user when the title is localised. */
       setToolbarTitle () {
         this.toolbarTitle = _.get(ConfigService.config, `toolbarTitle.${TranslateService.locale}`, _.get(ConfigService.config, 'toolbarTitle', false))
       },
@@ -570,11 +583,12 @@
           this.siteTitle = _.get(_.first(ResourceService.get('_settings')), 'title', '')
         }
       },
+      /** @param {{type: string, message: string}} data shown in the snackbar */
       onGetNotification (data) {
         this.notification = data
         this.showSnackBar = true
-      // console.warn('received notification !', data)
       },
+      /** @returns {string} notification-<type> */
       getNotificationClass () {
         return `notification-${this.notification.type}`
       },
@@ -582,6 +596,7 @@
         this.recordDialog = false
         this.displayDialog = false
       },
+      /** Closes the dialog and calls its onCancel. */
       cancelDialog() {
         const onCancel = _.get(this.recordDialog, 'onCancel', false)
         this.closeDialog()
@@ -592,13 +607,19 @@
       confirmDialog() {
         window.DialogService.confirm(this.recordDialog)
       },
+      /** @param {boolean} isEditing whether a record is being edited (guards the navigation) */
       onGetRecordEdition (isEditing) {
         this.isEditing = isEditing
       },
+      /** @param {Object} data the dialog to show: event, title, message, callback, onCancel */
       async onGetRecordEditionShowDialog (data) {
         this.recordDialog = data
         this.displayDialog = true
       },
+      /**
+       * @param {{callback?: Function}} data
+       * @returns {*} what the callback answers
+       */
       async onGetRecordEditionConfirm (data) {
         window.DialogService.send(false)
         this.closeDialog()
@@ -621,9 +642,15 @@
       selectCurrentResource () {
         this.selectResource(this.selectedResource)
       },
+      /** @param {Object} resourceGroup */
       async selectResourceGroup (resourceGroup) {
         this.selectedResourceGroup = resourceGroup
       },
+      /**
+       * Shows the unsaved-changes dialog instead when a record is being edited and force is off.
+       * @param {Object} resource a resource or a plugin
+       * @param {boolean} force
+       */
       async selectResource (resource, force = false) {
         if (_.isUndefined(resource)) {
           return
@@ -671,6 +698,10 @@
           this.loadingRecords = false
         }
       },
+      /**
+       * Caches the resource and the ones its fields draw from (extraSources, nested ones included).
+       * @param {Object} resource
+       */
       async cacheRelatedResources (resource) {
         let resources = _.union([resource.title], _.values(resource.extraSources))
         const extraResources = (obj) => {
@@ -685,6 +716,8 @@
                 resources.push(..._.values(extraSources))
                 if (value === 'select' || value === 'multiselect') {
                   const source = _.get(obj, 'source')
+                  // a field of several resources draws from all of them
+                  resources.push(..._.map(sourcesOf(obj), 'resource'))
                   if (_.isString(source)) {
                     resources.push(source)
                     const schema = ResourceService.getSchema(source)
@@ -717,6 +750,10 @@
           }
         }), {concurrency: 10})
       },
+      /**
+       * Nothing for a plugin or while the records load.
+       * @param {boolean} replace replace the history entry instead of pushing one
+       */
       writeRouteRecord (replace = false) {
         if (!this.selectedResource || this.selectedResource.type === 'plugin' || this.loadingRecords) {
           return
@@ -752,12 +789,21 @@
         }
         this.selectRecord(record)
       },
+      /**
+       * Shows the unsaved-changes dialog instead when another record is being edited and force is off.
+       * @param {Object|null} record
+       * @param {boolean} force
+       */
       selectRecord (record, force = false) {
         if (!force && this.isEditing && this.selectedRecord !== record) {
           return window.DialogService.show({event: 'selectRecord', callback: ()=> this.selectRecord(record)})
         }
         this.selectedRecord = record
       },
+      /**
+       * Shows the unsaved-changes dialog instead when a record is being edited.
+       * @param {boolean} isMultiselect
+       */
       onSelectMultiselect (isMultiselect) {
         if (this.isEditing) {
           return window.DialogService.show({event: 'selectMultiselect', callback: ()=> this.onSelectMultiselect(isMultiselect)})
@@ -767,9 +813,14 @@
           this.unsetSelectedRecord()
         }
       },
+      /** @param {Array<Object>} items copied */
       onChangeMultiselectItems (items) {
         this.multiselectItems = _.clone(items)
       },
+      /**
+       * Reloads the list after a save or a delete and selects the record again; a removed one leaves a blank new record (nothing in the table view).
+       * @param {Object} record the record saved or removed
+       */
       async updateRecordList (record) {
         try {
           this.$loading.start('updateRecordList')
@@ -811,7 +862,6 @@
           this.$vuetify.theme.change(theme)
         }
         LoginService.events.emit('changed-theme', theme)
-        this.$forceUpdate()
       },
       unsetSelectedRecord () {
         this.selectedRecord = null
@@ -977,6 +1027,11 @@
       font: inherit;
       cursor: pointer;
       border-radius: var(--cms-radius-sm);
+      // on a touch screen the hit area grows (to the touch target, with the line staying where it is), the line does not
+      @media (pointer: coarse) {
+        padding: var(--cms-space-3) var(--cms-space-2);
+        margin: calc(var(--cms-space-3) * -1) calc(var(--cms-space-2) * -1);
+      }
       &:hover {
         color: var(--cms-primary);
         text-decoration: underline;
@@ -1032,7 +1087,7 @@
 }
 
 // Phones: the navigation is an off-canvas drawer (wider screens keep the sidebar or the rail).
-@media (max-width: 767.98px) {
+@media #{$phone-query} {
   .cms-layout {
     .cms-nav {
       position: fixed;
@@ -1065,7 +1120,7 @@
 }
 
 // Phones: list and editor are two steps of one flow.
-@media (max-width: 767.98px) {
+@media #{$phone-query} {
   .cms-layout .records:not(.full-width) {
     &.has-selection .record-list {
       display: none;

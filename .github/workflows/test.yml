@@ -2,7 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
   # the release workflow runs the same jobs before it publishes
   workflow_call:

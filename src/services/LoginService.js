@@ -11,6 +11,7 @@ class LoginService {
     this.logoutCallbackList = []
   }
 
+  /** Polls the login status. */
   init () {
     // log.debug('LoginService - init')
     setInterval(async () => {
@@ -18,21 +19,23 @@ class LoginService {
     }, 1000 * 15)
   }
 
+  /** @returns {Promise<Array<Object>>} the plugins of the group of the user */
   async getPlugins() {
     const groups = await RequestService.get(`${window.location.pathname}_groups`)
     return _.get(_.find(groups, {name: _.get(this.user, 'group', false)}), 'plugins', [])
   }
 
+  /** @returns {Promise<Object|null>} the logged-in user */
   async getStatus () {
     try {
       const data = await RequestService.get(`${window.location.pathname}login`)
       if (_.get(this.user, '_updatedAt', false) && _.get(data, '_updatedAt', false)) {
         if (this.user._updatedAt !== data._updatedAt) {
-          console.warn('User data updated, will logout...')
+          log.debug('User data updated, will logout...')
           return await this.logout()
         }
       } else if (_.isEmpty(data) && !_.isEmpty(this.user)) {
-        console.warn('User not logged in, will logout...')
+        log.debug('User not logged in, will logout...')
         return await this.logout()
       }
       this.user = data
@@ -40,9 +43,9 @@ class LoginService {
       const localUptime = _.parseInt(VueCookies.get('uptime') || -1)
       if (localUptime <= -1) {
         VueCookies.set('uptime', `${remoteUptime}`)
-        console.warn('Server uptime saved:', VueCookies.get('uptime'))
+        log.debug('Server uptime saved:', VueCookies.get('uptime'))
       } else if (_.isNumber(localUptime) && remoteUptime > localUptime) {
-        console.warn('Will reload page for a new version...')
+        log.debug('Will reload page for a new version...')
         VueCookies.remove('uptime')
         window.location.reload(true)
       }
@@ -52,6 +55,7 @@ class LoginService {
     }
   }
 
+  /** Loads the status; a logout or a change of user runs the logout callbacks. */
   async checkStatus () {
     let status
     const userBefore = _.cloneDeep(this.user)
@@ -65,20 +69,27 @@ class LoginService {
     }
   }
 
-  async changeTheme () {
+  /**
+   * @param {string} [wanted] the theme to keep ('light' or 'dark'); the other one than the user has when none is given
+   * @returns {Promise<string|undefined>} the theme, saved for the user; nothing when the server could not keep it
+   */
+  async changeTheme (wanted) {
+    const before = _.get(this.user, 'theme', 'dark')
+    const newTheme = wanted || (before === 'dark' ? 'light' : 'dark')
     try {
-      const newTheme = _.get(this.user, 'theme', 'dark') === 'dark' ? 'light' : 'dark'
       this.events.emit('changed-theme', newTheme)
       await RequestService.get(`${window.location.pathname}changeTheme/${newTheme}`)
       log.debug(`Successfully changed the theme for user: ${newTheme}`)
       _.set(this.user, 'theme', newTheme)
-      document.querySelectorAll('body')[0].classList = [`v-theme--${newTheme}`]
       return newTheme
     } catch (error) {
       console.error('Failed to change theme: ', error)
+      // the fields that were told are told again, with the theme that is still the one
+      this.events.emit('changed-theme', before)
     }
   }
 
+  /** Clears the user, tells the server, runs the callbacks. */
   async logout () {
     this.user = null
     try {
@@ -92,10 +103,15 @@ class LoginService {
     })
   }
 
+  /** @param {Function} callback */
   onLogout (callback) {
     this.logoutCallbackList.push(callback)
   }
 
+  /**
+   * @param {string} module
+   * @returns {boolean} whether the group of the user has it
+   */
   checkPermission (module) {
     return _.includes(this.user.group.modules, module)
   }

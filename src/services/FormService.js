@@ -1,8 +1,19 @@
 
 import _ from 'lodash'
 import TranslateServiceLib from '@s/TranslateService'
+import { ratingOptions, normaliseRating } from '@u/rating'
+import { validateDuration } from '@u/duration'
+import { validateMoney } from '@u/money'
+import { validateDateRange } from '@u/dateRange'
+import { validateGeopoint } from '@u/geopoint'
+import { validateChoice } from '@u/choice'
+import { validatePhone } from '@u/phone'
 
 const TranslateService = window.TranslateService || TranslateServiceLib
+/**
+ * @param {Object} schema
+ * @returns {{key: string, locale?: string}} the field name and the locale of the model path
+ */
 const getKeyLocale = (schema) => {
   const options = {}
   const list = _.get(schema, 'model', '').split('.')
@@ -13,6 +24,10 @@ const getKeyLocale = (schema) => {
   return options
 }
 
+/**
+ * @param {string} email
+ * @returns {boolean|Array} empty passes; else the match
+ */
 const validateEmail = (email) => {
   return _.isUndefined(email) || String(email).length === 0 || String(email)
     .toLowerCase()
@@ -22,6 +37,10 @@ const validateEmail = (email) => {
 }
 
 const validators = {
+  /**
+   * @param {string} u
+   * @returns {boolean}
+   */
   url: (u) => {
     try {
       const validUrl = new URL(u)
@@ -30,21 +49,54 @@ const validators = {
       return false
     }
   },
+  /**
+   * @param {*} n
+   * @returns {boolean}
+   */
   number: (n) => _.isNumber(n),
+  /**
+   * @param {*} n
+   * @returns {boolean}
+   */
   integer: (n) => _.isNumber(n) && _.isInteger(n),
+  /**
+   * @param {*} n
+   * @returns {boolean}
+   */
   double: (n) => _.isNumber(n) && (_.isInteger(n) || (n === +n && n !== (n | 0))),
+  /**
+   * @param {*} t
+   * @returns {boolean}
+   */
   text: (t) => _.isString(t),
+  /**
+   * @param {*} a
+   * @returns {boolean}
+   */
   array: (a) => _.isArray(a),
+  /**
+   * @param {*} e
+   * @returns {boolean|Array}
+   */
   email: (e) => validateEmail(e)
 }
 
+/** @returns {string} the translated message */
 const fieldIsRequired = () => {
   return TranslateService.get('TL_FIELD_IS_REQUIRED')
 }
+/** @returns {string} the translated message */
 const invalidFormat = () => {
   return TranslateService.get('TL_INVALID_FORMAT')
 }
 
+/**
+ * @param {Object} field
+ * @param {*} value
+ * @param {Object} model
+ * @param {string} type number, integer or double
+ * @returns {true|string}
+ */
 const checkNumber = (field, value, model, type) => {
   if (_.get(field, 'required', false) && !_.isNumber(value)) {
     return TranslateService.get('TL_FIELD_IS_REQUIRED')
@@ -60,13 +112,70 @@ const checkNumber = (field, value, model, type) => {
   return false
 }
 
+/**
+ * @param {*} item
+ * @param {Object} labelProp labels by value
+ * @returns {string}
+ */
 const customLabel = (item, labelProp) => {
   return _.get(labelProp, item, item)
 }
 
 const customValidators = {
+  /**
+   * @param {*} value seconds
+   * @param {Object} field
+   * @returns {true|string}
+   */
+  duration: (value, field) => validateDuration(field, value) || true,
+  /**
+   * @param {*} value { amount, currency }
+   * @param {Object} field
+   * @returns {true|string}
+   */
+  money: (value, field) => validateMoney(field, value) || true,
+  /**
+   * @param {*} value { start, end }
+   * @param {Object} field
+   * @returns {true|string}
+   */
+  daterange: (value, field) => validateDateRange(field, value) || true,
+  geopoint: (value, field) => validateGeopoint(field, value) || true,
+  radio: (value, field) => validateChoice(field, value) || true,
+  segmented: (value, field) => validateChoice(field, value) || true,
+  /**
+   * @param {*} value an international number, +442071838750
+   * @param {Object} field
+   * @returns {true|string}
+   */
+  phone: (value, field) => validatePhone(field, value) || true,
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @returns {true|string} a rating is a number from 1 (0.5 with half steps) to the most the field says, or nothing
+   */
+  rating: (value, field) => {
+    if (_.isNil(value) || value === '') {
+      return _.get(field, 'required', false) ? fieldIsRequired() : true
+    }
+    const { max, half } = ratingOptions(field)
+    return _.isFinite(value) && normaliseRating(value, max, half) === value ? true : TranslateService.get('TL_INVALID_RATING', { max })
+  },
+  /**
+   * @param {*} a
+   * @returns {boolean}
+   */
   array: (a) => _.isArray(a),
+  /**
+   * @param {*} e
+   * @returns {boolean}
+   */
   email: (e) => (new RegExp('/^\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*(\\.\\w{2,3})+$/')).test(e),
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @returns {true|string}
+   */
   text: (value, field) => {
     if (_.get(field, 'required', false) && (!_.isString(value) || _.isEmpty(value))) {
       return fieldIsRequired()
@@ -98,14 +207,37 @@ const customValidators = {
     }
     return true
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @returns {true|string} an empty paragraph counts as empty
+   */
   wysiwyg: (value, field) => {
     if (_.get(field, 'required', false) && (!_.isString(value) || _.isEmpty(value)) || value === '<p></p>') {
       return fieldIsRequired()
     }
     return true
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @returns {true|string}
+   */
   number: (value, field, model) => checkNumber(field, value, model, 'number'),
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @returns {true|string}
+   */
   double: (value, field, model) => checkNumber(field, value, model, 'double'),
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model
+   * @returns {true|string}
+   */
   integer: (value, field, model) => {
     if (_.isNil(value)) {
       value = ''
@@ -115,6 +247,12 @@ const customValidators = {
     }
     return checkNumber(field, value, model, 'integer')
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model the record, where the attachment of the field is looked up
+   * @returns {true|string}
+   */
   image: (value, field, model) => {
     const { key, locale } = getKeyLocale(field)
     const attachment = _.find(_.get(model, '_attachments', []), (item) => {
@@ -125,6 +263,12 @@ const customValidators = {
     }
     return true
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @param {Object} model the record, where the attachment of the field is looked up
+   * @returns {true|string}
+   */
   file: (value, field, model) => {
     const { key, locale } = getKeyLocale(field)
     const attachment = _.find(_.get(model, '_attachments', []), (item) => {
@@ -135,9 +279,19 @@ const customValidators = {
     }
     return true
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @returns {true|string}
+   */
   select: (value, field) => {
     return _.get(field, 'required', false) && _.isEmpty(value) ? fieldIsRequired() : true
   },
+  /**
+   * @param {*} value
+   * @param {Object} field
+   * @returns {true|string}
+   */
   pillbox: (value, field) => {
     if (_.get(field, 'required', false) && (!_.isArray(value) || _.isEmpty(value))) {
       return fieldIsRequired()
@@ -146,7 +300,7 @@ const customValidators = {
   }
 }
 
-let typeMapper = {
+const typeMapper = {
   string: {
     type: 'input',
     overrideType: 'CustomInput',
@@ -208,6 +362,25 @@ let typeMapper = {
       placeholder: 'YYYY-MM-DD'
     }
   },
+  // a start and an end on one calendar, kept as { start, end } (see utils/dateRange.js)
+  daterange: {
+    type: 'DateRangeField',
+    validator: customValidators.daterange
+  },
+  // one value chosen from a short list that is all in view, as radio buttons or as joined buttons (see utils/choice.js)
+  radio: {
+    type: 'ChoiceField',
+    validator: customValidators.radio
+  },
+  segmented: {
+    type: 'ChoiceField',
+    validator: customValidators.segmented
+  },
+  // a place, kept as { lat, lng } in degrees (see utils/geopoint.js)
+  geopoint: {
+    type: 'GeopointField',
+    validator: customValidators.geopoint
+  },
   time: {
     type: 'CustomDatetimePicker',
     format: 'HH:mm:ss',
@@ -227,6 +400,12 @@ let typeMapper = {
     selectOptions: {
       multiple: true,
       searchable: true,
+      /**
+       * @param {string} newTag
+       * @param {string} id
+       * @param {Array} options receives it
+       * @param {Array} value receives it
+       */
       onNewTag (newTag, id, options, value) {
         options.push(newTag)
         value.push(newTag)
@@ -282,6 +461,16 @@ let typeMapper = {
     type: 'ImageView',
     validator: customValidators.image
   },
+  // an image field with the crop tool (see utils/cropRecipe.js): the same component, which shows the tool when the input is cropimage
+  cropimage: {
+    type: 'ImageView',
+    validator: customValidators.image
+  },
+  // an image field with an image map: the areas laid over the picture, each with a title and a link (see utils/imageMap.js)
+  imagemap: {
+    type: 'ImageView',
+    validator: customValidators.image
+  },
   file: {
     type: 'AttachmentView',
     validator: customValidators.file
@@ -295,6 +484,31 @@ let typeMapper = {
   },
   object: {
     type: 'JsonEditor'
+  },
+  // a length of time, typed in hours and minutes (or the units the field says) and kept in seconds (see utils/duration.js)
+  duration: {
+    type: 'DurationField',
+    validator: customValidators.duration
+  },
+  // a telephone number: a country and the national number, kept in the international form (see utils/phone.js)
+  phone: {
+    type: 'PhoneField',
+    validator: customValidators.phone
+  },
+  // a text written in Markdown, with a toolbar and a preview (see utils/markdown.js)
+  markdown: {
+    type: 'MarkdownField',
+    validator: customValidators.text
+  },
+  // an amount in a currency, kept as { amount, currency } (see utils/money.js)
+  money: {
+    type: 'MoneyField',
+    validator: customValidators.money
+  },
+  // a number of icons filled up to the value (see utils/rating.js)
+  rating: {
+    type: 'RatingField',
+    validator: customValidators.rating
   },
   color: {
     type: 'ColorPicker',
@@ -315,6 +529,10 @@ class FormService {
     this.typeMapper = typeMapper
   }
 
+  /**
+   * @param {Object} schema
+   * @returns {{key: string, locale?: string}}
+   */
   getKeyLocale (schema) {
     return getKeyLocale(schema)
   }

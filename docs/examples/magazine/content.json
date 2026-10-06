@@ -1,0 +1,378 @@
+{
+  "settings": [
+    {
+      "name": {
+        "enUS": "The Harbour Review",
+        "zhCN": "港湾评论"
+      },
+      "tagline": {
+        "enUS": "Slow stories about places, food and ideas",
+        "zhCN": "关于地方、美食与想法的慢故事"
+      }
+    }
+  ],
+  "authors": [
+    {
+      "name": "Mei Lin",
+      "slug": "mei-lin",
+      "bio": {
+        "enUS": "Mei writes about travel and food, usually from a train.",
+        "zhCN": "梅琳写旅行和美食，常常是在火车上写的。"
+      },
+      "photo": "attachment://files/authors/mei-lin.jpg"
+    },
+    {
+      "name": "Tom Becker",
+      "slug": "tom-becker",
+      "bio": {
+        "enUS": "Tom builds small servers and writes down what he learns.",
+        "zhCN": "汤姆搭建小型服务器，并记录所学。"
+      },
+      "photo": "attachment://files/authors/tom-becker.jpg"
+    },
+    {
+      "name": "Aiko Tanaka",
+      "slug": "aiko-tanaka",
+      "bio": {
+        "enUS": "Aiko covers craft, print and the people who keep both going.",
+        "zhCN": "爱子关注手工艺、印刷，以及让它们延续下去的人。"
+      },
+      "photo": "attachment://files/authors/aiko-tanaka.jpg"
+    }
+  ],
+  "categories": [
+    {
+      "slug": "travel",
+      "order": 1,
+      "name": {
+        "enUS": "Travel",
+        "zhCN": "旅行"
+      }
+    },
+    {
+      "slug": "food",
+      "order": 2,
+      "name": {
+        "enUS": "Food",
+        "zhCN": "美食"
+      }
+    },
+    {
+      "slug": "technology",
+      "order": 3,
+      "name": {
+        "enUS": "Technology",
+        "zhCN": "科技"
+      }
+    },
+    {
+      "slug": "culture",
+      "order": 4,
+      "name": {
+        "enUS": "Culture",
+        "zhCN": "文化"
+      }
+    }
+  ],
+  "articles": [
+    {
+      "slug": "slow-mornings-in-lisbon",
+      "title": {
+        "enUS": "Slow mornings in Lisbon",
+        "zhCN": "里斯本的慢早晨"
+      },
+      "summary": {
+        "enUS": "Coffee, trams and an hour with nowhere to be.",
+        "zhCN": "咖啡、电车，和一个无事可做的小时。"
+      },
+      "body": {
+        "enUS": "<p>The best part of a journey is rarely the arrival. It is the hour before, when the platform is quiet and the light has not decided what to do yet.</p><h2>In short</h2><p>We kept no schedule, and the days arranged themselves around meals, weather and whatever the person at the next table recommended.</p><blockquote>Coffee, trams and an hour with nowhere to be.</blockquote>",
+        "zhCN": "<p>旅途中最好的时刻很少是抵达，而是之前的那一个小时：站台安静，天光还没有拿定主意。</p><h2>简而言之</h2><p>我们没有安排行程，日子自己围着三餐、天气和邻桌的推荐转了起来。</p><blockquote>咖啡、电车，和一个无事可做的小时。</blockquote>"
+      },
+      "author": "authors://mei-lin",
+      "categories": [
+        "categories://travel"
+      ],
+      "publishedOn": "2026-10-01",
+      "featured": true,
+      "published": true,
+      "cover": "attachment://files/articles/slow-mornings-in-lisbon.jpg"
+    },
+    {
+      "slug": "the-case-for-the-long-lunch",
+      "title": {
+        "enUS": "The case for the long lunch",
+        "zhCN": "慢慢吃一顿午饭"
+      },
+      "summary": {
+        "enUS": "Why the best meal of the day should not fit in a break.",
+        "zhCN": "为什么一天中最好的一餐不该塞进休息时间。"
+      },
+      "body": {
+        "enUS": "<p>Good cooking is mostly patience with a little salt. The recipe matters less than paying attention to what is in the pan.</p><h2>In short</h2><p>Write down what you changed and why. A year from now that note will be the only recipe you really own.</p><blockquote>Why the best meal of the day should not fit in a break.</blockquote>",
+        "zhCN": "<p>好厨艺大半是耐心，再加一点盐。比起食谱，更重要的是留意锅里的变化。</p><h2>简而言之</h2><p>把改动和原因记下来。一年后，这张笔记才是你真正拥有的食谱。</p><blockquote>为什么一天中最好的一餐不该塞进休息时间。</blockquote>"
+      },
+      "author": "authors://mei-lin",
+      "categories": [
+        "categories://food"
+      ],
+      "publishedOn": "2026-09-28",
+      "featured": false,
+      "published": true,
+      "cover": "attachment://files/articles/the-case-for-the-long-lunch.jpg"
+    },
+    {
+      "slug": "what-a-small-server-can-do",
+      "title": {
+        "enUS": "What a small server can do",
+        "zhCN": "小服务器的大能耐"
+      },
+      "summary": {
+        "enUS": "A page, a database and a pair of hands.",
+        "zhCN": "一个页面、一个数据库，和一双手。"
+      },
+      "body": {
+        "enUS": "<p>A small server, a clear data model and a page that can be rebuilt from scratch: it is a dull recipe, and it is the one that keeps working.</p><h2>In short</h2><p>Keep what editors write apart from what developers write, and each side can change without asking the other for permission.</p><blockquote>A page, a database and a pair of hands.</blockquote>",
+        "zhCN": "<p>一台小服务器、清晰的数据模型、一个随时能重建的页面：这套做法乏味，但它能一直运转。</p><h2>简而言之</h2><p>把编辑写的内容和开发写的代码分开，双方都可以独立改动，不必互相请示。</p><blockquote>一个页面、一个数据库，和一双手。</blockquote>"
+      },
+      "author": "authors://tom-becker",
+      "categories": [
+        "categories://technology"
+      ],
+      "publishedOn": "2026-09-25",
+      "featured": false,
+      "published": true,
+      "cover": "attachment://files/articles/what-a-small-server-can-do.jpg"
+    },
+    {
+      "slug": "a-street-market-after-rain",
+      "title": {
+        "enUS": "A street market after rain",
+        "zhCN": "雨后的街市"
+      },
+      "summary": {
+        "enUS": "The stalls reopen one tarpaulin at a time.",
+        "zhCN": "摊位一块篷布一块篷布地重新打开。"
+      },
+      "body": {
+        "enUS": "<p>The best part of a journey is rarely the arrival. It is the hour before, when the platform is quiet and the light has not decided what to do yet.</p><h2>In short</h2><p>We kept no schedule, and the days arranged themselves around meals, weather and whatever the person at the next table recommended.</p><blockquote>The stalls reopen one tarpaulin at a time.</blockquote>",
+        "zhCN": "<p>旅途中最好的时刻很少是抵达，而是之前的那一个小时：站台安静，天光还没有拿定主意。</p><h2>简而言之</h2><p>我们没有安排行程，日子自己围着三餐、天气和邻桌的推荐转了起来。</p><blockquote>摊位一块篷布一块篷布地重新打开。</blockquote>"
+      },
+      "author": "authors://mei-lin",
+      "categories": [
+        "categories://travel"
+      ],
+      "publishedOn": "2026-09-22",
+      "featured": false,
+      "published": true,
+      "cover": "attachment://files/articles/a-street-market-after-rain.jpg"
+    },
+    {
+      "slug": "bread-patiently",
+      "title": {
+        "enUS": "Bread, patiently",
+        "zhCN": "耐心做面包"
+      },
+      "summary": {
+        "enUS": "Three ingredients and a very long afternoon.",
+        "zhCN": "三样配料，和一个很长的下午。"
+      },
+      "body": {
+        "enUS": "<p>Good cooking is mostly patience with a little salt. The recipe matters less than paying attention to what is in the pan.</p><h2>In short</h2><p>Write down what you changed and why. A year from now that note will be the only recipe you really own.</p><blockquote>Three ingredients and a very long afternoon.</blockquote>",
+        "zhCN": "<p>好厨艺大半是耐心，再加一点盐。比起食谱，更重要的是留意锅里的变化。</p><h2>简而言之</h2><p>把改动和原因记下来。一年后，这张笔记才是你真正拥有的食谱。</p><blockquote>三样配料，和一个很长的下午。</blockquote>"
+      },
+      "author": "authors://aiko-tanaka",
+      "categories": [
+        "categories://food"
+      ],
+      "publishedOn": "2026-09-19",
+      "featured": false,
+      "published": true,
+      "cover": "attachment://files/articles/bread-patiently.jpg"
+    },
+    {
+      "slug": "writing-documentation-people-read",
+      "title": {
+        "enUS": "Writing documentation people read",
+        "zhCN": "写出有人读的文档"
+      },
+      "summary": {
+        "enUS": "Start from the question, end at the example.",
+        "zhCN": "从问题开始，以示例结束。"
+      },
+      "body": {
+        "enUS": "<p>A small server, a clear data model and a page that can be rebuilt from scratch: it is a dull recipe, and it is the one that keeps working.</p><h2>In short</h2><p>Keep what editors write apart from what developers write, and each side can change without asking the other for permission.</p><blockquote>Start from the question, end at the example.</blockquote>",
+        "zhCN": "<p>一台小服务器、清晰的数据模型、一个随时能重建的页面：这套做法乏味，但它能一直运转。</p><h2>简而言之</h2><p>把编辑写的内容和开发写的代码分开，双方都可以独立改动，不必互相请示。</p><blockquote>从问题开始，以示例结束。</blockquote>"
+      },
+      "author": "authors://tom-becker",
+      "categories": [
+        "categories://technology"
+      ],
+      "publishedOn": "2026-09-16",
+      "featured": false,
+      "published": true,
+      "cover": "attachment://files/articles/writing-documentation-people-read.jpg"
+    },
+    {
+      "slug": "ink-paper-and-the-last-print-shop",
+      "title": {
+        "enUS": "Ink, paper and the last print shop",
+        "zhCN": "纸与墨：最后一家印刷坊"
+      },
+      "summary": {
+        "enUS": "A press that is older than the street it stands on.",
+        "zhCN": "一台比所在街道还要古老的印刷机。"
+      },
+      "body": {
+        "enUS": "<p>Some crafts survive because someone decided, quietly, that they were worth the trouble. Most of the time nobody notices until the shop is closed.</p><h2>In short</h2><p>Ask the people who still do it. They will tell you it is not nostalgia, just a better way to make the thing.</p><blockquote>A press that is older than the street it stands on.</blockquote>",
+        "zhCN": "<p>有些手艺能留下来，是因为有人悄悄认定它值得。大多数时候，要等店关了才有人注意到。</p><h2>简而言之</h2><p>去问问还在做的人。他们会说这不是怀旧，只是做这件东西更好的方式。</p><blockquote>一台比所在街道还要古老的印刷机。</blockquote>"
+      },
+      "author": "authors://aiko-tanaka",
+      "categories": [
+        "categories://culture"
+      ],
+      "publishedOn": "2026-09-13",
+      "featured": false,
+      "published": true,
+      "cover": "attachment://files/articles/ink-paper-and-the-last-print-shop.jpg"
+    },
+    {
+      "slug": "night-trains-across-the-north",
+      "title": {
+        "enUS": "Night trains across the north",
+        "zhCN": "北方的夜行列车"
+      },
+      "summary": {
+        "enUS": "Eleven hours, one blanket, a very good view.",
+        "zhCN": "十一个小时，一条毯子，窗外风景极好。"
+      },
+      "body": {
+        "enUS": "<p>The best part of a journey is rarely the arrival. It is the hour before, when the platform is quiet and the light has not decided what to do yet.</p><h2>In short</h2><p>We kept no schedule, and the days arranged themselves around meals, weather and whatever the person at the next table recommended.</p><blockquote>Eleven hours, one blanket, a very good view.</blockquote>",
+        "zhCN": "<p>旅途中最好的时刻很少是抵达，而是之前的那一个小时：站台安静，天光还没有拿定主意。</p><h2>简而言之</h2><p>我们没有安排行程，日子自己围着三餐、天气和邻桌的推荐转了起来。</p><blockquote>十一个小时，一条毯子，窗外风景极好。</blockquote>"
+      },
+      "author": "authors://mei-lin",
+      "categories": [
+        "categories://travel"
+      ],
+      "publishedOn": "2026-09-10",
+      "featured": false,
+      "published": true,
+      "cover": "attachment://files/articles/night-trains-across-the-north.jpg"
+    },
+    {
+      "slug": "fermentation-for-beginners",
+      "title": {
+        "enUS": "Fermentation for beginners",
+        "zhCN": "发酵入门"
+      },
+      "summary": {
+        "enUS": "A jar, some salt and the courage to wait.",
+        "zhCN": "一个罐子、一点盐，和等待的勇气。"
+      },
+      "body": {
+        "enUS": "<p>Good cooking is mostly patience with a little salt. The recipe matters less than paying attention to what is in the pan.</p><h2>In short</h2><p>Write down what you changed and why. A year from now that note will be the only recipe you really own.</p><blockquote>A jar, some salt and the courage to wait.</blockquote>",
+        "zhCN": "<p>好厨艺大半是耐心，再加一点盐。比起食谱，更重要的是留意锅里的变化。</p><h2>简而言之</h2><p>把改动和原因记下来。一年后，这张笔记才是你真正拥有的食谱。</p><blockquote>一个罐子、一点盐，和等待的勇气。</blockquote>"
+      },
+      "author": "authors://aiko-tanaka",
+      "categories": [
+        "categories://food"
+      ],
+      "publishedOn": "2026-09-07",
+      "featured": false,
+      "published": true,
+      "cover": "attachment://files/articles/fermentation-for-beginners.jpg"
+    },
+    {
+      "slug": "keeping-content-and-code-apart",
+      "title": {
+        "enUS": "Keeping content and code apart",
+        "zhCN": "内容与代码分开"
+      },
+      "summary": {
+        "enUS": "What an editor owns, what a developer owns, and the line between.",
+        "zhCN": "编辑负责什么，开发负责什么，以及两者的界线。"
+      },
+      "body": {
+        "enUS": "<p>A small server, a clear data model and a page that can be rebuilt from scratch: it is a dull recipe, and it is the one that keeps working.</p><h2>In short</h2><p>Keep what editors write apart from what developers write, and each side can change without asking the other for permission.</p><blockquote>What an editor owns, what a developer owns, and the line between.</blockquote>",
+        "zhCN": "<p>一台小服务器、清晰的数据模型、一个随时能重建的页面：这套做法乏味，但它能一直运转。</p><h2>简而言之</h2><p>把编辑写的内容和开发写的代码分开，双方都可以独立改动，不必互相请示。</p><blockquote>编辑负责什么，开发负责什么，以及两者的界线。</blockquote>"
+      },
+      "author": "authors://tom-becker",
+      "categories": [
+        "categories://technology"
+      ],
+      "publishedOn": "2026-09-04",
+      "featured": false,
+      "published": true,
+      "cover": "attachment://files/articles/keeping-content-and-code-apart.jpg"
+    },
+    {
+      "slug": "letters-from-a-tea-house",
+      "title": {
+        "enUS": "Letters from a tea house",
+        "zhCN": "茶馆来信"
+      },
+      "summary": {
+        "enUS": "Regulars, rules and one very old kettle.",
+        "zhCN": "熟客、规矩，和一只很老的水壶。"
+      },
+      "body": {
+        "enUS": "<p>Some crafts survive because someone decided, quietly, that they were worth the trouble. Most of the time nobody notices until the shop is closed.</p><h2>In short</h2><p>Ask the people who still do it. They will tell you it is not nostalgia, just a better way to make the thing.</p><blockquote>Regulars, rules and one very old kettle.</blockquote>",
+        "zhCN": "<p>有些手艺能留下来，是因为有人悄悄认定它值得。大多数时候，要等店关了才有人注意到。</p><h2>简而言之</h2><p>去问问还在做的人。他们会说这不是怀旧，只是做这件东西更好的方式。</p><blockquote>熟客、规矩，和一只很老的水壶。</blockquote>"
+      },
+      "author": "authors://aiko-tanaka",
+      "categories": [
+        "categories://culture"
+      ],
+      "publishedOn": "2026-09-01",
+      "featured": false,
+      "published": true,
+      "cover": "attachment://files/articles/letters-from-a-tea-house.jpg"
+    },
+    {
+      "slug": "three-days-on-the-coast-path",
+      "title": {
+        "enUS": "Three days on the coast path",
+        "zhCN": "海岸步道三日"
+      },
+      "summary": {
+        "enUS": "Sixty kilometres, nine beaches, one blister.",
+        "zhCN": "六十公里，九片海滩，一个水泡。"
+      },
+      "body": {
+        "enUS": "<p>The best part of a journey is rarely the arrival. It is the hour before, when the platform is quiet and the light has not decided what to do yet.</p><h2>In short</h2><p>We kept no schedule, and the days arranged themselves around meals, weather and whatever the person at the next table recommended.</p><blockquote>Sixty kilometres, nine beaches, one blister.</blockquote>",
+        "zhCN": "<p>旅途中最好的时刻很少是抵达，而是之前的那一个小时：站台安静，天光还没有拿定主意。</p><h2>简而言之</h2><p>我们没有安排行程，日子自己围着三餐、天气和邻桌的推荐转了起来。</p><blockquote>六十公里，九片海滩，一个水泡。</blockquote>"
+      },
+      "author": "authors://mei-lin",
+      "categories": [
+        "categories://travel"
+      ],
+      "publishedOn": "2026-08-29",
+      "featured": false,
+      "published": true,
+      "cover": "attachment://files/articles/three-days-on-the-coast-path.jpg"
+    },
+    {
+      "slug": "an-unfinished-idea",
+      "title": {
+        "enUS": "An unfinished idea",
+        "zhCN": "尚未完成的想法"
+      },
+      "summary": {
+        "enUS": "A draft: it is not on the site until an editor publishes it.",
+        "zhCN": "草稿：编辑发布之前，它不会出现在网站上。"
+      },
+      "body": {
+        "enUS": "<p>Some crafts survive because someone decided, quietly, that they were worth the trouble. Most of the time nobody notices until the shop is closed.</p><h2>In short</h2><p>Ask the people who still do it. They will tell you it is not nostalgia, just a better way to make the thing.</p><blockquote>A draft: it is not on the site until an editor publishes it.</blockquote>",
+        "zhCN": "<p>有些手艺能留下来，是因为有人悄悄认定它值得。大多数时候，要等店关了才有人注意到。</p><h2>简而言之</h2><p>去问问还在做的人。他们会说这不是怀旧，只是做这件东西更好的方式。</p><blockquote>草稿：编辑发布之前，它不会出现在网站上。</blockquote>"
+      },
+      "author": "authors://aiko-tanaka",
+      "categories": [
+        "categories://culture"
+      ],
+      "publishedOn": "2026-08-26",
+      "featured": false,
+      "published": false,
+      "cover": "attachment://files/articles/an-unfinished-idea.jpg"
+    }
+  ]
+}

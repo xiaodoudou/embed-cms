@@ -18,7 +18,7 @@ Catalogue: `resources/text_formats.js`, fields `url`, `requiredUrl`, `localisedU
 |---|---|---|---|
 | `field`, `input`, `label`, `required`, `localised`, `unique` | | | As for [string](string.md). |
 | `options.hint` | string | none | Help text under the input. |
-| `options.readonly` | boolean | `false` | Not editable, an eye icon after the label, no validation. |
+| `options.readonly` | boolean | `false` | Not editable, a lock icon after the label, no validation. |
 | `options.disabled` | boolean | `false` | Greyed out, not focusable. |
 | `options.min` / `options.max`, `options.regex` | | none | Length and pattern rules, as for [string](string.md); they run before the URL check. |
 

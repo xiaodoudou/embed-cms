@@ -26,19 +26,24 @@
 
   export default {
     mixins: [AbstractField],
+    emits: ['input'],
     computed: {
+      /** @returns {boolean} */
       isReadonly () {
         return !!this.schema.readonly
       },
+      /** @returns {boolean} the prop or the schema */
       isDisabled () {
         return !!(this.disabled || this.schema.disabled)
       }
     },
     methods: {
+      /** @returns {boolean|*} the value of the field, false when null or unset */
       getValue () {
         const value = _.get(this.model, this.schema.model, false)
         return _.isNull(value) ? false : value
       },
+      /** Flips the value, unless the field is locked. */
       onChange () {
         if (this.isDisabled || this.isReadonly) {
           return

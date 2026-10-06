@@ -1,0 +1,44 @@
+{
+  "articles": [
+    {
+      "slug": "welcome",
+      "title": {
+        "enUS": "Welcome to the blog"
+      },
+      "body": {
+        "enUS": "<p>This site is made of the content of the CMS: every page you see was rendered by <strong>PageHelper</strong> from a Mustache template.</p><h2>What is in it</h2><ul><li>Articles an editor writes in the admin</li><li>Templates that live in the project</li><li>Pages that are kept until something changes</li></ul>"
+      },
+      "published": true
+    },
+    {
+      "slug": "templates",
+      "title": {
+        "enUS": "Why the templates have no code"
+      },
+      "body": {
+        "enUS": "<p>Mustache templates only print what they are given. The loader of a route prepares the data, so a designer can edit a template without being able to break the server.</p>"
+      },
+      "published": true
+    },
+    {
+      "slug": "caching",
+      "title": {
+        "enUS": "A short guide to the kept pages"
+      },
+      "body": {
+        "enUS": "<p>A page is kept after it is made. It is made again when a template file changes, when a record it read is updated, or when it gets too old.</p>"
+      },
+      "published": true
+    },
+    {
+      "slug": "release",
+      "title": {
+        "enUS": "Release notes for October"
+      },
+      "body": {
+        "enUS": "<p>Pages, a 404 page and an error page, all of them templates of your own.</p>"
+      },
+      "published": true
+    }
+  ]
+}

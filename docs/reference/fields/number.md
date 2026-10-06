@@ -19,7 +19,7 @@ Catalogue: `resources/numbers.js` (group **Numbers**, resource **Numbers**). Rel
 | `field`, `input`, `label`, `localised`, `unique` | | | As for [string](string.md). Numbers are usually `localised: false`. |
 | `required` | boolean | `false` | Empty input shows `This field is required!`. `0` counts as filled. An empty optional number is valid and stores nothing. |
 | `options.hint` | string | none | Help text under the input. |
-| `options.readonly` | boolean | `false` | Not editable, an eye icon after the label. |
+| `options.readonly` | boolean | `false` | Not editable, a lock icon after the label. |
 | `options.disabled` | boolean | `false` | Greyed out, not focusable. |
 | `options.min` / `options.max` | number | none | Minimum / maximum **value**. Errors: `The number is too small! Minimum: 0` / `The number is too big! Maximum: 100`. |
 

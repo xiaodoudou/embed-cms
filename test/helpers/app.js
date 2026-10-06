@@ -8,6 +8,25 @@ const { getCMSInstance, options: baseOptions } = require('./cmsInstance')
 const ADMIN = ['localAdmin', 'localAdmin']
 
 /**
+ * Deletes a folder, trying again for a moment when the system says a file is still in use: on Windows the store of a database keeps its LOG file for a few milliseconds after it is
+ * closed, and a test that passed must not fail while it is cleaning up.
+ * @param {string} folder
+ * @returns {Promise<void>}
+ */
+async function removeFolder (folder) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fs.remove(folder)
+    } catch (error) {
+      if (attempt >= 10 || !['EBUSY', 'EPERM', 'ENOTEMPTY'].includes(error.code)) {
+        throw error
+      }
+      await new Promise(resolve => setTimeout(resolve, 100 * attempt))
+    }
+  }
+}
+
+/**
  * Boots an isolated in-process CMS on a random port with a temp data directory.
  * Replication peers are disabled so tests never open connections to other ports.
  * @param {object} overrides - CMS options merged over the shared test options
@@ -54,7 +73,7 @@ async function startApp (overrides = {}, extra = {}) {
       // flush and close the stores before their folder disappears, or a pending write fails with ENOENT
       await cms._closeDatabase()
       if (!extra.keepData) {
-        await fs.remove(dataDir)
+        await removeFolder(dataDir)
       }
     }
   }

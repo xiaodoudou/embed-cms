@@ -32,8 +32,8 @@ describe('FormService (how each input type is built and checked)', () => {
   describe('the input types', () => {
     it('knows every input type the documentation lists', () => {
       expect(Object.keys(mapper).sort()).toEqual([
-        'checkbox', 'code', 'color', 'date', 'datetime', 'double', 'email', 'file', 'group', 'image', 'integer', 'json', 'multiselect',
-        'number', 'object', 'paragraph', 'password', 'pillbox', 'select', 'string', 'text', 'time', 'transliterate', 'url', 'wysiwyg'
+        'checkbox', 'code', 'color', 'cropimage', 'date', 'daterange', 'datetime', 'double', 'duration', 'email', 'file', 'geopoint', 'group', 'image', 'imagemap', 'integer', 'json', 'markdown', 'money', 'multiselect',
+        'number', 'object', 'paragraph', 'password', 'phone', 'pillbox', 'radio', 'rating', 'segmented', 'select', 'string', 'text', 'time', 'transliterate', 'url', 'wysiwyg'
       ])
     })
 
@@ -194,6 +194,175 @@ describe('FormService (how each input type is built and checked)', () => {
       expect(check('url', 'https://example.com/a?b=1')).toBe(true)
       expect(check('url', 'example.com')).toBe(false)
       expect(check('url', '')).toBe(false)
+    })
+  })
+
+  describe('daterange', () => {
+    const day = (text) => new Date(text + 'T00:00:00').getTime()
+
+    it('is built by its own component', () => {
+      expect(mapper.daterange.type).toBe('DateRangeField')
+    })
+
+    it('says when a required range is missing', () => {
+      expect(check('daterange', undefined, { required: true })).toBe(REQUIRED())
+      expect(check('daterange', undefined, {})).toBe(true)
+    })
+
+    it('takes a range, and refuses an end before the start and a range of the wrong length', () => {
+      expect(check('daterange', { start: day('2026-10-01'), end: day('2026-10-03') }, {})).toBe(true)
+      expect(check('daterange', { start: day('2026-10-03'), end: day('2026-10-01') }, {})).toBe(TranslateService.get('TL_DATE_RANGE_ORDER'))
+      expect(check('daterange', { start: day('2026-10-01'), end: day('2026-10-02') }, { minDays: 3 })).toBe(TranslateService.get('TL_DATE_RANGE_TOO_SHORT', { min: 3 }))
+      expect(check('daterange', { start: 1 }, {})).toBe(TranslateService.get('TL_INVALID_DATE_RANGE'))
+    })
+  })
+
+  describe('radio and segmented', () => {
+    it('are built by the same component', () => {
+      expect(mapper.radio.type).toBe('ChoiceField')
+      expect(mapper.segmented.type).toBe('ChoiceField')
+    })
+
+    for (const input of ['radio', 'segmented']) {
+      it(`say when a required ${input} has no choice`, () => {
+        expect(check(input, undefined, { required: true, source: ['a', 'b'] })).toBe(REQUIRED())
+        expect(check(input, 'a', { required: true, source: ['a', 'b'] })).toBe(true)
+        expect(check(input, undefined, { source: ['a', 'b'] })).toBe(true)
+      })
+
+      it(`refuse a value that is not one of the choices of a ${input}`, () => {
+        expect(check(input, 'c', { source: ['a', 'b'] })).toBe(TranslateService.get('TL_CHOICE_UNKNOWN', { value: 'c' }))
+        expect(check(input, 2, { source: [1, 2] })).toBe(true)
+      })
+    }
+  })
+
+  describe('geopoint', () => {
+    it('is built by its own component', () => {
+      expect(mapper.geopoint.type).toBe('GeopointField')
+    })
+
+    it('says when a required point is missing', () => {
+      expect(check('geopoint', undefined, { required: true })).toBe(REQUIRED())
+      expect(check('geopoint', undefined, {})).toBe(true)
+    })
+
+    it('takes a latitude and a longitude, and refuses what is not a point', () => {
+      expect(check('geopoint', { lat: 48.8566, lng: 2.3522 }, {})).toBe(true)
+      expect(check('geopoint', { lat: 0, lng: 0 }, { required: true })).toBe(true)
+      expect(check('geopoint', { lat: 91, lng: 0 }, {})).toBe(TranslateService.get('TL_INVALID_GEOPOINT'))
+      expect(check('geopoint', { lat: 0, lng: -181 }, {})).toBe(TranslateService.get('TL_INVALID_GEOPOINT'))
+      expect(check('geopoint', '48.8, 2.3', {})).toBe(TranslateService.get('TL_INVALID_GEOPOINT'))
+    })
+  })
+
+  describe('markdown', () => {
+    it('is built by its own component', () => {
+      expect(mapper.markdown.type).toBe('MarkdownField')
+    })
+
+    it('says when a required text is missing, and keeps the text within its limits', () => {
+      expect(check('markdown', '', { required: true })).toBe(REQUIRED())
+      expect(check('markdown', undefined, { required: true })).toBe(REQUIRED())
+      expect(check('markdown', '# Title', { required: true })).toBe(true)
+      expect(check('markdown', '', {})).toBe(true)
+    })
+  })
+
+  describe('phone', () => {
+    it('is built by its own component', () => {
+      expect(mapper.phone.type).toBe('PhoneField')
+    })
+
+    it('says when a required number is missing', () => {
+      expect(check('phone', undefined, { required: true })).toBe(REQUIRED())
+      expect(check('phone', undefined, {})).toBe(true)
+    })
+
+    it('takes an international number of a country of the field', () => {
+      expect(check('phone', '+442071838750', {})).toBe(true)
+      expect(check('phone', '+442071838750', { options: { countries: ['GB', 'FR'] } })).toBe(true)
+      expect(check('phone', '+442071838750', { options: { countries: ['FR'] } })).toBe(TranslateService.get('TL_PHONE_COUNTRY'))
+      expect(check('phone', '0207 183 8750', {})).toBe(TranslateService.get('TL_INVALID_PHONE'))
+    })
+  })
+
+  describe('money', () => {
+    it('is built by its own component', () => {
+      expect(mapper.money.type).toBe('MoneyField')
+    })
+
+    it('says when a required amount is missing, and takes zero as an amount', () => {
+      expect(check('money', undefined, { required: true })).toBe(REQUIRED())
+      expect(check('money', { amount: 0, currency: 'USD' }, { required: true })).toBe(true)
+      expect(check('money', undefined, {})).toBe(true)
+    })
+
+    it('takes an amount in a currency of the field within its least and most', () => {
+      expect(check('money', { amount: 10, currency: 'USD' }, { min: 5, max: 20 })).toBe(true)
+      expect(check('money', { amount: 1, currency: 'USD' }, { min: 5 })).toBe(TranslateService.get('TL_MONEY_TOO_LOW', { min: '$5.00' }))
+      expect(check('money', { amount: 30, currency: 'USD' }, { max: 20 })).toBe(TranslateService.get('TL_MONEY_TOO_HIGH', { max: '$20.00' }))
+      expect(check('money', { amount: 1, currency: 'GBP' }, { currency: 'EUR' })).toBe(TranslateService.get('TL_INVALID_CURRENCY', { currency: 'EUR' }))
+      expect(check('money', 12, {})).toBe(TranslateService.get('TL_INVALID_MONEY'))
+    })
+  })
+
+  describe('duration', () => {
+    it('is built by its own component', () => {
+      expect(mapper.duration.type).toBe('DurationField')
+    })
+
+    it('says when a required length is missing, and takes zero as a length', () => {
+      expect(check('duration', undefined, { required: true })).toBe(REQUIRED())
+      expect(check('duration', 0, { required: true })).toBe(true)
+      expect(check('duration', undefined, {})).toBe(true)
+    })
+
+    it('takes a whole number of seconds within the least and the most of the field', () => {
+      expect(check('duration', 5400, { min: 60, max: 7200 })).toBe(true)
+      expect(check('duration', 30, { min: 60 })).toBe(TranslateService.get('TL_DURATION_TOO_SHORT', { min: '1m' }))
+      expect(check('duration', 9000, { max: 7200 })).toBe(TranslateService.get('TL_DURATION_TOO_LONG', { max: '2h' }))
+      expect(check('duration', -5, {})).toBe(TranslateService.get('TL_INVALID_DURATION'))
+      expect(check('duration', 1.5, {})).toBe(TranslateService.get('TL_INVALID_DURATION'))
+    })
+  })
+
+  describe('rating', () => {
+    const MESSAGE = (max) => TranslateService.get('TL_INVALID_RATING', { max })
+
+    it('is built by its own component', () => {
+      expect(mapper.rating.type).toBe('RatingField')
+    })
+
+    it('says when a required rating is missing, and lets an optional one be empty', () => {
+      expect(check('rating', undefined, { required: true })).toBe(REQUIRED())
+      expect(check('rating', null, { required: true })).toBe(REQUIRED())
+      expect(check('rating', '', { required: true })).toBe(REQUIRED())
+      expect(check('rating', undefined, {})).toBe(true)
+      expect(check('rating', null, {})).toBe(true)
+    })
+
+    it('takes a number from 1 to the most the field says', () => {
+      for (const value of [1, 2, 3, 4, 5]) {
+        expect(check('rating', value, { required: true }), String(value)).toBe(true)
+      }
+      expect(check('rating', 6, {})).toBe(MESSAGE(5))
+      expect(check('rating', 0, {})).toBe(MESSAGE(5))
+      expect(check('rating', -1, {})).toBe(MESSAGE(5))
+      expect(check('rating', 7, { options: { max: 10 } })).toBe(true)
+      expect(check('rating', 11, { options: { max: 10 } })).toBe(MESSAGE(10))
+    })
+
+    it('takes a half only when the field has half steps', () => {
+      expect(check('rating', 2.5, {})).toBe(MESSAGE(5))
+      expect(check('rating', 2.5, { options: { half: true } })).toBe(true)
+      expect(check('rating', 2.3, { options: { half: true } })).toBe(MESSAGE(5))
+    })
+
+    it('refuses what is not a number', () => {
+      expect(check('rating', 'good', {})).toBe(MESSAGE(5))
+      expect(check('rating', NaN, {})).toBe(MESSAGE(5))
+      expect(check('rating', '3', {})).toBe(MESSAGE(5))
     })
   })
 

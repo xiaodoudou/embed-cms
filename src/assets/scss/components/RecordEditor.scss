@@ -1,6 +1,9 @@
 @use "../variables.scss" as *;
 
 .record-editor {
+  // the lines of a form layout ask how wide the editor is (CustomForm.vue), not how wide the screen is
+  container-type: inline-size;
+
   .vue-form-generator > fieldset {
     border: none;
     margin: 0;
@@ -26,10 +29,6 @@
     min-width: 0;
   }
 
-  .drag-and-drop {
-    background-color: var(--cms-surface-2);
-  }
-
   // The back button only makes sense when list and editor are separate screens.
   button.back {
     display: none;
@@ -51,7 +50,7 @@
   }
 }
 
-@media (max-width: 767.98px) {
+@media #{$phone-query} {
   .record-editor:not(.full-width) button.back {
     display: inline-flex;
   }

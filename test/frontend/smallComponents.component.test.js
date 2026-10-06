@@ -3,7 +3,6 @@ import { flushPromises } from '@vue/test-utils'
 import ThemeSwitch from '@c/layout/ThemeSwitch.vue'
 import PluginPage from '@c/pages/PluginPage.vue'
 import LoginService from '@s/LoginService'
-import TranslateService from '@s/TranslateService'
 import { mountComponent } from './helpers/mountField.js'
 
 vi.mock('@s/LoginService', () => ({ default: { changeTheme: vi.fn(), user: {} } }))
@@ -30,7 +29,20 @@ describe('ThemeSwitch (the dark theme button)', () => {
     expect(button.attributes('title')).toBe('Switch to dark theme')
   })
 
-  it('switches to the theme the server says, and says so', async () => {
+  it('switches at once, without waiting for the server, and asks it to keep the theme', async () => {
+    let answer
+    LoginService.changeTheme.mockReturnValue(new Promise((resolve) => { answer = resolve }))
+    mountSwitch()
+    await wrapper.get('button').trigger('click')
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    expect(wrapper.get('button').attributes('aria-checked')).toBe('true')
+    expect(LoginService.changeTheme).toHaveBeenCalledWith('dark')
+    answer('dark')
+    await flushPromises()
+    expect(document.documentElement.dataset.theme).toBe('dark')
+  })
+
+  it('switches to the other theme, and says so', async () => {
     LoginService.changeTheme.mockResolvedValue('dark')
     mountSwitch()
     await wrapper.get('button').trigger('click')
@@ -52,13 +64,14 @@ describe('ThemeSwitch (the dark theme button)', () => {
     expect(document.documentElement.dataset.theme).toBe('light')
   })
 
-  it('stays as it is when the server could not change the theme', async () => {
+  it('goes back when the server could not keep the theme', async () => {
     LoginService.changeTheme.mockResolvedValue(undefined)
     mountSwitch()
     await wrapper.get('button').trigger('click')
     await flushPromises()
     expect(wrapper.get('button').attributes('aria-checked')).toBe('false')
-    expect(document.documentElement.dataset.theme).toBeUndefined()
+    expect(wrapper.get('button').attributes('title')).toBe('Switch to dark theme')
+    expect(document.documentElement.dataset.theme).toBe('light')
   })
 })
 

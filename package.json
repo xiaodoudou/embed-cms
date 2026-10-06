@@ -1,6 +1,6 @@
 {
   "name": "embed-cms",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "description": "Content management system, written in node.js, uses leveldb as an asset and content store.",
   "main": "index.js",
   "types": "index.d.ts",
@@ -43,6 +43,8 @@
     "bench:stores:crash": "node test/bench/stores.js --crash",
     "docs:reflow": "node test/docs/reflowMarkdown.js",
     "docs:screenshots": "node test/docs/screenshots/run.js",
+    "docs:site-screenshots": "node test/docs/screenshots/site.js",
+    "docs:magazine-screenshots": "node test/docs/screenshots/magazine.js",
     "bench:engines": "node --expose-gc test/bench/engines.js",
     "migrate-store": "node scripts/migrateStore.js"
   },
@@ -74,8 +76,10 @@
   },
   "bin": {
     "cms": "bin/cms.js",
+    "cms-sync": "bin/cmsSync.js",
     "cms-import": "bin/cmsImport.js",
-    "cms-import-remote": "bin/cmsImportRemote.js"
+    "cms-import-remote": "bin/cmsImportRemote.js",
+    "cms-load": "bin/cmsLoad.js"
   },
   "author": "Edouard Durand",
   "license": "GPL-3.0-only",
@@ -121,6 +125,7 @@
     "json5": "^2.2.3",
     "JSONStream": "^1.3.5",
     "jsonwebtoken": "^9.0.0",
+    "leaflet": "^1.9.4",
     "level-read-stream": "^2.0.0",
     "lodash": "^4.17.21",
     "lowlight": "^3.3.0",
@@ -179,8 +184,7 @@
     "vite": "^6.4.1",
     "vite-plugin-vuetify": "^2.0.1",
     "vitest": "^5.0.2",
-    "vue-eslint-parser": "^10.4.1",
-    "vue3-shortkey": "https://github.com/Zegfault/vue3-shortkey/archive/da8ee7ead0c618de22a227da2274d88c33e29aae.tar.gz"
+    "vue-eslint-parser": "^10.4.1"
   },
   "overrides": {
     "excel4node": {

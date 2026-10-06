@@ -6,14 +6,14 @@
       <v-icon size="small" icon="$information" />
       <span>{{ schema.options.hint }}</span>
     </div>
-    <div class="paragraph-view" :class="{'can-add-more': !blockMoreItems()}" :style="{ '--paragraph-level': getParagraphLevel() }">
+    <div class="paragraph-view" :class="{'can-add-more': !blockMoreItems(), 'is-reordering': reordering, 'is-dragging': dragging}" :style="{ '--paragraph-level': getParagraphLevel() }">
       <div v-if="!blockMoreItems()" class="paragraph-header-bar">
+        <label :id="`${inputId}-type-label`" :for="`${inputId}-type`" class="cms-visually-hidden">{{ $filters.translate('TL_PARAGRAPH_TYPE') }}</label>
         <v-autocomplete
-          ref="input" :ripple="false" :menu-props="menuProps" :theme="theme" transition="none" :model-value="selectedType" :items="types" :item-title="getLabel" item-value="title" hide-details
+          :id="`${inputId}-type`" ref="input" :name="`${inputId}-type`" :ripple="false" :menu-props="menuProps" :theme="theme" transition="none" :model-value="selectedType" :items="types" :item-title="getLabel"
+          item-value="title" hide-details
           rounded density="compact" persistent-placeholder variant="solo-filled" flat :rules="[validateField]" :disabled="disabled || schema.disabled" menu-icon="$chevronDown" @update:model-value="onChangeType"
-        >
-          <template #label />
-        </v-autocomplete>
+        />
         <div class="add-btn-wrapper">
           <v-btn elevation="0" class="add-new-item" :disabled="blockMoreItems()" @click="onClickAddNewItem"><span>{{ $filters.translate('TL_ADD') }}</span></v-btn>
           <v-btn v-if="hasFileOrImageTypes" elevation="0" class="add-multiple-items" variant="outlined" :disabled="blockMoreItems()" @click="toggleMultipleDropZone">
@@ -36,15 +36,31 @@
         </div>
       </div>
       <div class="paragraph-content">
+        <!-- a compact list of the blocks, one line each, to move them with the buttons (or the keyboard) instead of dragging them across the form -->
+        <div v-if="canReorder" class="paragraph-reorder-bar">
+          <v-btn class="reorder-toggle" variant="text" size="small" :aria-pressed="reordering ? 'true' : 'false'" @click="toggleReordering">
+            <v-icon start icon="$swapVertical" />{{ $filters.translate(reordering ? 'TL_DONE_REORDERING' : 'TL_REORDER') }}
+          </v-btn>
+        </div>
+        <div class="cms-visually-hidden" role="status" aria-live="polite">{{ announcement }}</div>
         <draggable
-          v-if="schema && subResourcesLoaded" :key="`${schema.model}-${key}`" :list="items" :class="{disabled, 'dynamic-layout-container': isDynamicLayoutContainer}" draggable=".item" v-bind="dragOptions" handle=".handle" :group="`${schema.model}-${key}`" ghost-class="ghost" :force-fallback="true"
-          @end="onEndDrag"
+          v-if="schema && subResourcesLoaded" :key="`${schema.model}-${key}`" :list="items" :class="{disabled, 'dynamic-layout-container': isDynamicLayoutContainer}" draggable=".item" v-bind="dragOptions" handle=".drag-grip" :group="`${schema.model}-${key}`" ghost-class="ghost" :force-fallback="true"
+          @choose="onDragChoose" @unchoose="onDragUnchoose" @start="onBlockDragStart" @end="onEndDrag"
         >
-          <v-card v-for="(item, idx) in items" :key="`paragraph-item-${idx}`" :theme="theme" elevation="0" :class="getItemClasses(idx, item)" :style="getItemStyles(item)">
-            <span v-if="isDynamicLayoutContainer" class="slots-badge" :title="getSlotsLabel(item)" :aria-label="getSlotsLabel(item)">{{ getItemSlots(item) }}/{{ parentSlots }}</span>
-            <v-card-title class="handle paragraph-header">
+          <v-card v-for="(item, idx) in items" :key="identityOf(item)" :data-block-index="idx" :theme="theme" elevation="0" :class="getItemClasses(idx, item)" :style="getItemStyles(item)">
+            <v-card-title class="handle paragraph-header" :class="{'no-grip': !canReorder}">
+              <span v-if="canReorder" class="drag-grip" :title="$filters.translate('TL_DRAG_TO_REORDER')"><v-icon icon="$dragVertical" size="small" /></span>
               <div class="paragraph-title">{{ getLabel(item) }}</div>
+              <div v-if="summaryOf(item)" class="paragraph-summary">{{ summaryOf(item) }}</div>
               <div class="add-btn-wrapper">
+                <template v-if="reordering">
+                  <v-btn class="move-up" :disabled="idx === 0" variant="text" icon rounded size="small" :aria-label="`${$filters.translate('TL_MOVE_UP')}: ${getLabel(item)} ${idx + 1}`" @click="moveItem(idx, -1)">
+                    <v-icon icon="$arrowUp" />
+                  </v-btn>
+                  <v-btn class="move-down" :disabled="idx === items.length - 1" variant="text" icon rounded size="small" :aria-label="`${$filters.translate('TL_MOVE_DOWN')}: ${getLabel(item)} ${idx + 1}`" @click="moveItem(idx, 1)">
+                    <v-icon icon="$arrowDown" />
+                  </v-btn>
+                </template>
                 <v-btn class="remove-item" :disabled="disabled || schema.disabled" variant="text" icon rounded size="small" @click="onClickRemoveItem(item)">
                   <v-icon icon="$trashCanOutline" />
                 </v-btn>
@@ -59,17 +75,17 @@
                   <template v-if="item.showConvert">
                     <div class="convert-action">
                       <v-select
-                        :model-value="item.showConvert" :menu-props="menuProps" :theme="theme" transition="none" :items="types" hide-details rounded density="compact" persistent-placeholder variant="solo-filled"
+                        :id="`${inputId}-convert-${idx}`" :name="`${inputId}-convert-${idx}`" :model-value="item.showConvert" :menu-props="menuProps" :theme="theme" transition="none" :items="types" hide-details rounded density="compact"
+                        persistent-placeholder variant="solo-filled"
                         flat
                       >
-                        <template #prepend><field-label :schema="{label: $filters.translate('TL_CONVERT_TO')}" /></template>
-                        <template #label />
+                        <template #prepend><field-label :schema="{label: $filters.translate('TL_CONVERT_TO')}" :input-id="`${inputId}-convert-${idx}`" /></template>
                       </v-select>
                       <v-btn elevation="0" rounded @click="convertParagraph(item)">{{ $filters.translate('TL_CONVERT') }}</v-btn>
                     </div>
                   </template>
                 </div>
-                <custom-form v-else :schema="getSchema(item, idx)" :model="item" :paragraph-index="idx" :paragraph-level="blockMoreItems() ? paragraphLevel : paragraphLevel + 1" @error="onError" @input="onModelUpdated" />
+                <custom-form v-else :schema="getSchema(item, idx)" :model="item" :form-id="`${inputId}-${idx}`" :paragraph-index="idx" :paragraph-level="blockMoreItems() ? paragraphLevel : paragraphLevel + 1" @error="onError" @input="onModelUpdated" />
               </div>
             </div>
           </v-card>
@@ -86,7 +102,15 @@
   import ResourceService from '@s/ResourceService'
   import TranslateService from '@s/TranslateService'
   import DragList from '@m/DragList'
+
+  // A key for each block, for as long as it is the same object: when the blocks are moved or one is removed, the others are moved or left
+  // as they are, with their forms, their editors and their pictures, and not made again.
+  const identities = new WeakMap()
+  let sequence = 0
   import pAll from 'p-all'
+  import { queueFiles, takeFiles } from '@u/pendingFiles'
+  import { isAttachmentInput } from '@u/inputTypes'
+  import { isMultiSource, sourcesOf } from '@u/sources'
 
   export default {
     mixins: [DragList],
@@ -98,14 +122,20 @@
       paragraphLevel: { type: Number, default: 0 },
       theme: { type: String, default: 'default' }
     },
+    emits: ['input', 'notify'],
     data () {
       return {
         items: _.cloneDeep(_.get(this.model, this.schema.model, [])),
         types: [],
-        fileInputTypes: ['file', 'img', 'image', 'imageView', 'attachmentView'],
+        fileInputTypes: ['file', 'img', 'image', 'cropimage', 'imagemap', 'imageView', 'attachmentView'],
         selectedType: false,
         subResourcesLoaded: false,
         key: crypto.randomUUID(),
+        // the compact list with the move buttons, and the drag in progress (the other blocks fold while a block is carried)
+        reordering: false,
+        dragging: false,
+        // what a screen reader is told after a block is moved
+        announcement: '',
         maxCount: _.get(this.schema, 'options.maxCount', -1),
         menuProps: {
           contentProps: {
@@ -121,20 +151,32 @@
       }
     },
     computed: {
+      /** @returns {boolean} whether there is something to put in order: two blocks or more, in a field that is not locked */
+      canReorder () {
+        return this.items.length > 1 && !(this.disabled || this.schema.disabled)
+      },
+      /** @returns {string} the id prefix of the selects of this field, so their labels can point at them */
+      inputId () {
+        return `cms-paragraph-${this.$.uid}`
+      },
+      /** @returns {boolean} options.dynamicLayout, or an item that carries slots */
       isDynamicLayoutContainer() {
         return this.schema && (
           _.get(this.schema, 'options.dynamicLayout', false) ||
           _.some(this.items, item => _.has(item, '_value.slots') || _.has(item, 'slots'))
         )
       },
+      /** @returns {number} the slots of a row: the model's, else the parent form's, else 12 */
       parentSlots() {
         return this.isDynamicLayoutContainer ? _.get(this.model, 'slots', _.get(this.vfg, 'model.slots', 12)) : 12
       },
+      /** @returns {boolean} whether options.mapping names a paragraph type for dropped files */
       hasFileOrImageTypes() {
         // Check if there's a mapping configuration for file types
         const mapping = _.get(this.schema, 'options.mapping', {})
         return _.has(mapping, 'default') || _.some(_.keys(mapping), key => key !== 'default')
       },
+      /** @returns {Object<string, Array<Object>>} the entries of options.mapping by file extension */
       fileImageTypesMap() {
         const map = {}
         const mapping = _.get(this.schema, 'options.mapping', {})
@@ -174,15 +216,26 @@
       FieldSelectorService.events.off('highlight-paragraph', this.onHighlightParagraph)
     },
     methods: {
+      /** @returns {number} the level of this view, 0 at the top */
       getParagraphLevel() {
         return Math.max(0, (this.paragraphLevel || 1) - 1)
       },
+      /**
+       * @param {Object} item
+       * @returns {string|false} label.enUS, else label
+       */
       getLabel(item) {
         return _.get(item, 'label.enUS', _.get(item, 'label', false))
       },
+      /** @returns {string|false} the display name of the paragraph type of mapping.default */
       getDefaultParagraph() {
         return _.get(ResourceService.getParagraphSchema(_.get(this.schema, 'mapping.default', false)), 'displayname', false)
       },
+      /**
+       * @param {number} idx
+       * @param {Object} item
+       * @returns {Array<string>} item, nested-level-<n>, and the highlight state
+       */
       getItemClasses(idx, item) {
         const classes = ['item', `nested-level-${this.paragraphLevel}`]
         if (this.isHighlighted(idx)) {
@@ -216,9 +269,10 @@
         }
         return slots || 2
       },
-      getSlotsLabel(item) {
-        return this.$filters.translate('TL_BLOCK_WIDTH_SLOTS', { slots: this.getItemSlots(item), total: this.parentSlots })
-      },
+      /**
+       * @param {Object} item
+       * @returns {Object} the width from its slots in a dynamic layout, else {}
+       */
       getItemStyles(item) {
         if (this.isDynamicLayoutContainer) {
           const slots = this.getItemSlots(item)
@@ -235,21 +289,32 @@
         }
         return {}
       },
+      /** @param {Object} item becomes the type chosen in its showConvert */
       convertParagraph(item) {
         item._type = item.showConvert
         delete item.showConvert
         this.getSchemaForItems()
       },
+      /** @returns {boolean} false when required and empty */
       validateField () {
         return this.schema.required && _.get(this.items, 'length', 0) === 0 ? false : true
       },
+      /**
+       * @param {number} level
+       * @param {number} index
+       */
       onHighlightParagraph(level, index) {
         this.highlight.level = level
         this.highlight.index = index
       },
+      /**
+       * @param {number} idx
+       * @returns {boolean}
+       */
       isHighlighted(idx) {
         return this.paragraphLevel === this.highlight.level && idx === this.highlight.index
       },
+      /** Caches the resources the fields of every paragraph type select from. */
       async getSubResources() {
         await pAll(_.map(this.types, type => {
           return async () => {
@@ -262,6 +327,7 @@
         }), {concurrency: 1})
         this.subResourcesLoaded = true
       },
+      /** Reads schema.types into this.types as group inputs; an unknown type is dropped. */
       getTypes() {
         this.types = _.compact(_.map(_.get(this, 'schema.types', []), (type)=> {
           const schema = ResourceService.getParagraphSchema(type)
@@ -275,6 +341,7 @@
           return schema
         }))
       },
+      /** Builds the form schema of every item from its type, localised when the field is. */
       getSchemaForItems() {
         this.items = _.compact(_.map(_.compact(this.items), (item)=> {
           if (!_.get(item, 'input', false) || !_.get(item, 'label', false)) {
@@ -302,12 +369,15 @@
         }))
         this.items = _.toArray(this.items)
       },
+      /** @returns {boolean} disabled, or maxCount reached */
       blockMoreItems() {
         return (this.disabled || this.schema.disabled) || (this.maxCount !== -1 && this.items.length >= this.maxCount)
       },
+      /** @param {Error} error logged */
       onError (error) {
         console.error('ParagraphView - error', error)
       },
+      /** @throws {Error} when a paragraph form has errors, kept in this.errors */
       validate () {
         _.each(this.$refs.vfg, vfg => {
           if (!vfg.validate()) {
@@ -317,15 +387,19 @@
         })
         return true
       },
+      /**
+       * @param {Object} item
+       * @param {number} index
+       * @returns {Array<Object>} the fields of the paragraph form, with the resource, the locales and the disabled state passed down
+       */
       getSchema (item, index) {
         let schemaItems = []
         const {resource, locale, userLocale, disabled} = this.schema
         if (item.input === 'group') {
           schemaItems = _.map(item.schema, schemaItems => {
-            let paragraphKey = `${this.paragraphLevel > 1 ? this.schema.paragraphKey : this.schema.model}[${index}].${schemaItems.field}`
             return _.extend({}, schemaItems, {
               field: `_value.${schemaItems.field}`,
-              paragraphKey,
+              paragraphKey: this.fieldKey(index, schemaItems.field),
               paragraphType: item.title,
               localised: _.get(schemaItems, 'localised', false),
               label: schemaItems.label || schemaItems.field
@@ -337,15 +411,20 @@
             localised: this.schema.localised
           }))
         }
-        let extraSources = _.isString(item.source) ? _.get(ResourceService.getSchema(item.source), 'extraSources', {}) : {}
+        const extraSources = _.isString(item.source) ? _.get(ResourceService.getSchema(item.source), 'extraSources', {}) : {}
         const fields = SchemaService.getSchemaFields(schemaItems, resource, locale, userLocale, disabled, extraSources, this.schema.rootView || this)
-        const groups = SchemaService.getNestedGroups(resource, fields, 0, null, '_value.')
+        // the groups of the fields of a block are described by the block type (`groups` in its file), as the groups of a resource are by it
+        const groups = SchemaService.getNestedGroups(_.extend({}, resource, { groups: _.get(item, 'groups', _.get(resource, 'groups')) }), fields, 0, null, '_value.')
         const schema = this.formatSchemaLayout({
           fields: groups,
           layout: item.layout
         })
         return schema
       },
+      /**
+       * @param {Object} schema
+       * @returns {Object} the schema with its fields placed on layout.lines; as it is without a layout
+       */
       formatSchemaLayout (schema) {
         if (!_.get(schema, 'layout.lines', false)) {
           return schema
@@ -363,25 +442,36 @@
             if (_.isUndefined(field.schema)) {
               field.schema = _.find(schema.fields, {originalModel: field.model})
             }
+            // a group of nested fields is named by its first part
+            const isGroup = _.isUndefined(field.schema)
+            if (isGroup) {
+              field.schema = _.find(schema.fields, {type: 'group', key: field.model})
+            }
             if (_.isUndefined(field.schema)) {
               console.error(`Couldn't find schema for field ${field.model}`)
             } else {
-              alreadyPlacedFields.push(modelKey)
+              alreadyPlacedFields.push(isGroup ? field.schema.key : modelKey)
             }
           })
         })
         _.each(schema.fields, (field) => {
-          if (!_.includes(alreadyPlacedFields, field.model) && !_.includes(alreadyPlacedFields, field.originalModel)) {
-            console.warn(`Layout doesn't contain field ${field.model}, will not display it. To fix this, add the field to the layout of the paragraph resource.`)
+          if (!_.includes(alreadyPlacedFields, field.model || field.key) && !_.includes(alreadyPlacedFields, field.originalModel)) {
+            console.warn(`Layout doesn't contain field ${field.model || field.key}, will not display it. To fix this, add the field to the layout of the paragraph resource.`)
             // schema.layout.lines.push({fields: [{model: field.model, schema: field}]})
           }
         })
         return schema
       },
+      /**
+       * @param {string} fileItemId
+       * @param {string} [field] a path in the attachment
+       * @returns {Object|*} the attachment of the record with that fileItemId, or the field asked
+       */
       getAttachment (fileItemId, field) {
         const attach = _.find(this.model._attachments, {_fields: {fileItemId}})
         return field ? _.get(attach, field) : attach
       },
+      /** @param {string} type the title of a paragraph type; an unknown one is ignored with a warning */
       onChangeType (type) {
         const foundType = _.find(this.types, {title: type})
         if (_.isUndefined(foundType)) {
@@ -390,19 +480,21 @@
         }
         this.selectedType = foundType
       },
+      /** @param {Object} paragraph a type: caches the resource of each select or multiselect field with a string source */
       async requestResourcesForParagraph(paragraph) {
         // NOTE: Requests additional resources
         await pAll(_.map(paragraph.schema, (field)=> {
           return async () => {
-            if (_.includes(['select', 'multiselect'], _.get(field, 'input', false)) && _.isString(_.get(field, 'source', false))) {
-              const result = ResourceService.get(field.source)
-              if (_.isUndefined(result)) {
-                await ResourceService.cache(field.source)
+            const sources = isMultiSource(field) ? _.map(sourcesOf(field), 'resource') : (_.includes(['select', 'multiselect'], _.get(field, 'input', false)) && _.isString(_.get(field, 'source', false)) ? [field.source] : [])
+            for (const source of sources) {
+              if (_.isUndefined(ResourceService.get(source))) {
+                await ResourceService.cache(source)
               }
             }
           }
         }), {concurrency: 5})
       },
+      /** Appends a clone of the selected type. */
       async onClickAddNewItem () {
         if (!this.selectedType) {
           return
@@ -412,6 +504,10 @@
         this.items.push(newItem)
         this.updateItems()
       },
+      /**
+       * @param {Object} obj
+       * @returns {Array<string>} every id in it, at any depth
+       */
       findIds (obj) {
         const ids = []
         _.each(obj, (value, key) => {
@@ -424,22 +520,140 @@
         })
         return ids
       },
+      /** @param {Object} item removed with the attachments of its files */
       onClickRemoveItem (item) {
         let attachments = _.get(this.model, '_attachments', [])
-        if (_.includes(['image', 'file', 'group'], item.input)) {
+        if (isAttachmentInput(item.input) || item.input === 'group') {
           _.each(this.findIds(item), fileItemId => {
             attachments = _.reject(attachments, {_fields: {fileItemId}})
           })
         }
         _.set(this.model, '_attachments', attachments)
         this.items = _.difference(this.items, [item])
-        this.key = crypto.randomUUID()
         this.updateItems()
       },
-      onEndDrag () {
-        this.key = crypto.randomUUID()
+      /**
+       * @param {Object} item a block
+       * @returns {number} a number that stays with this block, wherever it is in the list
+       */
+      identityOf (item) {
+        if (!identities.has(item)) {
+          identities.set(item, ++sequence)
+        }
+        return identities.get(item)
+      },
+      /** @returns {HTMLElement|null} the list of blocks of this field (not the one of a block inside it) */
+      ownContent () {
+        return this.$el.querySelector(':scope > .paragraph-view > .paragraph-content')
+      },
+      /** @returns {HTMLElement|null} what scrolls the form this field is in */
+      scroller () {
+        return this.$el.closest('.scroll-wrapper') || document.scrollingElement
+      },
+      /**
+       * A block is lifted: the others fold to their title bars, and the copy that follows the pointer too (see DragList.onDragStart).
+       * The folded list is much shorter, so the lifted block would jump up and leave the pointer far below the blocks. The list keeps
+       * the height it had, and gets as much space above as the blocks above the lifted one lost: it stays under the pointer, with
+       * the blocks it can be dropped on right around it.
+       * @param {{item?: HTMLElement}} evt the drag event of the library
+       */
+      onBlockDragStart (evt) {
+        const item = evt && evt.item
+        const content = this.ownContent()
+        const before = item ? item.getBoundingClientRect().top : 0
+        if (content) {
+          content.style.minHeight = `${content.offsetHeight}px`
+        }
+        this.dragging = true
+        // now, not at the next render: the measure below is of the folded list
+        const view = this.$el.querySelector(':scope > .paragraph-view')
+        if (view) {
+          view.classList.add('is-dragging')
+        }
+        if (item && content) {
+          const lost = before - item.getBoundingClientRect().top
+          content.style.paddingTop = lost > 0 ? `${lost}px` : ''
+        }
+        this.onDragStart()
+      },
+      /**
+       * A block is dropped: the list is drawn again with its forms, and the page scrolls to keep the block where it was dropped.
+       * Writes the blocks back in the order they have now.
+       * @param {{item?: HTMLElement, newIndex?: number}} evt the drag event of the library
+       */
+      onEndDrag (evt) {
+        const item = evt && evt.item
+        const scroller = this.scroller()
+        const before = item && item.isConnected ? item.getBoundingClientRect().top : null
+        const index = evt && evt.newIndex
+        this.dragging = false
+        const content = this.ownContent()
+        if (content) {
+          content.style.minHeight = ''
+          content.style.paddingTop = ''
+        }
+        this.$nextTick(() => {
+          const dropped = _.find(this.$el.querySelectorAll(`[data-block-index="${index}"]`), (el) => el.closest('.paragraph-field') === this.$el)
+          if (before !== null && scroller && dropped) {
+            scroller.scrollTop += dropped.getBoundingClientRect().top - before
+          }
+        })
         this.updateItems()
       },
+      /** Shows the blocks as one line each, with the buttons to move them, or back as forms. */
+      toggleReordering () {
+        this.reordering = !this.reordering
+      },
+      /**
+       * @param {Object} item a block
+       * @returns {string} the start of its first text (a heading, a title...), to tell the blocks of a compact list apart
+       */
+      summaryOf (item) {
+        const values = _.get(item, '_value', {})
+        for (const key of _.keys(values)) {
+          let value = values[key]
+          if (_.startsWith(key, '_')) {
+            continue
+          }
+          if (_.isPlainObject(value)) {
+            value = _.get(value, this.schema.locale, _.first(_.values(value)))
+          }
+          const text = _.isString(value) ? value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : ''
+          if (text) {
+            return _.truncate(text, { length: 60 })
+          }
+        }
+        return ''
+      },
+      /**
+       * Moves a block one place, writes the items back, and tells a screen reader where it went.
+       * @param {number} idx the block
+       * @param {number} delta -1 up, 1 down; nothing past the ends
+       */
+      moveItem (idx, delta) {
+        const to = idx + delta
+        if (to < 0 || to >= this.items.length) {
+          return
+        }
+        const items = [...this.items]
+        items.splice(to, 0, items.splice(idx, 1)[0])
+        this.items = items
+        this.updateItems()
+        this.announcement = TranslateService.get('TL_MOVED_TO_POSITION', { name: `${this.getLabel(items[to])} ${this.summaryOf(items[to])}`.trim(), pos: to + 1, total: items.length })
+        // the list is drawn again: the focus goes back to the button that was pressed, now on the block's new line
+        this.$nextTick(() => {
+          const line = _.find(this.$el.querySelectorAll(`[data-block-index="${to}"]`), (el) => el.closest('.paragraph-field') === this.$el)
+          const button = line && line.querySelector(delta < 0 ? '.move-up:not([disabled])' : '.move-down:not([disabled])') || (line && line.querySelector('.move-up:not([disabled]), .move-down:not([disabled])'))
+          if (button) {
+            button.focus()
+          }
+        })
+      },
+      /**
+       * @param {*} value a DOM event is ignored
+       * @param {string} model the field path
+       * @param {number} paragraphIndex
+       */
       onModelUpdated (value, model, paragraphIndex) {
         if (value instanceof Event) {
           return
@@ -447,8 +661,8 @@
         _.set(this.items, `[${paragraphIndex}].${model}`, value)
         this.updateItems()
       },
+      /** Writes the values of the items back to the field; an item without a title has no type and is dropped. */
       updateItems() {
-        // console.warn('updateItems before ', _.cloneDeep(this.items))
         const items = _.compact(_.map(this.items, (item)=> {
           const obj = _.get(item, '_value', {})
           if (!_.get(item, 'title', false)) {
@@ -463,38 +677,43 @@
       toggleMultipleDropZone() {
         this.showMultipleDropZone = !this.showMultipleDropZone
       },
+      /** @param {DragEvent} event */
       onDragEnter(event) {
         event.preventDefault()
         this.isDragOver = true
       },
+      /** @param {DragEvent} event */
       onDragOver(event) {
         event.preventDefault()
         this.isDragOver = true
       },
+      /** @param {DragEvent} event */
       onDragLeave(event) {
         event.preventDefault()
         this.isDragOver = false
       },
+      /** @param {DragEvent} event its files become paragraphs */
       onDropFiles(event) {
         event.preventDefault()
         this.isDragOver = false
         const files = Array.from(event.dataTransfer.files)
         this.processFiles(files)
       },
+      /** @param {Event} event from the file input, cleared so the same file can be chosen again */
       onSelectFiles(event) {
         const files = Array.from(event.target.files)
         this.processFiles(files)
         // Clear the input so the same file can be selected again
         event.target.value = ''
       },
+      /** @param {File[]} files one paragraph each, in order */
       async processFiles(files) {
-        // Process files sequentially to avoid race conditions
+        // one after the other: each file gets its own block, mounted before the next one is made
         for (const file of files) {
           await this.processSingleFile(file)
-          // Small delay to ensure DOM updates are complete
-          await new Promise(resolve => setTimeout(resolve, 50))
         }
       },
+      /** @param {File} file becomes a paragraph of the type mapped to its extension, mapping.default otherwise */
       async processSingleFile(file) {
         const extension = '.' + file.name.split('.').pop().toLowerCase()
         const matchingTypes = this.fileImageTypesMap[extension]
@@ -514,17 +733,19 @@
           // Find the paragraph type in our available types
           const paragraphType = _.find(this.types, { title: paragraphConfig.type })
           if (paragraphType) {
-            console.warn(`Processing file ${file.name} for field ${paragraphConfig.field}`)
             await this.createParagraphWithFile(paragraphType, file, paragraphConfig.field)
           } else {
-            console.warn(`Paragraph type ${paragraphConfig.type} is not an existing paragraph resource type, ignoring file: ${file.name}`)
             this.$emit('notify', `Paragraph type ${paragraphConfig.type} is not available for file: ${file.name}`)
           }
         } else {
-          console.warn(`No paragraph type found for file extension: ${extension}`)
           this.$emit('notify', `No paragraph type supports files with extension: ${extension}`)
         }
       },
+      /**
+       * @param {Object} paragraphType
+       * @param {File} file
+       * @param {string} targetField the file field of the block that takes it
+       */
       async createParagraphWithFile(paragraphType, file, targetField) {
         const newItem = _.cloneDeep(paragraphType)
         // Only set title if we're NOT setting an image field (to avoid overwriting the image field)
@@ -536,267 +757,35 @@
         await this.requestResourcesForParagraph(newItem)
         this.items.push(newItem)
         this.updateItems()
-        // Wait for the component to be fully rendered
+        // the file waits for the file field of the new block, under the key that field gets (see getSchema): the field takes
+        // it when it mounts, and runs its own checks and preview as for a file dropped on it
+        const key = this.fieldKey(this.items.length - 1, targetField)
+        queueFiles(key, [file])
         await this.$nextTick()
-        // Trigger file processing on the target field
-        // Use the current index of the newly added item (length - 1)
-        const currentItemIndex = this.items.length - 1
-        console.warn(`Creating paragraph with file ${file.name} at index ${currentItemIndex}`)
-        this.triggerFileUpload(targetField, file, currentItemIndex)
-      },
-      triggerFileUpload(targetField, file, itemIndex) {
-        // console.warn(`Triggering file upload for field: ${targetField} in item ${itemIndex}`)
-        // Use a more targeted approach with setTimeout to ensure components are mounted
-        setTimeout(() => {
-          const success = this.findAndTriggerFileValidation(targetField, file, itemIndex)
-          if (!success) {
-            console.warn(`Could not trigger file validation for field: ${targetField}. Trying alternative method...`)
-            const altSuccess = this.findAndTriggerFileValidationByRef(targetField, file, itemIndex)
-            if (!altSuccess) {
-              console.warn(`Alternative method also failed. Trying synthetic file input...`)
-              this.triggerSyntheticFileInput(targetField, file, itemIndex)
-            }
-          }
-        }, 200) // Increased delay to ensure components are fully mounted and rendered
-      },
-      findAndTriggerFileValidation(targetField, file, itemIndex) {
-        try {
-          const paragraphItems = this.$el.querySelectorAll('.v-card.item')
-          if (paragraphItems && paragraphItems[itemIndex]) {
-            const paragraphElement = paragraphItems[itemIndex]
-            const fieldWrappers = paragraphElement.querySelectorAll('.field-wrapper')
-            for (let wrapper of fieldWrappers) {
-              const labels = wrapper.querySelectorAll('label, .field-label')
-              const fieldMatches = _.some(labels, label => {
-                const labelText = label.textContent || label.innerText || ''
-                return labelText.toLowerCase().includes(targetField.toLowerCase())
-              })
-              if (fieldMatches) {
-                const filesToPass = [file]
-                const refInputElements = wrapper.querySelectorAll('*')
-                for (let element of refInputElements) {
-                  if (element.__vueParentComponent || element.__vue__ || element._vnode) {
-                    const vueInstance = element.__vueParentComponent || element.__vue__ || element._vnode?.component
-                    if (vueInstance) {
-                      if (_.get(vueInstance, 'ctx.onUploadChanged', false)) {
-                        vueInstance.ctx.onUploadChanged(filesToPass)
-                        return true
-                      } else if (_.get(vueInstance, 'exposed.onUploadChanged', false)) {
-                        vueInstance.exposed.onUploadChanged(filesToPass)
-                        return true
-                      } else if (_.get(vueInstance, 'setupState.onUploadChanged', false)) {
-                        vueInstance.setupState.onUploadChanged(filesToPass)
-                        return true
-                      }
-                    }
-                  }
-                }
-                // Alternative approach: look for the v-file-input component specifically
-                const fileInputComponents = wrapper.querySelectorAll('.v-file-input')
-                for (let fileInputEl of fileInputComponents) {
-                  const vueComponent = this.findVueComponent(fileInputEl)
-                  if (vueComponent && vueComponent.onUploadChanged) {
-                    // console.warn(`Found v-file-input component with onUploadChanged method for field: ${targetField}`)
-                    vueComponent.onUploadChanged(filesToPass)
-                    return true
-                  }
-                }
-              }
-            }
-            // Fallback: try to find by field name or data attributes
-            const allInputs = paragraphElement.querySelectorAll('input[type="file"]')
-            for (let input of allInputs) {
-              if (input.name && input.name.includes(targetField)) {
-                const vueComponent = this.findVueComponent(input)
-                if (_.get(vueComponent, 'onUploadChanged', false)) {
-                  // console.warn(`Fallback: triggering onUploadChanged for field: ${targetField}`)
-                  const filesToPass = [file]
-                  vueComponent.onUploadChanged(filesToPass)
-                  return true
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Could not find and trigger file validation:', error)
+        await this.$nextTick()
+        // still waiting: the block shows no such field (not in its layout, or not a file field)
+        if (takeFiles(key).length) {
+          this.$emit('notify', `${file.name}: ${targetField} is not a file field shown by ${paragraphType.title}`)
         }
-        return false
       },
-      findVueComponentForField(fieldWrapper, targetField) {
-        const elements = fieldWrapper.querySelectorAll('*')
-        for (let element of elements) {
-          if (element.__vueParentComponent) {
-            const component = element.__vueParentComponent
-            if (_.isFunction(_.get(component, 'ctx.onUploadChanged', false)) && _.get(component, 'ctx.schema.field', []).includes(targetField)) {
-              return component.ctx
-            } else if (_.isFunction(_.get(component, 'exposed.onUploadChanged', false)) && _.get(component, 'exposed.schema.field', []).includes(targetField)) {
-              return component.exposed
-            } else if (_.isFunction(_.get(component, 'setupState.onUploadChanged', false)) && _.get(component, 'setupState.schema.field', []).includes(targetField)) {
-              return component.setupState
-            }
-          }
-          if (element.__vue__) {
-            const component = element.__vue__
-            if (_.isFunction(_.get(component, 'onUploadChanged', false)) && _.get(component, 'schema.field', []).includes(targetField)) {
-              return component
-            }
-          }
-        }
-        return null
+      // the paragraphKey of a field of a block, as getSchema gives it to the field
+      fieldKey (index, field) {
+        return `${this.paragraphLevel > 1 ? this.schema.paragraphKey : this.schema.model}[${index}].${field}`
       },
-      findAndTriggerFileValidationByRef(targetField, file, itemIndex) {
-        try {
-          const paragraphItems = this.$el.querySelectorAll('.v-card.item')
-          if (paragraphItems && paragraphItems[itemIndex]) {
-            const paragraphElement = paragraphItems[itemIndex]
-            console.warn(`Alternative method: Found paragraph element at index ${itemIndex}`)
-            const fieldWrappers = paragraphElement.querySelectorAll('.field-wrapper')
-            for (let wrapper of fieldWrappers) {
-              const labels = wrapper.querySelectorAll('label, .field-label')
-              const fieldMatches = _.some(labels, label => {
-                const labelText = label.textContent || label.innerText || ''
-                return labelText.toLowerCase().includes(targetField.toLowerCase())
-              })
-              if (fieldMatches) {
-                console.warn(`Alternative method: Found matching field wrapper for ${targetField}`)
-                const filesToPass = [file]
-                const parentComponent = this.findVueComponent(wrapper)
-                if (parentComponent) {
-                  console.warn(`Alternative method: Found parent Vue component`, parentComponent)
-                  if (parentComponent.$refs && parentComponent.$refs.input) {
-                    const inputRef = parentComponent.$refs.input
-                    console.warn(`Alternative method: Found input ref`, inputRef)
-                    if (inputRef.onUploadChanged) {
-                      console.warn(`Alternative method: Triggering onUploadChanged via input ref`)
-                      inputRef.onUploadChanged(filesToPass)
-                      return true
-                    }
-                    if (parentComponent.onUploadChanged) {
-                      console.warn(`Alternative method: Triggering onUploadChanged via parent component`)
-                      parentComponent.onUploadChanged(filesToPass)
-                      return true
-                    }
-                  }
-                  if (parentComponent.onUploadChanged) {
-                    console.warn(`Alternative method: Directly triggering onUploadChanged on parent`)
-                    parentComponent.onUploadChanged(filesToPass)
-                    return true
-                  }
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.warn('Alternative method failed:', error)
-        }
-        return false
+      /** @returns {Array<string>} the extensions of options.mapping (the default entry apart), lower case with their dot */
+      mappedExtensions () {
+        return _.flatMap(_.keys(_.omit(_.get(this.schema, 'options.mapping', {}), 'default')), (key) => key.split(',').map((ext) => {
+          const trimmed = ext.trim().toLowerCase()
+          return trimmed.startsWith('.') ? trimmed : '.' + trimmed
+        }))
       },
-      triggerSyntheticFileInput(targetField, file, itemIndex) {
-        try {
-          // Look for the specific paragraph item by index
-          const paragraphItems = this.$el.querySelectorAll('.v-card.item')
-          if (paragraphItems && paragraphItems[itemIndex]) {
-            const paragraphElement = paragraphItems[itemIndex]
-            console.warn(`Synthetic method: Found paragraph element at index ${itemIndex}`)
-            // Look for all field wrappers within this specific paragraph
-            const fieldWrappers = paragraphElement.querySelectorAll('.field-wrapper')
-            for (let wrapper of fieldWrappers) {
-              // Check for field labels or other identifiers to match our target field
-              const labels = wrapper.querySelectorAll('label, .field-label')
-              const fieldMatches = _.some(labels, label => {
-                const labelText = label.textContent || label.innerText || ''
-                return labelText.toLowerCase().includes(targetField.toLowerCase())
-              })
-              if (fieldMatches) {
-                console.warn(`Synthetic method: Found matching field wrapper for ${targetField}`)
-                // Find the actual file input element
-                const fileInput = wrapper.querySelector('input[type="file"]')
-                if (fileInput) {
-                  console.warn(`Synthetic method: Found file input element`)
-                  // Create a synthetic file list with only one file
-                  const dataTransfer = new DataTransfer()
-                  dataTransfer.items.add(file)  // Always add only one file per call
-                  // Set the files property
-                  fileInput.files = dataTransfer.files
-                  // Create and dispatch a change event
-                  const changeEvent = new Event('change', {
-                    bubbles: true,
-                    cancelable: true
-                  })
-                  // Add the files to the event
-                  Object.defineProperty(changeEvent, 'target', {
-                    value: fileInput,
-                    enumerable: true
-                  })
-                  console.warn(`Synthetic method: Dispatching change event on file input with ${fileInput.files.length} file(s)`)
-                  fileInput.dispatchEvent(changeEvent)
-
-                  return true
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.warn('Synthetic method failed:', error)
-        }
-        return false
+      /** @returns {string} the accept attribute of the file input */
+      getAllAcceptedTypes () {
+        return this.mappedExtensions().join(',')
       },
-      findVueComponent(element) {
-        // Traverse up the DOM tree to find the Vue component
-        let currentElement = element
-        while (currentElement && currentElement.parentNode) {
-          // Check for Vue 3 component instance
-          if (currentElement.__vueParentComponent) {
-            const component = currentElement.__vueParentComponent
-            if (component.ctx && component.ctx.onUploadChanged) {
-              return component.ctx
-            }
-            if (component.exposed && component.exposed.onUploadChanged) {
-              return component.exposed
-            }
-            if (component.setupState && component.setupState.onUploadChanged) {
-              return component.setupState
-            }
-          }
-          // Check for Vue 2 component instance (fallback)
-          if (currentElement.__vue__) {
-            return currentElement.__vue__
-          }
-          currentElement = currentElement.parentNode
-        }
-        return null
-      },
-      getAllAcceptedTypes() {
-        const mapping = _.get(this.schema, 'options.mapping', {})
-        const extensions = []
-        _.each(mapping, (config, key) => {
-          if (key === 'default') {
-            return
-          }
-          // Handle comma-separated extensions
-          const keyExtensions = key.split(',').map(ext => {
-            const trimmed = ext.trim().toLowerCase()
-            return trimmed.startsWith('.') ? trimmed : '.' + trimmed
-          })
-          extensions.push(...keyExtensions)
-        })
-        return extensions.join(',')
-      },
-      getSupportedExtensions() {
-        const mapping = _.get(this.schema, 'options.mapping', {})
-        const extensions = []
-        _.each(mapping, (config, key) => {
-          if (key === 'default') {
-            return
-          }
-          // Handle comma-separated extensions
-          const keyExtensions = key.split(',').map(ext => {
-            const trimmed = ext.trim().toLowerCase()
-            return trimmed.startsWith('.') ? trimmed : '.' + trimmed
-          })
-          extensions.push(...keyExtensions)
-        })
-        return extensions.join(', ')
+      /** @returns {string} the extensions, comma separated, for the hint */
+      getSupportedExtensions () {
+        return this.mappedExtensions().join(', ')
       }
     }
   }
@@ -901,11 +890,14 @@
   /* Ensure nested paragraph sticky headers work */
   overflow: visible;
 
-  .handle, .file-item-handle {
-    cursor: pointer;
+  .file-item-handle {
+    cursor: grab;
+    &:active {
+      cursor: grabbing;
+    }
   }
   .handle {
-    border-radius: 6px 6px 0 0 !important; /* follows the rounded border of the card (8px less its 2px border) */
+    border-radius: 6px 6px 0 0; /* follows the rounded border of the card (8px less its 2px border) */
     @include h5;
   }
   .file-item-handle {
@@ -996,7 +988,16 @@
 .v-card.item > .v-card-title.paragraph-header {
   border-radius: 6px 6px 0 0;
 }
+// a block folded to its bar (while one is dragged, in the compact list, and the copy that follows the pointer) has no form under the bar: the bar is the whole card, and its bottom
+// corners follow the border too (square, they showed as a nub in the corners of the highlight of the block under the pointer)
+.paragraph-view.is-dragging .v-card.item > .v-card-title.paragraph-header,
+.paragraph-view.is-reordering .v-card.item > .v-card-title.paragraph-header,
+.sortable-fallback > .v-card-title.paragraph-header {
+  border-radius: 6px;
+}
 .paragraph-header {
+  // a press on the bar (to move the pointer to a button, or for nothing) must not select the text around it
+  user-select: none;
   background-color: $paragraph-top-bar-background;
   color: $paragraph-top-bar-color !important;
   display: flex;
@@ -1004,14 +1005,80 @@
   align-content: center;
   justify-content: space-between;
   height: 34px;
+  gap: var(--cms-space-1);
   padding-right: 0;
-  padding-left: 16px;
+  padding-left: 4px;
+  // without the grip (one block, or a locked field) the title takes its place
+  &.no-grip {
+    padding-left: 16px;
+  }
   // the top corners follow the rounded border of the block card (8px less its 2px border)
   border-radius: 6px 6px 0 0;
   .paragraph-title {
     height: 100%;
+    flex: 0 0 auto;
     @include subtext;
   }
+  // the start of the first text of the block, to tell the blocks of a compact list apart
+  .paragraph-summary {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--cms-text-muted);
+    font-weight: normal;
+    @include subtext;
+    &::before {
+      content: "—";
+      margin-right: var(--cms-space-2);
+    }
+  }
+}
+
+// The only place that starts a drag: a small grip, so a press anywhere else on the bar selects text or scrolls as usual
+.drag-grip {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  padding: 0 var(--cms-space-1);
+  color: var(--cms-text-muted);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  border-radius: var(--cms-radius-sm, 4px);
+  &:hover {
+    color: var(--cms-text);
+    background: var(--cms-surface-3);
+  }
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.paragraph-reorder-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--cms-space-1) var(--cms-space-2);
+}
+
+// A block carried (the others fold to their title bars, which also brings every place within reach), the compact list, and the
+// copy that follows the pointer: no forms, only the bars
+.paragraph-view.is-dragging .item-main-wrapper,
+.paragraph-view.is-reordering .item-main-wrapper,
+.sortable-fallback .item-main-wrapper {
+  display: none;
+}
+// While a block is carried the forms of the others are folded away only for a moment, and `display: none` throws their boxes away: showing them again at the drop built every box
+// of every editor again (75ms of a phone's time with four blocks). `content-visibility: hidden` keeps the boxes and skips drawing them, so the drop only shows what is kept.
+@supports (content-visibility: hidden) {
+  .paragraph-view.is-dragging .item-main-wrapper {
+    display: flex;
+    content-visibility: hidden;
+  }
+}
+.sortable-fallback {
+  height: auto;
 }
 
 .item {
@@ -1072,14 +1139,27 @@
       }
     }
 
-    /* Responsive layout for header */
+    /* On a phone the type and the buttons share a row (the bar sticks over the blocks, so it stays one line): the type takes what the buttons leave, and the buttons go
+       to a row of their own when there is no room for them beside it */
     @media (max-width: 768px) {
-      flex-direction: column;
+      flex-wrap: wrap;
+      align-items: center;
       gap: 8px;
 
+      > .v-input {
+        flex: 1 1 140px;
+        min-width: 0;
+      }
       .add-btn-wrapper {
-        width: 100%;
-        justify-content: center;
+        flex: 0 1 auto;
+        flex-wrap: wrap;
+        gap: 8px;
+        &:has(.add-multiple-items) {
+          flex: 1 1 100%;
+        }
+        .v-btn {
+          flex: 1 1 auto;
+        }
       }
     }
   }
@@ -1157,20 +1237,11 @@
       .item-main {
         overflow: hidden;
       }
-      .slots-badge {
-        position: absolute;
-        top: 2px;
-        left: 50%;
-        background: var(--cms-overlay-hover);
-        font-size: 10px;
-        line-height: 1.2;
-        padding: 2px 4px;
-        border-radius: 2px;
-        color: var(--cms-text-muted);
-        z-index: 10;
-        transform: translate(-50%, 0);
-        cursor: default;
-        user-select: none;
+      .paragraph-title {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
     }
 
@@ -1208,6 +1279,29 @@
     }
     >.paragraph-header-bar {
       top: calc((var(--paragraph-level, 0) + 1) * 80px);
+    }
+  }
+}
+</style>
+<style lang="scss">
+// a finger: the bar of a block is as tall as a button, and the grip that drags it is a button-sized target (the Reorder button moves blocks without dragging)
+@media (pointer: coarse) {
+  .paragraph-view .paragraph-header {
+    height: var(--cms-touch-target);
+    // (the title of a card has 8px above and below it: with a grip as tall as the bar the grip stood 8px low and the title 8px high)
+    padding-top: 0;
+    padding-bottom: 0;
+    // (the title fills the bar and its text stood at the top of it)
+    .paragraph-title {
+      display: flex;
+      align-items: center;
+    }
+    .drag-grip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--cms-touch-target);
+      height: var(--cms-touch-target);
     }
   }
 }

@@ -33,7 +33,7 @@
   export default {
     mixins: [FieldTheme],
     props: {
-      formId: { type: Number, default: 0 },
+      formId: { type: [Number, String], default: 0 },
       schema: { type: Object, default: () => ({}) },
       model: { type: Object, default: () => ({}) },
       formOptions: { type: Object, default: () => ({}) },
@@ -41,6 +41,7 @@
       paragraphIndex: { type: Number, default: 0 },
       paragraphLevel: { type: Number, default: 0 }
     },
+    emits: ['input'],
     created () {
       // the template shows nothing for a null schema: so must this
       _.each(_.get(this.schema, 'fields'), (field) => {
@@ -65,9 +66,17 @@
       FieldSelectorService.events.off('select', this.onFieldSelected)
     },
     methods: {
+      /**
+       * @param {Object} field
+       * @returns {string} its model (else its type) and the form id
+       */
       getFieldId (field) {
         return `${_.isUndefined(field.model) ? this.getFieldType(field) : field.model}-${_.isUndefined(this.formId) ? '1' : this.formId}`
       },
+      /**
+       * @param {Object} field
+       * @returns {Array<string>} width-<n>, and focused
+       */
       getFieldClasses (field) {
         const classes = [`width-${_.get(field, 'width', '1')}`]
         if (field.schema && field.schema.focused === -1) {
@@ -75,9 +84,14 @@
         }
         return classes
       },
+      /**
+       * @param {Object} line
+       * @returns {Array<string>} slots-<n> and nb-fields-<n>
+       */
       getLineClasses (line) {
         return [`slots-${_.get(line, 'slots', '1')}`, `nb-fields-${_.get(line, 'fields.length', 1)}`]
       },
+      /** @param {Object} field from the outline: the matching field is flagged focused */
       onFieldSelected (field) {
         _.each(_.get(this.schema, 'fields'), (f) => {
           f.focused = f.model === `${field.field}${f.localised ? `.${TranslateService.locale}` : ''}`
@@ -90,9 +104,17 @@
         })
         this.$forceUpdate()
       },
+      /**
+       * @param {Object} field
+       * @returns {string|false} overrideType, else type
+       */
       getFieldType (field) {
         return _.get(field, 'overrideType', _.get(field, 'type', false))
       },
+      /**
+       * @param {*} value
+       * @param {string} [model] the field path; the parentKey of the value when missing
+       */
       onInput (value, model) {
         if (_.isUndefined(model)) {
           model = _.get(_.first(value), 'parentKey', false)
@@ -125,14 +147,21 @@ $gapBetweenFields: 16px;
   align-content: flex-start;
   align-items: flex-start;
   gap: $gapBetweenFields;
-  @for $nbSlots from 1 through $maxColumns {
-    @for $nbFields from 1 through $maxColumns {
-      &.nb-fields-#{$nbFields} {
-        &.slots-#{$nbSlots} {
-          >.field-wrapper {
-            @for $i from 1 through $maxColumns {
-              &.width-#{$i} {
-                width: calc(100% / #{$nbSlots} * #{$i} - (#{$gapBetweenFields} / #{$nbFields} * (#{$nbFields} - 1)));
+  // fields side by side only where the editor is wide enough for them: on a phone every field is a whole line
+  >.field-wrapper {
+    flex: 1 1 100%;
+  }
+  @container (min-width: 480px) {
+    @for $nbSlots from 1 through $maxColumns {
+      @for $nbFields from 1 through $maxColumns {
+        &.nb-fields-#{$nbFields} {
+          &.slots-#{$nbSlots} {
+            >.field-wrapper {
+              @for $i from 1 through $maxColumns {
+                &.width-#{$i} {
+                  flex: 0 0 auto;
+                  width: calc(100% / #{$nbSlots} * #{$i} - (#{$gapBetweenFields} / #{$nbFields} * (#{$nbFields} - 1)));
+                }
               }
             }
           }

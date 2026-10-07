@@ -4,6 +4,8 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ## [Unreleased]
 
+## [3.0.5] - 2026-10-07
+
 ### Added
 
 - **Docker example.** `docs/examples/docker` runs embed-cms in a container with every secret in a `.env`. The image holds no secret. A `compose.yaml` hands the `.env` to the container, which runs read-only and is published on `127.0.0.1` only. Three scripts make the `.env` with random values, build the image and check it holds no secret, and start the container.
@@ -178,7 +180,8 @@ The release that turned node-cms into a project that stands on its own: the firs
 - The bugs the component tests found: a new record opens a blank editor again, a refused request is not logged as a server error, record names and labels after the mustache 4 update, a record whose id overlaps the machine id can be changed and removed, and `remove` and `update` throw instead of failing silently.
 - A delete goes to the replication peers right away again, `cms-import` prints no empty progress bars into logs, the xlsx import answers `400` without a file.
 
-[Unreleased]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.4...HEAD
+[Unreleased]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.5...HEAD
+[3.0.5]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.4...v3.0.5
 [3.0.4]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.3...v3.0.4
 [3.0.3]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.2...v3.0.3
 [3.0.2]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.1...v3.0.2

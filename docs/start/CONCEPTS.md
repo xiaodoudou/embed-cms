@@ -75,7 +75,9 @@ A resource can have content locales the admin isn't translated into, and the oth
 
 ## Attachment
 
-An attachment is a file that belongs to a record: an image in an `image` field, a PDF in a `file` field. The record keeps a description of each file (name, type, size and MD5), and the file itself is written to disk next to the resource's data, or to Alibaba Cloud OSS for fields set up for it. Whatever the storage engine, files are never inside the database. The API returns attachments grouped under their field, each with a `url`. You can ask for an image resized or cropped (`?resize=400x300`), and the resized copies are cached.
+An attachment is a file that belongs to a record: an image in an `image` field, a PDF in a `file` field. The record keeps a description of each file (name, type, size and MD5). The file itself is written to disk next to the resource's data, or to Alibaba Cloud OSS for fields set up for it. Whatever the storage engine, files are never inside the database.
+
+The API returns attachments grouped under their field, each with a `url`. You can ask for an image resized or cropped (`?resize=400x300`), and the resized copies are cached.
 
 ## Paragraph
 

@@ -48,7 +48,9 @@ One box that keeps its template, with a slot for each digit: `__:__` for hours a
 
 `resources/numbers_quantities.js`, fields `templateDuration` and `daysDuration`.
 
-- The units come from the template: the letter that follows each part says its unit (`d`, `h`, `m` or `s`, in any case, with or without a space before it), so `_h __m __s` is hours, minutes and seconds and `___ days` is days alone. Without letters (`__-__`) the units are the ones of `options.units` when there are as many, else the usual ones for that many parts: one is minutes, two hours and minutes, three hours, minutes and seconds, four days to seconds. The parts go from the largest unit to the smallest.
+- The units come from the template. The letter that follows each part says its unit (`d`, `h`, `m` or `s`, in any case, with or without a space before it). So `_h __m __s` is hours, minutes and seconds, and `___ days` is days alone.
+- Without letters (`__-__`), the units are the ones of `options.units` when there are as many. Otherwise the usual ones for that many parts apply: one part is minutes, two are hours and minutes, three are hours, minutes and seconds, and four are days to seconds.
+- The parts go from the largest unit to the smallest.
 - A part keeps the width the template gives it, and the box holds as many digits as the template has places. The first part is widened when `max`, or the length shown, needs more digits (a value of 120 hours shows `___h __m` rather than losing a digit).
 - A template that is not a template for a length (a letter or a digit-or-letter place, no place at all, more than four parts, parts in the wrong order) is ignored: the box has the usual template for the units of the field.
 - What is typed, pasted and carried up when the box is left works as described above, whatever the template.

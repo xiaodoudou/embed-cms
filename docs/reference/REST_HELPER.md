@@ -76,7 +76,7 @@ Register your own `/resources` route before a `/:resource` route, or Express wil
 
 ## What can go wrong
 
-- **Every request is allowed.** `authorize` runs before `find_resource`.
-- **The request never answers.** No `express.json()` before `authorize`.
-- **`Machine id should be an 8 digit string`.** `mid` must be exactly 8 characters.
-- **Errors come back as HTML.** `parse_query` answers a refused query with a JSON `400` itself, but an error your own handler passes to `next` reaches Express's default handler. Add an error handler of your own, or turn on `security.uniformErrors`.
+- Every request is allowed. `authorize` runs before `find_resource`.
+- The request never answers. No `express.json()` before `authorize`.
+- `Machine id should be an 8 digit string`. `mid` must be exactly 8 characters.
+- Errors come back as HTML. `parse_query` answers a refused query with a JSON `400` itself, but an error your own handler passes to `next` reaches Express's default handler. Add an error handler of your own, or turn on `security.uniformErrors`.

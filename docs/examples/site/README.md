@@ -1,8 +1,10 @@
 ← [Examples](../README.md)
 
-# The blog: the shortest site on embed-cms
+# Blog Example
 
-A tutorial in one folder. In about a hundred lines of code and eight small templates you get a site your visitors can read and your editors can change: a home page, a paged list, one page per article, a 404 page and an error page. It uses the [PageHelper](../../reference/PAGE_HELPER.md), which renders [Mustache](https://mustache.github.io/mustache.5.html) templates and keeps the finished pages. The [magazine](../magazine/README.md) is the next step: the same ideas without the helper, with relations, pictures and two languages.
+This is the shortest site you can build on embed-cms, and it fits in one folder. With about a hundred lines of code and eight small templates, you get a site that visitors can read and editors can change. It has a home page, a paged list, one page per article, a 404 page and an error page.
+
+It uses the [PageHelper](../../reference/PAGE_HELPER.md), which renders [Mustache](https://mustache.github.io/mustache.5.html) templates and keeps the finished pages. The [magazine](../magazine/README.md) is the next step. It teaches the same ideas without the helper, and adds relations, pictures and two languages.
 
 ![The home page of the blog: a list of articles](../../img/page-helper-home.png)
 
@@ -15,16 +17,16 @@ cd docs/examples/site
 node server.js
 ```
 
-`PORT=8080 node server.js` serves on another port, and `STATE_DIR` keeps the data of the CMS and the kept pages somewhere other than this folder.
+`PORT=8080 node server.js` serves on another port. `STATE_DIR` keeps the data of the CMS and the kept pages somewhere other than this folder.
 
-Open `http://localhost:3000` for the site and `http://localhost:3000/admin` for the editors (`localAdmin` / `localAdmin` on a development machine). **The first start loads four articles** from `content.json` with the [ContentLoader](../../operations/CONTENT_LOADER.md); the next starts find them in place and change nothing.
+Open `http://localhost:3000` for the site and `http://localhost:3000/admin` for the editors (`localAdmin` / `localAdmin` on a development machine). The first start loads four articles from `content.json` with the [ContentLoader](../../operations/CONTENT_LOADER.md). Later starts find them in place and change nothing.
 
-Now try the loop that is the point of the example:
+To see the loop this example is about, try this:
 
 1. In the admin, open **Articles** and change the title of one, or tick off **Published** on another.
-2. Reload the home page: the change is there. The page that showed the old title was kept; the helper saw that a record it read had been updated, and made it again.
-3. Open `views/card.html`, add a word, and reload: the same, for a template.
-4. Go to `http://localhost:3000/articles/nothing`: the 404 page, which is the template `views/notfound.html`.
+2. Reload the home page. The change is there. The old page had been kept, but the helper saw that a record it read was updated, and made the page again.
+3. Open `views/card.html`, add a word, and reload. The same happens for a template.
+4. Go to `http://localhost:3000/articles/nothing`. You get the 404 page, which is the template `views/notfound.html`.
 
 ## What is in the folder
 
@@ -34,7 +36,7 @@ Now try the loop that is the point of the example:
 | `content.json` | The four articles that the first start loads. |
 | `server.js` | The CMS and the pages in one Express application, and the load of the content. |
 | `site.js` | The site: the helper with its templates, and the three routes. |
-| `views/*.html` | The eight templates: `header`, `footer` and `card` are partials the others include, `home`, `articles` and `article` are pages, `notfound` and `error` are the two special ones. |
+| `views/*.html` | The eight templates. `header`, `footer` and `card` are partials that the others include. `home`, `articles` and `article` are pages. `notfound` and `error` are the two special ones. |
 | `public/site.css` | The stylesheet, served as it is. |
 
 ## The sitemap
@@ -55,13 +57,13 @@ flowchart LR
   home -. "a loader failed" .-> err
 ```
 
-Every page starts with `{{> header}}` (the head of the document and a link to the home page and to all articles) and ends with `{{> footer}}`.
+Every page starts with `{{> header}}` (the head of the document, and links to the home page and to all articles) and ends with `{{> footer}}`.
 
 ## Build it, step by step
 
 ### 1. A resource is a file
 
-`resources/articles.js` is the content model. The file name is the name of the resource, and `schema` is the fields an editor fills. `slug` is `unique` and not `localised`: it is the address of the article, the same in every language. See [Field types](../../reference/FIELDS.md).
+`resources/articles.js` is the content model. The file name is the name of the resource, and `schema` lists the fields an editor fills in. `slug` is `unique` and not `localised`: it is the address of the article, and it is the same in every language. See [Field types](../../reference/FIELDS.md).
 
 ```js
 module.exports = {
@@ -76,9 +78,9 @@ module.exports = {
 }
 ```
 
-### 2. The CMS and the site are one Express application, the CMS first
+### 2. One Express application, the CMS first
 
-`server.js` gives the CMS the folder of the resources, mounts it first (so `/admin` and `/api` are its), then mounts the pages. `anonymousRead` lets a visitor's browser read `articles` over `/api` (reads only; nothing can be written).
+`server.js` gives the CMS the folder of the resources and mounts it first, so `/admin` and `/api` are its. Then it mounts the pages. `anonymousRead` lets a visitor's browser read `articles` over `/api`. It allows reads only. Nothing can be written.
 
 ```js
 const cms = new CMS({ mid: 'webnode1', resources: './resources', data: './data', anonymousRead: ['articles'] })
@@ -94,11 +96,11 @@ const server = app.listen(3000, async () => {
 
 ### 3. The first content is a JSON file
 
-`content.json` is a list of records for each resource. The [ContentLoader](../../operations/CONTENT_LOADER.md) checks it, writes what is missing and changes nothing on a second run. (The magazine uses the same file for relations, `authors://mei-lin`, and for pictures, `attachment://files/cover.jpg`.)
+`content.json` is a list of records for each resource. The [ContentLoader](../../operations/CONTENT_LOADER.md) checks it, writes what is missing, and changes nothing on a second run. The magazine uses the same file for relations (`authors://mei-lin`) and for pictures (`attachment://files/cover.jpg`).
 
 ### 4. Give the helper every template
 
-The helper is given all the templates by name when it is made, and it reads and parses them then, so a mistake is found before the first visitor. There is no layout: a route names the template that is the root of its page, and the root includes the partials it needs.
+You give the helper all the templates by name when you make it. It reads and parses them at that moment, so a mistake shows up before the first visitor arrives. There is no layout. A route names the template that is the root of its page, and that root includes the partials it needs.
 
 ```js
 const pages = new CMS.PageHelper({
@@ -113,7 +115,7 @@ const pages = new CMS.PageHelper({
 
 ### 5. A route is a template and a loader
 
-The loader reads with `api()`, which has the rights of your server, so **the filter is what keeps a draft off the site**: every read says `published: true`. What it returns is what the template prints; Mustache has no code, so the loader prepares dates and names.
+The loader reads with `api()`, which has the rights of your server. So the filter is what keeps a draft off the site: every read says `published: true`. What the loader returns is what the template prints. Mustache has no code, so the loader prepares dates and names.
 
 ```js
 router.get('/articles/:slug', pages.route('article', async ({ api, params, notFound }) => {
@@ -122,7 +124,7 @@ router.get('/articles/:slug', pages.route('article', async ({ api, params, notFo
 }))
 ```
 
-`notFound()` is how a loader says that there is no such page: the visitor gets the 404 template with the status 404. The list route adds `{ vary: ['page'] }`, so that each `?page=N` is its own kept page.
+`notFound()` is how a loader says there is no such page. The visitor gets the 404 template with status 404. The list route adds `{ vary: ['page'] }`, so each `?page=N` is its own kept page.
 
 ### 6. Templates only print
 
@@ -137,11 +139,11 @@ router.get('/articles/:slug', pages.route('article', async ({ api, params, notFo
 {{> footer}}
 ```
 
-`{{value}}` is escaped; `{{{value}}}` is raw, and the one place that does that is the body, which is the HTML of a rich text field an editor wrote. A section (`{{#articles}}…{{/articles}}`) repeats for a list, and `{{^articles}}…{{/articles}}` shows when there is nothing.
+`{{value}}` is escaped. `{{{value}}}` is raw, and the only raw value here is the body, which is the HTML of a rich text field an editor wrote. A section (`{{#articles}}…{{/articles}}`) repeats for a list. `{{^articles}}…{{/articles}}` shows when the list is empty.
 
 ### 7. The 404 page and the error page are templates too
 
-The last two lines of the application catch what no route answered and what a route threw. The error page **says nothing of the error** (it is logged), so a visitor never reads a message meant for you.
+The last two lines of the application catch what no route answered and what a route threw. The error page says nothing about the error. The error is logged, so a visitor never reads a message meant for you.
 
 ```js
 router.use(pages.notFoundHandler())
@@ -166,7 +168,7 @@ GET /articles/welcome
     and kept, with the update times of the records it read.                  site.js
 ```
 
-How a kept page stays right (the update times of the records, the dates of the templates, the age, the folder) is the subject of [Kept pages](../../reference/PAGE_HELPER.md).
+How a kept page stays right (the update times of the records, the dates of the templates, the age, the folder) is explained in [Kept pages](../../reference/PAGE_HELPER.md).
 
 ## Where to go from here
 

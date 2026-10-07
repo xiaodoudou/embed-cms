@@ -4,11 +4,17 @@
 
 > **Status.** Phase 0 is built: the public tokens, the [UI kit](PLUGIN_UI_KIT.md) and the host object. The later phases are designed and not scheduled. How to write a plugin today is in [PLUGINS.md](PLUGINS.md).
 
-A plugin author can add a page to the admin, and that's all. The page has to be compiled into the admin (a rebuild from `node_modules`, with the dev dependencies), it reaches the admin through a handful of untyped globals on `window`, and it has no way to add a custom field type, a button in the editor, or a card on a dashboard. This page describes the system that fixes that, with three goals:
+A plugin author can add a page to the admin, and that is all. Three things limit it:
 
-1. **A plugin looks native without trying.** It gets the admin's theme (light and dark, the design tokens, Vuetify's theme) for free, whichever way it's written.
-2. **It's generic.** A plugin can use Vuetify, plain HTML, or another framework, and pick the layout it needs: a padded page, an edge-to-edge canvas, a dashboard of widgets.
-3. **It's small to write and safe to run.** One manifest, a typed host API, no admin rebuild when it can be avoided, and a plugin that breaks takes down its own card, not the admin.
+- The page has to be compiled into the admin (a rebuild from `node_modules`, with the dev dependencies).
+- It reaches the admin through a handful of untyped globals on `window`.
+- It has no way to add a custom field type, a button in the editor, or a card on a dashboard.
+
+This page describes the system that fixes that, with three goals:
+
+1. A plugin looks native without trying. It gets the admin's theme (light and dark, the design tokens, Vuetify's theme) for free, whichever way it's written.
+2. It's generic. A plugin can use Vuetify, plain HTML, or another framework, and pick the layout it needs: a padded page, an edge-to-edge canvas, a dashboard of widgets.
+3. It's small to write and safe to run. One manifest, a typed host API, no admin rebuild when it can be avoided, and a plugin that breaks takes down its own card, not the admin.
 
 ## Without this system
 
@@ -196,17 +202,17 @@ class Dashboard {
 
 ## 8. Rights, safety and failure
 
-- **Rights.** A page (or widget, or action) appears only for groups that list it, as now. Its REST calls are checked by the server like any other, so hiding a button is a convenience, not the protection. `ctx.can` mirrors the server's answer.
-- **Trust.** A plugin runs in the admin's origin with the user's session, like any code in the project. There is no sandbox, and the docs should say so plainly: install plugins you'd be happy to run on the server. The shadow-root option isolates styles, not privileges.
-- **Failure.** Every contribution is wrapped in an error boundary: a plugin that throws shows a small error card with its name and the version it declared, and the rest of the admin keeps working.
-- **Versions.** `apiVersion` is checked when the plugin loads. A plugin written for a version the admin doesn't support isn't loaded, and the admin says which one and why, instead of failing in a strange place.
+- Rights. A page (or widget, or action) appears only for groups that list it, as now. Its REST calls are checked by the server like any other, so hiding a button is a convenience, not the protection. `ctx.can` mirrors the server's answer.
+- Trust. A plugin runs in the admin's origin with the user's session, like any code in the project. There is no sandbox, and the docs should say so plainly: install plugins you'd be happy to run on the server. The shadow-root option isolates styles, not privileges.
+- Failure. Every contribution is wrapped in an error boundary: a plugin that throws shows a small error card with its name and the version it declared, and the rest of the admin keeps working.
+- Versions. `apiVersion` is checked when the plugin loads. A plugin written for a version the admin doesn't support isn't loaded, and the admin says which one and why, instead of failing in a strange place.
 
 ## 9. Writing and testing a plugin
 
-- **Scaffold.** `npx cms plugin new dashboard` creates the package: manifest, a page, a widget, a build script, and a `README`.
-- **Develop.** `npm run dev` in the plugin serves it with hot reload into a running admin (the admin's own `npm run dev` already proxies the CMS), so changing a Vue file updates the open page.
-- **Test.** The SDK includes `mountPage(manifest, pageId, { ctx })`, which mounts a contribution with a fake `ctx` in the tests of the plugin, with the theme applied, so the same visual rules the admin tests enforce (no hard-coded colours) can run on a plugin too.
-- **Types.** `@embed-cms/plugin-sdk` carries every type: the manifest, `ctx`, the slots.
+- Scaffold. `npx cms plugin new dashboard` creates the package: manifest, a page, a widget, a build script, and a `README`.
+- Develop. `npm run dev` in the plugin serves it with hot reload into a running admin (the admin's own `npm run dev` already proxies the CMS), so changing a Vue file updates the open page.
+- Test. The SDK includes `mountPage(manifest, pageId, { ctx })`. It mounts a contribution with a fake `ctx` in the tests of the plugin, with the theme applied. The same visual rules the admin tests enforce (no hard-coded colours) can then run on a plugin too.
+- Types. `@embed-cms/plugin-sdk` carries every type: the manifest, `ctx`, the slots.
 
 ## 10. Existing plugins
 
@@ -229,11 +235,41 @@ Each phase is useful on its own, and none needs the later ones.
 
 Phase 0 is three deliverables. None changes how a plugin or the admin behaved before.
 
-**0.1 The public tokens.** One page lists the stable subset of the `--cms-*` variables a plugin may rely on: colours (`--cms-bg`, `--cms-surface`, `--cms-surface-2`, `--cms-surface-3`, `--cms-text`, `--cms-text-muted`, `--cms-border`, `--cms-border-strong`, `--cms-primary` and its `-hover`, `-soft` and `on-` pairs, and the four status colours with their `-soft` pairs), spacing (`--cms-space-1` to `-6`, `-8`, `-10` and `-12`), radii (`--cms-radius-xs` to `-lg` and `-pill`), type (`--cms-fs-xs` to `-2xl`, `--cms-fw-*`, `--cms-lh-*`), shadows (`--cms-shadow-1` to `-3`), motion (`--cms-motion-*`, `--cms-ease`), the focus ring, and the three breakpoints (`--cms-bp-sm`, `--cms-bp-md`, `--cms-bp-lg`). Every other token stays private and free to change. *Done when:* the list is in the [Design system](DESIGN_SYSTEM.md) page with what each token is for, a test fails if a public token is missing from the light or the dark palette, and the page states that public tokens keep their names inside a major version.
+**0.1 The public tokens.** One page lists the stable subset of the `--cms-*` variables a plugin may rely on:
 
-**0.2 The UI kit.** `src/styles/kit.scss`, plain CSS once compiled (a layer would lose to the element rules of `base.scss`), with the classes of [PLUGIN_UI_KIT.md](PLUGIN_UI_KIT.md): foundations, links, layout, boxes, tables, lists, forms, buttons, feedback and icons. The classes the admin already uses move into it with the same names. The Design system page gets a "Plugin UI kit" section that draws all of it in both themes. *Done when:* the kit is built from tokens only (the existing design tests pass on it), every class named in the kit page exists, every variant passes AA contrast in both themes, the dashboard of [PLUGINS.md](PLUGINS.md) has a second version written with kit classes only that looks the same as the Vuetify one, and the admin looks as it did before.
+- Colours: `--cms-bg`, `--cms-surface`, `--cms-surface-2`, `--cms-surface-3`, `--cms-text`, `--cms-text-muted`, `--cms-border`, `--cms-border-strong`, `--cms-primary` and its `-hover`, `-soft` and `on-` pairs, and the four status colours with their `-soft` pairs.
+- Spacing: `--cms-space-1` to `-6`, `-8`, `-10` and `-12`.
+- Radii: `--cms-radius-xs` to `-lg`, and `-pill`.
+- Type: `--cms-fs-xs` to `-2xl`, `--cms-fw-*`, `--cms-lh-*`.
+- Shadows: `--cms-shadow-1` to `-3`.
+- Motion: `--cms-motion-*` and `--cms-ease`.
+- The focus ring, and the three breakpoints (`--cms-bp-sm`, `--cms-bp-md`, `--cms-bp-lg`).
 
-**0.3 The host object.** `window.embedCms.host`, one typed object (the `ctx` of the table above: `api`, `fetch`, `user`, `can`, `config`, `t`, `locale`, `notify`, `confirm`, `navigate`, `theme`, `icon`, `kitStyles`, `on`). It is a thin facade over what the admin already has (`RequestService`, `LoginService`, `ConfigService`, `TranslateService`, `NotificationsService`, `DialogService`, the router), so no behaviour changes. A page registered the way plugins are today also receives it as a prop and through `useAdmin()`. The loose globals keep working. *Done when:* every member is in `types/global.d.ts` and documented, each one has a test against the real service it wraps, and the dashboard example uses `ctx.fetch`, `ctx.navigate` and `ctx.t` instead of hand-built URLs and strings.
+Every other token stays private and free to change.
+
+*Done when:*
+
+- the list is in the [Design system](DESIGN_SYSTEM.md) page, with what each token is for;
+- a test fails if a public token is missing from the light or the dark palette;
+- the page states that public tokens keep their names inside a major version.
+
+**0.2 The UI kit.** The kit is `src/styles/kit.scss`. It is plain CSS once compiled (a layer would lose to the element rules of `base.scss`). It holds the classes of [PLUGIN_UI_KIT.md](PLUGIN_UI_KIT.md): foundations, links, layout, boxes, tables, lists, forms, buttons, feedback and icons. The classes the admin already uses move into it with the same names. The Design system page gets a "Plugin UI kit" section that draws all of it in both themes.
+
+*Done when:*
+
+- the kit is built from tokens only (the existing design tests pass on it);
+- every class named in the kit page exists;
+- every variant passes AA contrast in both themes;
+- the dashboard of [PLUGINS.md](PLUGINS.md) has a second version written with kit classes only, and it looks the same as the Vuetify one;
+- the admin looks as it did before.
+
+**0.3 The host object.** `window.embedCms.host` is one typed object, the `ctx` of the table above: `api`, `fetch`, `user`, `can`, `config`, `t`, `locale`, `notify`, `confirm`, `navigate`, `theme`, `icon`, `kitStyles`, `on`. It is a thin facade over what the admin already has (`RequestService`, `LoginService`, `ConfigService`, `TranslateService`, `NotificationsService`, `DialogService`, the router), so no behaviour changes. A page registered the way plugins are today also receives it as a prop and through `useAdmin()`. The loose globals keep working.
+
+*Done when:*
+
+- every member is in `types/global.d.ts` and documented;
+- each one has a test against the real service it wraps;
+- the dashboard example uses `ctx.fetch`, `ctx.navigate` and `ctx.t` instead of hand-built URLs and strings.
 
 **Not in phase 0:** the manifest, run-time loading, widgets, layouts beyond the kit's CSS, custom field types.
 
@@ -245,14 +281,14 @@ Run-time loading shares the admin's copies of Vue and Vuetify through an import 
 
 The questions this design raised, and what was decided:
 
-- **Vuetify.** Every `v-*` component is supported in a Vue plugin, at the Vuetify major the admin ships. A Vuetify major upgrade is announced as a plugin API change (a new `apiVersion`).
-- **Plugin translations.** A plugin may declare its strings per language in the manifest (`i18n`), merged into the admin's dictionary under `plugin.<id>.`; it may equally use plain text and skip translation.
-- **Widget data.** A declarative widget reads through REST with the viewer's rights. A widget can name a route of the plugin's server half instead, for heavy aggregations; that route does its own rights check.
-- **Server plugins.** A server plugin may declare an optional manifest (routes, resources, rights) so the CMS and the admin can list what it does. A class without one keeps working.
-- **Library sharing.** An import map, with the size budget above.
+- Vuetify. Every `v-*` component is supported in a Vue plugin, at the Vuetify major the admin ships. A Vuetify major upgrade is announced as a plugin API change (a new `apiVersion`).
+- Plugin translations. A plugin may declare its strings per language in the manifest (`i18n`), merged into the admin's dictionary under `plugin.<id>.`; it may equally use plain text and skip translation.
+- Widget data. A declarative widget reads through REST with the viewer's rights. A widget can name a route of the plugin's server half instead, for heavy aggregations; that route does its own rights check.
+- Server plugins. A server plugin may declare an optional manifest (routes, resources, rights) so the CMS and the admin can list what it does. A class without one keeps working.
+- Library sharing. An import map, with the size budget above.
 
 ## Non-goals
 
-- **A marketplace, or installing a plugin from the admin.** Plugins are installed by the project's developer, in code, with `cms.use`. Anything installable from a browser would need signing and a sandbox, and this design provides neither.
-- **A sandbox.** A plugin runs in the admin's origin with the user's session, like any code in the project. Shadow roots isolate styles, not privileges.
-- **A second component library.** The kit has no JavaScript and no behaviour; behaviour stays in Vuetify and the admin's components.
+- A marketplace, or installing a plugin from the admin. Plugins are installed by the project's developer, in code, with `cms.use`. Anything installable from a browser would need signing and a sandbox, and this design provides neither.
+- A sandbox. A plugin runs in the admin's origin with the user's session, like any code in the project. Shadow roots isolate styles, not privileges.
+- A second component library. The kit has no JavaScript and no behaviour; behaviour stays in Vuetify and the admin's components.

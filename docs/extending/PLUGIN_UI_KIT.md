@@ -10,13 +10,13 @@ A plugin should look like it belongs in the admin without knowing how the admin 
 
 ## The rules
 
-1. **Tokens only.** Every colour, space, radius, size and shadow in the kit comes from a `--cms-*` token. The kit never hard-codes a value, and the test that guards the Design system checks the kit file like any other.
-2. **Plain HTML, plain classes.** A class is a `cms-` name (`cms-card`), a variant is a modifier class (`is-primary`), a state is the real HTML attribute where there is one (`disabled`, `readonly`, `aria-invalid`, `aria-sort`, `aria-current`). No build step, no generated names.
-3. **Semantic before visual.** A class says what a thing is (a warning callout), never what it looks like (a yellow box).
-4. **Accessible by default.** The focus ring, 44px touch targets on coarse pointers, AA contrast, and `prefers-reduced-motion` are part of the classes, not something an author adds.
-5. **Logical properties.** The kit uses `margin-inline`, `padding-block` and the like, so right-to-left layouts work.
-6. **One home for the new classes.** The kit is one SCSS file, `src/styles/kit.scss`, compiled with the rest of the admin's CSS. The classes the admin had before it (`cms-page`, `cms-card`, `cms-empty`, `cms-chip`, `cms-toolbar`, `cms-icon-btn`, `cms-kbd`, `cms-check`) keep their names, so nothing in an existing plugin changes.
-7. **A public API.** Class names and the public tokens don't change inside a major version. New classes may be added in a minor one.
+1. Tokens only. Every colour, space, radius, size and shadow in the kit comes from a `--cms-*` token. The kit never hard-codes a value, and the test that guards the Design system checks the kit file like any other.
+2. Plain HTML, plain classes. A class is a `cms-` name (`cms-card`), a variant is a modifier class (`is-primary`), a state is the real HTML attribute where there is one (`disabled`, `readonly`, `aria-invalid`, `aria-sort`, `aria-current`). There is no build step and there are no generated names.
+3. Semantic before visual. A class says what a thing is (a warning callout), never what it looks like (a yellow box).
+4. Accessible by default. The focus ring, 44px touch targets on coarse pointers, AA contrast, and `prefers-reduced-motion` are part of the classes, not something an author adds.
+5. Logical properties. The kit uses `margin-inline`, `padding-block` and the like, so right-to-left layouts work.
+6. One home for the new classes. The kit is one SCSS file, `src/styles/kit.scss`, compiled with the rest of the admin's CSS. The classes the admin had before it (`cms-page`, `cms-card`, `cms-empty`, `cms-chip`, `cms-toolbar`, `cms-icon-btn`, `cms-kbd`, `cms-check`) keep their names, so nothing in an existing plugin changes.
+7. A public API. Class names and the public tokens don't change inside a major version. New classes may be added in a minor one.
 
 ## Where it sits in the CSS
 
@@ -199,14 +199,14 @@ Both are first-class, and both read the same tokens. **Any Vuetify component wor
 
 ## How it reaches a plugin
 
-- **Always loaded.** The admin loads the kit with the rest of its styles, so a page inside the admin can use the classes with no setup.
-- **Shadow roots.** A plugin mounted in a shadow root (the isolation for non-Vue plugins) gets the kit from `await host.kitStyles()`, a constructable stylesheet to add to `shadowRoot.adoptedStyleSheets`. Custom properties cross the shadow boundary, so the theme comes along. It resolves to null where the browser has no constructable stylesheets.
-- **Standalone pages.** `/admin/kit.css` serves the same CSS, tokens included in both palettes, for a page a plugin serves itself (a printable report, say) that wants the look without the admin around it. The build writes it as `dist/kit.css`.
+- Always loaded. The admin loads the kit with the rest of its styles, so a page inside the admin can use the classes with no setup.
+- Shadow roots. A plugin mounted in a shadow root (the isolation for non-Vue plugins) gets the kit from `await host.kitStyles()`, a constructable stylesheet to add to `shadowRoot.adoptedStyleSheets`. Custom properties cross the shadow boundary, so the theme comes along. It resolves to null where the browser has no constructable stylesheets.
+- Standalone pages. `/admin/kit.css` serves the same CSS, tokens included in both palettes, for a page a plugin serves itself (a printable report, say) that wants the look without the admin around it. The build writes it as `dist/kit.css`.
 
 ## How it's kept honest
 
-- **The reference page.** The Design system page draws every class and variant in both themes, so what's written here is what you can see.
-- **The tests.** The test that guards the Design system reads the kit like any other style file: only tokens, no hard-coded colours, no `!important`. A second test checks that every class named on this page exists in the compiled kit, and one checks the text contrast of the token pairs the kit uses against AA in light and dark.
+- The reference page. The Design system page draws every class and variant in both themes, so what's written here is what you can see.
+- The tests. The test that guards the Design system reads the kit like any other style file: only tokens, no hard-coded colours, no `!important`. A second test checks that every class named on this page exists in the compiled kit, and one checks the text contrast of the token pairs the kit uses against AA in light and dark.
 
 ## What the kit isn't
 

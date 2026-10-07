@@ -2,11 +2,13 @@
 
 # PageHelper: the pages of your public site
 
-The admin is for editors. The pages your visitors see are yours to build, and `CMS.PageHelper` is the piece that builds them from the content. You give it every template of the site and the CMS; a route names the template it shows and a loader that reads the records; the helper renders the page with [Mustache](https://mustache.github.io/mustache.5.html) and **keeps the finished page**, so the next visitor gets it without the loader or the template running again. A kept page is made again when a template file or a record it read changes. (It is typed too: see [TYPESCRIPT.md](TYPESCRIPT.md).)
+The admin is for editors. The pages your visitors see are yours to build, and `CMS.PageHelper` builds them from the content.
 
-(To see a site built on the platform **without** this helper, with relations, pictures, two languages, a search and a feed, read [the magazine example](../examples/magazine/README.md); both sites are compared on the [examples page](../examples/README.md).)
+You give it the CMS and every template of the site. A route names the template it shows, and a loader that reads the records. The helper renders the page with [Mustache](https://mustache.github.io/mustache.5.html) and keeps the finished page. The next visitor gets it without the loader or the template running again. A kept page is made again when a template file, or a record it read, changes. The helper is typed too: see [TYPESCRIPT.md](TYPESCRIPT.md).
 
-A runnable site that uses everything on this page is in [`docs/examples/site`](../examples/site/README.md), a tutorial in one folder: its resource, its eight templates, a small stylesheet, `site.js` (the routes) and `server.js` (the CMS and the pages in one Express application). This is what its home page and an article look like:
+To see a site built without this helper, with relations, pictures, two languages, a search and a feed, read [the magazine example](../examples/magazine/README.md). The [examples page](../examples/README.md) compares both sites.
+
+A runnable site that uses everything on this page is in [`docs/examples/site`](../examples/site/README.md). It is a tutorial in one folder: its resource, its eight templates, a small stylesheet, `site.js` (the routes) and `server.js` (the CMS and the pages in one Express application). This is what its home page and an article look like:
 
 ![The home page of the example site, a list of articles](../img/page-helper-home.png)
 
@@ -78,7 +80,7 @@ const server = app.listen(3000, () => cms.bootstrap(server))
 
 ## Templates
 
-The helper is given **all the templates when it is made**, and it reads and parses each one then. Nothing is looked for later, and a mistake is found before the first visitor:
+You give the helper all the templates when you make it, and it reads and parses each one then. Nothing is looked for later, and a mistake shows up before the first visitor arrives:
 
 - a file that cannot be read stops the start: `Template "home": cannot read /…/home.html (ENOENT)`;
 - a template that does not parse (a section that is never closed) stops it, naming the template;
@@ -121,7 +123,10 @@ Two things that surprise people: a section is skipped for `0`, so a page number 
 
 ### When a template file changes
 
-Each template remembers the **modification date** of its file. Whenever a page is made, or a kept page is checked, the dates of the templates it uses are read again (one `stat` each): a file with another date is read and parsed again, and only that template. Edit a file and the next request shows it, with no restart. A changed file that does not parse is refused with its name, the last text stays in use, and the next request tries again; a file that has gone is reported once in the log and the last text stays in use.
+Each template remembers the modification date of its file. Whenever a page is made, or a kept page is checked, the dates of the templates it uses are read again (one `stat` each). A file with another date is read and parsed again, and only that template. So when you edit a file, the next request shows it, with no restart.
+
+- A changed file that does not parse is refused with its name. The last text stays in use, and the next request tries again.
+- A file that has gone is reported once in the log, and the last text stays in use.
 
 ## Routes
 
@@ -153,28 +158,34 @@ The options of a route:
 
 ## Kept pages
 
-A kept page is sent without running the loader, and without rendering. Where it is kept is `cache`: **the memory** of the process by default (the fastest; lost when the process stops; `maxPages` bounds it), a **folder** (one `.html` file and one `.json` file with what the page was made of; it survives a restart; the folder is made if it is not there), or nowhere.
+A kept page is sent without running the loader and without rendering. `cache` says where it is kept:
+
+- The memory of the process (the default). It is the fastest, and it is lost when the process stops. `maxPages` bounds it.
+- A folder. Each page is one `.html` file and one `.json` file with what the page was made of. It survives a restart. The folder is made if it is not there.
+- **Nowhere** (`cache: false`).
 
 ### When a kept page is made again
 
-It is sent as it is only while **all** of this is true. Nothing is hashed: only dates are compared, so the check costs a few `stat` calls and comparisons.
+A kept page is sent as it is only while all of this is true. Nothing is hashed. The check only compares dates, so it costs a few `stat` calls and comparisons.
 
-1. **The templates have the date they had.** For the template of the route and every partial the page used, the file has the modification date it had when the page was made.
-2. **No record it read was updated since.** The loader reads through the `api` it is given, which notes each resource it is used on, with the update time of the resource at that moment (the latest `_updatedAt` of its records). A resource whose update time is later than that makes the page old.
-3. **It is not older than `maxAge`.**
+1. The templates have the date they had. For the template of the route and every partial the page used, the file has the modification date it had when the page was made.
+2. No record it read was updated since. The loader reads through the `api` it is given, which notes each resource it is used on, with the update time of the resource at that moment (the latest `_updatedAt` of its records). A resource whose update time is later than that makes the page old.
+3. It is not older than `maxAge`.
 4. With `revalidate`, none of this is looked at again before that many seconds have passed.
 
-How the update time of a resource is known: the first time a resource is asked for, its records are read once and the latest `_updatedAt` is kept. After that the helper puts a hook on the resource (create, update, remove and the attachment operations), and each change moves the time forward, so the check is a comparison in memory. When the process starts again with a folder of pages, the records are read once more, and a record updated since the page was made makes it old, even if the change was made while the server was not running.
+How the update time of a resource is known: the first time a resource is asked for, its records are read once and the latest `_updatedAt` is kept. After that the helper puts a hook on the resource (create, update, remove and the attachment operations), and each change moves the time forward. So the check is a comparison in memory.
+
+When the process starts again with a folder of pages, the records are read once more. A record updated since the page was made makes the page old, even if the change was made while the server was not running.
 
 ### What to know
 
-- **A deleted record** leaves no `_updatedAt` behind. It is seen by the hooks while the process runs; a record deleted by another process (or while this one was stopped) is seen when `maxAge` passes, and by `invalidate('articles')` at once.
-- **Data that did not come through `api`** (a file read, a call to another service, `cms.api()` used directly) is not noted. If it changes, the page is made again only by `maxAge`, or by `clear()` / `invalidate()`.
-- **A kept page is the same for everyone.** Do not read cookies, the user or headers in the loader of a kept page: the first visitor's version would be sent to all. Give such a route `cache: false`, or answer in a middleware before it. A loader that answers the request itself (`res.redirect`) on a kept page is refused, with a message that says so.
-- **Many asking at once make it once.** When a page is old and ten requests come, one runs the loader and the others wait for its page.
-- **A page that is damaged is made again.** A kept page whose file cannot be read, that was written by another version of the helper, or that does not say what it was made of, is not sent: it is made again and written over.
-- **Only a 200 is kept.** The 404 and error pages are made for each request, so an address that does not exist cannot fill the cache.
-- **One page for each address.** A route that gives a page for any value of a parameter (`/search/:q`) would keep a page for each one: give it `cache: false`, or `maxPages` and `maxAge` that fit.
+- A deleted record leaves no `_updatedAt` behind. It is seen by the hooks while the process runs; a record deleted by another process (or while this one was stopped) is seen when `maxAge` passes, and by `invalidate('articles')` at once.
+- Data that did not come through `api` (a file read, a call to another service, `cms.api()` used directly) is not noted. If it changes, the page is made again only by `maxAge`, or by `clear()` / `invalidate()`.
+- A kept page is the same for everyone. Do not read cookies, the user or headers in the loader of a kept page: the first visitor's version would be sent to all. Give such a route `cache: false`, or answer in a middleware before it. A loader that answers the request itself (`res.redirect`) on a kept page is refused, with a message that says so.
+- Many asking at once make it once. When a page is old and ten requests come, one runs the loader and the others wait for its page.
+- A page that is damaged is made again. A kept page whose file cannot be read, that was written by another version of the helper, or that does not say what it was made of, is not sent: it is made again and written over.
+- Only a 200 is kept. The 404 and error pages are made for each request, so an address that does not exist cannot fill the cache.
+- One page for each address. A route that gives a page for any value of a parameter (`/search/:q`) would keep a page for each one: give it `cache: false`, or `maxPages` and `maxAge` that fit.
 - The **keys** are the template, the path and the `vary` parameters. In a folder the file is named after the path, `articles_hello.<16 digits>.html`, the digits being a hash of the whole key, so no address can name a file outside the folder.
 
 ### The browser
@@ -234,7 +245,7 @@ Where they are used:
 | A middleware before the routes throws, and `app.use(pages.errorHandler())` comes after the routes | the error template |
 | An error that has a `status` of 400 to 599 (as the ones of `http-errors` do) | the error template, with that status |
 
-- **The text of an error is not shown.** `message` is empty for a 5xx, and for a 4xx unless the error has `expose: true` (as `http-errors` sets on a 4xx). A database message or a path never reaches a visitor; it goes to the log.
+- The text of an error is not shown. `message` is empty for a 5xx, and for a 4xx unless the error has `expose: true` (as `http-errors` sets on a 4xx). A database message or a path never reaches a visitor; it goes to the log.
 - Without a `notFound` template the 404 is `Not found` as plain text. Without an `error` template, or if it fails too, **Express** answers the error as it would have: `next(error)`.
 - The 404 and error pages are sent with `Cache-Control: no-store` (from the handlers) or `no-cache` (from a route) and are never kept.
 
@@ -259,12 +270,12 @@ Where they are used:
 
 ## What can go wrong
 
-- **The site never changes.** The loader read the records through `cms.api()` and not through the `api` it was given, so the page does not know what it depends on. Use the given `api`, or call `pages.invalidate('articles')` from a hook.
-- **A page shows something old for a while.** `revalidate` is set, or the change was a deletion made by another process: it is seen at `maxAge`. Call `invalidate`.
-- **`{{name}}` prints nothing.** The loader did not give `name` (Mustache says nothing for a missing value), or the value is inside a section that is skipped for `0`, `""` or `false`.
-- **Every request shows the same user's page.** The loader reads the person. Give the route `cache: false`.
-- **The first request after a restart is slow.** With a folder of pages, the records of each resource a page read are read once to know their update time.
-- **The 404 page has no style.** It is a template like the others: include `header` and `footer` in it, as the example does.
+- The site never changes. The loader read the records through `cms.api()` and not through the `api` it was given, so the page does not know what it depends on. Use the given `api`, or call `pages.invalidate('articles')` from a hook.
+- A page shows something old for a while. `revalidate` is set, or the change was a deletion made by another process: it is seen at `maxAge`. Call `invalidate`.
+- `{{name}}` prints nothing. The loader did not give `name` (Mustache says nothing for a missing value), or the value is inside a section that is skipped for `0`, `""` or `false`.
+- Every request shows the same user's page. The loader reads the person. Give the route `cache: false`.
+- The first request after a restart is slow. With a folder of pages, the records of each resource a page read are read once to know their update time.
+- The 404 page has no style. It is a template like the others: include `header` and `footer` in it, as the example does.
 
 ## Running the example
 

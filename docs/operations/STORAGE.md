@@ -2,7 +2,14 @@
 
 # Storage engines
 
-Where do your records actually live? That's the storage engine, and you pick it with one line in `cms.json`. There are five. This page tells you what each one is like to live with, how fast they really are (measured two ways), what happens to your content when the process is killed, and how to move a site from one to another. The setting itself, and the `url` of the two database servers, is in [CONFIG.md](../reference/CONFIG.md#storage-engines).
+Where do your records actually live? That is the storage engine, and you pick it with one line in `cms.json`. There are five. This page tells you:
+
+- what each one is like to live with;
+- how fast they really are, measured two ways;
+- what happens to your content when the process is killed;
+- how to move a site from one engine to another.
+
+The setting itself, and the `url` of the two database servers, is in [CONFIG.md](../reference/CONFIG.md#storage-engines).
 
 ```json
 { "dbEngine": { "type": "sqlite" } }
@@ -30,36 +37,36 @@ Short answer: **leave it alone.** Without `dbEngine` you get `leveldb`, which ne
 
 A LevelDB database per resource, in `data/<resource>/json/leveldb/`, through the `classic-level` package.
 
-- **The good:** the smallest on disk (about a third of the others, it compresses). It starts in 0.03 s and memory stays flat. A save is answered once it's in the log. It's the most widely used embedded store of the local three.
-- **The catch:** `classic-level` is a native module. It ships prebuilt files for the usual systems, and if yours can't load it the engine refuses to start with a clear error (set `dbEngine.type` to `sqlite` or `jsondown` then). It's also the slowest of the three at reading single records (0.025 ms, which you will never feel) and at searches, and the folder isn't something you open by hand.
+- The good: the smallest on disk (about a third of the others, it compresses). It starts in 0.03 s and memory stays flat. A save is answered once it's in the log. It's the most widely used embedded store of the local three.
+- The catch: `classic-level` is a native module. It ships prebuilt files for the usual systems, and if yours can't load it the engine refuses to start with a clear error (set `dbEngine.type` to `sqlite` or `jsondown` then). It's also the slowest of the three at reading single records (0.025 ms, which you will never feel) and at searches, and the folder isn't something you open by hand.
 
 ### `sqlite`
 
 One SQLite file per resource, `data/<resource>/json/db.sqlite`, in write-ahead-log mode. Records are read from disk (your operating system caches them) and nothing is held in memory.
 
-- **The good:** no server, no extra dependency, it's part of Node. It starts instantly and memory stays flat (around 85 MB at any size). A save is answered once it's in the log, so a crash loses nothing that was answered. One file to back up, and every SQLite tool can open it.
-- **The catch:** Node still calls `node:sqlite` experimental in Node 22 and prints a warning the first time it's used. Reads are about 10 times slower than from memory (still 0.013 ms), and a search that reads every record takes about 1.6 times as long as `jsondown`. A save that waits for the disk takes about 1.6 ms.
+- The good: no server, no extra dependency, it's part of Node. It starts instantly and memory stays flat (around 85 MB at any size). A save is answered once it's in the log, so a crash loses nothing that was answered. One file to back up, and every SQLite tool can open it.
+- The catch: Node still calls `node:sqlite` experimental in Node 22 and prints a warning the first time it's used. Reads are about 10 times slower than from memory (still 0.013 ms), and a search that reads every record takes about 1.6 times as long as `jsondown`. A save that waits for the disk takes about 1.6 ms.
 
 ### `jsondown`
 
 Every record of a resource sits in memory, and gets written to one JSON file, `data/<resource>/json/db.json`, a moment after a change. The file is written next to its final place and renamed over it, so a crash never leaves you with half a file.
 
-- **The good:** the fastest at reading and searching, because everything is already in memory. Nothing to install. The file is plain text: easy to look at, copy and back up.
-- **The catch:** memory grows with the content (about 480 MB for 100,000 records of 1 KB). The whole file is rewritten on every save, so a big store takes seconds to flush, and starting the server means parsing all of it (0.4 s for 100,000 records). A save is answered *before* it reaches the disk, so a crash loses the last moments of work (see [what happens if the process is killed](#what-happens-if-the-process-is-killed)).
+- The good: the fastest at reading and searching, because everything is already in memory. Nothing to install. The file is plain text: easy to look at, copy and back up.
+- The catch: memory grows with the content (about 480 MB for 100,000 records of 1 KB). The whole file is rewritten on every save, so a big store takes seconds to flush, and starting the server means parsing all of it (0.4 s for 100,000 records). A save is answered *before* it reaches the disk, so a crash loses the last moments of work (see [what happens if the process is killed](#what-happens-if-the-process-is-killed)).
 
 ### `mongodb`
 
 One MongoDB collection per resource, on a server you run. The `url` is in [CONFIG.md](../reference/CONFIG.md#storage-engines).
 
-- **The good:** your content lives in a server of its own. The CMS can restart or crash without touching it, several processes can read it, and MongoDB's backups, replica sets and monitoring all apply. Nothing is held in the CMS.
-- **The catch:** you run a server. Every read and write is a network round trip (0.4 ms for a read, 1 ms for a save on the same machine), and importing is slow because each record is its own write: 100,000 records take 75 seconds, against under one second for the local engines. Replication between servers works differently from the local three (see [REPLICATION.md](REPLICATION.md)).
+- The good: your content lives in a server of its own. The CMS can restart or crash without touching it, several processes can read it, and MongoDB's backups, replica sets and monitoring all apply. Nothing is held in the CMS.
+- The catch: you run a server. Every read and write is a network round trip (0.4 ms for a read, 1 ms for a save on the same machine), and importing is slow because each record is its own write: 100,000 records take 75 seconds, against under one second for the local engines. Replication between servers works differently from the local three (see [REPLICATION.md](REPLICATION.md)).
 
 ### `postgres`
 
 One PostgreSQL table per resource, on a server you run.
 
-- **The good:** the same story as MongoDB: a server of its own, PostgreSQL's backups, replicas and tools, and other applications can query your content with plain SQL.
-- **The catch:** you run a server. It's the slowest at writing: 2 ms for a save, and 205 seconds to import 100,000 records, because each one is its own write. It takes more disk than the local engines (69 MB for the same 56 MB of records).
+- The good: the same story as MongoDB: a server of its own, PostgreSQL's backups, replicas and tools, and other applications can query your content with plain SQL.
+- The catch: you run a server. It's the slowest at writing: 2 ms for a save, and 205 seconds to import 100,000 records, because each one is its own write. It takes more disk than the local engines (69 MB for the same 56 MB of records).
 
 ## How fast are they, really?
 
@@ -67,7 +74,13 @@ Two measurements: the stores on their own, then the whole CMS with real HTTP req
 
 ### The stores on their own
 
-Same data for every engine: 100,000 records of about 1 KB each (several fields, two languages, a paragraph of text), written through the same interface the CMS uses, one process per engine so the memory figures don't get mixed. **Lower is better in every row, and the best is in bold. Every value has its unit.** Measured on Windows 11 (Node 22.19, an NVMe disk, 32 cores); MongoDB 7.0 and PostgreSQL 16 run in WSL 2 on the same machine and are reached through its virtual network, so every server figure carries a round trip of a fraction of a millisecond, as it would on a fast LAN (on a slower network it grows by that round trip). Memory is that of the CMS process: the two servers use memory of their own on top.
+Same data for every engine: 100,000 records of about 1 KB each (several fields, two languages, a paragraph of text). They are written through the same interface the CMS uses, with one process per engine so the memory figures don't get mixed.
+
+**Lower is better in every row, and the best is in bold. Every value has its unit.**
+
+It was measured on Windows 11 (Node 22.19, an NVMe disk, 32 cores). MongoDB 7.0 and PostgreSQL 16 run in WSL 2 on the same machine and are reached through its virtual network. So every server figure carries a round trip of a fraction of a millisecond, as it would on a fast LAN. On a slower network it grows by that round trip.
+
+Memory is that of the CMS process. The two servers use memory of their own on top.
 
 | 100,000 records | `jsondown` | `sqlite` | `leveldb` | `mongodb` | `postgres` |
 |---|---|---|---|---|---|
@@ -83,8 +96,8 @@ Same data for every engine: 100,000 records of about 1 KB each (several fields, 
 
 Those two save rows are easy to mix up, so here they are in plain words. There are two ways to save a record:
 
-1. **Answer right away.** The store takes the change into memory, says "done", and writes it to the disk a moment later. Very fast, but if the process dies in that moment, the change is gone.
-2. **Answer once it's safe.** The store says "done" only after the change has really been written to the disk. Slower (about 1.5 ms), but a crash can't take it back.
+1. Answer right away. The store takes the change into memory, says "done", and writes it to the disk a moment later. Very fast, but if the process dies in that moment, the change is gone.
+2. Answer once it's safe. The store says "done" only after the change has really been written to the disk. Slower (about 1.5 ms), but a crash can't take it back.
 
 The CMS uses the second way for every record it creates or updates. `sqlite`, `leveldb`, `mongodb` and `postgres` can do it. `jsondown` can't: it only knows the first way, because it keeps everything in memory and rewrites its file afterwards. That's why its slow-save cell says N/A, and why it can lose the last moments of work in a crash (see [what happens if the process is killed](#what-happens-if-the-process-is-killed)).
 
@@ -92,13 +105,24 @@ The CMS uses the second way for every record it creates or updates. `sqlite`, `l
 
 At 10,000 records the differences mostly vanish: `jsondown` uses 120 MB and starts in 0.04 s, while `sqlite` and `leveldb` use 66 MB and start in 0.001 s and 0.05 s. Any engine is fast enough at that size.
 
-About the disk row: for the local engines it is the size of the store's folder. The two servers keep their data in their own place, so the row takes what the server reports for the database of the run, measured so that it is the same thing as a folder size: for MongoDB, `storageSize + indexSize` of `dbStats` after an `fsync` command (a checkpoint: WiredTiger writes its files at checkpoints, and before one the figure is the size of the files before the last writes reached them), which is the size of the collection and index files on disk, byte for byte; for PostgreSQL, the sum of `pg_total_relation_size` over the tables of the database (the rows, their TOAST and their indexes), where `pg_database_size` would add the 7 MB of catalogs every database carries. MongoDB's 70 MB is for the most part the index it keeps on every field (`$**`), which is larger than the compressed records themselves; PostgreSQL stores the records as JSONB rows, which take about a quarter more room than the JSON text.
+About the disk row. For the local engines, it is the size of the store's folder. The two servers keep their data in their own place, so for them the row takes what the server reports for the database of the run. It is measured so that it means the same thing as a folder size:
+
+- MongoDB: `storageSize + indexSize` of `dbStats`, after an `fsync` command. That command makes a checkpoint. WiredTiger writes its files at checkpoints, and before one the figure would be the size of the files before the last writes reached them. The result is the size of the collection and index files on disk, byte for byte.
+- PostgreSQL: the sum of `pg_total_relation_size` over the tables of the database (the rows, their TOAST and their indexes). `pg_database_size` would add the 7 MB of catalogs that every database carries.
+
+MongoDB's 70 MB is mostly the index it keeps on every field (`$**`), which is larger than the compressed records themselves. PostgreSQL stores the records as JSONB rows, which take about a quarter more room than the JSON text.
 
 The measurements use a database server on the same machine (a virtual network between it and the CMS, no slower one), one editor at a time or a few clients at once, and no power cut.
 
 ### Through the whole CMS
 
-The table above times the stores alone. This one times the real thing: each engine is started *inside* the CMS and driven through its REST API, so every figure includes authentication, rights, hooks, the unique-key check, the store and the answer. The data is 10,000 records of a Products resource (a unique `sku`, two languages, a paragraph of text). Requests come from one client at a time (the latency of one operation), or from several at once where the row says so. Measured on Windows 11, Node 22.19, an NVMe disk, 32 cores, one process per engine; MongoDB 7.0 and PostgreSQL 16 run in WSL 2 on the same machine and are reached through its virtual network, so their figures carry a round trip of a fraction of a millisecond, as they would on a fast LAN. **In every row the best is in bold: lower is better, except for the rows counted in operations per second (ops/s), where higher is better.**
+The table above times the stores alone. This one times the real thing: each engine is started inside the CMS and driven through its REST API. Every figure therefore includes authentication, rights, hooks, the unique-key check, the store and the answer.
+
+The data is 10,000 records of a Products resource (a unique `sku`, two languages, a paragraph of text). Requests come from one client at a time (the latency of one operation), or from several at once where the row says so.
+
+It was measured on Windows 11, Node 22.19, an NVMe disk, 32 cores, with one process per engine. MongoDB 7.0 and PostgreSQL 16 run in WSL 2 on the same machine and are reached through its virtual network, so their figures carry a round trip of a fraction of a millisecond, as they would on a fast LAN.
+
+In every row the best is in bold. Lower is better, except for the rows counted in operations per second (ops/s), where higher is better.
 
 | 10,000 records | `jsondown` | `sqlite` | `leveldb` | `mongodb` | `postgres` |
 |---|---|---|---|---|---|
@@ -129,11 +153,16 @@ The table above times the stores alone. This one times the real thing: each engi
 
 What to take from it:
 
-- **Reading one record is quick everywhere.** By id it takes 1.5 to 2.3 ms on the local engines and 3.5 to 7 ms on the two servers: the request itself costs more than the store, and a server adds a round trip. With eight clients reading at once, the local engines answer 635 to 764 requests a second, PostgreSQL 492 and MongoDB 321.
-- **Creating a record is where every engine but `jsondown` pays, and it is the unique key.** A resource with a `unique` field checks the key on every create and update with a search (`find`) through its records. `jsondown` does that in memory in 6 ms; `sqlite` and `leveldb` read their records from disk and take 60 to 80 ms; MongoDB and PostgreSQL run the search on the server and take 150 to 195 ms, the same time as their "find a record by its unique key" row. The cost grows with the size of the resource, so a very large resource with a unique key is quickest on `jsondown`, or split into smaller resources. A resource with no `unique` field never pays it, and the update and delete rows show what a plain write costs: 1 to 7 ms on every engine, 21 ms for the update on `sqlite`.
-- **Searches and filters over many records are where the engines differ most.** A filter over 10,000 records takes 11 to 34 ms on `jsondown`, 60 to 110 ms on `sqlite` and `leveldb`, and 150 to 200 ms on the two servers. The CMS filters the records itself, with the same code on every engine, so a server first hands over the whole resource: the cost of a search on MongoDB or PostgreSQL is the cost of reading 10,000 records over the network, and it is the same for a page of 50 as for 1,000 records.
-- **Files don't care about the engine.** They're stored as plain files next to the store, whatever the engine. An upload of 100 KB takes 11 to 16 ms, of 5 MB 45 to 57 ms, a download of 5 MB 23 to 27 ms, everywhere; the differences in those rows are noise. Removing a file also updates the record, which is why the servers take a few milliseconds more.
-- **Memory after the operations** is the biggest number of the run, because it includes the buffers of the 5 MB uploads and downloads, which Node holds on to for a while, and the connection pools of the two servers. Compare it between engines only roughly.
+- Reading one record is quick everywhere. By id it takes 1.5 to 2.3 ms on the local engines and 3.5 to 7 ms on the two servers: the request itself costs more than the store, and a server adds a round trip. With eight clients reading at once, the local engines answer 635 to 764 requests a second, PostgreSQL 492 and MongoDB 321.
+- Creating a record is where every engine but `jsondown` pays, and the cause is the unique key. A resource with a `unique` field checks the key on every create and update, with a search (`find`) through its records.
+  - `jsondown` does that in memory, in 6 ms.
+  - `sqlite` and `leveldb` read their records from disk and take 60 to 80 ms.
+  - MongoDB and PostgreSQL run the search on the server and take 150 to 195 ms, the same time as their "find a record by its unique key" row.
+
+  The cost grows with the size of the resource. A very large resource with a unique key is quickest on `jsondown`, or you can split it into smaller resources. A resource with no `unique` field never pays this cost. The update and delete rows show what a plain write costs: 1 to 7 ms on every engine, and 21 ms for the update on `sqlite`.
+- Searches and filters over many records are where the engines differ most. A filter over 10,000 records takes 11 to 34 ms on `jsondown`, 60 to 110 ms on `sqlite` and `leveldb`, and 150 to 200 ms on the two servers. The CMS filters the records itself, with the same code on every engine, so a server first hands over the whole resource: the cost of a search on MongoDB or PostgreSQL is the cost of reading 10,000 records over the network, and it is the same for a page of 50 as for 1,000 records.
+- Files don't care about the engine. They're stored as plain files next to the store, whatever the engine. An upload of 100 KB takes 11 to 16 ms, of 5 MB 45 to 57 ms, a download of 5 MB 23 to 27 ms, everywhere; the differences in those rows are noise. Removing a file also updates the record, which is why the servers take a few milliseconds more.
+- Memory after the operations is the biggest number of the run, because it includes the buffers of the 5 MB uploads and downloads, which Node holds on to for a while, and the connection pools of the two servers. Compare it between engines only roughly.
 - **Disk space** is the data folder of the CMS, which includes the uploaded files (about 40 MB) for every engine. For MongoDB and PostgreSQL it adds what the server holds for the database (how that is measured is under [the stores on their own](#the-stores-on-their-own)). At 10,000 records the five engines are within 3 MB of each other.
 
 ### Run it yourself
@@ -153,7 +182,7 @@ BENCH_MONGODB_URL=<wsl-ip>:27017 BENCH_POSTGRES_URL=<wsl-ip>:5432 POSTGRES_USER=
   node --expose-gc test/bench/engines.js --size 10000 --engines jsondown,sqlite,leveldb,mongodb,postgres --json out.json --markdown out.md
 ```
 
-A machine that drops a connection to a freshly opened local port now and then (see [TESTING.md](../contributing/TESTING.md#random-etimedout-failures-on-one-machine)) does not spoil a run: `engines.js` opens its connections once and keeps them, tries a dropped connection again, keeps the time it lost out of the figures and says so (`connectionRetries` and `retryMs` in the JSON), and starts an engine again when its process could not reach its own server at all.
+A machine that drops a connection to a freshly opened local port now and then (see [TESTING.md](../contributing/TESTING.md#random-etimedout-failures-on-one-machine)) does not spoil a run. `engines.js` opens its connections once and keeps them, and it tries a dropped connection again. It keeps the time it lost out of the figures and says so (`connectionRetries` and `retryMs` in the JSON). It starts an engine again when its process could not reach its own server at all.
 
 `test/bench/engines.js` measures the whole CMS on each engine through its REST API: create, read, update, delete, list, find, filter, and file upload and download, with one client and with several:
 
@@ -178,9 +207,9 @@ The crash test (`npm run bench:stores:crash`) starts a process that writes recor
 | `mongodb` | yes, every time | none | **none** (the data is in another process) |
 | `postgres` | yes, every time | none | **none** (the data is in another process) |
 
-- **No engine corrupts its data when the process dies**, and none loses a record that was written before. That includes `jsondown`: it writes a temporary file and renames it, so the file on disk is always a whole one, the one from the last flush.
-- **`jsondown` loses the writes made since its last flush.** Under normal use that's a fraction of a second of work. Under a continuous flood of writes (a loop writing as fast as it can, about 100,000 records a second) its flush never gets a turn, and it lost everything written since the burst began. That's not how editors work, but a script that loads records one by one through the API can do it. Importing (one big batch) doesn't.
-- **A power cut is not the same as a killed process**, and we didn't test it: the operating system can hold written data in memory for a while. `sqlite` and `leveldb` sync their log before they answer when the CMS asks for it (and it does, for every record it creates or updates), so they're built to survive one. `jsondown` isn't.
+- No engine corrupts its data when the process dies, and none loses a record that was written before. That includes `jsondown`: it writes a temporary file and renames it, so the file on disk is always a whole one, the one from the last flush.
+- `jsondown` loses the writes made since its last flush. Under normal use that's a fraction of a second of work. Under a continuous flood of writes (a loop writing as fast as it can, about 100,000 records a second) its flush never gets a turn, and it lost everything written since the burst began. That's not how editors work, but a script that loads records one by one through the API can do it. Importing (one big batch) doesn't.
+- A power cut is not the same as a killed process, and we didn't test it: the operating system can hold written data in memory for a while. `sqlite` and `leveldb` sync their log before they answer when the CMS asks for it (and it does, for every record it creates or updates), so they're built to survive one. `jsondown` isn't.
 - MongoDB and PostgreSQL lose nothing when the *CMS* dies. When their own server dies, what you lose depends on how you run them, not on embed-cms.
 
 ## Changing the engine

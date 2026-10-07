@@ -33,7 +33,9 @@ Catalogue: `resources/text_long.js` (group **Text**, resource **Long text**), fi
 - **The box** takes the text as it is written. The buttons of the toolbar write the signs around the selection and select what they wrote, so the next button works on it; pressed again on a selection that already has the signs, they take them away. **Heading** goes through `##`, `###`, `####` and none, on every line of the selection; **Quote**, **Bulleted list** and **Numbered list** do the same for the start of each line, and change one kind of list into the other.
 - **Keys:** Ctrl+B (Cmd on a Mac) is bold, Ctrl+I italic, Ctrl+K a link, with the address selected to be written. Enter at the end of an item of a list starts the next one (`- `, `2. `, and `- [ ] ` after a task); Enter on an item with nothing in it ends the list.
 - **The preview** shows what the text makes, as it is typed. The tabs are a tab list, with the arrow keys to go from one to the other; the toolbar is only there while the box is.
-- **The text is never run.** The renderer is the project's own and escapes the text first: HTML written in it is shown as text, a script or an event handler cannot be made, and the result goes through DOMPurify once more. A link or a picture goes only to `http`, `https`, `mailto`, `tel` or an address with no scheme (a path, `#anchor`); with any other (`javascript:`, `data:`) the text of the link is shown and no link. An external link opens in another tab and is not given the page.
+- **The text is never run.** The renderer is the project's own, and it escapes the text first. HTML written in the text is shown as text, and a script or an event handler cannot be made. The result then goes through DOMPurify once more.
+  - A link or a picture goes only to `http`, `https`, `mailto`, `tel` or an address with no scheme (a path, `#anchor`). With any other scheme (`javascript:`, `data:`), the text of the link is shown and there is no link.
+  - An external link opens in another tab and is not given the page.
 
 ## What it reads
 

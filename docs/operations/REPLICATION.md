@@ -108,11 +108,11 @@ await cms.$replicator.syncResource('articles')
 
 ## What can go wrong
 
-- **Nothing arrives.** Check that the peer has `netPort` set and that a firewall lets you reach it, that `host` and `port` point to that port (not to the HTTP port), and that both nodes have the same `replication.secret`.
-- **Records arrive, files don't.** `url` must be the peer's REST API ending in `/api/`, reachable from this node. If the peer requires a login to read the resource, set `replication.auth`. Look in the log for MD5 mismatches.
-- **"Can't modify foreign records".** The record was created on another node. Edit it there.
-- **Two nodes clash.** They share a `mid`. Give each node its own, before it creates records.
-- **`POST /replicator/sync/…` answers 200 but nothing changed.** Errors of each peer are collected into the answer instead of failing the request. Read the body (the Replicator page shows them), and the server log.
+- Nothing arrives. Check that the peer has `netPort` set and that a firewall lets you reach it, that `host` and `port` point to that port (not to the HTTP port), and that both nodes have the same `replication.secret`.
+- Records arrive, files don't. `url` must be the peer's REST API ending in `/api/`, reachable from this node. If the peer requires a login to read the resource, set `replication.auth`. Look in the log for MD5 mismatches.
+- "Can't modify foreign records". The record was created on another node. Edit it there.
+- Two nodes clash. They share a `mid`. Give each node its own, before it creates records.
+- `POST /replicator/sync/…` answers 200 but nothing changed. Errors of each peer are collected into the answer instead of failing the request. Read the body (the Replicator page shows them), and the server log.
 
 ## Security
 

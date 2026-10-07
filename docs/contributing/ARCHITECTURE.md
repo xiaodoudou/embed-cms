@@ -103,7 +103,12 @@ Your own hooks run before the built-in ones (`cms.api()('articles').before('crea
 
 `lib/util/driver` implements the operations on top of two stores per resource, created in `lib/Resource.js`:
 
-- **`JsonStore`** (`lib/db/jsonStore.js`) keeps the records. It is a level-style key-value store (the abstract-level interface) with one of five engines behind it, chosen by `dbEngine.type` ([STORAGE.md](../operations/STORAGE.md) compares them): `leveldb` (default, `leveldbDown.js`, classic-level) and `sqlite` (`SqliteDown.js`) keep them on disk and read them from there; `jsondown` holds the records in memory and writes them to `data/<resource>/json/db.json`, through a temporary file renamed over the old one, a few milliseconds after a change; `MongoDown` and `PgDown` keep them in a MongoDB collection or a PostgreSQL table per resource. The three local engines are created by `lib/db/local/localEngines.js`, and share the replication code in `Sync.js`; the two servers have their own. Queries are filtered in the process with sift, whatever the engine.
+- **`JsonStore`** (`lib/db/jsonStore.js`) keeps the records. It is a level-style key-value store (the abstract-level interface) with one of five engines behind it, chosen by `dbEngine.type` ([STORAGE.md](../operations/STORAGE.md) compares them):
+  - `leveldb` (the default, `leveldbDown.js`, classic-level) and `sqlite` (`SqliteDown.js`) keep the records on disk and read them from there.
+  - `jsondown` holds the records in memory. A few milliseconds after a change it writes them to `data/<resource>/json/db.json`, through a temporary file renamed over the old one.
+  - `MongoDown` and `PgDown` keep them in a MongoDB collection or a PostgreSQL table per resource.
+
+  `lib/db/local/localEngines.js` creates the three local engines, and they share the replication code in `Sync.js`. The two servers have their own. Queries are filtered in the process with sift, whatever the engine.
 - **`FileStore`** (`lib/db/FileStore.js`) keeps the attachments as plain files in `data/<resource>/blob/`, named by attachment id, with resized copies next to them. Fields configured for Alibaba Cloud OSS go there instead.
 
 Every record id starts with a timestamp followed by the `mid` of the node that made it, so ids sort in creation order and a node can tell its own records from replicated ones.

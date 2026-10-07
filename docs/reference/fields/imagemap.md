@@ -4,7 +4,15 @@
 
 An [image](image.md) field with an image map: areas laid over the picture, each linking to an address, to a record, or holding a value. Choose or drop a picture, click **Edit map**, draw rectangles, circles and polygons on it, and say where each one goes. Component: `ImageView` (`src/components/fields/ImageView.vue`), the tool is `ImageMapDialog` (`src/components/attachments/ImageMapDialog.vue`).
 
-Catalogue: `resources/media_map.js` (group **Media**, resource **Image maps**), fields `floorPlan` (addresses), `catalogue` (an address or a record), `productMap` (records only, with where they open), `multiMap` (records of several resources), `roomMap` (values only), `everything` (all three, with the words of the field), `localisedMap`, `readOnlyMap`.
+Catalogue: `resources/media_map.js` (group **Media**, resource **Image maps**). Its fields are:
+
+- `floorPlan`: addresses.
+- `catalogue`: an address or a record.
+- `productMap`: records only, with where they open.
+- `multiMap`: records of several resources.
+- `roomMap`: values only.
+- `everything`: all three, with the words of the field.
+- `localisedMap` and `readOnlyMap`.
 
 The map is kept with the picture (the `imageMap` of the attachment) and comes back with it in the record. The picture is not changed.
 
@@ -148,7 +156,7 @@ The map is checked before anything is written, whoever sends it (REST, the code 
 
 ## Records and sync
 
-A link to a record keeps its `resource` and `id`. When records are synced to another CMS, the record has another id there: the sync writes the id as the same record found by its unique value (as it does for the `select` fields, and for the ids written in texts), and an area that points to a record the other CMS does not have yet keeps a `cms-ref://resource/value` reference until the record comes. The record needs a field with `unique: true` for this.
+A link to a record keeps its `resource` and `id`. When records are synced to another CMS, the record has another id there. The sync writes the id as the same record found by its unique value, as it does for the `select` fields and for the ids written in texts. An area that points to a record the other CMS does not have yet keeps a `cms-ref://resource/value` reference until the record comes. The record needs a field with `unique: true` for this.
 
 ## Limits
 

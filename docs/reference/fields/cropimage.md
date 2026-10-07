@@ -6,7 +6,7 @@ An [image](image.md) field with a crop tool. Choose or drop a picture, click **E
 
 Catalogue: `resources/media_crop.js` (group **Media**, resource **Crop images**), fields `photo`, `avatar`, `banner`, `social`, `gallery`, `readOnlyCrop`.
 
-The picture you upload is kept as it is. The crop is stored with it as a small recipe (the `cropOptions` of the attachment) and the API cuts the image when it is asked for, so the crop can be changed at any time, and the same picture can be served at any size.
+The picture you upload is kept as it is. The crop is stored with it as a small recipe (the `cropOptions` of the attachment). The API cuts the image when it is asked for. So you can change the crop at any time, and the same picture can be served at any size.
 
 ## Declaration
 
@@ -93,7 +93,15 @@ The same attachment descriptors as for [image](image.md), with the recipe under 
 }
 ```
 
-The recipe is applied in this order: flipped (`flipX`, `flipY`), turned (`rotate`, clockwise, 0, 90, 180 or 270), cropped (`left`, `top`, `width` and `height` are in pixels of the picture once flipped and turned, as a browser shows it, its EXIF orientation applied), sized and formatted (`output`), shaped (`shape`). `ratio` is only the choice the tool shows again when it opens. The coordinates the first crop tool stored (`{ "data": { "coordinates": { "left", "top", "width", "height" } } }`) are still read.
+The recipe is applied in this order:
+
+1. Flipped (`flipX`, `flipY`).
+2. Turned (`rotate`, clockwise: 0, 90, 180 or 270).
+3. Cropped. `left`, `top`, `width` and `height` are in pixels of the picture once flipped and turned, as a browser shows it, with its EXIF orientation applied.
+4. Sized and formatted (`output`).
+5. Shaped (`shape`).
+
+`ratio` is only the choice the tool shows again when it opens. The coordinates the first crop tool stored (`{ "data": { "coordinates": { "left", "top", "width", "height" } } }`) are still read.
 
 `GET <cropUrl>` answers the cut image, and `?resize=300xauto` (or `autox300`, `300x200`) gives it at that size. A picture with no crop, and a file that is not a JPEG, PNG, WebP or GIF picture, is sent as it is. The cuts are kept next to the original and go with it. See [API](../API.md#attachments).
 

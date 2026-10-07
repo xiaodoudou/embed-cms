@@ -8,10 +8,10 @@ You don't have to take our word for it: the admin has a living reference page, o
 
 ## In short
 
-- **One palette, from the logo.** Everything is a tint or shade of the logo's indigo plus four muted status colours, with text contrast at WCAG AA or better in both themes. Colours, sizes and spacing are CSS tokens in `src/styles/tokens.scss`; components never hard-code a colour, and `test/frontend/designSystem.test.js` fails if one does.
-- **Layout.** A top bar, then a sidebar of collapsible resource groups that becomes a 60px rail on tablets and a drawer on phones. The record list and the editor sit side by side from 768px wide, one after the other below that.
-- **Editing.** A fixed action bar with Save and Discard, a dot on every changed field, per-locale markers for unsaved and missing values, a confirmation before you leave unsaved work, and a toast naming the required fields that are still empty.
-- **Shared pieces.** One button system, one dialog component, one toast host, one state system for form fields (editable, read-only, disabled, error). The living reference is in the admin itself: open `#/?id=design-system`.
+- One palette, from the logo. Everything is a tint or shade of the logo's indigo plus four muted status colours, with text contrast at WCAG AA or better in both themes. Colours, sizes and spacing are CSS tokens in `src/styles/tokens.scss`; components never hard-code a colour, and `test/frontend/designSystem.test.js` fails if one does.
+- Layout. A top bar, then a sidebar of collapsible resource groups that becomes a 60px rail on tablets and a drawer on phones. The record list and the editor sit side by side from 768px wide, one after the other below that.
+- Editing. A fixed action bar with Save and Discard, a dot on every changed field, per-locale markers for unsaved and missing values, a confirmation before you leave unsaved work, and a toast naming the required fields that are still empty.
+- Shared pieces. One button system, one dialog component, one toast host, one state system for form fields (editable, read-only, disabled, error). The living reference is in the admin itself: open `#/?id=design-system`.
 - **Dark mode** is opt-in: set `disableDarkMode: false` and the top bar gets a theme switch.
 
 To re-theme the admin, change the values in `tokens.scss` and the two colour maps at the top of `src/vuetify.js`. To build a component, follow the [rules at the end](#design-system-rules-enforced-by-testfrontenddesignsystemtestjs).
@@ -29,7 +29,9 @@ The screenshots in `docs/ui/` show the admin with the field catalogue of `resour
 
 ## Palette derivation
 
-The logo is an "E" whose three arms end in node dots, on an indigo badge (the dots echo the network-style mark it replaced), next to the wordmark "Embed CMS". It lives in `BrandLogo.vue`, `src/assets/logo.svg` and `public/favicon.svg`, with the PNG and ICO favicons and the touch icon generated from the same drawing. The logo (`src/assets/logo.svg`) has three colours: indigo badge `#3846C7`, near-black text `#161B26`, slate `#4A5468`. Everything else is a tint or shade of that indigo (hue about 234 degrees) or a muted status colour. The app bar and sidebar ("chrome") use a deep shade of the indigo with light text; `BrandLogo` has an `on-dark` variant (light wordmark), and the on-dark colours come from the same tokens.
+The logo is an "E" whose three arms end in node dots, on an indigo badge, next to the wordmark "Embed CMS". The dots echo the network-style mark it replaced. It lives in `BrandLogo.vue`, `src/assets/logo.svg` and `public/favicon.svg`. The PNG and ICO favicons and the touch icon are generated from the same drawing.
+
+The logo has three colours: indigo badge `#3846C7`, near-black text `#161B26`, and slate `#4A5468`. Everything else is a tint or shade of that indigo (hue about 234 degrees), or a muted status colour. The app bar and sidebar ("chrome") use a deep shade of the indigo with light text. `BrandLogo` has an `on-dark` variant with a light wordmark, and the on-dark colours come from the same tokens.
 
 Three surface levels: page (`--cms-bg`) below panels (`--cms-list-bg`, `--cms-bar-bg`, `--cms-crumb-bg`) below cards and fields (`--cms-surface`).
 
@@ -83,7 +85,11 @@ Dialogs: one component, `components/AppDialog.vue` (discard, delete, config rest
 
 ## Dirty tracking and locale markers
 
-`src/utils/dirtyTracker.js` is the single source of truth: a normalised snapshot of the record (taken when it loads or is saved) is compared with the current model by a deep watcher, so every field type is covered. Empty rich text (`""`, `<p></p>`, `<p><br></p>`), blanks, empty arrays/objects and unchecked booleans are equivalent, so an untouched WYSIWYG is clean and typing then deleting returns to clean. Per-locale results drive the locale tabs: an amber dot only on tabs whose own localised values changed, a red circle with `!` (and a count) on tabs with missing required fields, shared required fields are flagged on the field and in the "Jump to field" menu. Discard remounts the form, so rich text goes back to what was saved too.
+`src/utils/dirtyTracker.js` is the single source of truth. It takes a normalised snapshot of the record when it loads or is saved, and a deep watcher compares the snapshot with the current model. So every field type is covered.
+
+- Empty rich text (`""`, `<p></p>`, `<p><br></p>`), blanks, empty arrays and objects, and unchecked booleans count as equal. An untouched WYSIWYG is clean, and typing then deleting returns to clean.
+- Per-locale results drive the locale tabs. An amber dot shows only on tabs whose own localised values changed. A red circle with `!` (and a count) shows on tabs with missing required fields. Shared required fields are flagged on the field and in the "Jump to field" menu.
+- Discard remounts the form, so rich text goes back to what was saved too.
 
 ## Frontend tests
 
@@ -91,11 +97,25 @@ The pure logic behind the UI (dirty tracker, table model, sidebar model, prefere
 
 ## Editorial workflow features
 
-- List: dense rows with title, updated-by, updated-at and a read-only badge; the id appears on hover, focus and selection. Search stays focused while typing; `/` jumps to search from anywhere outside a field; Up/Down/Home/End move between rows and Enter opens one; sort, a density switch and an All / Me toggle (records created or updated by you) are always visible; the table view keeps the same toolbar. In the multi-select mode a click on a row adds or removes that record (like its box), and the chips of the selected records are never faded: the fade that hints at more records below only shows when the list really overflows. Rows have no colour transition, because the list recycles its rows and a fade would show a record as selected for a split second after a filter or a sort.
-- Editor: the action bar stays fixed above the scrolling form and shows "Unsaved changes" / "All changes saved", Discard and Save. Leaving the record, the resource, logging out or closing the tab with unsaved changes asks first (dialog buttons "Keep editing" / "Leave without saving", native prompt for the tab). Required and invalid fields show an inline message and a red boundary once the field is left or a save is attempted; dirty fields carry a dot. The locale switcher marks locales that still miss a required field. Every form has a "Jump to field" outline menu: it opens on a small search box (fuzzy, matched letters marked, arrows and Enter) and Ctrl/Cmd+J opens it from anywhere in the editor, inside a text field too.
+- List:
+  - Dense rows with title, updated-by, updated-at and a read-only badge. The id appears on hover, focus and selection.
+  - Search stays focused while you type. `/` jumps to search from anywhere outside a field. Up, Down, Home and End move between rows, and Enter opens one.
+  - Sort, a density switch and an All / Me toggle (records created or updated by you) are always visible. The table view keeps the same toolbar.
+  - In multi-select mode, a click on a row adds or removes that record, like its box. The chips of the selected records are never faded. The fade that hints at more records below only shows when the list really overflows.
+  - Rows have no colour transition. The list recycles its rows, and a fade would show a record as selected for a split second after a filter or a sort.
+- Editor:
+  - The action bar stays fixed above the scrolling form. It shows "Unsaved changes" or "All changes saved", Discard and Save.
+  - Leaving the record, the resource, logging out, or closing the tab with unsaved changes asks first. The dialog buttons are "Keep editing" and "Leave without saving", and the tab uses the native prompt.
+  - Required and invalid fields show an inline message and a red boundary once the field is left or a save is attempted. Dirty fields carry a dot.
+  - The locale switcher marks locales that still miss a required field.
+  - Every form has a "Jump to field" outline menu. It opens on a small search box (fuzzy, matched letters marked, arrows and Enter). Ctrl/Cmd+J opens it from anywhere in the editor, inside a text field too.
 - Navigation: the sidebar has a resource filter, collapsible groups whose state is remembered in `localStorage`, and a breadcrumb (group / resource / record) above the content. Ctrl/Cmd+K opens the quick switcher from anywhere, including inside form fields; it is a modal dialog, so Tab walks its results (Shift+Tab walks back) instead of leaving for the page behind.
 - Feedback: save, delete and error results are toasts (2.5s, errors persist until closed). Deleting one or many records opens a dialog that names the record(s) and says it cannot be undone. Loads show list skeletons and a thin progress bar under the app bar instead of dimming the page.
-- Attachments: a drop area that is a field like the others (a dashed accent outline over a tinted surface only while a file is dragged over it), one card per file (a grip to drag it, its position as 1/3, the picture across the card with a bin in its corner, the name and the size at the foot; a file without a picture has a View button and a Remove button side by side), and a Reorder mode that lists them with buttons to move each one place. The grip is shown when there are two files or more.
+- Attachments:
+  - A drop area that is a field like the others. It gets a dashed accent outline over a tinted surface only while a file is dragged over it.
+  - One card per file. It has a grip to drag it, its position as 1/3, the picture across the card with a bin in its corner, and the name and size at the foot. A file without a picture has a View button and a Remove button side by side.
+  - A Reorder mode that lists the files with buttons to move each one place.
+  - The grip is shown when there are two files or more.
 
 ## Table view
 
@@ -130,15 +150,46 @@ One state system for every control (`base.scss`, tokens `--cms-field-*`), shown 
 | Error | as editable | 1px `--cms-error` | inline message in `--cms-error` with a "!" icon | "!" before the message, `*` on the label when required | text | accent ring | error 6.5:1 / 8.1:1 on surface |
 | Loading or computed | skeleton or spinner in the field | as editable | muted | spinner | progress | n/a | n/a |
 
-Every control height is `--cms-field-h` (40px, 44px on touch and phones), labels are 13px semibold above the control, helper and error text are 13px. Read-only means the value is real but cannot be edited; disabled means the field is not available (dashed, muted). Controls: inputs and textarea (`CustomInput`, `CustomTextarea`), selects, multi selects and pillbox (Vuetify fields), date, datetime and time (`CustomDatetimePicker`), switch (`CustomCheckbox`, `role="switch"`, keyboard operable), JSON viewer, wysiwyg, code and colour keep their own surface but use the same border, radius and focus tokens; file and image drop zones are fields like the others.
+Every control height is `--cms-field-h` (40px, or 44px on touch and phones). Labels are 13px semibold above the control. Helper and error text are 13px.
 
-Date and time fields: a leading calendar icon inside a white 40px field, muted format placeholder, typing and picking both work (typed text is parsed with the schema format, dayjs tokens are translated by `src/utils/dateFormat.js`), clear button, a "Now" shortcut for datetime and time, the popup follows the dropdown surface, radius and elevation. Read-only shows the eye after the label, disabled the dashed style and a lock after the label.
+Read-only means the value is real but cannot be edited. Disabled means the field is not available (dashed, muted).
+
+Controls:
+
+- Inputs and textarea (`CustomInput`, `CustomTextarea`), selects, multi selects and pillbox (Vuetify fields).
+- Date, datetime and time (`CustomDatetimePicker`).
+- Switch (`CustomCheckbox`, `role="switch"`, keyboard operable).
+- JSON viewer, wysiwyg, code and colour keep their own surface, but use the same border, radius and focus tokens.
+- File and image drop zones are fields like the others.
+
+Date and time fields:
+
+- A leading calendar icon inside a white 40px field, and a muted format placeholder.
+- Typing and picking both work. Typed text is parsed with the schema format, and dayjs tokens are translated by `src/utils/dateFormat.js`.
+- A clear button, and a "Now" shortcut for datetime and time.
+- The popup follows the dropdown surface, radius and elevation.
+- Read-only shows the eye after the label. Disabled uses the dashed style and a lock after the label.
 
 ## Pictures and their tools
 
-The preview of a picture or a file in a field is a card (`PreviewAttachment.vue`, `ShowAttachment.vue`), 200px wide: a grip and the position (`1/3`) on top when there are two or more (nothing to put in order with one), the picture across the card with a bin in its corner, the name and the size at the foot. A file with no picture has **View** and **Remove** side by side. The bin sits on a translucent disc (`--cms-image-control-bg`, with `--cms-on-image-control` for the icon, defined in both palettes, so it reads on any picture). A picture keeps the card's own shape (16:10, cut to fit); a picture with a crop or a map has its own, whole, as high as its width says (at most 220px), and a circle crop is round.
+The preview of a picture or a file in a field is a card (`PreviewAttachment.vue`, `ShowAttachment.vue`), 200px wide:
 
-The crop tool (`CropDialog.vue`) and the image map tool (`ImageMapDialog.vue`) are modals with the same frame, so they feel alike: a title, a body with the picture on the left (on the checker `--cms-checker`) and the tools in a column on the right (320px and 340px), and a foot with the extra actions on the left and Cancel then the primary action on the right, as in the other dialogs. The card has a height of its own, `min(92vh, 820px)`, so that it does not grow and shrink with what is selected: the column of tools scrolls inside it, and the picture is fitted to the room the stage has (a small picture up to four times its size). Vuetify gives the card of a dialog a flex basis that a height does not beat, so the card overrides it (`&.v-dialog > .v-overlay__content > .card`). Under 900px the picture and the tools are one under the other and the modal scrolls.
+- A grip and the position (`1/3`) on top when there are two or more. With one there is nothing to put in order.
+- The picture across the card, with a bin in its corner.
+- The name and the size at the foot.
+- A file with no picture has **View** and **Remove** side by side.
+
+The bin sits on a translucent disc (`--cms-image-control-bg`, with `--cms-on-image-control` for the icon, defined in both palettes), so it reads on any picture. A picture keeps the card's own shape (16:10, cut to fit). A picture with a crop or a map keeps its own shape, whole, as high as its width says (at most 220px). A circle crop is round.
+
+The crop tool (`CropDialog.vue`) and the image map tool (`ImageMapDialog.vue`) are modals with the same frame, so they feel alike:
+
+- A title.
+- A body with the picture on the left (on the checker `--cms-checker`) and the tools in a column on the right (320px and 340px).
+- A foot with the extra actions on the left, then Cancel, then the primary action on the right, as in the other dialogs.
+
+The card has a height of its own, `min(92vh, 820px)`, so it does not grow and shrink with what is selected. The column of tools scrolls inside it, and the picture is fitted to the room the stage has (a small picture up to four times its size).
+
+Vuetify gives the card of a dialog a flex basis that a height does not beat, so the card overrides it (`&.v-dialog > .v-overlay__content > .card`). Under 900px the picture and the tools are one under the other, and the modal scrolls.
 
 The rules these two follow, for any tool of the kind:
 - A choice among a few things is a row of small rounded buttons: the chosen one is `variant="flat"` in the primary colour with `aria-pressed="true"`, the others outlined. Icon buttons have an `aria-label` and a `title`.
@@ -149,7 +200,15 @@ The rules these two follow, for any tool of the kind:
 
 ## Links
 
-A link is the primary colour with no underline at rest. It is underlined on hover and on keyboard focus (with the focus ring), and a visited link is a slightly darker shade. `cms-link is-muted` is the same in the muted text colour, for secondary links, and a link with `target="_blank"` gets a small arrow after it. Links to the admin itself use its addresses: `#/?id=articles` for a resource and `#/?id=articles&record=<id>` for a record. The same class styles a link in a page, in a table and in a plugin, so the three look alike (the links in the record grid follow the same rule); Vuetify's own `v-btn` and `v-list-item` are not links in this sense and keep their component styles. The classes are listed in [PLUGIN_UI_KIT.md](PLUGIN_UI_KIT.md#links), and the Design system page of the admin draws them.
+A link is the primary colour with no underline at rest. It is underlined on hover and on keyboard focus (with the focus ring). A visited link is a slightly darker shade.
+
+- `cms-link is-muted` is the same in the muted text colour, for secondary links.
+- A link with `target="_blank"` gets a small arrow after it.
+- Links to the admin itself use its addresses: `#/?id=articles` for a resource and `#/?id=articles&record=<id>` for a record.
+- The same class styles a link in a page, in a table and in a plugin, so the three look alike. The links in the record grid follow the same rule.
+- Vuetify's own `v-btn` and `v-list-item` are not links in this sense and keep their component styles.
+
+The classes are listed in [PLUGIN_UI_KIT.md](PLUGIN_UI_KIT.md#links), and the Design system page of the admin draws them.
 
 ## Dropdowns
 
@@ -157,7 +216,17 @@ Menus, selects and autocompletes share `base.scss` and the Vuetify defaults. `Cu
 
 ## List rows
 
-Rows have three lines: title (semibold, one line, ellipsis and tooltip), meta ("Updated by localAdmin · a few seconds ago", 12px, muted, wraps instead of truncating, a lock icon marks read-only records) and the full record id on its own line (11px monospace, muted, `overflow-wrap: anywhere`). Sizes are tokens: `--cms-record-title-fs`, `--cms-record-title-fw`, `--cms-record-meta-fs`, `--cms-record-id-fs` (the table's first column uses the same title weight), row heights `--cms-list-row` (68px) and `--cms-list-row-compact` (48px). The density button in the controls row switches to compact rows: plain full-width rows separated by a hairline, not cards (title and meta, the id in the tooltip and shown instead of the meta line on the selected row; the selected row has the soft fill and an accent bar on its left edge); the choice is remembered (`embed-cms.ui.list.density`). A ghost copy button appears on hover and focus (also the `c` key on a focused row) and shows an "ID copied" toast. Semantics: `listbox` with `option` rows and `aria-selected`.
+Rows have three lines:
+
+- The title: semibold, one line, with an ellipsis and a tooltip.
+- The meta line ("Updated by localAdmin · a few seconds ago"): 12px, muted. It wraps instead of truncating, and a lock icon marks read-only records.
+- The full record id on its own line: 11px monospace, muted, with `overflow-wrap: anywhere`.
+
+Sizes are tokens: `--cms-record-title-fs`, `--cms-record-title-fw`, `--cms-record-meta-fs` and `--cms-record-id-fs` (the table's first column uses the same title weight). Row heights are `--cms-list-row` (68px) and `--cms-list-row-compact` (48px).
+
+The density button in the controls row switches to compact rows. These are plain full-width rows separated by a hairline, not cards. They show the title and meta, and the id is in the tooltip. On the selected row the id replaces the meta line, and the row has the soft fill and an accent bar on its left edge. The choice is remembered (`embed-cms.ui.list.density`).
+
+A ghost copy button appears on hover and focus (also the `c` key on a focused row) and shows an "ID copied" toast. For screen readers the list is a `listbox` with `option` rows and `aria-selected`.
 
 ![List rows](../ui/list-light-1280x720.png) ![Compact rows, dark](../ui/list-compact-dark-1280x720.png)
 
@@ -165,13 +234,24 @@ Rows have three lines: title (semibold, one line, ellipsis and tooltip), meta ("
 
 The sidebar has three modes (`resolveNavMode` in `src/utils/navModel.js`): expanded (default from 1280px), rail (default from 768px to 1279px) and the off-canvas drawer under 768px. The toggle sits at the top of the sidebar (`aria-label`, `aria-expanded`, `aria-controls`) and Ctrl/Cmd+B toggles it too (ignored inside text fields, where Ctrl+B means bold); the choice is remembered (`embed-cms.ui.nav.mode`). The width changes in 160ms (`--cms-motion-nav`, none with reduced motion) and the content is clipped so nothing jumps.
 
-- Rail (`NavRail.vue`, 60px): one badge per group with the initials (`groupInitials`: "2. Exploration App" is EA) on one of six calm tints (`--cms-rail-tint-*`, chosen from a hash of the group name so a group always keeps its colour, text on tint at least 4.5:1, tested), an accent bar at the left edge for the group that holds the current resource, the mark of the logo alone in the app bar (the wordmark is hidden), a search icon that opens the quick switcher, and the resources of the regular "Others" group as separate badges in a bottom section.
+- Rail (`NavRail.vue`, 60px):
+  - One badge per group, with the initials (`groupInitials`: "2. Exploration App" is EA), on one of six calm tints (`--cms-rail-tint-*`). The tint is chosen from a hash of the group name, so a group always keeps its colour. Text on tint has a contrast of at least 4.5:1, and a test checks it.
+  - An accent bar at the left edge for the group that holds the current resource.
+  - The mark of the logo alone in the app bar (the wordmark is hidden).
+  - A search icon that opens the quick switcher.
+  - The resources of the regular "Others" group as separate badges in a bottom section.
 - Flyout: opens on hover, keyboard focus, click and Enter; header with the group name and count, active item highlighted; Up/Down/Home/End move between items, Escape or Left closes and returns focus to the badge, outside click and focus-out close it. Every icon has a `title` and an `aria-label`; the nav landmark is labelled "Resources".
 - Expanded: a drag handle on the right edge (`role="separator"`, `aria-valuenow` 200 to 360, arrows change it by 16px, double-click resets to 248, remembered as `embed-cms.ui.nav.width`).
 
 ![Rail with flyout](../ui/rail-flyout-light-1500x900.png) ![Rail on a tablet, dark](../ui/rail-tablet-dark.png) ![Drawer on a phone](../ui/rail-phone-drawer-light.png)
 
-The sticky title and filter block of the expanded sidebar uses 12 to 16px padding, sits on the opaque sidebar surface and shows a divider and shadow only once the list has scrolled. Scrollbars everywhere are thin and palette coloured with no arrow buttons (`base.scss`; WebKit pseudo-elements for Chromium and Safari, `scrollbar-width` for Firefox). The breadcrumb truncates its middle segments first and keeps the last one readable, every segment has a title, the last has `aria-current`. Auto-selection of the first resource moved from `ResourceList` to `App` (it does not run on the design-system page).
+The sticky title and filter block of the expanded sidebar uses 12 to 16px padding and sits on the opaque sidebar surface. It shows a divider and shadow only once the list has scrolled.
+
+Scrollbars everywhere are thin and palette coloured, with no arrow buttons (`base.scss`: WebKit pseudo-elements for Chromium and Safari, `scrollbar-width` for Firefox).
+
+The breadcrumb truncates its middle segments first and keeps the last one readable. Every segment has a title, and the last has `aria-current`.
+
+Auto-selection of the first resource moved from `ResourceList` to `App`. It does not run on the design-system page.
 
 ## Where things live
 
@@ -192,21 +272,57 @@ To re-theme: change values in `tokens.scss` and the two colour maps at the top o
 
 ## Accessibility summary
 
-WCAG AA text contrast, visible `:focus-visible` rings everywhere, forced-colors fallback, skip link, `aria-label`s on icon buttons, `aria-pressed`/`aria-expanded`/`aria-current` on toggles and navigation, labelled inputs, `role="alert"` login errors, `prefers-reduced-motion` disables animations and the spinner rotation, 44px touch targets on coarse pointers (every button, including the icon buttons of the app bar, the toggles, the sort and copy-id buttons, the locale buttons, the search boxes and the date boxes; the breadcrumb links grow their hit area without moving), and 16px text in every input on coarse pointers, so that iOS does not zoom in on focus (`src/assets/scss/main.scss`, the touch block at its end).
+The admin follows these rules:
 
-On a phone (under 600px wide) the record editor keeps its room for the form: the breadcrumb is hidden (the Back button, the title and the app bar say where you are), the card has no margin and no border, and the action bar is two lines, with "Unsaved changes" shortened to its dot (the text stays for screen readers). The form gets 636px of an 812px screen, where it had 520px, and 224px of a 400px one (the keyboard up), where it had 148px. Tablets and computers keep the card.
+- WCAG AA text contrast, visible `:focus-visible` rings everywhere, a forced-colors fallback, and a skip link.
+- `aria-label`s on icon buttons, and `aria-pressed`, `aria-expanded` and `aria-current` on toggles and navigation.
+- Labelled inputs, and `role="alert"` on login errors.
+- `prefers-reduced-motion` disables animations and the spinner rotation.
+- 44px touch targets on coarse pointers. This covers every button: the icon buttons of the app bar, the toggles, the sort and copy-id buttons, the locale buttons, the search boxes and the date boxes. The breadcrumb links grow their hit area without moving.
+- 16px text in every input on coarse pointers, so iOS does not zoom in on focus (`src/assets/scss/main.scss`, the touch block at its end).
 
-A phone on its side has the width of a tablet and 375px of height, so it gets the phone layout too: the phone layout starts under 768px wide, or on a touch screen under 500px high (`$phone-query` in `src/assets/scss/variables.scss`, and `DRAWER_QUERY` in `App.vue`, which a test keeps the same). One column (the list, then the editor with its Back button), the navigation in the drawer, and, in landscape, no breadcrumb anywhere, the title of the list on the row of the search, and the action bar of the editor on one line: the form gets 251px of a 375px screen (it had 179px beside the list).
+On a phone (under 600px wide) the record editor keeps its room for the form:
 
-The language of a record on a phone (the phone layout, see below) is one button of 44px next to Back, not a row of tabs: it shows the language that is edited with its markers (the amber dot for unsaved edits, the red circle for missing required fields) and, after them, the number of other languages that need a look (amber for unsaved edits, red when one misses a required field). With two languages a press changes the language (the button says which, to a screen reader as well); with more, it opens the list of them, one line of 44px each with its own markers and a check on the language that is shown. Ten languages take one row of the bar where the tabs took four (`TopBarLocaleList.vue`). The tabs also give way to the button off a phone, where they would take more than half of the bar (about 60px a language, and more for each marker it carries, `src/utils/localeBar.js`): five languages in an editor of the usual width, or four in a narrow one. On a phone Back is its arrow alone, Discard is its icon (the name stays for a screen reader), the text "Unsaved changes" is left out, and the bar is one line for a new record (Back, the language, the jump menu, Save); after a failed save what is missing has a row of its own under the bar, the width of the screen.
+- The breadcrumb is hidden. The Back button, the title and the app bar say where you are.
+- The card has no margin and no border.
+- The action bar is two lines, with "Unsaved changes" shortened to its dot (the text stays for screen readers).
+
+The form gets 636px of an 812px screen, where it had 520px. With the keyboard up, it gets 224px of a 400px screen, where it had 148px. Tablets and computers keep the card.
+
+A phone on its side has the width of a tablet and 375px of height, so it gets the phone layout too. The phone layout starts under 768px wide, or on a touch screen under 500px high (`$phone-query` in `src/assets/scss/variables.scss`, and `DRAWER_QUERY` in `App.vue`, which a test keeps the same).
+
+- One column: the list, then the editor with its Back button.
+- The navigation is in the drawer.
+- In landscape there is no breadcrumb anywhere, the title of the list is on the row of the search, and the action bar of the editor is on one line.
+
+The form gets 251px of a 375px screen. It had 179px beside the list.
+
+On a phone (the phone layout, see below), the language of a record is one 44px button next to Back, not a row of tabs.
+
+- The button shows the language being edited, with its markers (the amber dot for unsaved edits, the red circle for missing required fields). After them it shows the number of other languages that need a look: amber for unsaved edits, red when one misses a required field.
+- With two languages, a press changes the language. The button says which, to a screen reader as well. With more, a press opens the list of languages: one 44px line each, with its own markers and a check on the language that is shown. Ten languages take one row of the bar where the tabs took four (`TopBarLocaleList.vue`).
+- The tabs also give way to the button off a phone, where they would take more than half of the bar. A language takes about 60px, and more for each marker it carries (`src/utils/localeBar.js`). That happens at five languages in an editor of the usual width, or four in a narrow one.
+- Back is its arrow alone, Discard is its icon (the name stays for a screen reader), and the text "Unsaved changes" is left out.
+- The bar is one line for a new record (Back, the language, the jump menu, Save).
+- After a failed save, what is missing has a row of its own under the bar, the width of the screen.
 
 A group of nested fields (`address.city`) is a box with a title bar. When the resource says it `collapsible`, the bar is a button across the whole box with a chevron that turns (it is 44px tall on a touch screen) and the closed group is only its bar, with rounded corners; the fields of a closed group are kept (hidden, not removed), so they are checked and saved, and the group opens by itself for an error or a jump to one of its fields. See [Groups](../reference/FIELDS.md#groups).
 
-In a paragraph field, on a phone the type of block and the Add button share one row (Add multiple goes to a row of its own), the sticky bar stays one line over the blocks, and on a touch screen the bar of a block and its grip are 44px (the Reorder button moves blocks without dragging).
+In a paragraph field, on a phone:
+
+- The type of block and the Add button share one row. Add multiple goes to a row of its own.
+- The sticky bar stays one line over the blocks.
+- On a touch screen, the bar of a block and its grip are 44px. The Reorder button moves blocks without dragging.
 
 A dialog on a phone keeps its title and its foot in view and scrolls its middle (the map of a geopoint field, the crop and image map tools); in landscape the picture and the tools stand side by side. The calendar popup of a touch screen is never taller than the screen and scrolls inside, with Cancel and Select fixed at its foot. A field that has the cursor is left when a block is dragged.
 
-In an image or file field the previews are 200px cards; in an editor under 480px wide (a phone, a tablet beside the list) each takes the whole line instead of leaving the rest of it empty, and on a touch screen the grip that drags a preview is a 44px target and the line of the preview is as tall as a button. A finger drags as soon as it moves from the grip (the grip has `touch-action: none`, so a swipe on it never scrolls the page, and there is nothing to wait for); the blocks, the images and the files share the options in `src/mixins/DragList.js`. While one is dragged the page is not restyled as a whole: the grabbing cursor and the ban on selecting text are for a mouse only, and the previews and the blocks have no transition. On a touch screen the others do not slide aside either, and the blocks that are folded while one is carried are hidden with `content-visibility: hidden`, which keeps their boxes (where `display: none` throws them away, and showing them again at the drop built every box of every editor again); a browser without it folds them with `display: none`.
+In an image or file field the previews are 200px cards.
+
+- In an editor under 480px wide (a phone, or a tablet beside the list), each preview takes the whole line instead of leaving the rest of it empty.
+- On a touch screen, the grip that drags a preview is a 44px target, and the line of the preview is as tall as a button.
+- A finger drags as soon as it moves from the grip. The grip has `touch-action: none`, so a swipe on it never scrolls the page, and there is nothing to wait for. Blocks, images and files share the options in `src/mixins/DragList.js`.
+- While one is dragged, the page is not restyled as a whole. The grabbing cursor and the ban on selecting text are for a mouse only, and the previews and blocks have no transition.
+- On a touch screen the other items do not slide aside either. The blocks that are folded while one is carried are hidden with `content-visibility: hidden`. That keeps their boxes, whereas `display: none` throws them away, and showing them again at the drop built every box of every editor again. A browser without `content-visibility` folds them with `display: none`.
 
 ## Design choices
 

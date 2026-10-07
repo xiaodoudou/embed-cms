@@ -65,11 +65,28 @@ A few tests guard the documentation:
 
 ## Screenshots of the documentation
 
-The pictures of `docs/reference/fields/img` (one per state of each field type) and the ones of `docs/ui` that the README and the guides show are taken by a script, in the light theme unless the file name says dark, so they can be retaken after the interface changes: `npm i --no-save playwright-core`, then `npm run docs:screenshots`. It starts a throw-away CMS on a free port with the catalogue of `resources/` and a temporary data folder, seeds the records some pictures need over REST, drives a headless Chrome through the admin and writes the PNG files over the old ones; Chrome is looked for in its usual install folder, `CHROME_PATH` names another one.
+A script takes the pictures of the documentation, so you can retake them after the interface changes. They are the pictures of `docs/reference/fields/img` (one per state of each field type) and the ones of `docs/ui` that the README and the guides show. They use the light theme unless the file name says dark.
 
-`npm run docs:screenshots -- --only string` retakes only the pictures whose name matches the regular expression, and `--url http://127.0.0.1:9990 --seed` uses a server that is already running (seeded first) instead of a throw-away one. One picture is one entry in `test/docs/screenshots/fields.js` (the field pages) or `ui.js` (the interface): its file name, the resource, the steps that bring the form to the state the page describes, and what to crop; `lib.js` holds the browser helpers, `seed.js` the records and `fixtures.js` the files the pictures upload. A failed picture leaves a `docshot-fail-<name>.png` in the temporary folder of the system.
+```sh
+npm i --no-save playwright-core
+npm run docs:screenshots
+```
 
-The pictures of the example site of [PAGE_HELPER.md](docs/reference/PAGE_HELPER.md) (`docs/img/page-helper-*.png`: the home page, an article, the 404 page and the error page) are taken by their own script, `npm run docs:site-screenshots`: it boots `docs/examples/site` over a throw-away CMS with four articles and photographs its pages. The pictures of the [magazine](docs/examples/magazine/README.md) (`docs/img/magazine-*.png`) are taken the same way by `npm run docs:magazine-screenshots`, and the ones of the [docs platform](docs/examples/platform/README.md) (`docs/img/platform-*.png`, one of them signed in) by `npm run docs:platform-screenshots`, and the ones of [Boardwalk](docs/examples/taskboard/README.md) (`docs/img/taskboard-*.png`: the app is built by Vite, a browser signs in as a person of the team) by `npm run docs:taskboard-screenshots`.
+The script starts a throw-away CMS on a free port, with the catalogue of `resources/` and a temporary data folder. It seeds the records some pictures need over REST, drives a headless Chrome through the admin, and writes the PNG files over the old ones. It looks for Chrome in its usual install folder. `CHROME_PATH` names another one.
+
+Two options help:
+
+- `npm run docs:screenshots -- --only string` retakes only the pictures whose name matches the regular expression.
+- `--url http://127.0.0.1:9990 --seed` uses a server that is already running (seeded first) instead of a throw-away one.
+
+One picture is one entry in `test/docs/screenshots/fields.js` (the field pages) or `ui.js` (the interface). The entry gives the file name, the resource, the steps that bring the form to the state the page describes, and what to crop. `lib.js` holds the browser helpers, `seed.js` the records and `fixtures.js` the files the pictures upload. A failed picture leaves a `docshot-fail-<name>.png` in the temporary folder of the system.
+
+Each example has its own script for its pictures:
+
+- The example site of [PAGE_HELPER.md](docs/reference/PAGE_HELPER.md) (`docs/img/page-helper-*.png`: the home page, an article, the 404 page and the error page). Run `npm run docs:site-screenshots`. It boots `docs/examples/site` over a throw-away CMS with four articles and photographs its pages.
+- The [magazine](docs/examples/magazine/README.md) (`docs/img/magazine-*.png`). Run `npm run docs:magazine-screenshots`.
+- The [docs platform](docs/examples/platform/README.md) (`docs/img/platform-*.png`, one of them signed in). Run `npm run docs:platform-screenshots`.
+- [Boardwalk](docs/examples/taskboard/README.md) (`docs/img/taskboard-*.png`). Run `npm run docs:taskboard-screenshots`. Vite builds the app, and a browser signs in as a person of the team.
 
 ## What CI checks
 
@@ -105,16 +122,16 @@ One naming rule for the whole tree:
 - **Files** are `PascalCase.js` or `.vue` when the module is something that gets mounted, instantiated or extended: a Vue component, a class (one class per file: `ExpressManager.js`, `lib/db/FileStore.js`, `lib/db/local/JsonDown.js`), a frontend service (`TranslateService.js`), a mixin (`src/mixins/RecordName.js`). Everything else is `camelCase.js`: utilities, helpers, middleware, functions and factories (`lib/db/jsonStore.js`, `lib/plugins/rest/middleware/findResource.js`), scripts, tests. No snake_case or kebab-case source file names.
 - **Resource definitions** under `resources/`, and the pages of `docs/reference/fields/`, are named after the resource or field type they define (`text_long`, `inputtag`): they are data, not code, and are not renamed. The top-level documentation pages are `UPPERCASE.md`.
 - **Tests** mirror the source and say what kind they are by their folder, not by their name: `test/unit/<subject>.test.js`, `test/security/<area>.security.test.js`, `test/frontend/<subject>.test.js` and `<component>.component.test.js`, `test/integration/<suite>.test.js`. Shared code is in `test/helpers/`, shared data in `test/fixtures/`.
-- **Public names do not follow the file names.** The keys of `RestHelper.mw` (`find_resource`, `parse_query`), the plugin names, the configuration keys, the REST routes, the storage engine names (`jsondown`, `sqlite`) and the npm scripts (`migrate-store`) are what they were.
+- Public names do not follow the file names. These keep their old names: the keys of `RestHelper.mw` (`find_resource`, `parse_query`), the plugin names, the configuration keys, the REST routes, the storage engine names (`jsondown`, `sqlite`) and the npm scripts (`migrate-store`).
 
 ## Making a change
 
-- **One concern per commit**, small enough to review. A refactor and a behaviour change are two commits.
-- **A bug fix comes with a test** that fails without the fix.
-- **Protections are on by default.** A protection becomes a `security.*` setting that defaults to on (`lib/util/securityOptions.js`), so a deployment can turn one off for a reason but never gets one silently missing. It is documented in `SECURITY.md`.
-- **UI code follows the design system**: colours, sizes and spacing come from `src/styles/tokens.scss`; texts go through the translation files in `i18n/`, in English and Chinese.
-- **Update the documentation in the same change.** A new option goes into [docs/reference/CONFIG.md](docs/reference/CONFIG.md), a new field option into its page in `docs/reference/fields/`, a new route into [docs/reference/API.md](docs/reference/API.md). [docs/README.md](docs/README.md) says which page owns which topic.
-- **Draw diagrams with [Mermaid](https://mermaid.js.org/)** in a ` ```mermaid ` block (GitHub renders it), not as ASCII art or images, so they stay editable in a diff. Check a new one with `npx -y @mermaid-js/mermaid-cli -i diagram.mmd -o diagram.svg`. Folder trees can stay plain text.
+- One concern per commit, small enough to review. A refactor and a behaviour change are two commits.
+- A bug fix comes with a test that fails without the fix.
+- Protections are on by default. A protection becomes a `security.*` setting that defaults to on (`lib/util/securityOptions.js`), so a deployment can turn one off for a reason but never gets one silently missing. It is documented in `SECURITY.md`.
+- UI code follows the design system: colours, sizes and spacing come from `src/styles/tokens.scss`; texts go through the translation files in `i18n/`, in English and Chinese.
+- Update the documentation in the same change. A new option goes into [docs/reference/CONFIG.md](docs/reference/CONFIG.md), a new field option into its page in `docs/reference/fields/`, a new route into [docs/reference/API.md](docs/reference/API.md). [docs/README.md](docs/README.md) says which page owns which topic.
+- Draw diagrams with [Mermaid](https://mermaid.js.org/) in a ` ```mermaid ` block (GitHub renders it), not as ASCII art or images, so they stay editable in a diff. Check a new one with `npx -y @mermaid-js/mermaid-cli -i diagram.mmd -o diagram.svg`. Folder trees can stay plain text.
 
 ## Commit messages
 
@@ -151,11 +168,11 @@ Security problems don't go in a public issue or pull request: see [SECURITY.md](
 
 ## Releasing
 
-A release is a tag on `main`. Every change worth telling goes under **Unreleased** in `CHANGELOG.md` with the commit that makes it, in the words of the person who uses the CMS (what they can do now, what behaves differently, what was broken), not of the code.
+A release is a tag on `main`. Every change worth telling goes under **Unreleased** in `CHANGELOG.md`, in the same commit that makes the change. Write it for the person who uses the CMS: what they can do now, what behaves differently, what was broken. Do not write it in the words of the code.
 
 1. **On `dev`**, a last commit moves the Unreleased entries under a heading with the version and the date, adds the compare link at the bottom, and bumps the version of `package.json`. CI is green.
-2. **Open a pull request from `dev` to `main`** titled "Release 3.0.4", with the new section of the changelog as its description, and **squash-merge** it (the only way `main` accepts). `main` gets one commit, with that title and description.
-3. **Tag that commit** and push the tag:
+2. Open a pull request from `dev` to `main` titled "Release 3.0.4", with the new section of the changelog as its description, and **squash-merge** it (the only way `main` accepts). `main` gets one commit, with that title and description.
+3. Tag that commit and push the tag:
 
 ```sh
 git fetch origin
@@ -163,7 +180,7 @@ git tag -a v3.0.4 -m "embed-cms 3.0.4" origin/main
 git push origin v3.0.4
 ```
 
-4. **Bring `dev` up to date with `main`**, so that the next release pull request shows only what came after. The squash commit has the same content as `dev` already has, so nothing changes in the files:
+4. Bring `dev` up to date with `main`, so that the next release pull request shows only what came after. The squash commit has the same content as `dev` already has, so nothing changes in the files:
 
 ```sh
 git checkout dev

@@ -8,6 +8,15 @@ const { spawnSync } = require('child_process')
 
 const root = path.resolve(__dirname, '..')
 
+// In a clone, git is pointed at .githooks, whose commit-msg hook checks the commit messages (Conventional Commits, see CONTRIBUTING.md).
+// A package installed as a dependency has no .git, and a hooks path that is already set is not changed.
+if (fs.existsSync(path.join(root, '.git')) && fs.existsSync(path.join(root, '.githooks'))) {
+  const current = spawnSync('git', ['config', '--local', 'core.hooksPath'], { cwd: root, encoding: 'utf8' })
+  if (current.status !== 0 || !current.stdout.trim()) {
+    spawnSync('git', ['config', '--local', 'core.hooksPath', '.githooks'], { cwd: root })
+  }
+}
+
 if (process.env.EMBED_CMS_SKIP_BUILD) {
   console.log('embed-cms: EMBED_CMS_SKIP_BUILD is set, the admin app was not built')
   process.exit(0)

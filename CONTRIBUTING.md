@@ -96,7 +96,8 @@ Each example has its own script for its pictures:
 2. `npm run test:unit`, `npm run test:frontend`, `npm test`;
 3. `npm run build`;
 4. `npm audit --omit=dev --audit-level=high`;
-5. in a second job, the driver contract suite against PostgreSQL 16 and MongoDB 7 service containers.
+5. in a second job, the driver contract suite against PostgreSQL 16 and MongoDB 7 service containers;
+6. in a third job, that the commit messages of the push or pull request follow [Conventional Commits](#commit-messages), and that the title of a pull request into `main` does too.
 
 Run the first three locally before you push. `npm run knip` finds unused files, exports and dependencies.
 
@@ -135,15 +136,61 @@ One naming rule for the whole tree:
 
 ## Commit messages
 
-The subject is a plain sentence saying what changes for the user of the code, in the present tense, without a type prefix or a final period. Name the area first when it helps:
+Commit messages follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/):
 
 ```
-Uploads without a file extension keep their type
-CI: actions/checkout and actions/setup-node v7
-Saving is refused while a required field is empty, whatever its type
+<type>(<scope>): <description>
+
+<body>
+
+<footer>
 ```
 
-The body, wrapped at about 120 characters, explains **why**: what was wrong, what the change does about it, and anything a reviewer should know (what was tried and dropped, what is left for later). The diff already says what changed line by line.
+The title is one line of at most 100 characters, with no final period. It says what changes for the user of the code, in the present tense.
+
+| Type | Use it for |
+|---|---|
+| `feat` | A new feature, or a change a user can see |
+| `fix` | A bug fix |
+| `docs` | Documentation only |
+| `style` | Formatting and lint rules, with no change of behaviour |
+| `refactor` | A change of the code that neither fixes a bug nor adds a feature |
+| `perf` | A change that makes something faster or lighter |
+| `test` | Tests |
+| `build` | The build, the dependencies and the package |
+| `ci` | The CI and release workflows |
+| `chore` | Anything else, and releases: `chore(release): 3.0.5` |
+| `revert` | A revert |
+
+The scope is the part of the CMS the change is about, in lower case: `admin`, `fields`, `api`, `rest`, `sync`, `storage`, `security`, `i18n`, `examples`, `release`. Leave it out when no part fits.
+
+```
+fix(admin): keep Tab inside the omnibar switcher
+feat(fields): add the geopoint field
+docs: say which page to read for each question
+ci: update actions/checkout and actions/setup-node to v7
+```
+
+A change that breaks users gets a `!` before the colon, and a `BREAKING CHANGE:` footer that says what to do about it:
+
+```
+feat(security)!: turn every protection on by default
+
+BREAKING CHANGE: the legacy security profile is gone, see SECURITY.md.
+```
+
+The body, wrapped at about 120 characters, explains **why**: what was wrong, what the change does about it, and anything a reviewer should know (what was tried and dropped, what is left for later). The diff already says what changed line by line. Put detail that does not fit in a title of 100 characters in the body.
+
+### The check
+
+`npm install` points git at `.githooks` (`git config core.hooksPath .githooks`, done by `scripts/prepare.js`), and its `commit-msg` hook refuses a message that does not follow the rules above, with the reason. The rules are in `scripts/commitlint.js`, which has no dependency. You can run it yourself:
+
+```sh
+node scripts/commitlint.js --range origin/dev..HEAD   # the commits of a branch
+node scripts/commitlint.js --title "fix: stop the crash"   # one title
+```
+
+The hook only helps the person who has it, so CI checks the same rules on every push and pull request. Merge commits, reverts made by git and the `fixup!` commits of an autosquash are let through.
 
 ## Branches
 
@@ -170,8 +217,8 @@ Security problems don't go in a public issue or pull request: see [SECURITY.md](
 
 A release is a tag on `main`. Every change worth telling goes under **Unreleased** in `CHANGELOG.md`, in the same commit that makes the change. Write it for the person who uses the CMS: what they can do now, what behaves differently, what was broken. Do not write it in the words of the code.
 
-1. **On `dev`**, a last commit moves the Unreleased entries under a heading with the version and the date, adds the compare link at the bottom, and bumps the version of `package.json`. CI is green.
-2. Open a pull request from `dev` to `main` titled "Release 3.0.4", with the new section of the changelog as its description, and **squash-merge** it (the only way `main` accepts). `main` gets one commit, with that title and description.
+1. **On `dev`**, a last commit titled `chore(release): 3.0.4` moves the Unreleased entries under a heading with the version and the date, adds the compare link at the bottom, and bumps the version of `package.json`. CI is green.
+2. Open a pull request from `dev` to `main` titled "chore(release): 3.0.4", with the new section of the changelog as its description, and **squash-merge** it (the only way `main` accepts). `main` gets one commit, with that title and description.
 3. Tag that commit and push the tag:
 
 ```sh
@@ -184,7 +231,7 @@ git push origin v3.0.4
 
 ```sh
 git checkout dev
-git merge -s ours origin/main -m "Release 3.0.4 is on main"
+git merge -s ours origin/main -m "chore: merge release 3.0.4 from main"
 git push origin dev
 ```
 

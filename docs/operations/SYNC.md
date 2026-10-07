@@ -60,12 +60,22 @@ sequenceDiagram
 For each resource, the source exports its records with the internal fields removed, relations turned into the `unique` values of the related records, and attachments as download links. The target then:
 
 - creates records it doesn't have and updates those it has, matching them by their **`unique` fields**;
-- **deletes its records that are not in the export**;
-- copies the **attachments** (the files): file by file, a file it already has (same content and same name) is left alone, the ones the source no longer has are removed, and only the missing ones are downloaded, so syncing twice copies nothing the second time; the files of a record it deletes go with it.
+- deletes its records that are not in the export;
+- copies the **attachments** (the files), file by file:
+  - a file it already has (same content and same name) is left alone;
+  - a file the source no longer has is removed;
+  - only the missing files are downloaded, so syncing twice copies nothing the second time;
+  - the files of a record it deletes go with it.
 
-This holds for the files and the relations inside the blocks of a `paragraph` field too, and for the blocks inside blocks. A `select` or `multiselect` of a block is sent as the `unique` value of the record it points to and turned back into that record's id on the other server, like the ones of the resource itself, so the resources the blocks point to have to be synced, and have a `unique` field, as well. The files of a block keep their place (the path of their block and their order) and are copied with their content type, so an image stays an image.
+This holds for the files and the relations inside the blocks of a `paragraph` field too, and for blocks inside blocks.
 
-**Record ids written in a text** are followed too. In a `wysiwyg`, `text`, `code`, `string`, `object` or `json` value (and in the same fields of a block), a 24-character id that is the id of a record of this server is sent as the `unique` value of that record (`cms-ref://tags/red`) and turned back into the id of the record that has that value on the other server. A link such as `#/?id=tags&record=<id>` or a JSON value `{ "featured": "<id>" }` therefore still points to the same record there. Only the ids of records are followed, in any resource whose records have a `unique` field with a text or number value; other texts are untouched. If the record is not on the other server yet (sync the resource it belongs to first), the reference stays in the text as `cms-ref://…`, the next sync writes the record again, and it resolves once the record is there.
+A `select` or `multiselect` of a block is sent as the `unique` value of the record it points to. It is turned back into that record's id on the other server, like the ones of the resource itself. So the resources the blocks point to have to be synced too, and they need a `unique` field.
+
+The files of a block keep their place (the path of their block and their order). They are copied with their content type, so an image stays an image.
+
+**Record ids written in a text** are followed too. This applies to a `wysiwyg`, `text`, `code`, `string`, `object` or `json` value, and to the same fields of a block. A 24-character id that is the id of a record of this server is sent as the `unique` value of that record (`cms-ref://tags/red`). On the other server it is turned back into the id of the record that has that value. A link such as `#/?id=tags&record=<id>` or a JSON value `{ "featured": "<id>" }` therefore still points to the same record there.
+
+Only the ids of records are followed, in any resource whose records have a `unique` field with a text or number value. Other texts are untouched. If the record is not on the other server yet (sync the resource it belongs to first), the reference stays in the text as `cms-ref://…`. The next sync writes the record again, and the reference resolves once the record is there.
 
 A file that cannot be downloaded does not stop the sync: the records are still written, but the sync ends as an **error** (`N attachments could not be copied`) rather than as done, and a second sync copies what is missing. The report, the Sync page and `cms-sync` count the attachments copied (`attachmentsAdded`) and removed (`attachmentsRemoved`) next to the records.
 
@@ -83,17 +93,17 @@ The admin has a **Sync** page in the **CMS** group of the menu, next to **Sync s
 
 ![The Sync page: all the resources with the last run and the schedule, then one resource compared with the other CMS](../ui/sync-page-light.png)
 
-- **All the resources** runs every resource at once, and shows the last run and the schedule (see below).
+- All the resources runs every resource at once, and shows the last run and the schedule (see below).
 - **One resource** compares a resource with the other CMS: how many records each one has, and what a push or a pull would create, update and remove, matching the records by their `unique` fields. A push or a pull of just that resource starts from there. When a resource has attachments, each CMS also shows how many it has, and a push or a pull says how many attachments it would copy and remove. A button is missing when the CMS it would write to does not allow writing.
 
 ## Syncing all the resources at once
 
-Besides syncing a resource at a time on the Sync page, you can run a **push** (this server writes to the other one) or a **pull** (the other server writes here) for every resource to sync, one after the other. A resource that fails does not stop the others, and the run says how each one went. Only one run goes on at a time: a second one is refused while the first runs.
+Besides syncing one resource at a time on the Sync page, you can run a **push** (this server writes to the other one) or a **pull** (the other server writes here) for every resource to sync, one after the other. A resource that fails does not stop the others, and the run says how each one went. Only one run goes on at a time. A second one is refused while the first runs.
 
 There are four ways to start one, and they all do the same thing.
 
-- **From the Sync page.** The **All the resources** section has **Push all** and **Pull all**. Each asks first, because it removes the records the target has and the source does not. It shows the resource the run is on, then how each one went, and the schedule (see below).
-- **From code.** `cms.$sync` is the sync plugin. `run` syncs one resource and answers when the other server has finished with it, and `runAll` does all of them:
+- From the Sync page. The **All the resources** section has **Push all** and **Pull all**. Each asks first, because it removes the records the target has and the source does not. It shows the resource the run is on, then how each one went, and the schedule (see below).
+- From code. `cms.$sync` is the sync plugin. `run` syncs one resource and answers when the other server has finished with it, and `runAll` does all of them:
 
   ```js
   const result = await cms.$sync.run('articles', 'push')
@@ -105,8 +115,10 @@ There are four ways to start one, and they all do the same thing.
   ```
 
   They throw only when the run cannot start: an error with `code: 400` for a resource that is not among the resources to sync, or `code: 409` when a run is going on.
-- **From the command line**, with `cms-sync` (below).
-- **Over HTTP**, with the token of this server, which is the **Token** under **This CMS** in its Sync settings: `POST /sync/run/push` or `POST /sync/run/pull`, with `?resources=a,b` to name some. It answers `202` at once with `{ started, direction, startedAt, resources }`, `409` when a run is going on and `400` for a resource that is not one to sync. `GET /sync/runs?token=…` says what is going on (`running`), how the last run went (`last`) and what is scheduled (`schedule`). Both also accept a logged-in person of the admin instead of the token. A `GET` never starts a run.
+- From the command line, with `cms-sync` (below).
+- **Over HTTP**, with the token of this server. The token is the **Token** under **This CMS** in its Sync settings. Both routes also accept a logged-in person of the admin instead of the token.
+  - `POST /sync/run/push` or `POST /sync/run/pull`, with `?resources=a,b` to name some. It answers `202` at once with `{ started, direction, startedAt, resources }`. It answers `409` when a run is going on, and `400` for a resource that is not one to sync.
+  - `GET /sync/runs?token=…` says what is going on (`running`), how the last run went (`last`) and what is scheduled (`schedule`). A `GET` never starts a run.
 
 ### The command
 
@@ -125,7 +137,14 @@ push: articles, authors
   authors: error: write data is not allowed
 ```
 
-The exit code is `0` when every resource is done, `1` when one failed, `2` for a wrong command, and `3` when the server could not be reached or refused to start the run (a wrong token, a resource that is not one to sync, a run going on). That makes it fit a script or a CI job.
+The exit code is:
+
+- `0` when every resource is done;
+- `1` when one failed;
+- `2` for a wrong command;
+- `3` when the server could not be reached or refused to start the run (a wrong token, a resource that is not one to sync, a run going on).
+
+That makes it fit a script or a CI job.
 
 ### Syncing on a schedule
 
@@ -177,7 +196,7 @@ In **Sync settings** of each, give **This CMS** a token and its address (`http:/
 
 ## What can go wrong
 
-- **`401 token is not match`.** The tokens are crossed: **Token** under **The other CMS** on one side must equal **Token** under **This CMS** on the other.
-- **Records vanished on the target.** That is what a sync does with records the source doesn't have. Sync the other way first, or keep target-only records in a resource that isn't synced.
-- **Duplicates instead of updates.** The resource has no `unique` field, or its values differ between the two servers.
-- **Changes don't sync on their own.** The automatic push asks the other server to pull a resource 5 seconds after the last change to it. It only happens when the resource is ticked in **Resources to sync** and **Address** under **The other CMS** is set, and only works when the other server's own settings point back at this one.
+- `401 token is not match`. The tokens are crossed: **Token** under **The other CMS** on one side must equal **Token** under **This CMS** on the other.
+- Records vanished on the target. That is what a sync does with records the source doesn't have. Sync the other way first, or keep target-only records in a resource that isn't synced.
+- Duplicates instead of updates. The resource has no `unique` field, or its values differ between the two servers.
+- Changes don't sync on their own. The automatic push asks the other server to pull a resource 5 seconds after the last change to it. It only happens when the resource is ticked in **Resources to sync** and **Address** under **The other CMS** is set, and only works when the other server's own settings point back at this one.

@@ -1,0 +1,30 @@
+{{> header}}
+<div class="docs">
+  <aside class="menu">
+    <p class="product-name"><a href="{{product.href}}">{{product.name}}</a></p>
+    <p class="versions" aria-label="Versions">
+      {{#switcher}}<a href="{{href}}"{{#selected}} aria-current="true" class="selected"{{/selected}}>{{name}}{{#current}} (current){{/current}}</a>{{/switcher}}
+    </p>
+    {{#groups}}
+      {{#title}}<h3>{{title}}</h3>{{/title}}
+      <ul>
+      {{#pages}}
+        <li><a href="{{href}}"{{#selected}} aria-current="page" class="selected"{{/selected}}>{{title}}</a>{{#membersOnly}} <span class="tag small">Members</span>{{/membersOnly}}</li>
+      {{/pages}}
+      </ul>
+    {{/groups}}
+  </aside>
+  <article class="page">
+    {{#banner}}<p class="banner">This is the documentation of version {{version.name}}, which is old. <a href="{{href}}">Go to {{name}}</a>, the current version.</p>{{/banner}}
+    <h1>{{page.title}}</h1>
+    {{#page.membersOnly}}<p class="member-banner">For members{{#member}}: you are signed in as {{member}}{{/member}}.</p>{{/page.membersOnly}}
+    <p class="lede">{{page.summary}}</p>
+    {{#page.hasDiagram}}<img class="diagram" src="{{page.diagram}}" srcset="{{page.srcset}}" sizes="(min-width: 48rem) 40rem, 95vw" alt="Diagram for {{page.title}}" width="800" height="450">{{/page.hasDiagram}}
+    <div class="body">{{{body}}}</div>
+    <p class="actions">
+      {{#page.hasDownload}}<a class="button" href="{{page.download}}">Download as PDF</a>{{/page.hasDownload}}
+      <a href="{{page.report}}">Report a problem with this page</a>
+    </p>
+  </article>
+</div>
+{{> footer}}

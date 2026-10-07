@@ -1,0 +1,17 @@
+{{> header}}
+<h1>Search</h1>
+{{#searched}}
+  {{#found}}<p class="lede">Pages for “{{term}}”:</p>{{/found}}
+  {{^found}}<p class="lede">No page matches “{{term}}”.</p>{{/found}}
+{{/searched}}
+{{^searched}}<p class="lede">Type a word in the box above.</p>{{/searched}}
+<ul class="entries">
+{{#results}}
+  <li class="entry">
+    <a href="{{href}}">{{title}}</a> {{#membersOnly}}<span class="tag">Members</span>{{/membersOnly}}
+    <span class="meta">{{product}} {{version}}</span>
+    <span class="summary">{{summary}}</span>
+  </li>
+{{/results}}
+</ul>
+{{> footer}}

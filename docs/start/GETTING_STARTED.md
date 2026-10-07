@@ -103,7 +103,7 @@ module.exports = {
 A few things are going on here:
 
 - **`locales`** gives every field of `articles` one value per language, with a tab per language in the editor. A field that doesn't change with the language says `localised: false`.
-- **`source: 'authors'`** makes the select offer the records of another resource, and stores the author's `_id`.
+- `source: 'authors'` makes the select offer the records of another resource, and stores the author's `_id`.
 - **`unique`** is checked by the server, and it's how imports and syncs recognise a record. Give every resource one.
 - **`group`** files the resource under a heading in the admin's menu.
 
@@ -127,8 +127,8 @@ const total = Number(res.headers.get('numRecords'))
 const articles = await res.json()
 ```
 
-- **Always set `limit`.** Without it you get every record, which is fun with ten and not fun with ten thousand.
-- **There's no sort parameter.** Records come in creation order, so sort them yourself.
+- Always set `limit`. Without it you get every record, which is fun with ten and not fun with ten thousand.
+- There's no sort parameter. Records come in creation order, so sort them yourself.
 
 If your site runs in the same process as the CMS, skip HTTP and use the JavaScript API:
 
@@ -160,7 +160,7 @@ Before the first real user, work through the [hardening checklist](../../SECURIT
 - behind a reverse proxy, set `trustProxy` and serve the admin over HTTPS;
 - back up `data/` (or your database) and `cms.json`.
 
-The CMS reads `cms.json` once, at start-up, and nothing in the admin changes it, so a change means a restart. Run it under a supervisor (systemd, pm2, Docker) that starts it again if it stops.
+The CMS reads `cms.json` once, at start-up, and nothing in the admin changes it, so a change means a restart. Run it under a supervisor (systemd, pm2, Docker) that starts it again if it stops. For Docker, the [Docker example](../examples/docker/README.md) is a Dockerfile, a `.env` for the secrets and the scripts to make, build and run it.
 
 ## When something goes wrong
 

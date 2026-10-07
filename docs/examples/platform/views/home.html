@@ -1,0 +1,14 @@
+{{> header}}
+<h1>Documentation</h1>
+<p class="lede">The docs of every product, a version at a time.</p>
+<div class="products">
+{{#products}}
+  <article class="product">
+    <h2>{{#href}}<a href="{{href}}">{{name}}</a>{{/href}}{{^href}}{{name}}{{/href}} {{#membersOnly}}<span class="tag">Members</span>{{/membersOnly}}</h2>
+    <p>{{summary}}</p>
+    {{#version}}<p class="meta">Current version: {{version}}</p>{{/version}}
+  </article>
+{{/products}}
+</div>
+{{^products}}<p>No product yet.</p>{{/products}}
+{{> footer}}

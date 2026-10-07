@@ -140,10 +140,10 @@ cms.bootstrapFunctions.push(async (done) => {   // runs once the stores are open
 
 ### Good to know
 
-- **Install the plugin before `cms.bootstrap`.** Resources and bootstrap functions added after it are never started.
-- **Errors in your routes.** The CMS answers its own errors as JSON, but its error handler sits before your plugin in the chain. An error you pass to `next(error)` reaches your Express app's error handler (or Express's HTML default), so add one, or answer the error in the route with `res.status(500).json(...)`.
-- **A plugin name** (`pluginName`) is only a label; two plugins with the same name replace each other in the CMS's list.
-- **Everything is typed.** In TypeScript, the class you pass to `cms.use` is checked against `CMS.PluginClass`: see [TYPESCRIPT.md](../reference/TYPESCRIPT.md).
+- Install the plugin before `cms.bootstrap`. Resources and bootstrap functions added after it are never started.
+- Errors in your routes. The CMS answers its own errors as JSON, but its error handler sits before your plugin in the chain. An error you pass to `next(error)` reaches your Express app's error handler (or Express's HTML default), so add one, or answer the error in the route with `res.status(500).json(...)`.
+- A plugin name (`pluginName`) is only a label; two plugins with the same name replace each other in the CMS's list.
+- Everything is typed. In TypeScript, the class you pass to `cms.use` is checked against `CMS.PluginClass`: see [TYPESCRIPT.md](../reference/TYPESCRIPT.md).
 
 ## An admin page
 
@@ -322,7 +322,7 @@ The script is the same as above, and the `<style>` block goes away. A plugin wri
 
 ### Build it, then let people in
 
-1. **Build the admin again**, so that your pages are included (a minute or two):
+1. Build the admin again, so that your pages are included (a minute or two):
 
    ```sh
    cd node_modules/embed-cms
@@ -332,7 +332,7 @@ The script is the same as above, and the `<style>` block goes away. A plugin wri
    ```
 
    Working in a clone of the embed-cms repository instead? The admin takes its pages from `src/.plugins/` there, and `npm run serve-backend` with `npm run dev` rebuilds them as you type (see [CONTRIBUTING.md](../../CONTRIBUTING.md#running-it)).
-2. **Give a group the right.** Open **Groups** in the admin's **CMS** menu, and pick `Dashboard` (the `displayname`) in the **Plugins** list of the group: the list shows every page the admin has built in. The `admins` group keeps the plugins you add by hand.
+2. Give a group the right. Open **Groups** in the admin's **CMS** menu, and pick `Dashboard` (the `displayname`) in the **Plugins** list of the group: the list shows every page the admin has built in. The `admins` group keeps the plugins you add by hand.
 
    ![The Plugins field of the admins group, with Syslog, Replicator and Dashboard](../img/plugins-group.png)
 3. Reload the admin: **Dashboard** is in the menu under *Tools*.

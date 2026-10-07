@@ -18,18 +18,18 @@ Take a wide picture with its subject off to one side, like this lighthouse, and 
 
 The plain resize cuts the lighthouse in half and keeps a lot of empty sky. Smart cropping notices the saturated red, the bright lamp and the detail around it, and frames those. (The pictures are a drawn scene, cropped with the real code, so there's nobody's photo in the docs.)
 
-## How the magic works
+## How it works
 
-There's no AI here, and nothing is learned. It's four plain steps, done by [sharp](https://sharp.pixelplumbing.com/api-resize) (and libvips under it), in about 12 ms for a small picture and about 55 ms for a 12-megapixel one (measured on a development machine):
+It uses no AI model and learns nothing. It runs four steps, done by [sharp](https://sharp.pixelplumbing.com/api-resize) (and libvips under it), in about 12 ms for a small picture and about 55 ms for a 12-megapixel one (measured on a development machine):
 
 ![The four steps of a smart crop on a drawn scene: fit the picture to the target, score every part for attention, place the window on the best spot, cut it out](../img/smart-cropping-how.png)
 
 Step by step:
 
-1. **Fit.** The picture is scaled until it *covers* the size you asked for, the way CSS `object-fit: cover` does. One side matches exactly and the other overflows, and the overflow is what has to be cut. The part you keep is a window with the shape of your target, and it can only slide along the side that overflows. Ask for a square from a 1200x800 picture and the window is 800x800: it can slide 400 pixels sideways and not at all up or down.
-2. **Score.** Every part of the picture gets an *attention* score, from three things that draw a human eye: **detail** (edges and contrast, so a sharp subject beats a smooth sky), **saturated colour** (the red lighthouse beats the grey sea), and **skin tones** (faces and hands). Flat, pale, even areas score close to nothing.
-3. **Place.** The window is centred on the best-scoring spot, then pushed back inside the picture if it hangs over an edge.
-4. **Cut.** The window is cut out and scaled to the target size. The kept part comes back as `cropResult` (see below), in pixels of the original.
+1. Fit. The picture is scaled until it *covers* the size you asked for, the way CSS `object-fit: cover` does. One side matches exactly and the other overflows, and the overflow is what has to be cut. The part you keep is a window with the shape of your target, and it can only slide along the side that overflows. Ask for a square from a 1200x800 picture and the window is 800x800: it can slide 400 pixels sideways and not at all up or down.
+2. Score. Every part of the picture gets an *attention* score, from three things that draw a human eye: detail (edges and contrast, so a sharp subject beats a smooth sky), saturated colour (the red lighthouse beats the grey sea), and skin tones (faces and hands). Flat, pale, even areas score close to nothing.
+3. Place. The window is centred on the best-scoring spot, then pushed back inside the picture if it hangs over an edge.
+4. Cut. The window is cut out and scaled to the target size. The kept part comes back as `cropResult` (see below), in pixels of the original.
 
 Nothing else changes: the window is never zoomed or tilted, and your original file is left as it was.
 
@@ -45,10 +45,10 @@ The window sits at `x: 0` when the lighthouse is on the left, at `x: 236` when i
 
 How it behaves on simple pictures:
 
-- **It moves along one axis only.** A wide picture cut to a square slides sideways. A wide target taken from a tall subject slides up and down: with a bright subject near the top of a 1200x800 picture, a `800x300` crop kept the top, and with the subject near the bottom it kept the bottom.
-- **It picks one place, not a compromise.** With two subjects, the window goes to one of them, the stronger one: a big red circle on the left beat a small one on the right. With two equal ones it picked the right-hand one, so don't count on a tie going your way.
-- **Detail counts without colour.** A patch of grey stripes attracted the crop just as a colourful subject does.
-- **When nothing stands out, it doesn't pick the centre.** On a picture with no peak at all (a flat colour) the window ended up in the top-left corner. If your pictures can be plain, such as a logo on a white background, check how they come out, or set the crop yourself.
+- It moves along one axis only. A wide picture cut to a square slides sideways. A wide target taken from a tall subject slides up and down: with a bright subject near the top of a 1200x800 picture, a `800x300` crop kept the top, and with the subject near the bottom it kept the bottom.
+- It picks one place, not a compromise. With two subjects, the window goes to one of them, the stronger one: a big red circle on the left beat a small one on the right. With two equal ones it picked the right-hand one, so don't count on a tie going your way.
+- Detail counts without colour. A patch of grey stripes attracted the crop just as a colourful subject does.
+- When nothing stands out, it doesn't pick the centre. On a picture with no peak at all (a flat colour) the window ended up in the top-left corner. If your pictures can be plain, such as a logo on a white background, check how they come out, or set the crop yourself.
 
 ## Asking for a smart crop
 

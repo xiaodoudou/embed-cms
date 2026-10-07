@@ -1,0 +1,22 @@
+{
+  "trustProxy": 1,
+  "blockRetry": { "retry": 10, "duration": 5 },
+  "attachmentCleanupGrace": 300000,
+  "security": {
+    "strongSecrets": true,
+    "localAdmin": false,
+    "passwordHash": "scrypt",
+    "hideCredentials": true,
+    "genericLockout": true,
+    "csrf": "origin",
+    "cookies": { "httpOnly": true, "sameSite": "lax", "secure": "auto" },
+    "strictSessions": true,
+    "redactConfig": true,
+    "strictAdmin": true,
+    "headers": true,
+    "safeAttachments": true,
+    "strictUploads": true,
+    "wsAuth": true,
+    "limits": { "json": "100kb" }
+  }
+}

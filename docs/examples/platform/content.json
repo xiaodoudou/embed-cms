@@ -1,0 +1,300 @@
+{
+  "products": [
+    {
+      "slug": "tidewater",
+      "name": "Tidewater",
+      "summary": "Keeps folders the same on all your machines, in the background.",
+      "order": 1,
+      "membersOnly": false,
+      "published": true
+    },
+    {
+      "slug": "anchor",
+      "name": "Anchor CLI",
+      "summary": "One command to put a folder under Tidewater, from a script.",
+      "order": 2,
+      "membersOnly": false,
+      "published": true
+    },
+    {
+      "slug": "lighthouse",
+      "name": "Lighthouse Enterprise",
+      "summary": "Monitoring and alerts for a fleet of Tidewater machines. For customers.",
+      "order": 3,
+      "membersOnly": true,
+      "published": true
+    }
+  ],
+  "versions": [
+    {
+      "key": "tidewater/3.0",
+      "product": "products://tidewater",
+      "slug": "3.0",
+      "order": 1,
+      "current": true,
+      "archived": false,
+      "published": true
+    },
+    {
+      "key": "tidewater/2.x",
+      "product": "products://tidewater",
+      "slug": "2.x",
+      "order": 2,
+      "current": false,
+      "archived": true,
+      "published": true
+    },
+    {
+      "key": "tidewater/3.1-draft",
+      "product": "products://tidewater",
+      "slug": "3.1-draft",
+      "order": 0,
+      "current": false,
+      "archived": false,
+      "published": false
+    },
+    {
+      "key": "anchor/1.0",
+      "product": "products://anchor",
+      "slug": "1.0",
+      "order": 1,
+      "current": true,
+      "archived": false,
+      "published": true
+    },
+    {
+      "key": "lighthouse/1.0",
+      "product": "products://lighthouse",
+      "slug": "1.0",
+      "order": 1,
+      "current": true,
+      "archived": false,
+      "published": true
+    }
+  ],
+  "pages": [
+    {
+      "key": "tidewater/3.0/install",
+      "version": "versions://tidewater/3.0",
+      "slug": "install",
+      "group": "Getting started",
+      "order": 1,
+      "title": {
+        "enUS": "Install Tidewater"
+      },
+      "summary": {
+        "enUS": "One download, one command, and Tidewater runs in the background."
+      },
+      "body": {
+        "enUS": "<p>Tidewater is one program. It has no server to set up and no account to make.</p><h2>Install</h2><ol><li>Download the installer for your system.</li><li>Run it, and keep the folder it proposes.</li><li>Open a terminal and run <code>tidewater status</code>: it says <em>running</em>.</li></ol><h2>Where things are</h2><p>Your settings are in <code>~/.tidewater/config.json</code>. Nothing else is written outside the folders you choose to share.</p>"
+      },
+      "diagram": "attachment://files/diagrams/tidewater-3.0-install.jpg",
+      "membersOnly": false,
+      "published": true
+    },
+    {
+      "key": "tidewater/3.0/first-sync",
+      "version": "versions://tidewater/3.0",
+      "slug": "first-sync",
+      "group": "Getting started",
+      "order": 2,
+      "title": {
+        "enUS": "Your first sync"
+      },
+      "summary": {
+        "enUS": "Choose a folder, add a second machine, and watch the two meet."
+      },
+      "body": {
+        "enUS": "<p>A sync is two folders that agree. Tidewater keeps them the same, whichever you change.</p><h2>Share a folder</h2><p>Run <code>tidewater share ~/Documents</code>. It prints a code of six words.</p><h2>Join from the other machine</h2><p>Run <code>tidewater join</code> and type the six words. The files arrive in the background; <code>tidewater status</code> shows how far it is.</p>"
+      },
+      "download": "attachment://files/pdf/tidewater-3.0-first-sync.pdf",
+      "membersOnly": false,
+      "published": true
+    },
+    {
+      "key": "tidewater/3.0/configuration",
+      "version": "versions://tidewater/3.0",
+      "slug": "configuration",
+      "group": "Using Tidewater",
+      "order": 3,
+      "title": {
+        "enUS": "Configuration reference"
+      },
+      "summary": {
+        "enUS": "Every setting of config.json, with its default."
+      },
+      "body": {
+        "enUS": "<p>The file is JSON. A setting you leave out has its default.</p><table><thead><tr><th>Setting</th><th>Default</th><th>What it does</th></tr></thead><tbody><tr><td><code>port</code></td><td>7410</td><td>The port Tidewater listens on, on this machine.</td></tr><tr><td><code>pauseOnBattery</code></td><td>true</td><td>Stops syncing when a laptop runs on its battery.</td></tr><tr><td><code>ignore</code></td><td>[]</td><td>Patterns of files that are never synced.</td></tr></tbody></table>"
+      },
+      "download": "attachment://files/pdf/tidewater-3.0-configuration.pdf",
+      "membersOnly": false,
+      "published": true
+    },
+    {
+      "key": "tidewater/3.0/troubleshooting",
+      "version": "versions://tidewater/3.0",
+      "slug": "troubleshooting",
+      "group": "Using Tidewater",
+      "order": 4,
+      "title": {
+        "enUS": "Troubleshooting"
+      },
+      "summary": {
+        "enUS": "What to check when the two folders do not agree."
+      },
+      "body": {
+        "enUS": "<p>Start with <code>tidewater status</code>. It names what is waiting and why.</p><h2>The two machines do not find each other</h2><p>Both must be online, and the port in <code>config.json</code> must be open on the machine that shares.</p><h2>A file keeps coming back</h2><p>Another machine still has it. Remove it there too, or add it to <code>ignore</code>.</p>"
+      },
+      "membersOnly": false,
+      "published": true
+    },
+    {
+      "key": "tidewater/3.0/single-sign-on",
+      "version": "versions://tidewater/3.0",
+      "slug": "single-sign-on",
+      "group": "For teams",
+      "order": 5,
+      "title": {
+        "enUS": "Single sign-on setup"
+      },
+      "summary": {
+        "enUS": "Let your team sign in with the account they already have."
+      },
+      "body": {
+        "enUS": "<p>Tidewater for teams speaks SAML. This page is for members.</p><h2>1. Register Tidewater with your identity provider</h2><p>Give it the address of your Tidewater server and the certificate it publishes at <code>/saml/metadata</code>.</p><h2>2. Map the groups</h2><p>A group of your provider becomes a team of Tidewater. A person who leaves the group loses access at the next sign-in.</p><h2>3. Test with one person</h2><p>Keep the local administrator account until one person has signed in through the provider.</p>"
+      },
+      "diagram": "attachment://files/diagrams/tidewater-3.0-single-sign-on.jpg",
+      "download": "attachment://files/pdf/tidewater-3.0-single-sign-on.pdf",
+      "membersOnly": true,
+      "published": true
+    },
+    {
+      "key": "tidewater/3.0/audit-log",
+      "version": "versions://tidewater/3.0",
+      "slug": "audit-log",
+      "group": "For teams",
+      "order": 6,
+      "title": {
+        "enUS": "Audit log export"
+      },
+      "summary": {
+        "enUS": "Send who did what to the system your security team reads."
+      },
+      "body": {
+        "enUS": "<p>Every share, join and removal is written to the audit log. This page is for members.</p><h2>Export</h2><p>Run <code>tidewater audit export --since 30d --format json</code>. Each line is one event, with the person, the folder and the time.</p><h2>Keep it</h2><p>The log is kept on the server for ninety days. Export it to keep it longer.</p>"
+      },
+      "membersOnly": true,
+      "published": true
+    },
+    {
+      "key": "tidewater/2.x/install",
+      "version": "versions://tidewater/2.x",
+      "slug": "install",
+      "group": "Getting started",
+      "order": 1,
+      "title": {
+        "enUS": "Install Tidewater"
+      },
+      "summary": {
+        "enUS": "Download, unpack, run."
+      },
+      "body": {
+        "enUS": "<p>In version 2 Tidewater is a folder you unpack and run by hand: <code>./tidewater start</code>. Version 3 installs itself and runs in the background.</p>"
+      },
+      "membersOnly": false,
+      "published": true
+    },
+    {
+      "key": "tidewater/2.x/configuration",
+      "version": "versions://tidewater/2.x",
+      "slug": "configuration",
+      "group": "Using Tidewater",
+      "order": 2,
+      "title": {
+        "enUS": "Configuration reference"
+      },
+      "summary": {
+        "enUS": "The settings of version 2."
+      },
+      "body": {
+        "enUS": "<p>The file is <code>tidewater.ini</code>. Version 3 moved to JSON, and has more settings.</p>"
+      },
+      "membersOnly": false,
+      "published": true
+    },
+    {
+      "key": "tidewater/3.1-draft/install",
+      "version": "versions://tidewater/3.1-draft",
+      "slug": "install",
+      "group": "Getting started",
+      "order": 1,
+      "title": {
+        "enUS": "Install Tidewater"
+      },
+      "summary": {
+        "enUS": "Not published yet: it is a draft."
+      },
+      "body": {
+        "enUS": "<p>The next version is not final. This page is a draft and nobody can read it.</p>"
+      },
+      "membersOnly": false,
+      "published": false
+    },
+    {
+      "key": "anchor/1.0/usage",
+      "version": "versions://anchor/1.0",
+      "slug": "usage",
+      "group": "Using Anchor",
+      "order": 1,
+      "title": {
+        "enUS": "Using the command"
+      },
+      "summary": {
+        "enUS": "The three commands you need."
+      },
+      "body": {
+        "enUS": "<p><code>anchor add &lt;folder&gt;</code> puts a folder under Tidewater. <code>anchor list</code> shows what is shared. <code>anchor remove &lt;folder&gt;</code> stops sharing it, and keeps the files.</p>"
+      },
+      "membersOnly": false,
+      "published": true
+    },
+    {
+      "key": "lighthouse/1.0/overview",
+      "version": "versions://lighthouse/1.0",
+      "slug": "overview",
+      "group": "Overview",
+      "order": 1,
+      "title": {
+        "enUS": "What Lighthouse watches"
+      },
+      "summary": {
+        "enUS": "The machines, the folders and the queue, on one page."
+      },
+      "body": {
+        "enUS": "<p>Lighthouse reads the status of every Tidewater machine of your fleet and puts it on one page. This product is for customers.</p><h2>What is watched</h2><p>Whether a machine is online, how far behind it is, and which folders are paused.</p>"
+      },
+      "diagram": "attachment://files/diagrams/lighthouse-1.0-overview.jpg",
+      "membersOnly": false,
+      "published": true
+    },
+    {
+      "key": "lighthouse/1.0/api-keys",
+      "version": "versions://lighthouse/1.0",
+      "slug": "api-keys",
+      "group": "Overview",
+      "order": 2,
+      "title": {
+        "enUS": "API keys"
+      },
+      "summary": {
+        "enUS": "Make a key for a script, and take it away."
+      },
+      "body": {
+        "enUS": "<p>An API key lets a script read the status of the fleet. Make one in the Lighthouse settings, and revoke it there when the script is gone.</p>"
+      },
+      "download": "attachment://files/pdf/lighthouse-1.0-api-keys.pdf",
+      "membersOnly": false,
+      "published": true
+    }
+  ]
+}

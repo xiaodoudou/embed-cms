@@ -8,6 +8,40 @@ on:
   workflow_call:
 
 jobs:
+  # The commit messages follow Conventional Commits (CONTRIBUTING.md): the commits of a pull request, the title of a pull request into main (it
+  # becomes the message of the squash commit there), and the commits of a push
+  commits:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Commits of the pull request
+        if: github.event_name == 'pull_request'
+        run: node scripts/commitlint.js --range "$BASE..$HEAD"
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+      - name: Title of the pull request into main
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: node scripts/commitlint.js --title "$TITLE"
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+      - name: Commits of the push
+        if: github.event_name == 'push'
+        run: |
+          if [ "$BEFORE" != "0000000000000000000000000000000000000000" ] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            node scripts/commitlint.js --range "$BEFORE..$AFTER"
+          else
+            echo "No earlier commit to compare with (a new branch, a tag or a forced push): nothing to check"
+          fi
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+
   test:
     runs-on: ubuntu-24.04
     steps:

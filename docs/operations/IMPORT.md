@@ -118,6 +118,6 @@ cms-import-remote ./import-remote.json -y --overwrite
 | `--use-cache` | Reuse the data downloaded by the previous run. |
 | `--convert-to-preload` | Also write the downloaded data in preload format. |
 
-`prefix` is the path each CMS is mounted under; leave it out for the root. `docs/examples/importFromRemote-example.json` is a complete example.
+`prefix` is the path each CMS is mounted under; leave it out for the root.
 
 The same configuration can go under `importFromRemote` in `cms.json`, which adds `GET /importFromRemote/status` and `GET /importFromRemote/execute`. `execute` answers `{ "status": "started" }` at once and imports in the background (a second call while one runs answers `409`); `status` follows it, from `starting` to `done`, or `error` with the reason. There is no admin page for it. Files are only downloaded from the remote's own host (and `remote.allowedHosts`), so a tampered remote can't make your server fetch other addresses.

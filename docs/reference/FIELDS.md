@@ -105,10 +105,16 @@ One detail: when a text or number field fails its own rules (for example an empt
 The list button in the top bar of the record form opens **Jump to field**: one row for each field of the form, in the order of the form; a field in a group is named after its groups (`Address · City`). A click scrolls to the field and tints it for a moment, a little past its edges, so the eye finds it (with reduced motion on, it scrolls without animation and the tint stays for the same time).
 
 - A required field that is still empty has a red mark, and a field that changed since the record was loaded or saved has an amber dot, the same dot as on its label.
-- Under a [paragraph field](fields/paragraph.md) there is a row for each of its blocks, in the order they have now, named by the type and the first text the block holds (`Half · News`), or by the type and its place (`Half 3`) when it holds none. Under each block there is a row for each of its fields. A click scrolls to that block or field. A block or field that changed has the amber dot, and so does the paragraph field around it. A block that moved to another place counts as changed.
+- Under a [paragraph field](fields/paragraph.md) there is a row for each of its blocks, in the order they have now. A block is named by its type and the first text it holds (`Half · News`), or by its type and its place (`Half 3`) when it holds none. Under each block there is a row for each of its fields. A click scrolls to that block or field. A block or field that changed has the amber dot, and so does the paragraph field around it. A block that moved to another place counts as changed.
 - Blocks inside a block are not listed.
 
-The menu opens on a search box. Type some letters of a name, in order, and only the rows that hold them stay, the best match first, with the letters marked (`ctry` finds `Address · Country`; the fields of a block are searched with the name of their block in front, so `news head` finds the Heading of the block named `Tile · News`). The arrow keys move over the rows, Enter goes to the marked row, Escape closes the menu, and with nothing typed every row is there, in the order of the form. No row is marked when the menu opens: typing marks the best match, and an arrow key or the pointer marks another. On a phone or a touch screen the menu is the list alone, without the search box.
+The menu opens on a search box.
+
+- Type some letters of a name, in order, and only the rows that hold them stay. The best match comes first, with the letters marked. `ctry` finds `Address · Country`. The fields of a block are searched with the name of their block in front, so `news head` finds the Heading of the block named `Tile · News`.
+- The arrow keys move over the rows, Enter goes to the marked row, and Escape closes the menu.
+- With nothing typed, every row is there, in the order of the form.
+- No row is marked when the menu opens. Typing marks the best match, and an arrow key or the pointer marks another.
+- On a phone or a touch screen the menu is the list alone, without the search box.
 
 **Ctrl+J** (Cmd+J on a Mac) opens the menu from anywhere in the form, inside a text box too, and closes it when it is open: type, press Enter, and the form is at the field. A field in a group that is closed opens the group.
 
@@ -126,7 +132,19 @@ The button is there on every form, long or short.
 | `accept`, `limit` (files) | yes, on selection | no |
 | `maxCount` | yes | `image` fields only |
 
-The admin runs its rules on blur and when Create/Save is clicked; an invalid field blocks the save. An empty optional value is always valid. Messages: `This field is required!`, `The text is too short! Length: N, minimum: M`, `The text is too long! Length: N, maximum: M`, `The number is too small! Minimum: M`, `The number is too big! Maximum: M`, `The value is not an integer`, `Invalid e-mail address!`, `Invalid URL!`, `Invalid format! (description)`, `Add at least N tags`, `At most N tags`. The text and number rules live in `src/utils/fieldValidation.js`.
+The admin runs its rules on blur and when Create or Save is clicked. An invalid field blocks the save. An empty optional value is always valid. The text and number rules live in `src/utils/fieldValidation.js`. The messages are:
+
+- `This field is required!`
+- `The text is too short! Length: N, minimum: M`
+- `The text is too long! Length: N, maximum: M`
+- `The number is too small! Minimum: M`
+- `The number is too big! Maximum: M`
+- `The value is not an integer`
+- `Invalid e-mail address!`
+- `Invalid URL!`
+- `Invalid format! (description)`
+- `Add at least N tags`
+- `At most N tags`
 
 The server stores what it receives, so if you write over REST, validate your own input.
 

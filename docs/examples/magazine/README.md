@@ -1,8 +1,10 @@
 ← [Examples](../README.md)
 
-# The magazine: a tutorial on building a site on the platform, without a helper
+# Magazine Example
 
-A bilingual magazine, "The Harbour Review", built the way you would build your own site on embed-cms: **Express, `cms.api()` and a template engine of your own**. It uses none of the helpers of the CMS (no [PageHelper](../../reference/PAGE_HELPER.md), no REST middleware), so each step shows what a piece does and you can take the parts you want. Read it with the code open beside it. The [blog](../site/README.md) is the shorter first tutorial: the same ideas with the PageHelper doing the rendering and the keeping.
+"The Harbour Review" is a bilingual magazine built the way you would build your own site on embed-cms: Express, `cms.api()` and a template engine of your own. It uses none of the CMS helpers (no [PageHelper](../../reference/PAGE_HELPER.md), no REST middleware). Each step shows what one piece does, so you can take the parts you want.
+
+Read it with the code open beside it. The [blog](../site/README.md) is the shorter first tutorial. It teaches the same ideas, with the PageHelper doing the rendering and the keeping.
 
 ![The home page of the magazine: the featured article, and the latest in a grid](../../img/magazine-home.png)
 
@@ -19,12 +21,16 @@ cd docs/examples/magazine
 node server.js
 ```
 
-Open `http://localhost:3000` for the site and `http://localhost:3000/admin` for the editors (`localAdmin` / `localAdmin` on a development machine). **The first start loads the content** from `content.json` and `files/` with the [ContentLoader](../../operations/CONTENT_LOADER.md): the settings, three authors with photos, four categories and thirteen articles with covers (one is a draft). The next starts find it all in place and change nothing. Edit an article in the admin, reload the page, and it is there.
+`PORT=8080 node server.js` serves on another port. `STATE_DIR` keeps the data of the CMS and the kept pages somewhere other than this folder.
+
+Open `http://localhost:3000` for the site and `http://localhost:3000/admin` for the editors (`localAdmin` / `localAdmin` on a development machine).
+
+The first start loads the content from `content.json` and `files/` with the [ContentLoader](../../operations/CONTENT_LOADER.md). That is the settings, three authors with photos, four categories and thirteen articles with covers (one is a draft). Later starts find it all in place and change nothing. Edit an article in the admin, reload the page, and the change is there.
 
 | File | What it does |
 |---|---|
 | `resources/` | The content model: `settings` (one record), `authors`, `categories`, `articles`, in two languages. |
-| `content.json`, `files/` | The sample content and its pictures. `make-pictures.js` is how the pictures were drawn; the site does not need it. |
+| `content.json`, `files/` | The sample content and its pictures. `make-pictures.js` drew the pictures. The site does not need it. |
 | `server.js` | The CMS and the site in one Express application, and the load of the content. |
 | `magazine.js` | The site: the routes, the languages, the small functions the templates use, the 404 and error pages. |
 | `content.js` | Everything the site reads from the CMS, in one place. |
@@ -64,7 +70,7 @@ flowchart TB
   err["a failure<br>500 page, which does not read the CMS"]
 ```
 
-Every page has the menu of the sections and a search box in its head. And this is how a request becomes one of them:
+Every page has the menu of sections and a search box in its head. One request for an article goes through these steps:
 
 ```
 GET /en/articles/slow-mornings-in-lisbon
@@ -83,7 +89,13 @@ GET /en/articles/slow-mornings-in-lisbon
 
 ### 1. The content model: a file for each resource
 
-A file in `resources/` is a resource, and `schema` is the fields an editor fills. `articles.js` has text in two languages (`title`, `summary`, `body`), a `slug` that is `unique` and the same in both languages (`localised: false`), a `cover` image, an `author` that points to `authors` and `categories` that point to `categories`:
+A file in `resources/` is a resource. Its `schema` lists the fields an editor fills in. `articles.js` has:
+
+- text in two languages (`title`, `summary`, `body`)
+- a `slug` that is `unique` and the same in both languages (`localised: false`)
+- a `cover` image
+- an `author` that points to `authors`
+- `categories` that point to `categories`
 
 ```js
 // resources/articles.js
@@ -105,9 +117,9 @@ module.exports = {
 }
 ```
 
-`settings.js` has `maxCount: 1`: one record and no list, for the name and the tagline of the site. See [Field types](../../reference/FIELDS.md).
+`settings.js` has `maxCount: 1`: one record and no list, for the name and tagline of the site. See [Field types](../../reference/FIELDS.md).
 
-### 2. The CMS and the site are one Express application, the CMS first
+### 2. One Express application, the CMS first
 
 ```js
 // server.js
@@ -126,7 +138,7 @@ app.use(magazine(cms))      // the site: magazine.js returns an Express applicat
 
 ### 3. The first content is a JSON file
 
-`content.json` is one list of records for each resource, in the order they are made. An article points to its author with `"authors://mei-lin"` and to its cover with `"attachment://…"`; the loader finds the records, puts the ids in, uploads the files, and checks all of it before it writes anything. It is [documented on its own page](../../operations/CONTENT_LOADER.md); here it is two lines in `server.js`.
+`content.json` is one list of records for each resource, in the order they are made. An article points to its author with `"authors://mei-lin"` and to its cover with `"attachment://…"`. The loader finds the records, puts the ids in, uploads the files, and checks everything before it writes anything. The loader has [its own page](../../operations/CONTENT_LOADER.md). Here it is two lines in `server.js`.
 
 ```json
 {
@@ -148,16 +160,18 @@ const server = app.listen(3000, async () => {
 
 ### 4. Read with `cms.api()`: one file talks to the CMS
 
-`content.js` is the only file that reads the CMS, and the routes ask it for "an article" or "a search" without knowing how that is read. `cms.api()` runs with the rights of your server: nothing checks a user, so **the filters (`published: true`) are the rules of the site**, and a draft is never read for a page. Things worth seeing in it:
+`content.js` is the only file that reads the CMS. The routes ask it for "an article" or "a search" and do not know how it is read.
 
-**Relations followed.** Naming the related resources gives the author and the categories of an article as records, not as ids ([resolving relations](../../reference/API.md#resolving-relations)). The templates write `article.author.name`.
+`cms.api()` runs with the rights of your server and checks no user. So the filters (`published: true`) are the rules of the site, and a draft is never read for a page. Here is what to look for in the file.
+
+**Relations followed.** If you name the related resources, an article comes with its author and categories as records, not ids ([resolving relations](../../reference/API.md#resolving-relations)). The templates write `article.author.name`.
 
 ```js
 const articles = api('articles', 'authors', 'categories')
 const published = async () => newestFirst(await articles.list({ published: true }))
 ```
 
-**A query on a relation.** The articles of a section are a filter in the MongoDB style on the ids a field holds, evaluated by the CMS ([querying](../../reference/API.md#querying-and-paging)).
+**A query on a relation.** The articles of a section are a MongoDB-style filter on the ids a field holds. The CMS evaluates it ([querying](../../reference/API.md#querying-and-paging)).
 
 ```js
 inCategory: async (slug) => {
@@ -166,9 +180,9 @@ inCategory: async (slug) => {
 }
 ```
 
-**No sort, so it is done here.** A resource has no sort parameter, so `newestFirst` sorts what `list` returns with lodash. For a few hundred articles that is nothing; a site with many more would page with `limit` and keep its own order.
+**No sort, so it is done here.** A resource has no sort parameter, so `newestFirst` sorts what `list` returns, using lodash. For a few hundred articles that costs nothing. A site with many more would page with `limit` and keep its own order.
 
-**Search without a pattern problem.** What a visitor types goes into a regular expression, so it is escaped and cut to 80 characters: `c++` and `(` are letters, not syntax, and the CMS (which refuses a long pattern) is never given one.
+**Search that cannot break on a pattern.** What a visitor types goes into a regular expression. So it is escaped and cut to 80 characters: `c++` and `(` are plain letters, not syntax. The CMS refuses a long pattern, and it is never given one.
 
 ```js
 const pattern = _.escapeRegExp(String(term).trim().slice(0, 80))
@@ -176,7 +190,7 @@ const match = (field) => ({ [`${field}.${locale}`]: { $regex: pattern, $options:
 return newestFirst(await articles.list({ published: true, $or: [match('title'), match('summary')] }))
 ```
 
-**What is read most is kept, and emptied by hooks.** The menu and the list of published articles are kept in a `Map`; a hook after each event on each resource clears it when a record is created, updated or removed, or a file is added ([hooks](../../reference/API.md#hooks)). An editor's change shows at once.
+**What is read most is kept, and hooks empty it.** The menu and the list of published articles are kept in a `Map`. A hook after each event on each resource clears it when a record is created, updated or removed, or when a file is added ([hooks](../../reference/API.md#hooks)). An editor's change shows at once.
 
 ```js
 for (const resource of ['settings', 'authors', 'categories', 'articles']) {
@@ -191,7 +205,7 @@ for (const resource of ['settings', 'authors', 'categories', 'articles']) {
 
 ### 5. The routes and the languages
 
-The first part of the address is the language (`/en`, `/zh`). A middleware reads it and sets what every template can use; then each route asks `content.js` and renders a template:
+The first part of the address is the language (`/en`, `/zh`). A middleware reads it and sets what every template can use. Then each route asks `content.js` and renders a template:
 
 ```js
 const pages = express.Router({ mergeParams: true })
@@ -212,11 +226,20 @@ pages.get('/articles/:slug', route(async (req, res, next) => {
 }))
 ```
 
-What `prepare` gives every template: the words (`t`), the menu, `text(record, 'title')` (the text in the language, English when it has none), `date(ms)` (formatted for the language, in the time zone of the server: a date field keeps the start of the day of the editor), `switchTo('zh')` (the same page in the other language) and the picture functions of step 7. The address without a language answers a redirect to the language the browser asks for (`req.acceptsLanguages`).
+`prepare` gives every template:
+
+- the words (`t`)
+- the menu
+- `text(record, 'title')`: the text in the language, or English when there is none
+- `date(ms)`: formatted for the language, in the time zone of the server (a date field keeps the start of the editor's day)
+- `switchTo('zh')`: the same page in the other language
+- the picture functions of step 7
+
+An address without a language redirects to the language the browser asks for (`req.acceptsLanguages`).
 
 ### 6. The templates and the engine
 
-`engine.js` is what `app.engine('html', …)` receives: it keeps the function `_.template` made for each file, with the modification date of the file, so a request costs one `stat`, and an edited file shows at the next request. Templates call `include('partials/card', { article })` for a piece they share.
+`engine.js` is what `app.engine('html', …)` receives. For each file it keeps the function `_.template` made, along with the file's modification date. A request costs one `stat`, and an edited file shows at the next request. A template calls `include('partials/card', { article })` for a piece it shares.
 
 ```html
 <!-- views/article.html -->
@@ -230,11 +253,11 @@ What `prepare` gives every template: the words (`t`), the menu, `text(record, 't
 <% }) %>
 ```
 
-`<%- value %>` prints the value **escaped**; `<%= value %>` prints it raw, and the one place that does is the body of an article, which is the HTML of a rich text field an editor wrote. Templates are files of the project: lodash compiles them into functions, which is code, so text from a record is never given to it as a template.
+`<%- value %>` prints the value escaped. `<%= value %>` prints it raw. The only raw value is the body of an article, which is the HTML of a rich text field an editor wrote. Templates are files of the project, and lodash compiles them into functions, which is code. So text from a record is never given to it as a template.
 
 ### 7. Pictures come from the CMS, at the size the page needs
 
-A record's files are served by the REST API of the CMS, which resizes images and keeps the copies: `/api/articles/<id>/attachments/<aid>.jpg?resize=640xauto` ([attachments](../../reference/API.md#attachments)). `magazine.js` builds those addresses, and the templates give the browser a `srcset` (320, 640, 960 and 1280 pixels wide) so it fetches the size it needs.
+The REST API of the CMS serves a record's files. It resizes images and keeps the copies: `/api/articles/<id>/attachments/<aid>.jpg?resize=640xauto` ([attachments](../../reference/API.md#attachments)). `magazine.js` builds those addresses. The templates give the browser a `srcset` (320, 640, 960 and 1280 pixels wide), so it fetches the size it needs.
 
 ```js
 const imageUrl = (resource, record, file, width) =>
@@ -245,11 +268,11 @@ const imageUrl = (resource, record, file, width) =>
 <img src="<%- image('articles', article, 'cover', 960) %>" srcset="<%- srcset('articles', article, 'cover') %>" sizes="(min-width: 48rem) 46rem, 100vw" alt="">
 ```
 
-The pictures are public because `server.js` lets the anonymous visitor **read** the four resources (`anonymousRead`); nothing can be written.
+The pictures are public because `server.js` lets the anonymous visitor read the four resources (`anonymousRead`). Nothing can be written. This also opens every file of those resources, drafts included. For private content, read the [docs platform](../platform/README.md), which serves its files itself.
 
 ### 8. The browser's cache
 
-Each page carries `Last-Modified`, the latest update of the records it shows (the article, but also its author and its categories, which are in it). The browser asks again with `If-Modified-Since` and gets `304 Not Modified` with no body if nothing changed. The date is never older than the start of the process, so a change of template (a new release) is seen too.
+Each page carries `Last-Modified`: the latest update among the records it shows. That includes the article, and also its author and categories, because they appear in it. The browser asks again with `If-Modified-Since`, and gets `304 Not Modified` with no body if nothing changed. The date is never older than the start of the process, so a changed template (a new release) is seen too.
 
 ```js
 function send (req, res, view, data, ...records) {
@@ -264,7 +287,9 @@ function send (req, res, view, data, ...records) {
 
 ### 9. The feed and the sitemap
 
-`/en/feed.xml` and `/zh/feed.xml` are RSS 2.0 of the newest articles (up to twenty); `/sitemap.xml` lists the home page, each section and each article in both languages, with their last update; `/robots.txt` points to it. The XML is written by hand in `feed.js`, with every text escaped (`_.escape` turns `& < > " '` into entities XML reads too). The absolute addresses come from the address of the request, or from `baseUrl` when you give one.
+`/en/feed.xml` and `/zh/feed.xml` are RSS 2.0 feeds of the newest articles (up to twenty). `/sitemap.xml` lists the home page, each section and each article in both languages, with their last update. `/robots.txt` points to it.
+
+The XML is written by hand in `feed.js`, and every text is escaped (`_.escape` turns `& < > " '` into entities that XML also reads). The absolute addresses come from the address of the request, or from `baseUrl` when you give one.
 
 ```js
 const items = articles.slice(0, 20).map((article) => `    <item>
@@ -276,7 +301,7 @@ const items = articles.slice(0, 20).map((article) => `    <item>
 
 ### 10. A 404 and an error are pages too
 
-An address nothing answered renders `404.html` in the language of the address (or of the browser) with the status 404. An error renders `500.html` with the status 500, **says nothing of the error** (it goes to the log) and does not read the CMS: the page of an error must work when the CMS is what failed.
+An address nothing answered renders `404.html` with status 404, in the language of the address (or of the browser). An error renders `500.html` with status 500. It says nothing about the error, which goes to the log. It also does not read the CMS, because the error page must work when the CMS is what failed.
 
 ```js
 app.use(route(async (req, res) => {       // nothing answered: the language of the address, or of the browser
@@ -294,7 +319,7 @@ app.use((error, req, res, _next) => {     // something threw: logged, and the pa
 
 ## What a bigger site would change
 
-- **Many records:** page with `limit` instead of keeping everything, and sort in the store you use (or keep an index of your own).
-- **Many requests:** put the pages in front of a cache. The `Last-Modified` and `304` are what a CDN or a reverse proxy needs; or keep finished pages as the [PageHelper](../../reference/PAGE_HELPER.md) does.
-- **People who log in:** the pages above are the same for everyone. For a page that depends on a person, authenticate in a middleware and read with that person's rights ([RestHelper](../../reference/REST_HELPER.md)) instead of `cms.api()`.
-- **Files in production:** the pictures come from the CMS here. Put them in front of a CDN, or in object storage ([STORAGE.md](../../operations/STORAGE.md)).
+- Many records. Page with `limit` instead of keeping everything. Sort in the store you use, or keep an index of your own.
+- Many requests. Put the pages behind a cache. `Last-Modified` and `304` are what a CDN or a reverse proxy needs. Or keep finished pages the way the [PageHelper](../../reference/PAGE_HELPER.md) does.
+- People who log in. The pages above are the same for everyone. For a page that depends on a person, authenticate in a middleware and read with that person's rights ([RestHelper](../../reference/REST_HELPER.md)) instead of `cms.api()`.
+- Files in production. Here the pictures come from the CMS. Put them behind a CDN, or in object storage ([STORAGE.md](../../operations/STORAGE.md)).

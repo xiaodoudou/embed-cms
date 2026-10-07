@@ -4,9 +4,9 @@
 
 embed-cms holds content, user accounts and files, and often sits on the public internet, so its protections matter. The short version:
 
-- **Every protection is on by default**, in development and in production: CSRF checks, secure cookies, security headers, scrypt password hashes, upload limits, safe attachment downloads, authenticated replication and more. There is no weaker profile to fall back to; the `security.profile` setting of earlier releases is refused at boot.
-- **Run production with `NODE_ENV=production`.** Two things follow it: strong secrets are required (boot is refused with a missing, short or published `auth.secret` or `session.secret`) and the built-in `localAdmin` account is not created. Development keeps both, so a fresh checkout can log in with `localAdmin` / `localAdmin`.
-- **Any single protection can be set on its own** in the `security` block of `cms.json`.
+- Every protection is on by default, in development and in production: CSRF checks, secure cookies, security headers, scrypt password hashes, upload limits, safe attachment downloads, authenticated replication and more. There is no weaker profile to fall back to; the `security.profile` setting of earlier releases is refused at boot.
+- Run production with `NODE_ENV=production`. Two things follow it: strong secrets are required (boot is refused with a missing, short or published `auth.secret` or `session.secret`) and the built-in `localAdmin` account is not created. Development keeps both, so a fresh checkout can log in with `localAdmin` / `localAdmin`.
+- Any single protection can be set on its own in the `security` block of `cms.json`.
 
 This page lists every setting with its default, gives the recommended production configuration and a hardening checklist, and says how to report a vulnerability. The other options of `cms.json` are in [docs/reference/CONFIG.md](docs/reference/CONFIG.md).
 
@@ -160,22 +160,26 @@ The values that depend on your setup:
 - `localAdmin` is off. A `localAdmin` record that already exists stays, and every boot logs an error while it has its default password: change that password or delete the account.
 - `safeAttachments` and `strictUploads` are on. Turning `safeAttachments` off displays HTML and SVG attachments inline, with the privileges of the site for whoever opens them. Turning `strictUploads` off removes the file name sanitising, the content-based type and the upload limits.
 
-Not in the block because it depends on the environment: `imageConcurrency` (one per core by default), the `importFromRemote` remotes (`restrictUrls`, `allowedHosts` per remote) and the peers list. In development, run without `NODE_ENV=production` and without this block: the defaults apply (with `localAdmin` and the default secrets allowed). The default Content-Security-Policy is written for the built admin app, and lets through the tile server and the search of the map of the geopoint field (OpenStreetMap unless the `maps` option says otherwise, nothing with `maps: false`, see [CONFIG.md](docs/reference/CONFIG.md#maps)); a plugin page that loads from another origin needs its own `contentSecurityPolicy`.
+The block leaves out what depends on your environment: `imageConcurrency` (one per core by default), the `importFromRemote` remotes (`restrictUrls`, `allowedHosts` per remote) and the peers list.
+
+In development, run without `NODE_ENV=production` and without this block. The defaults then apply, with `localAdmin` and the default secrets allowed.
+
+The default Content-Security-Policy is written for the built admin app. It lets through the tile server and the search of the map of the geopoint field: OpenStreetMap unless the `maps` option says otherwise, and nothing with `maps: false` (see [CONFIG.md](docs/reference/CONFIG.md#maps)). A plugin page that loads from another origin needs its own `contentSecurityPolicy`.
 
 ## Hardening checklist
 
 Run with `NODE_ENV=production`, then check:
 
-1. **Secrets.** Set `auth.secret` and `session.secret` to random values of at least 32 characters in `cms.json` (or set `security.generateSecrets` and back up `<data>/.secrets.json`). Keep the file out of version control.
-2. **Accounts.** Log in once with your own administrator and delete `localAdmin` if it exists. Do not set `security.localAdmin`.
-3. **Password hashes.** Leave `passwordHash` on `scrypt`. If nodes replicate `_users`, upgrade every node first: a node that runs an earlier release cannot verify an scrypt hash.
-4. **Proxy.** Behind a reverse proxy, set `trustProxy` to the number of proxies, forward `X-Forwarded-Proto`, and serve the admin app over https (cookies get `Secure`, HSTS is sent).
-5. **CSRF and origins.** If the admin app is served from another origin than the API, list it in `allowedOrigins`.
-6. **Replication.** Set the same `replication.secret` on every node, firewall the replication port to the peers, and set a `direction` on every peer before turning on `replication.strictTypes`.
-7. **Uploads.** Tune `limits.upload` to what your editors need. Do not add `text/html` or `image/svg+xml` to `inlineTypes` unless you trust everyone who can upload.
-8. **Configuration.** `cms.json` is not editable from the admin: nothing on the web can read or rewrite the secrets.
-9. **Logs.** `/api/_syslog` shows the log to every user who can log in: keep secrets out of log lines (the backend does not write passwords or tokens) and give the `plugins` right of the group only to administrators. The log page and the log file are bounded by `syslog.maxLineLength`, `syslog.maxFileSize` and `syslog.maxClientBuffer`.
-10. **Dependencies.** Run `npm audit --omit=dev` in CI (the workflow does).
+1. Secrets. Set `auth.secret` and `session.secret` to random values of at least 32 characters in `cms.json` (or set `security.generateSecrets` and back up `<data>/.secrets.json`). Keep the file out of version control.
+2. Accounts. Log in once with your own administrator and delete `localAdmin` if it exists. Do not set `security.localAdmin`.
+3. Password hashes. Leave `passwordHash` on `scrypt`. If nodes replicate `_users`, upgrade every node first: a node that runs an earlier release cannot verify an scrypt hash.
+4. Proxy. Behind a reverse proxy, set `trustProxy` to the number of proxies, forward `X-Forwarded-Proto`, and serve the admin app over https (cookies get `Secure`, HSTS is sent).
+5. CSRF and origins. If the admin app is served from another origin than the API, list it in `allowedOrigins`.
+6. Replication. Set the same `replication.secret` on every node, firewall the replication port to the peers, and set a `direction` on every peer before turning on `replication.strictTypes`.
+7. Uploads. Tune `limits.upload` to what your editors need. Do not add `text/html` or `image/svg+xml` to `inlineTypes` unless you trust everyone who can upload.
+8. Configuration. `cms.json` is not editable from the admin: nothing on the web can read or rewrite the secrets.
+9. Logs. `/api/_syslog` shows the log to every user who can log in: keep secrets out of log lines (the backend does not write passwords or tokens) and give the `plugins` right of the group only to administrators. The log page and the log file are bounded by `syslog.maxLineLength`, `syslog.maxFileSize` and `syslog.maxClientBuffer`.
+10. Dependencies. Run `npm audit --omit=dev` in CI (the workflow does).
 
 ## Not covered
 
@@ -188,10 +192,12 @@ Run with `NODE_ENV=production`, then check:
 
 ### Embed CMS, after 3.0.0
 
-- **The configuration editor is removed.** `/admin/cms-config` (a page that rewrote `cms.json` from the browser and restarted the process) no longer exists: nothing on the web can read or change the secrets, the ports or the plugin settings. Edit `cms.json` on the server. Hardening item 8 and the `redactConfig` setting follow from it.
-- **The mode without any authentication works.** With `disableAuthentication` and `disableJwtLogin` both on, the admin used to reload for ever (the schemas of the paragraphs answered 401), showed nothing (the `anonymous` group had no right) and signed writes "anonymous~false". The `anonymous` group now has every right in that mode, and an error line in the log says so at every start.
-- **The log cannot exhaust the disk or the memory.** A line over `syslog.maxLineLength` is cut on the log page, a log file over `syslog.maxFileSize` is rotated to `<path>.1`, and a page that stops reading is dropped after `syslog.maxClientBuffer` bytes (see [CONFIG.md](docs/reference/CONFIG.md)).
-- **The cookies are renamed with the product and named after the server** (`embedCmsJwt-<mid>` for the login token, `embedCmsSid-<mid>` for the session, `embedCmsUser` for the session key): everyone is logged out once at the upgrade. Browsers share the cookies of a host between its ports, so two CMS on `localhost` used to overwrite and clear each other's login; they now keep their own. A client that sends the login token as a cookie must use the name of the server (the `x-access-token` header needs no name), and `importFromRemote` now sends the token in that header.
+- The configuration editor is removed. `/admin/cms-config` (a page that rewrote `cms.json` from the browser and restarted the process) no longer exists: nothing on the web can read or change the secrets, the ports or the plugin settings. Edit `cms.json` on the server. Hardening item 8 and the `redactConfig` setting follow from it.
+- The mode without any authentication works. With `disableAuthentication` and `disableJwtLogin` both on, the admin used to reload for ever (the schemas of the paragraphs answered 401), showed nothing (the `anonymous` group had no right) and signed writes "anonymous~false". The `anonymous` group now has every right in that mode, and an error line in the log says so at every start.
+- The log cannot exhaust the disk or the memory. A line over `syslog.maxLineLength` is cut on the log page, a log file over `syslog.maxFileSize` is rotated to `<path>.1`, and a page that stops reading is dropped after `syslog.maxClientBuffer` bytes (see [CONFIG.md](docs/reference/CONFIG.md)).
+- The cookies are renamed with the product and named after the server. The login token is `embedCmsJwt-<mid>`, the session is `embedCmsSid-<mid>`, and the session key is `embedCmsUser`. Everyone is logged out once at the upgrade.
+  - Browsers share the cookies of a host between its ports. Two CMS on `localhost` used to overwrite and clear each other's login. Now each keeps its own.
+  - A client that sends the login token as a cookie must use the name of the server. The `x-access-token` header needs no name, and `importFromRemote` now sends the token in that header.
 
 ### Backend hardening (merged in PR #1)
 

@@ -85,6 +85,7 @@ Two things in this quick start are only fit for your laptop. The `localAdmin` ac
 - [Field types](docs/reference/FIELDS.md): every input type, with screenshots.
 - [Configuration](docs/reference/CONFIG.md) and [API](docs/reference/API.md): the references.
 - [Storage engines](docs/operations/STORAGE.md): LevelDB, SQLite, JSON file, MongoDB or PostgreSQL, with benchmarks and what a crash loses.
+- [Examples](docs/examples/README.md): runnable projects to learn from, each written as a tutorial. A [blog](docs/examples/site/README.md) (the shortest site), a bilingual [magazine](docs/examples/magazine/README.md), a [docs platform](docs/examples/platform/README.md) with pages for members and a CMS kept off the public site, [Boardwalk](docs/examples/taskboard/README.md) (a Vue 3 task board over the REST API), and [Docker](docs/examples/docker/README.md) (running it in a container with every secret in a `.env`).
 
 ## Contributing, security, license
 

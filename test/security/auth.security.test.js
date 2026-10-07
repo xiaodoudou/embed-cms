@@ -509,6 +509,22 @@ describe('authentication hardening (security)', () => {
         expect(imp.status).to.equal(403)
       })
 
+      it('rejects it whatever the case of the letters of the address: the router matches /Admin/changeTheme as it matches /admin/changeTheme', async () => {
+        for (const route of ['/Admin/changeTheme/light', '/ADMIN/CHANGETHEME/light', '/admin/changetheme/light', '/admin/changeTheme/light/']) {
+          const res = await request(app.url).get(route).set('Cookie', cookie).set('Sec-Fetch-Site', 'cross-site')
+          expect(res.status, route).to.equal(403)
+        }
+      })
+
+      it('rejects a logout that a foreign site triggered, and leaves the person signed in', async () => {
+        for (const route of ['/admin/logout', '/Admin/Logout', '/admin/logout/']) {
+          const res = await request(app.url).get(route).set('Cookie', cookie).set('Sec-Fetch-Site', 'cross-site')
+          expect(res.status, route).to.equal(403)
+        }
+        const still = await request(app.url).get('/admin/changeTheme/light').set('Cookie', cookie).set('Sec-Fetch-Site', 'same-origin')
+        expect(still.status).to.equal(200)
+      })
+
       it('rejects a POST with a foreign Origin or Referer', async () => {
         const origin = await request(app.url).post('/_users').set('Cookie', cookie).set('Origin', 'https://evil.example').send({})
         expect(origin.status).to.equal(403)

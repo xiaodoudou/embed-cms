@@ -1,6 +1,6 @@
 {
   "name": "embed-cms",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "description": "Content management system, written in node.js, uses leveldb as an asset and content store.",
   "main": "index.js",
   "types": "index.d.ts",
@@ -45,6 +45,8 @@
     "docs:screenshots": "node test/docs/screenshots/run.js",
     "docs:site-screenshots": "node test/docs/screenshots/site.js",
     "docs:magazine-screenshots": "node test/docs/screenshots/magazine.js",
+    "docs:platform-screenshots": "node test/docs/screenshots/platform.js",
+    "docs:taskboard-screenshots": "node test/docs/screenshots/taskboard.js",
     "bench:engines": "node --expose-gc test/bench/engines.js",
     "migrate-store": "node scripts/migrateStore.js"
   },

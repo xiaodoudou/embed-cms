@@ -96,8 +96,8 @@ Use `-G` with `--data-urlencode`: a raw `{` in a curl URL is read as a glob, and
 Things to know:
 
 - Allowed operators: `$eq $ne $gt $gte $lt $lte $in $nin $all $size $mod $exists $regex $options $and $or $nor $not $elemMatch`. Anything else, `$where` included, is refused, as are queries nested deeper than 10 levels and patterns longer than 200 characters. Regular expressions that can backtrack badly are refused too.
-- **There is no sort parameter.** Records come back in creation order (by `_id` in the default store, by creation time in MongoDB and PostgreSQL). Sort on your side if you need another order.
-- **Without `limit` you get every record.** Always page lists that can grow.
+- There is no sort parameter. Records come back in creation order (by `_id` in the default store, by creation time in MongoDB and PostgreSQL). Sort on your side if you need another order.
+- Without `limit` you get every record. Always page lists that can grow.
 - The filter runs in the CMS, over every record of the resource, whatever the storage engine. That's quick for thousands of records and slower for hundreds of thousands (the [storage benchmarks](../operations/STORAGE.md#how-fast-are-they-really) have numbers).
 - A refused query answers `400` with the reason as JSON, always; so does a `query` that isn't valid JSON.
 
@@ -206,7 +206,15 @@ const deeper = cms.api()('comments', 'authors', 'articles')
 (await deeper.find(id)).author.article   // the article too: a related record has its own relations followed, one level down
 ```
 
-A value per language is followed language by language, a multiselect gives an array of records, and the relations inside the blocks of a `paragraph` field are followed as well. An id that no record has becomes `undefined` in its place: the field, the entry of the list (the list keeps its positions) or the language. Each record gets its own copy of the related record, so changing one does not change another. Resolving lists the named resources once per call: keep it for code that needs the related records, not for a hot path over a large resource.
+Relations are followed in these cases:
+
+- A value per language is followed language by language.
+- A multiselect gives an array of records.
+- The relations inside the blocks of a `paragraph` field are followed too.
+
+An id that no record has becomes `undefined` in its place: the field, the entry of the list (the list keeps its positions) or the language. Each record gets its own copy of the related record, so changing one does not change another.
+
+Resolving lists the named resources once per call. Use it in code that needs the related records, not in a hot path over a large resource.
 
 The JavaScript API runs with full rights: there is no user and no group check, and `_updatedBy` is not set. Check rights yourself before you expose it to a request.
 

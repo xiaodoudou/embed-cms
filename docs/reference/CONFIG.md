@@ -22,8 +22,8 @@ flowchart LR
 
 If `cms.json` doesn't exist yet, the first boot writes it: the defaults merged with your constructor options. From then on the file is yours to edit. Two things follow from that:
 
-- **Secrets you pass to the constructor end up in `cms.json`** on that first boot. Keep the file out of version control (the repository's `.gitignore` already does).
-- **A value in the constructor always wins** over the same value in `cms.json`. If an edit to the file seems to do nothing, look at what your code passes in.
+- Secrets you pass to the constructor end up in `cms.json` on that first boot. Keep the file out of version control (the repository's `.gitignore` already does).
+- A value in the constructor always wins over the same value in `cms.json`. If an edit to the file seems to do nothing, look at what your code passes in.
 
 ```js
 const CMS = require('embed-cms')
@@ -34,7 +34,7 @@ const cms = new CMS({
 })
 ```
 
-The CMS reads its configuration once, at start-up, so restart the process after you edit `cms.json`. (The admin never edits this file.) Run the CMS under a supervisor (systemd, pm2, Docker) that starts it again when it stops.
+The CMS reads its configuration once, at start-up, so restart the process after you edit `cms.json`. (The admin never edits this file.) Run the CMS under a supervisor (systemd, pm2, Docker) that starts it again when it stops. In a container the secrets are given as environment variables and `cms.json` is part of the image: see the [Docker example](../examples/docker/README.md).
 
 ## Core
 
@@ -106,7 +106,7 @@ The words of the admin (buttons, messages, the names of the languages of a resou
 ```
 
 - What the admin is given for a language is the words of the CMS with the ones of your file over them: say only what is yours, and a key that is in both takes your text. Your keys are the ones a resource names in `displayname`, `label` and `options.hint` (`label: 'TL_ARTICLES'`), and the ones of your plugin pages.
-- **A new language** is a new file: `./i18n/frFR.json`, then `admin.language: { "defaultLocale": "enUS", "locales": ["enUS", "frFR"] }`. A key that the file does not have is English, so a language can be added a page at a time. A language is named like `enUS`: two or three lower case letters and two capitals.
+- A new language is a new file: `./i18n/frFR.json`, then `admin.language: { "defaultLocale": "enUS", "locales": ["enUS", "frFR"] }`. A key that the file does not have is English, so a language can be added a page at a time. A language is named like `enUS`: two or three lower case letters and two capitals.
 - The names of the languages of a resource (the tabs of the record editor, the columns of the table) are the keys `TL_ENUS`, `TL_FRFR`, `TL_JAJP`... The CMS names English, Chinese, French, Thai, Japanese, Korean, German, Spanish, Portuguese (`ptBR`) and Vietnamese. A language that has no key is shown by its code (`itIT`): add `"TL_ITIT": "Italiano"` to your file to name it.
 - A file that is not a flat object of texts is not used, and the log says so; a value that is not a text is left out. The files are read again when they change, with no restart.
 - The words are served at `/admin/i18n/<language>.json`, to anybody who can open the admin (as the CMS files were before).

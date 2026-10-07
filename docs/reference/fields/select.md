@@ -78,7 +78,11 @@ options: { labels: { low: { enUS: 'Low', zhCN: '低' }, medium: { enUS: 'Medium'
 { field: 'owner', input: 'select', label: 'Owner', localised: false, sources: ['authors', { resource: 'editors', customLabel: '{{name}} ({{role}})', title: 'Editors' }] }
 ```
 
-The list shows the records of every resource under a heading for each (the title, in the order of `sources`), each by its label (while you search, the headings are left out and the kind of record is said under each record). An id alone does not say which resource it is of, so the value kept is a **reference**, `{ resource, id }`: `{ "owner": { "resource": "editors", "id": "mus3k2…" } }`. A reference to a record that is gone is shown by its id and marked as not found, so that it is not lost without being seen. In the table the record is shown by its label.
+The list shows the records of every resource under a heading for each (the title, in the order of `sources`), each by its label. While you search, the headings are left out and the kind of record is said under each record.
+
+An id alone does not say which resource it is of. So the value kept is a reference, `{ resource, id }`: `{ "owner": { "resource": "editors", "id": "mus3k2…" } }`.
+
+A reference to a record that is gone is shown by its id and marked as not found, so it is not lost without being seen. In the table the record is shown by its label.
 
 - API: `cms.api()('pages', 'authors', 'editors')` resolves the references of the resources it is asked for into the records, each with `_resource` (the resource it is of); a reference to a resource that was not asked for stays as it is, and one to a record that is gone becomes `undefined`.
 - Import files, spreadsheets and sync name the record by its first `unique` field, as for a `source`: `{ "resource": "editors", "id": "Eve" }`. In a spreadsheet the cell holds the reference as JSON.

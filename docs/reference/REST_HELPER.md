@@ -39,7 +39,7 @@ const server = app.listen(3000, () => cms.bootstrap(server))
 | Middleware | Use it as | What it does |
 |---|---|---|
 | `mw.find_resource(ctx)` | a factory | Answers `404` if `:resource` isn't a declared resource; otherwise sets `req.resource`. |
-| `mw.authorize(ctx)` | a factory (returns two middlewares) | Identifies the caller (Basic header, or a JWT in `token`, `x-access-token` or the `embedCmsJwt-<mid>` cookie; anonymous otherwise) and checks the right that matches the HTTP method: `GET` read, `POST` create, `PUT` update, `DELETE` remove, and `attachments` for writes to an `/attachments` URL. Answers `401` when the group lacks it. Sets `req.body._updatedBy`. |
+| `mw.authorize(ctx)` | a factory (returns two middlewares) | Identifies the caller (Basic header, or a JWT in `token`, `x-access-token` or the `embedCmsJwt-<mid>` cookie; anonymous otherwise) and checks the right that matches the HTTP method: `GET` read, `POST` create, `PUT` update, `DELETE` remove, and `attachments` for writes to the attachments routes (`/:resource/:id/attachments...`: the route that matched decides, not the text of the address, so a query such as `?x=/attachments` changes nothing). Answers `401` when the group lacks it. Sets `req.body._updatedBy`. |
 | `mw.parse_query` | as is | Parses `?query=` as JSON, refuses operators outside the allowed list, and copies the other query parameters (as strings) into `req.options`. |
 | `mw.list_resources(ctx)` | a factory, as a handler | Answers the declaration of every resource (schema, locales and so on, with `title` and `mid`). |
 
@@ -76,7 +76,7 @@ Register your own `/resources` route before a `/:resource` route, or Express wil
 
 ## What can go wrong
 
-- **Every request is allowed.** `authorize` runs before `find_resource`.
-- **The request never answers.** No `express.json()` before `authorize`.
-- **`Machine id should be an 8 digit string`.** `mid` must be exactly 8 characters.
-- **Errors come back as HTML.** `parse_query` answers a refused query with a JSON `400` itself, but an error your own handler passes to `next` reaches Express's default handler. Add an error handler of your own, or turn on `security.uniformErrors`.
+- Every request is allowed. `authorize` runs before `find_resource`.
+- The request never answers. No `express.json()` before `authorize`.
+- `Machine id should be an 8 digit string`. `mid` must be exactly 8 characters.
+- Errors come back as HTML. `parse_query` answers a refused query with a JSON `400` itself, but an error your own handler passes to `next` reaches Express's default handler. Add an error handler of your own, or turn on `security.uniformErrors`.

@@ -217,5 +217,36 @@ describe('CMS class (unit)', () => {
       await cms._closeDatabase()
       expect(cms._resources.things.json._db._closing).to.equal(true)
     })
+
+    describe('shutdown', () => {
+      // what the handler does, with the exit and the closing of the databases put in the place of the real ones
+      const run = async (...args) => {
+        const cms = build()
+        let closed = 0
+        // the real closing comes back in the finally, so that the cleanup of the test closes the stores before it removes their folder
+        const realClose = cms._closeDatabase
+        cms._closeDatabase = async () => { closed++ }
+        const realExit = process.exit
+        const exited = new Promise((resolve) => { process.exit = (code) => resolve(code) })
+        try {
+          const handler = cms.shutdown('TEST')
+          handler(...args)
+          handler(...args)
+          return { code: await exited, closed }
+        } finally {
+          process.exit = realExit
+          cms._closeDatabase = realClose
+        }
+      }
+      it('exits with 0 for a signal, which process.on gives the handler as its name', async () => {
+        expect(await run('SIGTERM')).to.deep.equal({ code: 0, closed: 1 })
+      })
+      it('exits with 0 when it is called with nothing', async () => {
+        expect(await run()).to.deep.equal({ code: 0, closed: 1 })
+      })
+      it('exits with 1 for an error, and closes the databases once however many times it is called', async () => {
+        expect(await run(new Error('boom'))).to.deep.equal({ code: 1, closed: 1 })
+      })
+    })
   })
 })

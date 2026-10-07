@@ -79,9 +79,34 @@ Setting `LOG_LEVEL` does the same (`LOG_LEVEL=debug` shows even the refused requ
 | `test/unit/xlsx*`, `sync*`, `import*`, `importFromRemote*`, `replicator*` | The plugins, each checked through its real routes |
 | `test/unit/pageHelper*` | The [PageHelper](../reference/PAGE_HELPER.md): the templates read and checked at the start, each way a kept page can be old (a template, a record, the age, a damaged file), the memory and the folder, errors and 404 pages, many requests at once. `pageHelper.edge.test.js` stands a small CMS in for the real one, so that each failure is made on purpose |
 | `test/unit/contentLoader*` | The [ContentLoader](../operations/CONTENT_LOADER.md) and `cms-load`: every problem it reports, relations, dates, files (a path, an object, a buffer, a stream, a language), blocks, a second load, a dry run; `contentLoader.cli.test.js` runs the real executable in a project folder and checks its output and exit codes, `contentLoader.resources.test.js` uses resources of its own (blocks, localised fields, nested fields) |
-| `test/unit/exampleMagazine*` | The example [magazine](../examples/magazine/README.md): its content loaded from `content.json`, each page and language, the search, the feed, the sitemap, the dates the browser is told, 404 and error pages, and the template engine |
+| `test/unit/example*`, `test/frontend/taskboard.*` | The tests of the examples in `docs/examples`. See [Tests of the examples](#tests-of-the-examples) |
 | `test/unit/cms.class*` | Configuration, secrets, plugin loading, resources, paragraphs, lifecycle |
 | `test/frontend/` | `validators`, `sanitizeHtml`, the request/translate/login/resource/config services |
+
+## Tests of the examples
+
+Every example in `docs/examples` is a test of the CMS. If a change to the CMS breaks an example, a test says so.
+
+**One suite for all of them.** `test/unit/examples.test.js` holds the blog, the magazine, the docs platform and Boardwalk to the same bar. They are listed in `test/helpers/examples.js`. For each example it checks that:
+
+- the resources are accepted by the CMS;
+- the content file loads, and loads again with nothing to do;
+- a dry run finds no problem;
+- a crawl (`test/helpers/crawl.js`) follows every link, picture and stylesheet, and finds no broken one and no page that shows `undefined`;
+- the real `server.js`, run as `node server.js` over a folder of its own, serves its first page and starts again over what it kept.
+
+Boardwalk is a single-page app, so its crawl follows what its page loads. It builds the app on the first start, and every script and stylesheet the page names must be there. A new folder in `docs/examples` that is not in the list fails a test. A folder that deploys an example instead (`docker`) is listed as a deployment and has a test of its own.
+
+**One file for each example, for what is special about it:**
+
+| Test | What it checks |
+|---|---|
+| `test/unit/exampleSite*` | The [blog](../examples/site/README.md): its four articles, the home page, the paged list, an article, the 404 and error pages, what it escapes, and that its pages are kept and made again when an article or a template changes. |
+| `test/unit/exampleMagazine*` | The [magazine](../examples/magazine/README.md): the content loaded from `content.json`, each page and language, the search, the feed, the sitemap, the dates the browser is told, the 404 and error pages, and the template engine. |
+| `test/unit/examplePlatform*` | The [docs platform](../examples/platform/README.md). The public site has no route of the CMS. The addresses of versions work (`latest`, the first page, an old version, a draft). One rule decides who reads what, for pages, diagrams, PDFs and search. A product for members shows nothing of itself. Member secrets are hashed on write and hidden on every read, and only the sign-in reads them. The sign-in has its protections (token, limit, new session, one answer for every reason). The support form works from a page. Every failure ends in a page that says nothing about the cause. |
+| `test/frontend/taskboard.*` | The app [Boardwalk](../examples/taskboard/README.md), in four levels. `taskboard.lib` tests the order of the cards and the filters, as plain functions. `taskboard.api` tests the HTTP client, the session and the websocket, with a fake `fetch`, XHR and WebSocket. `taskboard.stores` tests the collection and the board over an in-memory fake of the REST API (`helpers/taskboard.js`), whose calls wait for the test so answers can arrive in the wrong order. `taskboard.components` mounts the whole app with its router. |
+| `test/unit/exampleTaskboard*` | Boardwalk over a real CMS. It checks the hooks (numbers that two parallel creates cannot share, an author that is the account) and the rights of the group. It also drives the app's own modules from Node with a real login cookie, websocket and upload, to catch what a fake cannot: a removal has no id, a file is announced by its own id, and the message for your own write can arrive before its answer. |
+| `test/unit/exampleDocker*` | The [Docker example](../examples/docker/README.md), which is a deployment. It checks that `.env` is out of git and out of the build, and that the Dockerfile and `compose.yaml` hold no secret. It runs `scripts/env.sh` (only where there is a bash) and the real `server.js` in production. Docker is not needed. Build and run the image by hand when the folder changes. |
 
 ## Component tests
 
@@ -98,7 +123,20 @@ expect(wrapper.emitted('input')[0]).toEqual([true, 'flag'])
 
 `mountField` is for the fields (props `model` and `schema`); `mountComponent` for everything else. `test/frontend/helpers/setup.js` stubs what jsdom lacks (`ResizeObserver`, `matchMedia`, `scrollIntoView`). jsdom has no layout, so tests check structure, attributes, classes, emitted events and state, not pixel positions: layout and appearance stay a matter for the browser (and the design-system test, which reads the CSS).
 
-Two things bite in jsdom: a list that uses the virtual scroller needs a stand-in that renders every item (see `recordList.component.test.js`), and a component that marks the records it is given (the record list does) needs its own copies of them in every test. The record editor ignores changes for 700 ms after it opens (fields fill in their own defaults), so a test that edits the model advances its fake timers first (see `recordEditor.component.test.js`). `app.component.test.js` mounts `App` with a real router (memory history) and fake timers, because the address follows the selection 60 ms later, and the services are mocked with `vi.mock`. `paragraphView.component.test.js` stands in for the draggable list and the nested form and mocks `ResourceService` and `SchemaService` (the paragraph types come from `getParagraphSchema`, which must return a fresh copy each time because the component edits what it gets). `jsonEditor.component.test.js` runs the real library: it builds its form a moment after the constructor returns, so a test waits for `originalValue` (set when it is ready) and for the library's own changes with `vi.waitFor`; CodeMirror needs the `Range` measurements stubbed in `helpers/setup.js`. The navigation tests share a small menu in `helpers/navFixtures.js`, advance fake timers for the rail's hover delays, and stub `offsetParent` where the keyboard code asks which buttons are shown (jsdom has no layout). `customDatetimePicker.component.test.js` builds the three schemas `FormService` makes for date, time and datetime and runs the real @vuepic/vue-datepicker; the installed version has no `enableDatePicker` prop (the component's own state says whether a calendar is shown), so a test reads `wrapper.vm` for it. `systemInfo.component.test.js` stands in for `EventSource` (a class the test drives: `message`, `fail`, `end`) and uses fake timers, because the stream connects after a second and reconnects with growing delays. `fileFields.component.test.js` puts files in the upload box the way a browser does (it defines `files` on the native input and dispatches `change`, because the box validates the files it holds, not the ones handed to the handler) and reads real `File` objects with the jsdom `FileReader`; the cropper is stood in for. Also: a field sets its password-manager attributes one tick after mounting (`await wrapper.vm.$nextTick()`), and timers (toasts) are tested with `vi.useFakeTimers()`.
+Some things bite in jsdom, and the tests of these components handle them in the same way:
+
+- Virtual scroller. A list that uses it needs a stand-in that renders every item (see `recordList.component.test.js`).
+- Marked records. A component that marks the records it is given (the record list does) needs its own copies of them in every test.
+- Record editor. It ignores changes for 700 ms after it opens, because fields fill in their own defaults. A test that edits the model advances its fake timers first (see `recordEditor.component.test.js`).
+- The whole app. `app.component.test.js` mounts `App` with a real router (memory history) and fake timers, because the address follows the selection 60 ms later. The services are mocked with `vi.mock`.
+- Paragraph view. `paragraphView.component.test.js` stands in for the draggable list and the nested form, and mocks `ResourceService` and `SchemaService`. The paragraph types come from `getParagraphSchema`, which must return a fresh copy each time because the component edits what it gets.
+- JSON editor. `jsonEditor.component.test.js` runs the real library. It builds its form a moment after the constructor returns, so a test waits for `originalValue` (set when it is ready) and for the library's own changes with `vi.waitFor`. CodeMirror needs the `Range` measurements stubbed in `helpers/setup.js`.
+- Navigation. The tests share a small menu in `helpers/navFixtures.js`, advance fake timers for the rail's hover delays, and stub `offsetParent` where the keyboard code asks which buttons are shown, since jsdom has no layout.
+- Date and time pickers. `customDatetimePicker.component.test.js` builds the three schemas `FormService` makes for date, time and datetime, and runs the real @vuepic/vue-datepicker. The installed version has no `enableDatePicker` prop (the component's own state says whether a calendar is shown), so a test reads `wrapper.vm` for it.
+- System info. `systemInfo.component.test.js` stands in for `EventSource`, a class the test drives with `message`, `fail` and `end`. It uses fake timers, because the stream connects after a second and reconnects with growing delays.
+- File fields. `fileFields.component.test.js` puts files in the upload box the way a browser does: it defines `files` on the native input and dispatches `change`, because the box validates the files it holds, not the ones handed to the handler. It reads real `File` objects with the jsdom `FileReader`, and the cropper is stood in for.
+- Password-manager attributes. A field sets them one tick after mounting, so a test does `await wrapper.vm.$nextTick()`.
+- Timers. Toasts are tested with `vi.useFakeTimers()`.
 
 ## Driver contract suite
 
@@ -153,10 +191,24 @@ A test marked `it.skip` documents a bug that is understood but not fixed yet, wi
 
 ## Coverage, and its limits
 
-- **Alibaba Cloud OSS attachments** are covered by `test/unit/ossHelper.test.js`. The `ali-oss` client is stood in for by an in-memory object store that records every call, so nothing leaves the process. The helper is tested alone (object keys, the config file, upload, download, delete, each error path) and inside a resource (`test/fixtures/ossResources`): an attachment on an OSS field goes to the object store and never to the blob folder, is read back and resized from there, is deleted from there with the attachment or with its record, a field with OSS options but `method: 'disk'` stays on disk, and a store that fails answers an error without leaving a file or a record behind.
-- **MongoDB and PostgreSQL** run the whole [driver contract suite](#driver-contract-suite) against real servers: locally with `TEST_MONGODB_URL` and `TEST_POSTGRES_URL` (and `REQUIRE_DATABASES=1` to turn a server that does not answer into a failure), and on every push in the `drivers` job of `.github/workflows/test.yml`, where MongoDB 7 and PostgreSQL 16 are service containers. The two-node replication scenarios (`test/unit/replicator*.test.js`, `test/unit/sync*.test.js`) run on the local engines: the replicator plugin, the peer handshake and the record ownership rules they exercise are shared by every engine, and the suite does not start a second node on MongoDB or PostgreSQL.
-- **A power cut** is outside what a test can do: the crash test (`npm run bench:stores:crash`) kills the process, and the operating system keeps writing what the process had handed it. [STORAGE.md](../operations/STORAGE.md#what-happens-if-the-process-is-killed) says what each engine does about it.
-- **Vue components**: every component under `src/components` is mounted by a test in `test/frontend` (see [Component tests](#component-tests)): the fields (switch, text, textarea, pillbox, selects, colour, date, time and datetime pickers, image and file fields with their previews, blocks, object and list fields with the real @json-editor library and CodeMirror, rich text editor and its toolbar, code editor, slug, group and tree), the record list, table (grid, cell, column menu) and record editor, the app itself (routing, the address, the unsaved-edits guard, the breadcrumb), the navigation (rail, flyouts, resource list, quick switcher, top bar, system menu with its live stream), the login page, the plugin pages (import, sync, configuration editor, log viewer, design system), the toasts, dialog, search field, resource selector, language switch, brand mark, updates notifier, uploads panel and selection page. `FormService` (the input types and their checks) and `SchemaService` (a resource schema becoming a form) are tested as modules.
+- Alibaba Cloud OSS attachments are covered by `test/unit/ossHelper.test.js`. An in-memory object store that records every call stands in for the `ali-oss` client, so nothing leaves the process. The helper is tested alone (object keys, the config file, upload, download, delete, each error path) and inside a resource (`test/fixtures/ossResources`). In a resource:
+  - an attachment on an OSS field goes to the object store and never to the blob folder;
+  - it is read back and resized from there, and deleted from there with the attachment or with its record;
+  - a field with OSS options but `method: 'disk'` stays on disk;
+  - a store that fails answers an error without leaving a file or a record behind.
+- MongoDB and PostgreSQL run the whole [driver contract suite](#driver-contract-suite) against real servers. Locally, set `TEST_MONGODB_URL` and `TEST_POSTGRES_URL` (and `REQUIRE_DATABASES=1` to make a server that does not answer a failure). On every push, the `drivers` job of `.github/workflows/test.yml` runs them, with MongoDB 7 and PostgreSQL 16 as service containers.
+
+  The two-node replication scenarios (`test/unit/replicator*.test.js`, `test/unit/sync*.test.js`) run on the local engines. The replicator plugin, the peer handshake and the record ownership rules are shared by every engine, so the suite does not start a second node on MongoDB or PostgreSQL.
+- A power cut is outside what a test can do: the crash test (`npm run bench:stores:crash`) kills the process, and the operating system keeps writing what the process had handed it. [STORAGE.md](../operations/STORAGE.md#what-happens-if-the-process-is-killed) says what each engine does about it.
+- Vue components. A test in `test/frontend` mounts every component under `src/components` (see [Component tests](#component-tests)). They cover:
+  - the fields: switch, text, textarea, pillbox, selects, colour, the date, time and datetime pickers, image and file fields with their previews, blocks, object and list fields (with the real @json-editor library and CodeMirror), the rich text editor and its toolbar, the code editor, slug, group and tree;
+  - the record list, the table (grid, cell, column menu) and the record editor;
+  - the app itself: routing, the address, the unsaved-edits guard and the breadcrumb;
+  - the navigation: rail, flyouts, resource list, quick switcher, top bar, and the system menu with its live stream;
+  - the login page and the plugin pages (import, sync, configuration editor, log viewer, design system);
+  - the toasts, dialog, search field, resource selector, language switch, brand mark, updates notifier, uploads panel and selection page.
+
+  `FormService` (the input types and their checks) and `SchemaService` (a resource schema becoming a form) are tested as modules.
 
 ## Random ETIMEDOUT failures on one machine
 

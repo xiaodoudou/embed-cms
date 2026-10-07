@@ -436,10 +436,12 @@ class CMS {
 
   /**
    * @param {string} signal
-   * @returns {function(Error=): void} the handler: logs, closes the databases, exits once
+   * @returns {function((Error|string)=): void} the handler: logs, closes the databases, exits once, with 0 for a signal and 1 for an error
    */
   shutdown (signal) {
-    return (err) => {
+    return (arg) => {
+      // process.on('SIGTERM', handler) calls the handler with the name of the signal: that is not a failure, an Error is
+      const err = arg instanceof Error ? arg : undefined
       logger.warn(`${ signal }...`)
       if (err) {
         logger.error(err.stack || err)

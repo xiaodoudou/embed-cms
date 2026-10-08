@@ -25,14 +25,8 @@ export default {
     '*.js'
   ],
   ignore: [
-    // Files we know are unused but want to keep
-    'src/.plugins/js/main.js',
     // Type definitions kept as documentation (referenced from index.js)
     'lib/jsdocTypes.js',
-    // Consumed as `FileType.fromBuffer(...)`, which knip cannot follow
-    'lib/util/fileType.js',
-    // exports the Logger class next to the shared instance; only the tests use the class
-    'lib/logger.js',
     // statusFor is exported for its unit tests
     'lib/plugins/rest/sendError.js'
   ],

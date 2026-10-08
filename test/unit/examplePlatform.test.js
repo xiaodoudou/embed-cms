@@ -1248,7 +1248,8 @@ describe('the example docs platform (unit)', () => {
         expect(token).to.have.length.above(20)
         expect(csrfToken(req)).to.equal(token)
         expect(csrfValid({ session: { csrf: token }, body: { _csrf: token } })).to.equal(true)
-        expect(csrfValid({ session: { csrf: token }, body: { _csrf: `${token.slice(0, -1)}x` } })).to.equal(false)
+        // the last character is one of 64 and could already be the one written here: change it to another
+        expect(csrfValid({ session: { csrf: token }, body: { _csrf: `${token.slice(0, -1)}${token.endsWith('x') ? 'y' : 'x'}` } })).to.equal(false)
         expect(csrfValid({ session: { csrf: token }, body: { _csrf: token.slice(1) } })).to.equal(false)
         expect(csrfValid({ session: { csrf: token }, body: {} })).to.equal(false)
         expect(csrfValid({ session: { csrf: token } })).to.equal(false)

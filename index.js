@@ -10,7 +10,7 @@
 const path = require('path')
 const os = require('os')
 const fs = require('fs')
-const pAll = require('p-all')
+const { default: pAll } = require('p-all')
 const compression = require('compression')
 const cookieParser = require('cookie-parser')
 const express = require('express')

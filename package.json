@@ -158,7 +158,7 @@
     "vue-cookies": "^1.8.4",
     "vue-draggable-next": "^2.3.0",
     "vue-json-viewer": "^3.0.4",
-    "vue-router": "^4.6.3",
+    "vue-router": "^5.3.1",
     "vue-virtual-scroller": "^3.0.5",
     "vuetify": "^4.2.3",
     "ws": "^8.18.0"

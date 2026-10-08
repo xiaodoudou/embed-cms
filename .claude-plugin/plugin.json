@@ -1,0 +1,9 @@
+{
+  "name": "embed-cms",
+  "description": "Skills to build and run websites on embed-cms: create a site, model content, add, patch and load content, back up, sync and go to production.",
+  "version": "3.0.5",
+  "author": { "name": "Edouard Durand" },
+  "homepage": "https://github.com/xiaodoudou/embed-cms",
+  "repository": "https://github.com/xiaodoudou/embed-cms",
+  "license": "GPL-3.0-only"
+}

@@ -15,6 +15,8 @@
     "i18n/",
     "types/",
     "scripts/",
+    "skills/",
+    ".claude-plugin/",
     "vite.config.js",
     "vite.utils.js",
     "jsconfig.json"
@@ -82,6 +84,7 @@
     "cms-import": "bin/cmsImport.js",
     "cms-import-remote": "bin/cmsImportRemote.js",
     "cms-load": "bin/cmsLoad.js",
+    "cms-skills": "bin/cmsSkills.js",
     "cms-backup": "bin/cmsBackup.js",
     "cms-restore": "bin/cmsRestore.js"
   },

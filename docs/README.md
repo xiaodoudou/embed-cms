@@ -60,6 +60,10 @@ The sites and the app share an [overview](examples/README.md): what they have in
 - [Architecture](contributing/ARCHITECTURE.md): one request followed from the admin to the store and back.
 - [Testing](contributing/TESTING.md): how the test suites are built, the helpers, the driver contract suite and the benchmark.
 
+## Agent skills (`../skills/`)
+
+- [Skills](../skills/README.md): eight skills for coding agents (Claude Code, Codex, Gemini CLI, Cursor, Copilot and others) that create a site, model and load content, patch records, back up, sync and go to production on embed-cms. The `cms-skills` command installs them.
+
 ## Who owns what
 
 | If you want to know | Read |

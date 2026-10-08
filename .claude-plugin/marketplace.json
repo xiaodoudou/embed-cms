@@ -1,0 +1,12 @@
+{
+  "name": "embed-cms",
+  "description": "Skills for building and running websites on embed-cms.",
+  "owner": { "name": "Edouard Durand" },
+  "plugins": [
+    {
+      "name": "embed-cms",
+      "source": "./",
+      "description": "Skills to build and run websites on embed-cms."
+    }
+  ]
+}

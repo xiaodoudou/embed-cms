@@ -270,7 +270,6 @@ class CMS {
       this._app.use(securityHeaders({ contentSecurityPolicy: this.security.contentSecurityPolicy, maps: normalizeMaps(options.maps) }))
     } else {
       this._app.use(helmet.dnsPrefetchControl())
-      this._app.use(helmet.expectCt())
       this._app.use(helmet.frameguard())
       this._app.use(helmet.hidePoweredBy())
       this._app.use(helmet.hsts())

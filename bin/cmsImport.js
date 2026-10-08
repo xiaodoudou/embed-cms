@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const program = require('commander')
+const { program } = require('commander')
 const _ = require('lodash')
 const path = require('path')
 const fs = require('fs-extra')
@@ -18,13 +18,11 @@ const Api = require('../lib/importers/spreadsheet/api')
 
 const pkg = require('../package.json')
 
-program.on('--help', () => {
-  console.log('')
-  console.log('  Examples:')
-  console.log('')
-  console.log('    $ cms-import ./dev.json username:password')
-  console.log('')
-})
+program.addHelpText('after', `
+  Examples:
+
+    $ cms-import ./dev.json username:password
+`)
 
 program
   .version(pkg.version)
@@ -34,6 +32,8 @@ program
   .option('-c, --createFolders', 'only create the local folders for the attachments (resource/key/field), import nothing')
   .option('-o, --createOnly', 'create only')
   .parse(process.argv)
+
+const options = program.opts()
 
 if (!program.args[0] || !program.args[1] || !/^(.+):(.+)$/.test(program.args[1])) {
   program.help()
@@ -58,21 +58,21 @@ class ImportManager {
     // ---------------------- start populating ------------------------------
     const endAllProcess = h.startProcess('Populating data to %s%s ... ... ', this.config.protocol, this.config.host)
     try {
-      if (!program.createFolders) {
+      if (!options.createFolders) {
         await this.askConfirmation()
       }
       await this.checkConnection()
       await this.loadDataFromSpreadSheet()
       await this.checkDuplicatedRecord()
-      if (program.createFolders) {
+      if (options.createFolders) {
         await this.createDummyFolders()
       } else {
         await this.downloadBinaries()
         const createdRecordsMap = await this.createDummyRecords()
-        if (!program.createOnly) {
+        if (!options.createOnly) {
           await this.deleteUnusedRecords()
         }
-        await this.updateRecords(program.createOnly ? createdRecordsMap : null)
+        await this.updateRecords(options.createOnly ? createdRecordsMap : null)
       }
     } catch (error) {
       logger.error(_.get(error, 'response.body', error.message || error))
@@ -83,7 +83,7 @@ class ImportManager {
 
   /** Asks before writing, unless --yes was given. */
   async askConfirmation () {
-    if (program.yes) {
+    if (options.yes) {
       return
     }
     const schema = {
@@ -165,7 +165,7 @@ class ImportManager {
         const endProcess = h.startProcess(`Download data from gsheet (${sheet.id}) ... ... `)
         if (_.isEmpty(config.gsheetId)) {
           throw new Error('gsheetId or gsheet is not defined in config file')
-        } else if (program.skip) {
+        } else if (options.skip) {
           return endProcess('skip')
         }
         const jsonFile = path.join(__dirname, '..', 'cached', `${sheet.id}-active.json`)

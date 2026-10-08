@@ -1,18 +1,16 @@
 #!/usr/bin/env node
 
-const program = require('commander')
+const { program } = require('commander')
 // const _ = require('lodash')
 const path = require('path')
 const prompt = require('prompt')
 
 const ImportWrapper = require('../lib/importers/remote')
 
-program.on('--help', () => {
-  console.log('')
-  console.log('  Example:')
-  console.log('    $ import-from-remote ./dev.json')
-  console.log('')
-})
+program.addHelpText('after', `
+  Example:
+    $ import-from-remote ./dev.json
+`)
 
 program
   .usage('<config json>')

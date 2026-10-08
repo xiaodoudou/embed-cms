@@ -6,6 +6,7 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ### Added
 
+- **A mask can force the case of the letters.** `options.maskCase: 'upper'` or `'lower'` on a `string` with an `options.mask` writes the letters typed or pasted in capitals or in small letters (`AA-___-AA` with `'upper'` turns `ad232da` into `AD-232-DA`). See [string](docs/reference/fields/string.md#mask).
 - **`cms-backup` and `cms-restore`.** Two modes: `files` copies the data folder of a stopped server and keeps every `_id`; `api` reads a running server over REST and writes a payload (`content.json` and `files/`) that `cms-load` replays, with new `_id`. See [BACKUP.md](docs/operations/BACKUP.md).
 - **Agent skills.** `skills/` holds eight skills in the Agent Skills format (create a site, model, add, patch and load content, back up, sync, go to production). The `cms-skills` command installs them into `.agents/skills` or `.claude/skills`, and `.claude-plugin/` lets Claude Code install them as a plugin. See [skills/README.md](skills/README.md).
 

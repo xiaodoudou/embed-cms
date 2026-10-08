@@ -81,7 +81,9 @@
     "cms-sync": "bin/cmsSync.js",
     "cms-import": "bin/cmsImport.js",
     "cms-import-remote": "bin/cmsImportRemote.js",
-    "cms-load": "bin/cmsLoad.js"
+    "cms-load": "bin/cmsLoad.js",
+    "cms-backup": "bin/cmsBackup.js",
+    "cms-restore": "bin/cmsRestore.js"
   },
   "author": "Edouard Durand",
   "license": "GPL-3.0-only",

@@ -45,6 +45,7 @@ The sites and the app share an [overview](examples/README.md): what they have in
 - [Replication](operations/REPLICATION.md): keeping several servers in step, continuously.
 - [Sync](operations/SYNC.md): copying chosen resources between two servers, such as staging and production, from the admin, from code, with the `cms-sync` command, or on a schedule.
 - [Import and export](operations/IMPORT.md): Google Sheets, Excel files, and copying from another embed-cms.
+- [Backup and restore](operations/BACKUP.md): `cms-backup` and `cms-restore`, from the data folder (every `_id` kept) or over the REST API (a payload `cms-load` replays, with new `_id`).
 
 ## Extending the admin (`extending/`)
 
@@ -77,6 +78,7 @@ The sites and the app share an [overview](examples/README.md): what they have in
 | Resizing and smart cropping of images | [API.md](reference/API.md#attachments), [SMART_CROPPING.md](reference/SMART_CROPPING.md) |
 | Type definitions and editor autocomplete | [TYPESCRIPT.md](reference/TYPESCRIPT.md) |
 | Where records are stored, engine speed and safety | [STORAGE.md](operations/STORAGE.md) |
+| Backing up and restoring a site, `cms-backup`, `cms-restore` | [BACKUP.md](operations/BACKUP.md) |
 | Replication, sync between servers, importers | [REPLICATION.md](operations/REPLICATION.md), [SYNC.md](operations/SYNC.md), [IMPORT.md](operations/IMPORT.md) |
 | How to build a whole site, step by step | The tutorials: [blog](examples/site/README.md), [magazine](examples/magazine/README.md), [docs platform](examples/platform/README.md). For an app that uses the REST API from a browser, see [Boardwalk](examples/taskboard/README.md). |
 | Your own plugin or admin page | [PLUGINS.md](extending/PLUGINS.md), [PLUGIN_UI_KIT.md](extending/PLUGIN_UI_KIT.md) |

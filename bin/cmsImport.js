@@ -9,7 +9,7 @@ const { isAttachmentInput } = require('../lib/util/inputTypes')
 const { GoogleSpreadsheet } = require('google-spreadsheet')
 const md5File = require('md5-file')
 const prompt = require('prompt')
-const pAll = require('p-all')
+const { default: pAll } = require('p-all')
 const {setTimeout} = require('node:timers/promises')
 const { JWT } = require('google-auth-library')
 

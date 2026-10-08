@@ -55,7 +55,7 @@ async function main () {
   const app = express()
   app.use(cms.express())
   app.use(express.static(dist))
-  app.get('*', (req, res) => res.sendFile(path.join(dist, 'index.html')))
+  app.get('/*path', (req, res) => res.sendFile(path.join(dist, 'index.html')))
   const server = await new Promise((resolve) => { const listening = app.listen(0, '127.0.0.1', () => resolve(listening)) })
   await cms.bootstrap(server)
   hooks.install(cms)

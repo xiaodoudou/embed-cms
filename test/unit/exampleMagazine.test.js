@@ -378,7 +378,7 @@ describe('the example magazine (unit)', () => {
 
     it('leaves the response alone when an error comes after it was begun', () => {
       const site = magazine(app.cms)
-      const handler = site._router.stack.map((layer) => layer.handle).filter((handle) => handle.length === 4).pop()
+      const handler = site.router.stack.map((layer) => layer.handle).filter((handle) => handle.length === 4).pop()
       const ended = []
       const log = console.error
       console.error = () => {}

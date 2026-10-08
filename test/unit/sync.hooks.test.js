@@ -21,7 +21,7 @@ describe('sync plugin: push after a change (unit)', () => {
     // stands in for the other CMS: records the trigger calls it receives
     calls = []
     const remoteApp = express()
-    remoteApp.all('/*', (req, res) => {
+    remoteApp.all('/*path', (req, res) => {
       calls.push({ method: req.method, path: req.path, token: req.query.token })
       res.json({ message: 'done' })
     })

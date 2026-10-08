@@ -113,7 +113,7 @@
     "dayjs": "^1.11.19",
     "dompurify": "^3.4.16",
     "excel4node": "^1.8.0",
-    "express": "^4.18.2",
+    "express": "^5.2.1",
     "express-session": "^1.18.2",
     "file-type": "^22.1.1",
     "filesize": "^11.0.13",

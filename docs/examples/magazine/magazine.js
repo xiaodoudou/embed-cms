@@ -113,7 +113,9 @@ module.exports = function magazine (cms, { baseUrl, views = VIEWS } = {}) {
   })
 
   const pages = express.Router({ mergeParams: true })
-  app.use('/:lang(en|zh)', pages)
+  // a path that names another language is not one of these pages
+  app.param('lang', (req, res, next, code) => LANGUAGES.some((item) => item.code === code) ? next() : next('route'))
+  app.use('/:lang', pages)
 
   pages.use(route(async (req, res, next) => {
     await prepare(req, res, language(req.params.lang))

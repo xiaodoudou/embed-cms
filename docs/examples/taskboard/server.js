@@ -49,7 +49,7 @@ async function serveApp (app, server) {
   }
   app.use(express.static(DIST))
   // an address of the app (/p/WEB, /login) is the page of the app: the router of the browser reads it. The addresses of the CMS were answered before.
-  app.get('*', (req, res) => res.sendFile(path.join(DIST, 'index.html')))
+  app.get('/*path', (req, res) => res.sendFile(path.join(DIST, 'index.html')))
 }
 
 const app = express()

@@ -262,6 +262,12 @@ class CMS {
     }
     // create main application
     this._app = express()
+    // Express 4 parsed the query string with qs and kept the object: the routes read nested keys and write to it
+    this._app.set('query parser', 'extended')
+    this._app.use((req, res, next) => {
+      Object.defineProperty(req, 'query', { value: req.query, writable: true, configurable: true, enumerable: true })
+      next()
+    })
     if (options.trustProxy !== undefined) {
       // req.ip, req.secure and the login lockout follow the proxy chain instead of the raw socket
       this._app.set('trust proxy', options.trustProxy)

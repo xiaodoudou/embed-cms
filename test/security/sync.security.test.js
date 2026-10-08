@@ -13,7 +13,7 @@ async function startRemote () {
   const calls = []
   const app = express()
   app.use(express.json())
-  app.all('/*', (req, res) => {
+  app.all('/*path', (req, res) => {
     calls.push({ method: req.method, path: req.path, token: req.query.token, body: req.body })
     if (req.query.token !== REMOTE_TOKEN) {
       return res.status(401).json({ error: 'token is not match' })

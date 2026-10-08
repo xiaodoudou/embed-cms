@@ -128,7 +128,7 @@ describe('sync plugin: the resources to sync (unit)', () => {
     before(async () => {
       calls = []
       const remoteApp = express()
-      remoteApp.all('/*', (req, res) => {
+      remoteApp.all('/*path', (req, res) => {
         calls.push({ path: req.path, token: req.query.token })
         res.json({ message: 'done' })
       })

@@ -28,6 +28,7 @@ Catalogue: `resources/text_strings.js` (group **Text**, resource **Strings**).
 | `options.min` / `options.max` | number | none | Minimum / maximum **length** in characters. Errors: `The text is too short! Length: 2, minimum: 3` / `The text is too long! Length: 26, maximum: 12`. |
 | `options.regex` | `{ value, description }` or `{ enUS: { value, description }, ... }` | none | Pattern written as `'/pattern/flags'` (a bare pattern also works). The per-locale form applies the rule of the locale being edited. Error: `Invalid format! (description)`. |
 | `options.mask` | string | none | A template the box keeps while it is typed in, `(___) ___-____`: `_` or `#` is a digit, `A` a letter, `*` a letter or a digit, a backslash before a character takes it as it is, anything else is written for you. See [Mask](#mask). A template with no place is ignored. |
+| `options.maskCase` | `'upper'` \| `'lower'` | none | With a `mask`: the letters typed or pasted are written in capitals (`'upper'`) or in small letters (`'lower'`). See [Mask](#mask). |
 
 ## Variations
 
@@ -106,7 +107,7 @@ With one rule per locale, each locale tab applies its own rule:
 
 ```js
 { field: 'phone', input: 'string', label: 'Phone', localised: false, options: { mask: '(___) ___-____' } }
-{ field: 'plate', input: 'string', label: 'Plate', localised: false, options: { mask: 'AA-___-AA' } }
+{ field: 'plate', input: 'string', label: 'Plate', localised: false, options: { mask: 'AA-___-AA', maskCase: 'upper' } }
 ```
 
 With `options.mask` the box keeps its template while it is typed in, with an underscore for each place left: `(___) ___-____`. The characters fill the places from the left, the characters of the template are written for you, and what does not fit a place is not taken. The template says what each character is:
@@ -123,6 +124,7 @@ With `options.mask` the box keeps its template while it is typed in, with an und
 - Backspace takes the last character away. When the box is entered its whole text is selected, so that what you type replaces it. The caret always goes to the next place, wherever the box is clicked.
 - A text pasted in any way of writing it fills the places: `555-123-4567`, `5551234567` and `(555) 123-4567` all give `(555) 123-4567`; what does not fit is left out.
 - The value kept is the text as the template writes it, as far as it goes: `(555) 123-4567`. A box with no character holds nothing. A text that is not complete is refused when the box is left, with `Fill in every place: (___) ___-____`; `required`, `min`, `max` and `regex` apply to the value as kept.
+- `options.maskCase` forces the case of the letters: `'upper'` writes what is typed or pasted in capitals (`ad232da` gives `AD-232-DA` in field `maskPlate`), `'lower'` in small letters. It changes the letters of the places only: digits and the characters of the template stay as they are, and a letter that is longer in the other case (`ß` is `SS` in capitals) stays as typed, because it has to fill one place. Any other value leaves the case alone. A value that is already stored in another case is shown in the forced case, and is stored that way the next time the box is edited. Only the admin applies it: the REST API stores what it is sent, as it does for the mask itself.
 - A template with no place (`'abc'`) is ignored: the field is the usual text box. Only a `string` takes a mask; the same template is how the [duration](duration.md) field is given its own shape (`options.template`).
 
 ![Mask](img/string-mask.png) ![Mask filled](img/string-mask-filled.png)

@@ -3,6 +3,7 @@ import _ from 'lodash'
 // The masks of the admin: a template that stays in the box while it is typed in, `__:__` or `(___) ___-____`. The template says what each character is:
 //   `_` or `#`  a digit        `A`  a letter        `*`  a letter or a digit        `\`  the next character is itself, whatever it is (`\A`, `\_`)
 // and anything else is written as it is. The duration field and the strings with `options.mask` use it, and so can any field that wants a template.
+// A template can also force the case of the letters that are typed (`options.maskCase`: 'upper' or 'lower'): see parseMask.
 
 const SLOTS = { _: 'digit', '#': 'digit', A: 'letter', '*': 'alnum' }
 // the letters of a language that has them (accents included); the digits are the ones of the Latin script
@@ -10,10 +11,11 @@ const TESTS = { digit: /^[0-9]$/, letter: /^\p{L}$/u, alnum: /^[\p{L}0-9]$/u }
 
 /**
  * @param {string} pattern the template, `(___) ___-____`
- * @returns {{pattern: string, tokens: Array<{slot: string}|{literal: string}>, size: number, groups: Array<{start: number, size: number}>}|null} the template read: its
+ * @param {string} [letterCase] 'upper' or 'lower': the letters typed or pasted are written in that case (anything else leaves them as they are)
+ * @returns {{pattern: string, tokens: Array<{slot: string}|{literal: string}>, size: number, groups: Array<{start: number, size: number}>, letterCase?: string}|null} the template read: its
  *   characters (a slot, or a literal), how many characters can be typed, and the runs of slots between the literals (`__:__` has two of two); nothing when it has no slot
  */
-export function parseMask (pattern) {
+export function parseMask (pattern, letterCase) {
   if (!_.isString(pattern)) {
     return null
   }
@@ -28,15 +30,16 @@ export function parseMask (pattern) {
       tokens.push({ literal: char })
     }
   }
-  return fromTokens(tokens, pattern)
+  return fromTokens(tokens, pattern, letterCase)
 }
 
 /**
  * @param {Array<Object>} tokens
  * @param {string} [pattern]
+ * @param {string} [letterCase] 'upper' or 'lower'
  * @returns {Object|null} the mask the tokens make; nothing when none is a slot
  */
-function fromTokens (tokens, pattern) {
+function fromTokens (tokens, pattern, letterCase) {
   const groups = []
   let slots = 0
   _.each(tokens, (token, index) => {
@@ -49,7 +52,14 @@ function fromTokens (tokens, pattern) {
       slots++
     }
   })
-  return slots ? { pattern, tokens, size: slots, groups } : null
+  if (!slots) {
+    return null
+  }
+  const mask = { pattern, tokens, size: slots, groups }
+  if (letterCase === 'upper' || letterCase === 'lower') {
+    mask.letterCase = letterCase
+  }
+  return mask
 }
 
 /**
@@ -63,7 +73,17 @@ export function widenGroup (mask, index, extra) {
   const slots = _.reduce(mask.tokens, (found, token, at) => token.slot ? [...found, at] : found, [])
   const last = slots[group.start + group.size - 1]
   const added = _.times(extra, () => ({ slot: mask.tokens[last].slot }))
-  return fromTokens([...mask.tokens.slice(0, last + 1), ...added, ...mask.tokens.slice(last + 1)])
+  return fromTokens([...mask.tokens.slice(0, last + 1), ...added, ...mask.tokens.slice(last + 1)], undefined, mask.letterCase)
+}
+
+/**
+ * @param {string} char one character that fits a slot
+ * @param {Object} mask
+ * @returns {string} the character in the case the mask forces, if it has one. A letter that changes size in the other case (`ß` is `SS` in capitals) stays as it is: it must fill one place.
+ */
+function inCase (char, mask) {
+  const changed = mask.letterCase === 'upper' ? char.toUpperCase() : mask.letterCase === 'lower' ? char.toLowerCase() : char
+  return changed.length === char.length ? changed : char
 }
 
 /**
@@ -113,7 +133,7 @@ export function maskCaret (chars, mask) {
 export function maskType (chars, mask, key, options = {}) {
   const slots = _.filter(mask.tokens, 'slot')
   if (chars.length < mask.size && fitsSlot(slots[chars.length].slot, key)) {
-    return chars + key
+    return chars + inCase(key, mask)
   }
   if (options.pad) {
     const group = _.find(mask.groups, ({ start, size }) => chars.length < start + size)
@@ -174,7 +194,7 @@ export function maskFromText (text, mask) {
     if (at >= input.length) {
       break
     }
-    chars += input[at++]
+    chars += inCase(input[at++], mask)
   }
   return chars
 }

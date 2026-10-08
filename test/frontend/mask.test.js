@@ -186,3 +186,35 @@ describe('widenGroup', () => {
     expect(maskText('', original)).toBe('__:__')
   })
 })
+
+describe('the case of the letters', () => {
+  const upper = parseMask('AA-___-AA', 'upper')
+  const lower = parseMask('****-****', 'lower')
+
+  it('writes the letters that are typed in capitals or in small letters, and leaves digits and the template alone', () => {
+    expect(['a', 'd', '-', '2', '3', '2', 'd', 'a'].reduce((chars, key) => maskType(chars, upper, key), '')).toBe('AD232DA')
+    expect(maskValue('AD232DA', upper)).toBe('AD-232-DA')
+    expect(maskType('', lower, 'Q')).toBe('q')
+    expect(maskType('q', lower, '7')).toBe('q7')
+  })
+
+  it('writes the letters of a pasted or stored text in that case too, the template written or not', () => {
+    expect(maskFromText('ad-232-Da', upper)).toBe('AD232DA')
+    expect(maskFromText('AB12-cdEF', lower)).toBe('ab12cdef')
+  })
+
+  it('keeps the letters as they are without a case, or with one that is not upper or lower', () => {
+    expect(maskFromText('Ad-232-dA', parseMask('AA-___-AA'))).toBe('Ad232dA')
+    expect(maskFromText('Ad-232-dA', parseMask('AA-___-AA', 'title'))).toBe('Ad232dA')
+    expect(parseMask('AA-___-AA', 'title').letterCase).toBeUndefined()
+  })
+
+  it('keeps a letter that has more characters in the other case, because it fills one place', () => {
+    expect(maskType('', upper, 'ß')).toBe('ß')
+    expect(maskType('', upper, 'é')).toBe('É')
+  })
+
+  it('keeps the case when a group is widened', () => {
+    expect(widenGroup(upper, 0, 1).letterCase).toBe('upper')
+  })
+})

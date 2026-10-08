@@ -4,6 +4,19 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ## [Unreleased]
 
+## [3.0.6] - 2026-10-08
+
+### Added
+
+- **A mask can force the case of the letters.** `options.maskCase: 'upper'` or `'lower'` on a `string` with an `options.mask` writes the letters typed or pasted in capitals or in small letters (`AA-___-AA` with `'upper'` turns `ad232da` into `AD-232-DA`). See [string](docs/reference/fields/string.md#mask).
+- **`cms-backup` and `cms-restore`.** Two modes: `files` copies the data folder of a stopped server and keeps every `_id`; `api` reads a running server over REST and writes a payload (`content.json` and `files/`) that `cms-load` replays, with new `_id`. See [BACKUP.md](docs/operations/BACKUP.md).
+- **Agent skills.** `skills/` holds eight skills in the Agent Skills format (create a site, model, add, patch and load content, back up, sync, go to production). The `cms-skills` command installs them into `.agents/skills` or `.claude/skills`, and `.claude-plugin/` lets Claude Code install them as a plugin. See [skills/README.md](skills/README.md).
+
+### Changed
+
+- **The toolbar of the rich text field has the tint of the Markdown field's toolbar.** It was the colour of the text area, so the two editors looked different side by side.
+- **The dependencies are on their current major versions.** Express 5, body-parser 2, Helmet 8, the MongoDB driver 7, commander 15 and p-all 5 for the server, and Vite 8 and vue-router 5 for the admin build. The routes were rewritten for Express 5 to answer the same addresses, and the driver tests pass against MongoDB and PostgreSQL. One header is gone: Helmet 8 no longer has `Expect-CT`, which browsers dropped, so the CMS no longer sends it.
+
 ## [3.0.5] - 2026-10-07
 
 ### Added
@@ -181,6 +194,7 @@ The release that turned node-cms into a project that stands on its own: the firs
 - A delete goes to the replication peers right away again, `cms-import` prints no empty progress bars into logs, the xlsx import answers `400` without a file.
 
 [Unreleased]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.5...HEAD
+[3.0.6]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.5...v3.0.6
 [3.0.5]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.4...v3.0.5
 [3.0.4]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.3...v3.0.4
 [3.0.3]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.2...v3.0.3

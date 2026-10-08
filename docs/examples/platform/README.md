@@ -74,7 +74,7 @@ The site and the admin share one process and one CMS. A change an editor makes i
 flowchart TB
   home["/<br>the products"]
   product["/:product<br>goes to /:product/latest/"]
-  latest["/:product/latest/:page?<br>goes to the current version"]
+  latest["/:product/latest{/:page}<br>goes to the current version"]
   version["/:product/:version<br>goes to its first page"]
   page["/:product/:version/:page<br>a page"]
   home --> product
@@ -161,12 +161,12 @@ app.get('/', pages.route('home', async ({ api }) => {
 
 ### 4. Versions: `latest`, the first page, the banner, the switcher
 
-`/:product/latest/:page?` is not a version. It finds the current version (the one marked, or the first when none is) and redirects there, to the same page. A version address without a page goes to the version's first page.
+`/:product/latest{/:page}` is not a version. It finds the current version (the one marked, or the first when none is) and redirects there, to the same page. A version address without a page goes to the version's first page.
 
 An old version (`archived`) says it is old and links to the current one. The switcher lists every published version. It keeps you on the same page when the other version has it, and goes to that version's start when it does not.
 
 ```js
-app.get('/:product/latest/:page?', underProduct(async (req, res, next, product) => {
+app.get('/:product/latest{/:page}', underProduct(async (req, res, next, product) => {
   const current = await reads.current(product)
   return current ? res.redirect(302, `${address(product, current)}${req.params.page ? `/${enc(req.params.page)}` : ''}`) : next()
 }))

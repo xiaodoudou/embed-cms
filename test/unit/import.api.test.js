@@ -14,7 +14,7 @@ describe('import command api clients (unit)', () => {
   before(async () => {
     calls = []
     const app = express()
-    app.all('/*', (req, res) => {
+    app.all('/*path', (req, res) => {
       calls.push({ method: req.method, path: req.path, headers: req.headers })
       res.json([])
     })

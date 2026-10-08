@@ -57,7 +57,7 @@ add('string-pattern-per-locale-zhCN-error', 'text_strings', async (c) => {
 add('string-mask', 'text_strings', (c) => [c.field('maskPhone'), c.field('maskPlate')])
 add('string-mask-filled', 'text_strings', async (c) => {
   await c.type('maskPhone', '5551234567')
-  await c.type('maskPlate', 'ab12')
+  await c.type('maskPlate', 'ab123cd')
   await c.blur()
   return [c.field('maskPhone'), c.field('maskPlate')]
 })

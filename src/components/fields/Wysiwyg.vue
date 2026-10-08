@@ -260,8 +260,8 @@
     flex-wrap: wrap;
     gap: 2px;
     padding: var(--cms-space-1) var(--cms-space-2);
-    // same surface as the text area, so that the whole thing reads as one field box like a text field
-    background-color: $wysiwyg-editor-background;
+    // the tinted surface of the toolbar of the Markdown field, so that the two editors look alike
+    background-color: var(--cms-surface-2);
     border-bottom: 1px solid $wysiwyg-toolbar-border;
   }
   .editor-content {

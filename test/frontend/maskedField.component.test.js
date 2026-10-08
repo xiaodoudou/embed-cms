@@ -98,6 +98,22 @@ describe('MaskedField', () => {
       expect(model.phone).toBe('é中z')
     })
 
+    it('writes the letters in capitals or in small letters when the field says so, typed or pasted', async () => {
+      const model = {}
+      mount('AA-___-AA', { options: { mask: 'AA-___-AA', maskCase: 'upper' } }, model)
+      await type('ad232da')
+      expect(value()).toBe('AD-232-DA')
+      expect(model.phone).toBe('AD-232-DA')
+      await edit('deleteContentBackward')
+      await paste('xy-999-zq')
+      expect(model.phone).toBe('XY-999-ZQ')
+      wrapper.unmount()
+      const second = {}
+      mount('****-****', { options: { mask: '****-****', maskCase: 'lower' } }, second)
+      await type('AB12Cd')
+      expect(second.phone).toBe('ab12-cd')
+    })
+
     it('takes a letter or a digit for a * slot', async () => {
       const model = {}
       mount('*****-*****', {}, model)

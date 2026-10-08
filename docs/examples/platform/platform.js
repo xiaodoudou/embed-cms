@@ -343,7 +343,7 @@ module.exports = function platform (cms, { secret, secureCookies = false, trustP
   app.get('/:product', underProduct((req, res, next, product) => res.redirect(302, `/${enc(product.slug)}/latest/`)))
 
   // `latest` is not a version: it goes to the current one, on the same page
-  app.get('/:product/latest/:page?', underProduct(async (req, res, next, product) => {
+  app.get('/:product/latest{/:page}', underProduct(async (req, res, next, product) => {
     const current = await reads.current(product)
     return current ? res.redirect(302, `${address(product, current)}${req.params.page ? `/${enc(req.params.page)}` : ''}`) : next()
   }))

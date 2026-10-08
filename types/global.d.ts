@@ -154,6 +154,8 @@ declare namespace EmbedCMS {
     maxRows?: number
     /** `string`: a template the box keeps while it is typed in: `_` or `#` a digit, `A` a letter, `*` a letter or a digit, a backslash makes the next character itself, the rest is written for you (`'(___) ___-____'`, `'F__-AAAA'`) */
     mask?: string
+    /** `string` with a `mask`: write the letters typed or pasted in capitals (`'upper'`) or in small letters (`'lower'`); digits and the characters of the template are not changed */
+    maskCase?: 'upper' | 'lower'
     /** `duration`: the template of the box, written like a mask with digits only (`'__:__'`, `'_h __m'`, `'___ days'`); its parts give the units */
     template?: string
     /** `phone`: the countries it takes, ISO 3166 codes (every one by default); `country` is the one it starts with */

@@ -10,7 +10,7 @@
 const path = require('path')
 const os = require('os')
 const fs = require('fs')
-const pAll = require('p-all')
+const { default: pAll } = require('p-all')
 const compression = require('compression')
 const cookieParser = require('cookie-parser')
 const express = require('express')
@@ -262,6 +262,12 @@ class CMS {
     }
     // create main application
     this._app = express()
+    // Express 4 parsed the query string with qs and kept the object: the routes read nested keys and write to it
+    this._app.set('query parser', 'extended')
+    this._app.use((req, res, next) => {
+      Object.defineProperty(req, 'query', { value: req.query, writable: true, configurable: true, enumerable: true })
+      next()
+    })
     if (options.trustProxy !== undefined) {
       // req.ip, req.secure and the login lockout follow the proxy chain instead of the raw socket
       this._app.set('trust proxy', options.trustProxy)
@@ -270,7 +276,6 @@ class CMS {
       this._app.use(securityHeaders({ contentSecurityPolicy: this.security.contentSecurityPolicy, maps: normalizeMaps(options.maps) }))
     } else {
       this._app.use(helmet.dnsPrefetchControl())
-      this._app.use(helmet.expectCt())
       this._app.use(helmet.frameguard())
       this._app.use(helmet.hidePoweredBy())
       this._app.use(helmet.hsts())

@@ -209,7 +209,8 @@ The first part of the address is the language (`/en`, `/zh`). A middleware reads
 
 ```js
 const pages = express.Router({ mergeParams: true })
-app.use('/:lang(en|zh)', pages)
+app.param('lang', (req, res, next, code) => LANGUAGES.some((item) => item.code === code) ? next() : next('route'))
+app.use('/:lang', pages)
 
 pages.use(route(async (req, res, next) => {
   await prepare(req, res, language(req.params.lang))

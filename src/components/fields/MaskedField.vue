@@ -38,7 +38,7 @@
     computed: {
       /** @returns {Object|null} the template of the field, read */
       mask () {
-        return parseMask(_.get(this.schema, 'options.mask', this.schema.mask))
+        return parseMask(_.get(this.schema, 'options.mask', this.schema.mask), _.get(this.schema, 'options.maskCase'))
       },
       /** @returns {string} the box: the template, filled as far as the characters go */
       display () {

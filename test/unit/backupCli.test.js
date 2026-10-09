@@ -82,6 +82,26 @@ describe('cms-backup and cms-restore (unit)', () => {
       expect(fs.readFileSync(path.join(project, aside, 'notes', 'json', 'db.json'), 'utf8')).to.equal('damaged')
     })
 
+    it('leaves the sessions out: they hold login tokens', async () => {
+      const project = path.join(scratch, 'project')
+      fs.mkdirSync(path.join(project, 'data', 'notes', 'json'), { recursive: true })
+      fs.mkdirSync(path.join(project, 'data', '.sessions.json'), { recursive: true })
+      fs.writeFileSync(path.join(project, 'data', 'notes', 'json', 'db.json'), '{"id-1":"record"}')
+      fs.writeFileSync(path.join(project, 'data', '.sessions.json', 'abc.json'), '{"embedCmsJwt":"a-login-token"}')
+      fs.writeFileSync(path.join(project, 'data', '.secrets.json'), '{"auth":"kept"}')
+      fs.writeFileSync(path.join(project, 'cms.json'), JSON.stringify({ data: './data' }))
+      const out = path.join(scratch, 'backups')
+      const { io } = capture()
+      expect(await backup(['files', '--config', path.join(project, 'cms.json'), '--out', out, '--server-stopped'], {}, io)).to.equal(0)
+      const copy = path.join(out, fs.readdirSync(out)[0], 'data')
+      expect(fs.existsSync(path.join(copy, '.sessions.json'))).to.equal(false)
+      // the rest of the data folder, hidden files included, is there
+      expect(fs.readFileSync(path.join(copy, 'notes', 'json', 'db.json'), 'utf8')).to.equal('{"id-1":"record"}')
+      expect(fs.existsSync(path.join(copy, '.secrets.json'))).to.equal(true)
+      // the data folder itself keeps its sessions
+      expect(fs.existsSync(path.join(project, 'data', '.sessions.json', 'abc.json'))).to.equal(true)
+    })
+
     it('refuses an --out inside the data folder', async () => {
       const project = path.join(scratch, 'project')
       fs.mkdirSync(path.join(project, 'data'), { recursive: true })

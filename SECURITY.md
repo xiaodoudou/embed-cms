@@ -93,6 +93,7 @@ These behaviours are not policy. They hold whatever the settings:
 - a user name that is not a string can't be used as a query to log in, and the login lockout counts it;
 - login for an unknown account takes as long as for a known one (timing);
 - the session id is replaced at login, logout destroys the session and revokes the token (the list of revoked tokens survives a restart, `<data>/.revoked-tokens.json`), a changed password ends the sessions and tokens of that user;
+- in production the session files (`<data>/.sessions.json`) are kept in a folder that only the account of the server can enter. A session holds the login token of a person in clear text, so a file that another account of the machine could read would be a login that can be taken. The folder is set to mode 0700 at every start, also when an earlier version made it with the permissions of the umask;
 - uploaded temporary files are removed after the request and kept in a private folder; xlsx exports use a private file that is deleted after sending;
 - a replication peer can't make the node create folders outside its data directory, an error event on a socket or a websocket doesn't end the process, a malformed frame doesn't crash the sync;
 - the json file store keeps a file it cannot parse aside (`db.json.corrupt-<time>`) instead of overwriting it, and writes through a temporary file that is renamed;

@@ -1019,6 +1019,10 @@
     flex: 0 0 auto;
     @include subtext;
   }
+  // the buttons stay at the right end, so a block with no summary keeps its title next to the grip instead of in the middle
+  .add-btn-wrapper {
+    margin-left: auto;
+  }
   // the start of the first text of the block, to tell the blocks of a compact list apart
   .paragraph-summary {
     flex: 1 1 auto;

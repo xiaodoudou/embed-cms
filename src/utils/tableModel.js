@@ -583,8 +583,3 @@ export const DENSITIES = ['compact', 'default', 'comfortable']
 /** Row heights in px, mirrored by the --cms-table-row-* tokens (the CSS variable wins at runtime) */
 export const DENSITY_ROW_HEIGHT = { compact: 32, default: 40, comfortable: 48 }
 
-export default {
-  fieldKind, buildColumns, fieldsFromSchema, defaultHiddenKeys, loadPrefs, savePrefs, applyPrefs, orderedColumns, compareValues, sortRows, nextSort,
-  richTextToPlain, visibleLocales, toggleColumn, moveColumn, selectionState, toggleId, toggleAllIds, selectRange, rowWindow, scrollTopForRow, moveFocus,
-  matchesSearch, formatDateValue, formatNumberValue, chipsFor, sortValue, columnWidth, distributeWidths
-}

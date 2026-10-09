@@ -183,5 +183,3 @@ export function railSections (groups) {
   }
 }
 
-export default {
-  isOthersGroup, groupSettingsName, menuIconMap, groupKey, groupHoldsItem, orderResources, railSections, resolveNavMode, toggledPref, clampNavWidth, resizeByKey, groupInitials, groupTint, moveInList, flyoutPosition }

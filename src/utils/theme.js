@@ -56,4 +56,3 @@ export function savedUserTheme (resource, record, user, config) {
   return theme === pickTheme(config, user.theme) ? null : theme
 }
 
-export default { applyThemeToDocument, withoutTransitions, pickTheme, savedUserTheme }

@@ -12,4 +12,3 @@ export function buildPageTitle ({ record = '', resource = '', site = '' } = {}) 
   return _.uniq(_.filter([record, resource, site || PRODUCT_NAME], (part) => _.isString(part) && _.trim(part) !== '')).join(' · ')
 }
 
-export default { buildPageTitle, PRODUCT_NAME }

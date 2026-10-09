@@ -120,6 +120,7 @@
   import { sanitizeHtml, escapeHtml } from '@u/sanitizeHtml'
   import TranslateService from '@s/TranslateService'
   import { getResourceLabel } from '@u/recordLabel'
+  import { groupOf } from '@u/navModel'
   import Notification from '@m/Notification'
   import NotificationsService from '@s/NotificationsService'
   import LoginService from '@s/LoginService'
@@ -187,9 +188,9 @@
       itemSize () {
         return this.isCompact ? 44 : 68
       },
-      /** @returns {Object|undefined} the group of the current resource */
+      /** @returns {Object|undefined} the group of the current resource, the innermost one */
       selectedResourceGroup () {
-        return _.find(this.groupedList, (resourceGroup) => this.groupSelected(resourceGroup))
+        return this.resource ? groupOf(this.groupedList, this.resource) : undefined
       },
       /** @returns {string} */
       currentSortLabel () {
@@ -459,21 +460,6 @@
         }
         console.error(errorMessage, record)
         this.notify(errorMessage, 'error')
-      },
-      /**
-       * @param {Object} resourceGroup
-       * @returns {boolean} whether the current resource is in it
-       */
-      groupSelected (resourceGroup) {
-        if (!this.resource) {
-          return false
-        }
-        const selectedItemGroup = _.get(this.resource, 'group.enUS', _.get(this.resource, 'group', false))
-        const groupName = _.get(resourceGroup, 'name.enUS', resourceGroup.name)
-        if (groupName === 'TL_OTHERS' && !selectedItemGroup) {
-          return true
-        }
-        return groupName === selectedItemGroup
       },
       /**
        * @param {Object} resource

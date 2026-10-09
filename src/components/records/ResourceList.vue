@@ -24,21 +24,24 @@
       </div>
     </div>
     <p v-if="filter" class="nav-empty" role="status">{{ matchMessage }}</p>
-    <div v-for="resourceGroup in visibleGroups" :key="groupKey(resourceGroup)" class="resource-group" :class="{'is-open': isGroupOpen(resourceGroup)}">
+    <div
+      v-for="row in rows" v-show="rowShown(row)" :key="groupKey(row.group)" class="resource-group" :class="{'is-open': isGroupOpen(row.group), nested: row.depth > 0}"
+      :style="row.depth > 0 ? {'--depth': row.depth} : undefined"
+    >
       <h2 class="group-heading">
         <button
-          type="button" class="group-toggle" :class="{locating: isLocatingGroup(resourceGroup)}" :aria-expanded="isGroupOpen(resourceGroup) ? 'true' : 'false'"
-          :aria-controls="`resource-group-list-${groupKey(resourceGroup)}`" @click="toggleGroup(resourceGroup)"
+          type="button" class="group-toggle" :title="$filters.translate(row.group.name)" :class="{locating: isLocatingGroup(row.group)}" :aria-expanded="isGroupOpen(row.group) ? 'true' : 'false'"
+          :aria-controls="`resource-group-list-${groupKey(row.group)}`" @click="toggleGroup(row.group)"
         >
           <v-icon class="group-chevron" size="small" icon="$chevronRight" />
-          <img v-if="iconUrl(resourceGroup)" :src="iconUrl(resourceGroup)" class="group-image" alt="">
-          <span class="group-title">{{ $filters.translate(resourceGroup.name) }}</span>
-          <span v-if="!isGroupOpen(resourceGroup) && groupSelected(resourceGroup)" class="group-current-dot" :title="$filters.translate('TL_YOU_ARE_HERE')" />
+          <img v-if="iconUrl(row.group)" :src="iconUrl(row.group)" class="group-image" alt="">
+          <span class="group-title">{{ $filters.translate(row.group.name) }}</span>
+          <span v-if="!isGroupOpen(row.group) && groupSelected(row.group)" class="group-current-dot" :title="$filters.translate('TL_YOU_ARE_HERE')" />
         </button>
       </h2>
-      <ul v-show="isGroupOpen(resourceGroup)" :id="`resource-group-list-${groupKey(resourceGroup)}`" class="group-list">
-        <li v-for="resource in resourceGroup.list" :key="resource.name || resource.title">
-          <button type="button" class="resource-link" :class="{selected: isSelected(resource), locating: (crumbHint === 'resource' || pulse) && isSelected(resource)}" :aria-current="isSelected(resource) ? 'page' : undefined" @click="selectResourceCallback(resource)">
+      <ul v-show="isGroupOpen(row.group)" :id="`resource-group-list-${groupKey(row.group)}`" class="group-list">
+        <li v-for="resource in row.list" :key="resource.name || resource.title">
+          <button type="button" class="resource-link" :title="getResourceTitle(resource)" :class="{selected: isSelected(resource), locating: (crumbHint === 'resource' || pulse) && isSelected(resource)}" :aria-current="isSelected(resource) ? 'page' : undefined" @click="selectResourceCallback(resource)">
             <span class="resource-link-title"><template v-for="(part, i) in segments(getResourceTitle(resource))"><mark v-if="part.match" :key="i">{{ part.text }}</mark><template v-else>{{ part.text }}</template></template></span>
           </button>
         </li>
@@ -52,7 +55,7 @@
   import TranslateService from '@s/TranslateService'
   import SearchField from '@c/records/SearchField.vue'
   import ResourceService from '@s/ResourceService'
-  import { groupSettingsName } from '@u/navModel'
+  import { groupMenuName, groupKey, groupItems, groupHoldsItem, groupOwnsItem, groupRows } from '@u/navModel'
   import { getResourceLabel } from '@u/recordLabel'
   import { shortcutLabel } from '@u/platform'
 
@@ -83,22 +86,23 @@
       }
     },
     computed: {
-      /** @returns {Array<Object>} the groups with their lists ordered */
-      sortedGroups () {
-        return _.map(this.groupedList, (group) => ({ ...group, list: this.orderedList(_.get(group, 'list', [])) }))
-      },
-      /** @returns {Array<Object>} the groups with the resources matching the filter */
+      /** @returns {Array<Object>} the groups with the resources matching the filter, the sub-groups too; those with none are left out */
       visibleGroups () {
         const query = _.toLower(_.trim(this.filter))
-        const groups = _.compact(_.map(this.sortedGroups, (group) => {
+        const narrow = (groups) => _.compact(_.map(groups, (group) => {
           if (!query) {
             return group
           }
-          const filtered = _.filter(group.list, (resource) => _.includes(_.toLower(this.getResourceTitle(resource)), query))
-          return filtered.length > 0 ? { ...group, list: filtered } : false
+          const list = _.filter(group.list, (resource) => _.includes(_.toLower(this.getResourceTitle(resource)), query))
+          const inner = narrow(group.groups)
+          return list.length > 0 || inner.length > 0 ? { ...group, list, groups: inner } : false
         }))
         // Resources without a group are collected in "Others", a regular group that always comes last
-        return _.sortBy(groups, (group) => (this.isOthers(group) ? 1 : 0))
+        return _.sortBy(narrow(this.groupedList), (group) => (this.isOthers(group) ? 1 : 0))
+      },
+      /** @returns {Array<{group: Object, depth: number, list: Array<Object>}>} the groups top down, the sub-groups under their group, with their resources ordered */
+      rows () {
+        return _.flatMap(this.visibleGroups, (group) => groupRows(group, this.orderedList))
       },
       /** @returns {string} */
       matchMessage () {
@@ -113,11 +117,11 @@
       },
       /** @returns {number} */
       matchCount () {
-        return _.sum(_.map(this.visibleGroups, (group) => group.list.length))
+        return _.sum(_.map(this.visibleGroups, (group) => groupItems(group).length))
       },
       /** @returns {Array<Object>} */
       collapsibleGroups () {
-        return this.groupedList
+        return _.map(_.flatMap(this.groupedList, (group) => groupRows(group)), 'group')
       },
       /** @returns {boolean} */
       allOpen () {
@@ -134,7 +138,7 @@
       await this.$nextTick()
       if (this.autoSelect && _.isEmpty(this.selectedItem)) {
         // Selects first resource in first group
-        this.selectResourceCallback(_.first(_.get(_.first(this.groupedList), 'list', [])))
+        this.selectResourceCallback(_.first(groupItems(_.first(this.groupedList))))
       }
       this.openCurrentGroup()
       ResourceService.events.on('cached', this.onResourceCached)
@@ -176,11 +180,11 @@
         clearTimeout(this.pulseTimer)
         this.pulseTimer = setTimeout(() => { this.pulse = false }, 1800)
       },
-      /** Opens the group of the current page when it is closed. */
+      /** Opens the group of the current page, and the ones around it, when they are closed. */
       openCurrentGroup () {
-        const group = _.find(this.groupedList, (g) => this.groupSelected(g))
-        if (group && !this.isGroupOpen(group)) {
-          this.toggled = { ...this.toggled, [this.groupKey(group)]: true }
+        const closed = _.filter(this.collapsibleGroups, (g) => this.groupSelected(g) && !this.isGroupOpen(g))
+        if (closed.length > 0) {
+          this.toggled = { ...this.toggled, ..._.fromPairs(_.map(closed, (g) => [this.groupKey(g), true])) }
           this.saveToggled()
         }
       },
@@ -247,13 +251,13 @@
           // storage unavailable (private mode): the state simply is not remembered
         }
       },
+      groupKey,
       /**
-       * @param {Object} resourceGroup
-       * @returns {string} kebab-case of its English name
+       * @param {{parents: Array<Object>}} row
+       * @returns {boolean} whether every group above it is open
        */
-      groupKey (resourceGroup) {
-        const name = _.get(resourceGroup, 'name.enUS', resourceGroup.name)
-        return _.kebabCase(_.isString(name) ? name : JSON.stringify(name))
+      rowShown (row) {
+        return _.every(row.parents, (parent) => this.isGroupOpen(parent))
       },
       /**
        * @param {Object} resourceGroup
@@ -303,7 +307,7 @@
       // the group of the current page is the target of the 'group' crumb, and of the 'resource' crumb while it is folded
       // the image chosen for this group in Settings, if any
       iconUrl (resourceGroup) {
-        return this.menuIcons[groupSettingsName(resourceGroup)]
+        return this.menuIcons[groupMenuName(resourceGroup)]
       },
       /** @param {string} resource the settings saved: the menu icons follow */
       onResourceCached (resource) {
@@ -316,20 +320,17 @@
        * @returns {boolean} whether it is being pointed at (crumb hint or pulse)
        */
       isLocatingGroup (resourceGroup) {
-        if (!(this.crumbHint || this.pulse) || !this.groupSelected(resourceGroup)) {
+        if (!(this.crumbHint || this.pulse) || !groupOwnsItem(resourceGroup, this.selectedItem)) {
           return false
         }
         return this.crumbHint === 'group' || this.pulse || !this.isGroupOpen(resourceGroup)
       },
       /**
        * @param {Object} resourceGroup
-       * @returns {boolean} whether the selected item is in it
+       * @returns {boolean} whether the selected item is in it, or in a group inside it
        */
       groupSelected (resourceGroup) {
-        if (!this.selectedItem) { return false }
-        const selectedItemGroup = _.get(this.selectedItem, 'group.enUS', _.get(this.selectedItem, 'group', false))
-        const groupName = _.get(resourceGroup, 'name.enUS', resourceGroup.name)
-        return groupName === 'TL_OTHERS' && !selectedItemGroup ? true : groupName === selectedItemGroup
+        return groupHoldsItem(resourceGroup, this.selectedItem)
       }
     }
   }
@@ -413,6 +414,10 @@
   border-radius: var(--cms-radius-sm);
   &.is-open {
     padding-bottom: var(--cms-space-1);
+  }
+  // a group inside a group sits one step in; the step is small and stops growing after five, so a deep menu keeps room for the names
+  &.nested {
+    margin-left: calc(var(--cms-space-3) * min(var(--depth), 5));
   }
 }
 

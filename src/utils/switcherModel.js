@@ -1,5 +1,6 @@
 import _ from 'lodash'
 import fuzzysort from 'fuzzysort'
+import { groupItems } from '@u/navModel'
 
 /**
  * Pure logic of the quick switcher (Ctrl+K): what can be searched, how it is ranked, how the arrow keys move.
@@ -8,7 +9,7 @@ import fuzzysort from 'fuzzysort'
 
 /**
  * The entries to search, one per resource or plugin of the menu.
- * @param {Array} groupedList the menu groups, each with a `list` of resources and plugins
+ * @param {Array} groupedList the menu groups, each with a `list` of resources and plugins, and the groups inside it
  * @param {Function} labelOf gives the display name of a resource or plugin (already translated)
  * @returns {Array<{ref: object, type: string, displayname: string}>}
  */
@@ -16,7 +17,7 @@ export function buildEntries (groupedList, labelOf) {
   const seen = new Set()
   const entries = []
   _.each(groupedList, (group) => {
-    _.each(_.get(group, 'list', []), (item) => {
+    _.each(groupItems(group), (item) => {
       if (!item || _.isString(item) || seen.has(item)) {
         return
       }

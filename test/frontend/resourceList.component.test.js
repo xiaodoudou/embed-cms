@@ -4,6 +4,7 @@ import ResourceList from '@c/records/ResourceList.vue'
 import ResourceService from '@s/ResourceService'
 import { mountComponent } from './helpers/mountField.js'
 import { groupedList, products, pages, settings, notes } from './helpers/navFixtures.js'
+import { buildGroupTree, orderGroups } from '@u/navModel'
 
 vi.mock('@s/ResourceService', async () => {
   const { default: Emitter } = await import('tiny-emitter')
@@ -42,7 +43,69 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
+const resourceOf = (title, group) => ({ title, name: title, displayname: { enUS: title }, group })
+const nestedMenu = () => orderGroups(buildGroupTree([
+  resourceOf('Pages', 'Content'), resourceOf('Posts', ['Content', 'Blog']), resourceOf('Tags', ['Content', 'Blog']), resourceOf('Drafts', ['Content', 'Blog', 'Private']),
+  resourceOf('Orders', 'Shop'), resourceOf('Notes')
+]), (name) => name, 'enUS')
+
 describe('ResourceList (the expanded sidebar)', () => {
+  describe('nested groups', () => {
+    it('shows a group inside its group, one step in, after the resources of the group', async () => {
+      await list({ groupedList: nestedMenu() })
+      expect(headings()).toEqual(['Content', 'Blog', 'Private', 'Shop', 'Others'])
+      expect(linksOf('Content')).toEqual(['Pages'])
+      expect(linksOf('Blog')).toEqual(['Posts', 'Tags'])
+      expect(linksOf('Private')).toEqual(['Drafts'])
+      expect(group('Content').classes()).not.toContain('nested')
+      expect(group('Blog').classes()).toContain('nested')
+      expect(group('Private').attributes('style')).toContain('--depth: 2')
+    })
+
+    it('hides the groups inside a group that is closed', async () => {
+      await list({ groupedList: nestedMenu() })
+      await group('Content').get('.group-toggle').trigger('click')
+      expect(isOpen('Content')).toBe(false)
+      expect(group('Blog').attributes('style')).toContain('display: none')
+      expect(group('Private').attributes('style')).toContain('display: none')
+      await group('Content').get('.group-toggle').trigger('click')
+      expect(group('Blog').attributes('style')).not.toContain('display: none')
+    })
+
+    it('opens the groups around the open resource and leaves the others closed', async () => {
+      // four top groups, so only the group of the open resource is open by default
+      const menu = orderGroups(buildGroupTree([
+        resourceOf('Posts', ['Content', 'Blog']), resourceOf('Drafts', ['Content', 'Blog', 'Private']), resourceOf('Pages', ['Content', 'Static']),
+        resourceOf('Orders', 'Shop'), resourceOf('Users', 'Team'), resourceOf('Notes')
+      ]), (name) => name, 'enUS')
+      const drafts = menu[0].groups[0].groups[0].list[0]
+      await list({ groupedList: menu, selectedItem: drafts })
+      expect(['Content', 'Blog', 'Private', 'Static', 'Shop', 'Team'].map(isOpen)).toEqual([true, true, true, false, false, false])
+    })
+
+    it('finds the resources of the groups inside a group when it filters', async () => {
+      await list({ groupedList: nestedMenu() })
+      await type('draft')
+      expect(headings()).toEqual(['Content', 'Blog', 'Private'])
+      expect(linksOf('Private')).toEqual(['Drafts'])
+    })
+
+    it('shows the image chosen in Settings for a group inside a group, by its name from the top down', async () => {
+      ResourceService.menuIcons.mockReturnValue({ 'Content / Blog': '/blog.png', Content: '/content.png' })
+      await list({ groupedList: nestedMenu() })
+      expect(group('Content').get('.group-image').attributes('src')).toBe('/content.png')
+      expect(group('Blog').get('.group-image').attributes('src')).toBe('/blog.png')
+      expect(group('Private').find('.group-image').exists()).toBe(false)
+    })
+
+    it('points at the group that lists the open resource when the breadcrumb does, not at the groups around it', async () => {
+      const menu = nestedMenu()
+      await list({ groupedList: menu, selectedItem: menu[0].groups[0].list[0], crumbHint: 'group' })
+      expect(group('Blog').get('.group-toggle').classes()).toContain('locating')
+      expect(group('Content').get('.group-toggle').classes()).not.toContain('locating')
+    })
+  })
+
   describe('the groups', () => {
     it('shows the groups in their order with Others last, and the resources of each in alphabetical order', async () => {
       await list()

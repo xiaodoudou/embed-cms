@@ -41,4 +41,3 @@ export function withGroupHeadings (items, groupOf) {
   return _.flatMap(names, (name) => (name === '' ? groups[name] : [{ type: 'subheader', title: name }, ...groups[name]]))
 }
 
-export default { highlightSegments, withGroupHeadings }

@@ -42,4 +42,3 @@ export function savedUserLanguage (resource, record, user, locales, current) {
   return _.includes(locales, record.language) && record.language !== current ? record.language : null
 }
 
-export default { localeTag, datePickerLocale, savedUserLanguage }

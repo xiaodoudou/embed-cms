@@ -64,4 +64,3 @@ export function getResourceLabel (resource) {
   return name ? TranslateService.get(name) : (resource.title || resource.name || '')
 }
 
-export default { getRecordLabel, getResourceLabel }

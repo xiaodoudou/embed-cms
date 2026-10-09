@@ -47,5 +47,7 @@ export default {
   // Ignore binaries that are referenced in package.json but not installed
   // exports only used inside their own file (and by tests) are fine
   ignoreExportsUsedInFile: true,
-  ignoreBinaries: ['ulimit', 'mongod']
+  ignoreBinaries: ['ulimit', 'mongod'],
+  // Screenshot scripts load it on demand and print an install hint when missing
+  ignoreDependencies: ['playwright-core']
 }

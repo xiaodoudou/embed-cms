@@ -16,5 +16,3 @@ export function toDateFnsFormat (format) {
 export function formatHas (format, token) {
   return String(format || '').includes(token)
 }
-
-export default { toDateFnsFormat, formatHas }

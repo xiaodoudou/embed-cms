@@ -8,7 +8,7 @@ const logger = require('../lib/logger')
 const { isAttachmentInput } = require('../lib/util/inputTypes')
 const { GoogleSpreadsheet } = require('google-spreadsheet')
 const md5File = require('md5-file')
-const prompt = require('prompt')
+const { confirm } = require('../lib/util/confirm')
 const { default: pAll } = require('p-all')
 const {setTimeout} = require('node:timers/promises')
 const { JWT } = require('google-auth-library')
@@ -86,22 +86,8 @@ class ImportManager {
     if (options.yes) {
       return
     }
-    const schema = {
-      name: 'confirm',
-      description: `Are you sure you want to seed to this environment (${program.args[0]}) to ${this.config.protocol}${this.config.host}? [yes/no]`,
-      type: 'string',
-      pattern: /^(yes|no)$/i,
-      message: 'yes / no',
-      required: true
-    }
-    let ans =  {confirm: 'no'}
-    try {
-      ans = await prompt.get(schema)
-    } catch (error) {
-      console.error('Error:', error)
-    }
-    if (ans.confirm.toLowerCase() !== 'yes') {
-      console.log(ans.confirm)
+    if (!await confirm(`Are you sure you want to seed to this environment (${program.args[0]}) to ${this.config.protocol}${this.config.host}? [yes/no]`)) {
+      console.log('no')
       process.exit(1)
     }
   }

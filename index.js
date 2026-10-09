@@ -18,6 +18,7 @@ const helmet = require('helmet')
 const _ = require('lodash')
 const fsExtra = require('fs-extra')
 const { isAttachmentInput } = require('./lib/util/inputTypes')
+const { ensurePrivateFolder } = require('./lib/util/privateFolder')
 const { isMultiSource, sourcesOf } = require('./lib/util/fieldSources')
 const session = require('express-session')
 const UUID = require('./lib/util/uuid')
@@ -311,8 +312,11 @@ class CMS {
       }
       if (process.env.NODE_ENV === 'production') {
         const FileStore = require('session-file-store')(session)
+        // a session file holds the login token of a person, in clear text: only the account of the server may enter the folder
+        const sessionsFolder = path.resolve(this.options.data, '.sessions.json')
+        ensurePrivateFolder(sessionsFolder)
         sessionOptions.store = new FileStore({
-          path: path.resolve(this.options.data, '.sessions.json'),
+          path: sessionsFolder,
           retries: 1,
           logFn: function(){}
         })

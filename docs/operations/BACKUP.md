@@ -29,6 +29,7 @@ Run them in the project folder, with the server stopped. `--server-stopped` is r
 
 - The backup is a new folder `backups/embed-cms-backup-<date>-files/` (change the place with `--out`) with `data/`, `cms.json` and `manifest.json`. It holds the secrets of `cms.json`: keep it private and out of git.
 - `--config <file>` names the `cms.json` when it is not `./cms.json`. The data folder is the `data` option of that file.
+- The sessions (`<data>/.sessions.json`) are not copied. They hold the login tokens of the people who are signed in, a backup has no use for them, and a token in a backup that travels is a login that can be taken. Everyone signs in again after a restore.
 - A restore moves the data folder that is there to `data.replaced-<date>`. It never deletes it. `cms.json` stays the one of the project, unless you add `--with-config`, which also moves the current one aside.
 - The files of every storage engine are in `data/`. With MongoDB or PostgreSQL the records are in the database server, so also take a dump with `mongodump` or `pg_dump`: `cms-backup files` copies only the files of the attachments and the configuration.
 

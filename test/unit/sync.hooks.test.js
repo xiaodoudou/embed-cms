@@ -70,12 +70,21 @@ describe('sync plugin: push after a change (unit)', () => {
   })
 
   it('groups a burst of changes into one call', async () => {
-    await cities.create({ key: 'a1', name: { en: 'A1' } })
-    await cities.create({ key: 'a2', name: { en: 'A2' } })
-    await cities.create({ key: 'a3', name: { en: 'A3' } })
-    await waitFor(() => calls.length > 0)
-    await sleep(200)
-    expect(calls).to.have.length(1)
+    // a create checks the unique key against the store, which takes longer than the 50 ms of the other tests on a busy machine, and the burst
+    // would split in two calls: give it a delay that no write takes longer than
+    const delay = 500
+    app.cms.$sync.hookDelay = delay
+    try {
+      await cities.create({ key: 'a1', name: { en: 'A1' } })
+      await cities.create({ key: 'a2', name: { en: 'A2' } })
+      await cities.create({ key: 'a3', name: { en: 'A3' } })
+      await waitFor(() => calls.length > 0)
+      // a second call would come within one more delay
+      await sleep(delay + 200)
+      expect(calls).to.have.length(1)
+    } finally {
+      app.cms.$sync.hookDelay = 50
+    }
   })
 
   it('follows the saved settings: no call without an address for the other CMS', async () => {

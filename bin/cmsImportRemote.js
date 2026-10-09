@@ -3,7 +3,7 @@
 const { program } = require('commander')
 // const _ = require('lodash')
 const path = require('path')
-const prompt = require('prompt')
+const { confirm } = require('../lib/util/confirm')
 
 const ImportWrapper = require('../lib/importers/remote')
 
@@ -42,21 +42,8 @@ class ImportManager {
     if (program.opts().yes) {
       return
     }
-    const schema = {
-      name: 'confirm',
-      description: `Are you sure you want to import data from ${this.buildUrl(config.remote)} to ${this.buildUrl(config.local)} ? [yes/no]`,
-      type: 'string',
-      pattern: /^(yes|no)$/i,
-      message: 'yes / no',
-      required: true
-    }
-    let answer =  {confirm: 'no'}
-    try {
-      answer = await prompt.get(schema)
-    // eslint-disable-next-line no-unused-vars
-    } catch (error) {}
-    if (answer.confirm.toLowerCase() !== 'yes') {
-      console.log(answer.confirm)
+    if (!await confirm(`Are you sure you want to import data from ${this.buildUrl(config.remote)} to ${this.buildUrl(config.local)} ? [yes/no]`)) {
+      console.log('no')
       process.exit(1)
     }
   }

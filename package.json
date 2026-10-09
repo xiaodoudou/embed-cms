@@ -22,7 +22,7 @@
     "jsconfig.json"
   ],
   "scripts": {
-    "dev": "node -e \"require('fs').rmSync('./src/plugins', { recursive: true, force: true })\" && cross-env VITE_CJS_IGNORE_WARNING=true vite",
+    "dev": "node scripts/clean-plugins.js && cross-env VITE_CJS_IGNORE_WARNING=true vite",
     "build": "vite build --emptyOutDir",
     "prepare": "node scripts/prepare.js",
     "prepack": "npm run build",

@@ -4,6 +4,13 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ## [Unreleased]
 
+## [3.0.7] - 2026-10-09
+
+### Changed
+
+- **`cms-import` and `cms-import-remote` ask their yes/no question with Node's `readline`.** They used the `prompt` package for it, which brought 11 more packages with it, among them `winston` 2, `colors`, `eyes`, `cycle` and `revalidator`. The question is the same. Anything other than a whole yes or no asks again, and a closed input (a pipe that ended, Ctrl+D) counts as no, so nothing is written when nobody answered.
+- **Two more dependencies are gone.** `stream-to-array` (last release 2016) was replaced by `stream/consumers`, and the dev tool `del-cli` by a small script. `npm audit` now reports 0 vulnerabilities, where it reported 6 high ones in dev tooling, all through `braces`, which has no patched release.
+
 ### Fixed
 
 - **The session files could be read by other accounts of the machine.** In production the sessions are files in `<data>/.sessions.json`, and a session holds the login token of the person in clear text. The folder was made with the permissions of the umask, usually 0755, so any account on the same machine (or a container sharing the volume) could read the files and use a token for as long as it lasts. The folder is now owner only (0700), at every start, including a folder that an earlier version made. `cms-backup files` no longer copies the sessions either. A token that was readable before the upgrade stays valid until it expires (24 hours). On a machine shared with other accounts, change `auth.secret` to end all of them at once.
@@ -198,6 +205,7 @@ The release that turned node-cms into a project that stands on its own: the firs
 - A delete goes to the replication peers right away again, `cms-import` prints no empty progress bars into logs, the xlsx import answers `400` without a file.
 
 [Unreleased]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.5...HEAD
+[3.0.7]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.6...v3.0.7
 [3.0.6]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.5...v3.0.6
 [3.0.5]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.4...v3.0.5
 [3.0.4]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.3...v3.0.4

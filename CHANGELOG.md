@@ -6,7 +6,7 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ### Fixed
 
-- **The session files could be read by other accounts of the machine.** In production the sessions are files in `<data>/.sessions.json`, and a session holds the login token of the person in clear text. The folder was made with the permissions of the umask, usually 0755, so any account on the same machine (or a container sharing the volume) could read the files and use a token for as long as it lasts. The folder is now owner only (0700), at every start, including a folder that an earlier version made. A token that was readable before the upgrade stays valid until it expires (24 hours). On a machine shared with other accounts, change `auth.secret` to end all of them at once.
+- **The session files could be read by other accounts of the machine.** In production the sessions are files in `<data>/.sessions.json`, and a session holds the login token of the person in clear text. The folder was made with the permissions of the umask, usually 0755, so any account on the same machine (or a container sharing the volume) could read the files and use a token for as long as it lasts. The folder is now owner only (0700), at every start, including a folder that an earlier version made. `cms-backup files` no longer copies the sessions either. A token that was readable before the upgrade stays valid until it expires (24 hours). On a machine shared with other accounts, change `auth.secret` to end all of them at once.
 
 ## [3.0.6] - 2026-10-08
 

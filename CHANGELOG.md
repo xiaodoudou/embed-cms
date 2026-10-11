@@ -4,6 +4,10 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ## [Unreleased]
 
+### Changed
+
+- **The Replicator page is in the CMS menu, and drawn with the plugin kit.** It was in the System menu, apart from Syslog and Sync. Its table, buttons, error message and record id field now use the kit (`cms-card`, `cms-datatable`, `cms-btn`, `cms-callout`, `cms-field`), like the other pages that run the CMS.
+
 ## [3.1.1] - 2026-10-11
 
 ### Changed

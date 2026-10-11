@@ -178,7 +178,7 @@ Every resource keeps its records in a store, and you choose which kind with `dbE
 | `dbEngine.type` | What it is | Needs |
 |---|---|---|
 | `leveldb` (the default) | a LevelDB folder per resource, read from disk | nothing (the `classic-level` package comes with embed-cms) |
-| `sqlite` | one SQLite file per resource, read from disk | nothing (it is part of Node 22; Node marks it experimental) |
+| `sqlite` | one SQLite file per resource, read from disk | nothing (it is part of Node; Node marks it experimental) |
 | `jsondown` | all records in memory, saved to one JSON file per resource | nothing |
 | `mongodb` | one collection per resource | a MongoDB server |
 | `postgres` | one table per resource | a PostgreSQL server |

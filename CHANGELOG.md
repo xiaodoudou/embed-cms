@@ -4,6 +4,16 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ## [Unreleased]
 
+## [3.1.1] - 2026-10-11
+
+### Changed
+
+- **Node 24 is the version Embed CMS requires, and Node 22 no longer is.** `engines` was `^22.12.0`. It is now `^24.0.0`, so installing on Node 22 prints an engine warning. CI runs every job on Node 24, and the Docker example runs on `node:24-bookworm-slim`.
+
+### Fixed
+
+- **`cms-import` and `cms-import-remote` crashed on Node 24 when their input ended right after a wrong answer.** Asked again after the wrong answer, the question was put to a closed input, which Node 24 refuses with `ERR_USE_AFTER_CLOSE`. It now answers no, as it does when the input closes before any answer.
+
 ## [3.1.0] - 2026-10-11
 
 ### Added
@@ -221,6 +231,7 @@ The release that turned node-cms into a project that stands on its own: the firs
 - A delete goes to the replication peers right away again, `cms-import` prints no empty progress bars into logs, the xlsx import answers `400` without a file.
 
 [Unreleased]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.5...HEAD
+[3.1.1]: https://github.com/xiaodoudou/embed-cms/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.7...v3.1.0
 [3.0.7]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.6...v3.0.7
 [3.0.6]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.5...v3.0.6

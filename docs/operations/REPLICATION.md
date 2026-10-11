@@ -159,6 +159,8 @@ A new site gets every article as soon as its link connects: the first thing a li
 
 When replication runs, the admin has a **Replicator** page in the CMS menu (for the `admins` group, which gets it by default whenever replication runs). There is nothing to start there: it shows, and refreshes every two seconds, each resource that replicates, the peers this node pulls it from with the state of each link (**Live**, **Connecting**, **Reconnecting** with the error and the next try, **Polling** or **Waiting** for a MongoDB or PostgreSQL peer) and the time of the last change it brought, and the peers that pull it from this node.
 
+![The Replicator page: articles sent to a site, notes both ways with one peer reconnecting, signups received](../img/replicator.png)
+
 The same is available over HTTP to any logged-in user (the routes are in `routesToAuth`), and from code:
 
 | Route | What it does |

@@ -6,7 +6,8 @@ const { startApp } = require('../helpers/app')
 describe('token field (unit)', () => {
   describe('the options', () => {
     it('keeps the length between 8 and 128 random bytes, 32 by default, a short prefix, and base64url unless it says hex', () => {
-      expect(tokenOptions({})).to.deep.equal({ length: 32, prefix: '', format: 'base64url' })
+      expect(tokenOptions({})).to.deep.equal({ length: 32, prefix: '', format: 'base64url', autoGenerate: false })
+      expect(tokenOptions({ options: { autoGenerate: true } }).autoGenerate).to.equal(true)
       expect(tokenOptions({ options: { length: 2 } }).length).to.equal(8)
       expect(tokenOptions({ options: { length: 1000 } }).length).to.equal(128)
       expect(tokenOptions({ options: { length: 'long' } }).length).to.equal(32)
@@ -32,12 +33,14 @@ describe('token field (unit)', () => {
   describe('a record about to be created', () => {
     const schema = [
       { field: 'title', input: 'string' },
-      { field: 'key', input: 'token', options: { prefix: 'k_' } },
-      { field: 'access.secret', input: 'token', options: { format: 'hex', length: 8 } }
+      { field: 'key', input: 'token', options: { prefix: 'k_', autoGenerate: true } },
+      { field: 'access.secret', input: 'token', options: { format: 'hex', length: 8, autoGenerate: true } },
+      { field: 'pasted', input: 'token' }
     ]
 
-    it('gets a token in every token field it leaves empty, nested ones too', () => {
+    it('gets a token in every autoGenerate field it leaves empty, nested ones too, and none in the others', () => {
       const record = fillTokens(schema, { title: 'A', key: '' })
+      expect(record.pasted).to.equal(undefined)
       expect(record.key).to.match(/^k_[A-Za-z0-9_-]{43}$/)
       expect(record.access.secret).to.match(/^[0-9a-f]{16}$/)
       expect(record.title).to.equal('A')
@@ -54,14 +57,16 @@ describe('token field (unit)', () => {
     let app
     before(async () => {
       app = await startApp({ disableJwtLogin: true })
-      app.cms.resource('keys', { schema: [{ field: 'name', input: 'string' }, { field: 'token', input: 'token', localised: false, options: { prefix: 'key_' } }] })
+      app.cms.resource('keys', { schema: [{ field: 'name', input: 'string' }, { field: 'token', input: 'token', localised: false, options: { prefix: 'key_', autoGenerate: true } }, { field: 'typed', input: 'token', localised: false }] })
     })
     after(() => app.close())
 
-    it('gives the record a token when it has none, and keeps the one it sends', async () => {
+    it('gives the record a token in an autoGenerate field when it has none, and keeps the one it sends', async () => {
       const api = app.cms.api()('keys')
       const made = await api.create({ name: 'first' })
       expect(made.token).to.match(/^key_[A-Za-z0-9_-]{43}$/)
+      // without autoGenerate the field waits for a token typed, pasted or made in the admin
+      expect(made.typed).to.equal(undefined)
       const given = await api.create({ name: 'second', token: 'key_mine' })
       expect(given.token).to.equal('key_mine')
       // an update does not make a new one

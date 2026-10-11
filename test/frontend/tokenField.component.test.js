@@ -5,7 +5,7 @@ import NotificationsService from '@s/NotificationsService'
 import { tokenOptions, encodeBytes, generateToken } from '@u/token'
 import { mountField } from './helpers/mountField.js'
 
-// The token field: a random value made once, read-only, copied with a button and replaced with another.
+// The token field: a key typed, pasted or made with the Generate button, and copied with the Copy button.
 
 let wrapper
 const mount = (schema = {}, model = {}) => {
@@ -21,9 +21,9 @@ afterEach(() => {
 
 describe('token helpers', () => {
   it('keep the options safe, as the server does', () => {
-    expect(tokenOptions({})).toEqual({ length: 32, prefix: '', format: 'base64url' })
-    expect(tokenOptions({ options: { length: 4, prefix: 'p_', format: 'hex' } })).toEqual({ length: 8, prefix: 'p_', format: 'hex' })
-    expect(tokenOptions({ options: { length: 4096 } }).length).toBe(128)
+    expect(tokenOptions({})).toEqual({ length: 32, prefix: '', format: 'base64url', autoGenerate: false })
+    expect(tokenOptions({ options: { length: 4, prefix: 'p_', format: 'hex', autoGenerate: true } })).toEqual({ length: 8, prefix: 'p_', format: 'hex', autoGenerate: true })
+    expect(tokenOptions({ options: { length: 4096, autoGenerate: 'yes' } })).toMatchObject({ length: 128, autoGenerate: false })
   })
 
   it('write the bytes in hex or in base64url without padding', () => {
@@ -40,26 +40,40 @@ describe('token helpers', () => {
 })
 
 describe('TokenField', () => {
-  it('gives a new record a token at once, read-only, in the format the field says', async () => {
+  it('starts empty, with the label, and a Generate button that fills it in the format the field says', async () => {
     mount({ options: { prefix: 'key_', format: 'hex', length: 8 } })
     await flushPromises()
-    expect(input().element.value).toMatch(/^key_[0-9a-f]{16}$/)
-    expect(input().attributes('readonly')).toBeDefined()
+    expect(input().element.value).toBe('')
     expect(wrapper.text()).toContain('Key')
+    await wrapper.get('.token-generate').trigger('click')
+    expect(input().element.value).toMatch(/^key_[0-9a-f]{16}$/)
   })
 
-  it('keeps the token the record has', async () => {
-    mount({}, { key: 'saved-token' })
+  it('takes a token typed or pasted in', async () => {
+    mount()
     await flushPromises()
-    expect(input().element.value).toBe('saved-token')
+    expect(input().attributes('readonly')).toBeUndefined()
+    await input().setValue('pasted-from-the-other-side')
+    expect(wrapper.emitted('input')?.at(-1)?.[0]).toBe('pasted-from-the-other-side')
   })
 
-  it('makes another token with Regenerate', async () => {
-    mount({}, { key: 'old-token' })
+  it('keeps the token the record has, and replaces it with Generate', async () => {
+    mount({}, { _id: 'a-record', key: 'old-token' })
     await flushPromises()
-    await wrapper.get('.token-regenerate').trigger('click')
+    expect(input().element.value).toBe('old-token')
+    await wrapper.get('.token-generate').trigger('click')
     expect(input().element.value).not.toBe('old-token')
     expect(input().element.value).toMatch(/^[A-Za-z0-9_-]{43}$/)
+  })
+
+  it('fills a new record at once when the field says autoGenerate, and leaves an existing one as it is', async () => {
+    mount({ options: { autoGenerate: true, prefix: 'auto_' } })
+    await flushPromises()
+    expect(input().element.value).toMatch(/^auto_/)
+    wrapper.unmount()
+    mount({ options: { autoGenerate: true } }, { _id: 'saved-record' })
+    await flushPromises()
+    expect(input().element.value).toBe('')
   })
 
   it('copies the token and says so', async () => {
@@ -74,10 +88,11 @@ describe('TokenField', () => {
     expect(send).toHaveBeenCalledWith('Token copied', 'success')
   })
 
-  it('makes no token and offers no Regenerate when the field is read-only', async () => {
-    mount({ readonly: true })
+  it('is read-only, with no Generate button, when the field says so', async () => {
+    mount({ readonly: true, options: { autoGenerate: true } }, { key: 'fixed' })
     await flushPromises()
-    expect(input().element.value).toBe('')
-    expect(wrapper.find('.token-regenerate').exists()).toBe(false)
+    expect(input().element.value).toBe('fixed')
+    expect(input().attributes('readonly')).toBeDefined()
+    expect(wrapper.find('.token-generate').exists()).toBe(false)
   })
 })

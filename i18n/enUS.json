@@ -535,7 +535,7 @@
     "TL_ID_COPIED": "ID copied",
     "TL_TOKEN_COPY": "Copy the token",
     "TL_TOKEN_COPIED": "Token copied",
-    "TL_TOKEN_REGENERATE": "Make a new token",
+    "TL_TOKEN_GENERATE": "Generate a new token",
     "TL_RECORDS": "Records",
     "TL_EXPAND_SIDEBAR": "Expand sidebar",
     "TL_COLLAPSE_SIDEBAR": "Collapse sidebar",

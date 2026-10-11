@@ -12,14 +12,16 @@ const MAX_PREFIX = 32
 
 /**
  * @param {object} schema the field: its `options` hold `length` (random bytes), `prefix` and `format`
- * @returns {{length: number, prefix: string, format: 'base64url'|'hex'}} the options made safe
+ * @returns {{length: number, prefix: string, format: 'base64url'|'hex', autoGenerate: boolean}} the options made safe
  */
 export function tokenOptions (schema) {
   const options = _.get(schema, 'options', {}) || {}
   const length = Number.isInteger(options.length) ? _.clamp(options.length, MIN_BYTES, MAX_BYTES) : DEFAULT_BYTES
   const prefix = _.isString(options.prefix) ? options.prefix.slice(0, MAX_PREFIX) : ''
   const format = options.format === 'hex' ? 'hex' : 'base64url'
-  return { length, prefix, format }
+  // true: a new record gets a token by itself; otherwise the field waits for one typed, pasted or made with its button
+  const autoGenerate = options.autoGenerate === true
+  return { length, prefix, format, autoGenerate }
 }
 
 /**

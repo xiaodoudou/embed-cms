@@ -46,6 +46,7 @@ import DurationField from '@c/fields/DurationField.vue'
 import MarkdownField from '@c/fields/MarkdownField.vue'
 import MaskedField from '@c/fields/MaskedField.vue'
 import MoneyField from '@c/fields/MoneyField.vue'
+import TokenField from '@c/fields/TokenField.vue'
 import PhoneField from '@c/fields/PhoneField.vue'
 import JsonEditor from '@c/fields/JsonEditor.vue'
 import WysiwygField from '@c/fields/Wysiwyg.vue'
@@ -118,6 +119,7 @@ app.use(router)
   .component('MarkdownField', MarkdownField)
   .component('MaskedField', MaskedField)
   .component('MoneyField', MoneyField)
+  .component('TokenField', TokenField)
   .component('PhoneField', PhoneField)
   .component('JsonEditor', JsonEditor)
   .component('WysiwygField', WysiwygField)

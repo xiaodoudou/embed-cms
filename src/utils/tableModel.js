@@ -38,6 +38,7 @@ const KIND_BY_INPUT = {
   rating: 'rating',
   duration: 'duration',
   money: 'money',
+  token: 'text',
   phone: 'phone',
   markdown: 'markdown'
 }

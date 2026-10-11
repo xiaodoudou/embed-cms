@@ -27,6 +27,24 @@ Catalogue: `resources/text_formats.js` (group **Text**, resource **Formatted str
 | `options.readonly` | boolean | `false` | Shows the token, changes nothing: no **Generate** button, and no token for a new record. |
 | `options.disabled` | boolean | `false` | Greyed out and not focusable. |
 
+## Variations
+
+### Default
+
+`resources/text_formats.js`, field `apiKey`. Empty, the field has only the **Generate** button:
+
+![Empty token](img/token-empty.png)
+
+After **Generate**, or once a token is typed or pasted, the **Copy** button appears next to it:
+
+![Generated token](img/token-generated.png)
+
+### Filled on creation
+
+`resources/text_formats.js`, field `hexToken` (`autoGenerate`, `length: 8`, `format: 'hex'`). A new record opens with its token:
+
+![Token made for a new record](img/token-auto.png)
+
 ## Stored value
 
 A string. A generated token is the prefix, then the random bytes: `key_mH2v0Z8yJ3sQe5b1rXo9cWkT4uPn6aLdFgVhYi7jRzE`. A typed or pasted one is kept as it is.

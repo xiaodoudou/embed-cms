@@ -114,6 +114,15 @@ add('password-required-error', 'text_formats', async (c) => {
   return refuse(c, 'requiredPassword')
 })
 
+
+// ---------------------------------------------------------------- token
+add('token-empty', 'text_formats', (c) => c.field('apiKey'))
+add('token-generated', 'text_formats', async (c) => {
+  await c.field('apiKey').locator('button.token-generate').click()
+  await c.blur()
+  return c.field('apiKey')
+})
+add('token-auto', 'text_formats', (c) => c.field('hexToken'))
 // ---------------------------------------------------------------- number, integer, double
 add('number-default', 'numbers', (c) => [c.field('number'), c.field('requiredNumber')])
 add('number-required-error', 'numbers', async (c) => {

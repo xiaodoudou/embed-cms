@@ -33,7 +33,7 @@ describe('FormService (how each input type is built and checked)', () => {
     it('knows every input type the documentation lists', () => {
       expect(Object.keys(mapper).sort()).toEqual([
         'checkbox', 'code', 'color', 'cropimage', 'date', 'daterange', 'datetime', 'double', 'duration', 'email', 'file', 'geopoint', 'group', 'image', 'imagemap', 'integer', 'json', 'markdown', 'money', 'multiselect',
-        'number', 'object', 'paragraph', 'password', 'phone', 'pillbox', 'radio', 'rating', 'segmented', 'select', 'string', 'text', 'time', 'transliterate', 'url', 'wysiwyg'
+        'number', 'object', 'paragraph', 'password', 'phone', 'pillbox', 'radio', 'rating', 'segmented', 'select', 'string', 'text', 'time', 'token', 'transliterate', 'url', 'wysiwyg'
       ])
     })
 

@@ -33,7 +33,7 @@ The rest of the setup happens in the admin, in **Sync settings** (CMS group), on
 | Setting | What to put there |
 |---|---|
 | What the other CMS may do here | `read` to let the other server read the synced resources, `write` to let it change them. |
-| This CMS > Token | A long random secret. The other server must send it to sync with this one; without it, sync is refused. |
+| This CMS > Token | A long random secret: type one, or make one with **Generate**, then copy it into the other server. The other server must send it to sync with this one; without it, sync is refused. |
 | This CMS > Address | How the other server reaches this one, e.g. `https://staging.example.com`. |
 | The other CMS > Token | The other server's own token. |
 | The other CMS > Address | The other server's address, e.g. `https://production.example.com`. |

@@ -319,6 +319,12 @@ describe('RecordEditor', () => {
     expect(wrapper.classes()).toContain('frozen')
   })
 
+  it('says a record of another node is read-only, and names that node', async () => {
+    await editor({ _id: 'mu0aaaaasitenodey0cglxoi', _local: false, name: 'x' })
+    expect(wrapper.find('.status-foreign').text()).toContain('sitenode')
+    expect(wrapper.find('.status-saved').exists()).toBe(false)
+  })
+
   describe('jump to', () => {
     const page = {
       title: 'pages',

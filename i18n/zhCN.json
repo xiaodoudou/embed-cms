@@ -420,6 +420,8 @@
     "TL_UNSAVED_CHANGES": "有未保存的更改",
     "TL_UNSAVED_CHANGES_HINT": "你有尚未保存的修改。点击创建或保存以保留，点击放弃则丢弃。",
     "TL_ALL_SAVED": "所有更改已保存",
+    "TL_FOREIGN_RECORD": "只读，由 {{ mid }} 创建",
+    "TL_FOREIGN_RECORD_HINT": "此记录由另一个节点创建，请在 {{ mid }} 上编辑。",
     "TL_JUMP_TO": "跳转到字段",
     "TL_JUMP_TO_SEARCH": "查找字段",
     "TL_INCOMPLETE": "未完成",

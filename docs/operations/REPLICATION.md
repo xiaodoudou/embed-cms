@@ -8,9 +8,7 @@ It works at the level of the store, record by record, and it knows which node cr
 
 ## How it works
 
-Every record id carries the [`mid`](../reference/CONFIG.md#core) of the node that created it. A node only edits its own records; the others it receives from peers are read-only (`_local: false`). This is what keeps two nodes from overwriting each other, and why every node needs its own 8-character `mid`.
-
-The admin shows such a record greyed out in the list, with a lock and "Read-only" next to it. Its form says "Read-only, made on" and the `mid` of the node that made it, where it can be edited, with every field disabled and no Save or Delete button. Over the REST API, a `PUT` or `DELETE` on it answers `403` ([API.md](../reference/API.md)).
+Every record id carries the [`mid`](../reference/CONFIG.md#core) of the node that created it. A node edits only its own records. The ones it receives from peers are read-only here ([Records of another node](#records-of-another-node)), which keeps two nodes from overwriting each other.
 
 Replication is live. A node keeps a link open to each peer it receives a resource from, and the link pulls:
 
@@ -36,6 +34,26 @@ A link that drops connects again by itself, after 1, 2, 5, 10, then 30 seconds w
 A store on MongoDB or PostgreSQL can't keep a link open: it sends what it has and ends. A node pulling from such a peer asks again every `replication.pollInterval` (30 seconds by default).
 
 The node a peer connects to only sends. Nothing a connecting peer sends is stored, so a node changes only through the links it opened itself, to the peers it lists.
+
+### Records of another node
+
+A record id is 24 characters in base 36, in three parts of 8:
+
+| Characters | What they are | In `muosrfetwebnode1y000gql4` |
+|---|---|---|
+| 1 to 8 | The time the record was created, in milliseconds | `muosrfet` |
+| 9 to 16 | The `mid` of the node that created it | `webnode1` |
+| 17 to 24 | A random number that only grows within a millisecond, so the ids of one node sort in creation order | `y000gql4` |
+
+A node owns the records whose id carries its own `mid`. The others are foreign records. It receives them from a peer, stores them and serves them, but it can't edit or delete them. That's why every node needs its own `mid`, and why it must keep it: change it once records exist, and they all turn foreign.
+
+On a foreign record:
+
+- The REST API answers `_local: false`. A `PUT` or `DELETE` answers `403` with `Can't modify foreign records`, and the record stays as it was.
+- The record list of the admin shows it greyed out, with a lock and "Read-only" before who updated it.
+- Its form says "Read-only, made on sitenode", with the `mid` of the node to edit it on. Every field is disabled, and there is no Save or Delete button.
+
+To change a foreign record, edit it on the node that created it. The change reaches this node through its link, like any other.
 
 ## Setting it up
 

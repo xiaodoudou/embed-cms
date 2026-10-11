@@ -10,7 +10,7 @@ It works at the level of the store, record by record, and it knows which node cr
 
 Every record id carries the [`mid`](../reference/CONFIG.md#core) of the node that created it. A node only edits its own records; the others it receives from peers are read-only (`_local: false`). This is what keeps two nodes from overwriting each other, and why every node needs its own 8-character `mid`.
 
-The admin shows such a record greyed out in the list, with a lock and "Read-only" next to it. Its form opens with every field disabled and no Save or Delete button. Over the REST API, a `PUT` or `DELETE` on it answers `403` ([API.md](../reference/API.md)).
+The admin shows such a record greyed out in the list, with a lock and "Read-only" next to it. Its form says "Read-only, made on" and the `mid` of the node that made it, where it can be edited, with every field disabled and no Save or Delete button. Over the REST API, a `PUT` or `DELETE` on it answers `403` ([API.md](../reference/API.md)).
 
 Replication is live. A node keeps a link open to each peer it receives a resource from, and the link pulls:
 

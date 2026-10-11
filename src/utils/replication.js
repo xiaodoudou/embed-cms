@@ -46,3 +46,33 @@ export function replicatedResources (resources) {
   const shown = _.filter(resources, (resource) => !_.isEmpty(resource.peers) || !_.isEmpty(resource.receives) || !_.isEmpty(resource.sends))
   return { shown, others: _.size(resources) - shown.length }
 }
+
+/**
+ * @param {string} url the REST url of a peer
+ * @returns {string} its host and port, the part a person recognises: http://site-1.internal:9990/api/ -> site-1.internal:9990
+ */
+export function peerHost (url) {
+  try {
+    return new URL(url).host || url
+  } catch {
+    return _.toString(url)
+  }
+}
+
+/**
+ * The machine ids of the peers this node pulls from, with their host: a peer that pulls from here is named by its machine
+ * id only, and this tells which host it is when this node also pulls from it.
+ * @param {Array<object>} resources the answer of GET /replicator/resources
+ * @returns {Object<string, string>} host by machine id
+ */
+export function hostsById (resources) {
+  const hosts = {}
+  _.each(resources, (resource) => {
+    _.each(resource.receives, (link) => {
+      if (link.peerId) {
+        hosts[link.peerId] = peerHost(link.peer)
+      }
+    })
+  })
+  return hosts
+}

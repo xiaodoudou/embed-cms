@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import CmsReplicator from '@c/pages/CmsReplicator.vue'
 import RequestService from '@s/RequestService'
-import { peerLabel, directionKey, linkState, replicatedResources } from '../../src/utils/replication.js'
+import { peerLabel, directionKey, linkState, replicatedResources, peerHost, hostsById } from '../../src/utils/replication.js'
 import { mountComponent, TranslateService } from './helpers/mountField.js'
 
 vi.mock('@s/RequestService', () => ({ default: { get: vi.fn(), post: vi.fn() } }))
@@ -14,15 +14,15 @@ const RESOURCES = [
     name: 'articles',
     type: 'downstream',
     peers: [{ url: 'http://central.internal:9990/api/', direction: 'upstream' }],
-    receives: [{ peer: 'http://central.internal:9990/api/', direction: 'upstream', state: 'live', error: null, since: NOW - 60000, retryAt: null, received: 3, lastReceivedAt: NOW - 5000 }],
+    receives: [{ peer: 'http://central.internal:9990/api/', peerId: 'central1', direction: 'upstream', state: 'live', error: null, since: NOW - 60000, retryAt: null, received: 3, lastReceivedAt: NOW - 5000 }],
     sends: []
   },
   {
     name: 'signups',
     type: 'normal',
     peers: [{ url: 'http://site-2.internal:9990/api/' }],
-    receives: [{ peer: 'http://site-2.internal:9990/api/', direction: null, state: 'reconnecting', error: 'The replication peer answered 404', since: null, retryAt: NOW + 4000, received: 0, lastReceivedAt: null }],
-    sends: [{ peer: 'site0002', since: NOW - 30000, sent: 2, lastSentAt: NOW - 10000 }]
+    receives: [{ peer: 'http://site-2.internal:9990/api/', peerId: 'site0002', direction: null, state: 'reconnecting', error: 'The replication peer answered 404', since: null, retryAt: NOW + 4000, received: 0, lastReceivedAt: null }],
+    sends: [{ peer: 'site0002', since: NOW - 30000, sent: 2, lastSentAt: NOW - 10000 }, { peer: 'site0003', since: NOW - 20000, sent: 0, lastSentAt: null }]
   },
   { name: 'drafts', type: 'normal', peers: [], receives: [], sends: [] }
 ]
@@ -61,6 +61,11 @@ describe('Replicator helpers', () => {
     expect(linkState('connecting').tone).toBe('neutral')
     expect(linkState('whatever').key).toBe('TL_LINK_STOPPED')
   })
+  it('names a peer by its host, and finds the host of a machine id from the links', () => {
+    expect(peerHost('http://site-1.internal:9990/api/')).toBe('site-1.internal:9990')
+    expect(peerHost('not a url')).toBe('not a url')
+    expect(hostsById(RESOURCES)).toEqual({ central1: 'central.internal:9990', site0002: 'site-2.internal:9990' })
+  })
   it('lists the resources that replicate, and counts the others', () => {
     const { shown, others } = replicatedResources(RESOURCES)
     expect(shown.map((resource) => resource.name)).toEqual(['articles', 'signups'])
@@ -75,14 +80,16 @@ describe('Replicator page', () => {
     expect(wrapper.findAll('thead th').map((th) => th.text())).toEqual(['Resource', 'Direction', 'Receives from', 'Sends to'])
     expect(rows()).toHaveLength(2)
     const articles = rows()[0]
-    expect(articles.find('.name').text()).toContain('articles')
-    expect(articles.find('.name code').text()).toBe('downstream')
-    expect(articles.findAll('td')[1].text()).toBe('From peers')
+    expect(articles.find('.name').text()).toBe('articles')
+    expect(articles.find('.direction').text()).toContain('From peers')
+    expect(articles.find('.direction .type').text()).toBe('downstream')
     expect(articles.find('.receives .cms-badge').text()).toBe('Live')
     expect(articles.find('.receives .cms-badge').classes()).toContain('is-success')
-    expect(articles.find('.receives').text()).toContain('http://central.internal:9990/api/')
-    expect(articles.find('.receives').text()).toContain('Last change')
-    expect(articles.find('.sends').text()).toBe('No peer pulls it now')
+    expect(articles.find('.receives .peer').text()).toBe('central.internal:9990')
+    expect(articles.find('.receives .peer').attributes('title')).toBe('http://central.internal:9990/api/')
+    expect(articles.find('.receives .peer-id').text()).toBe('central1')
+    expect(articles.find('.receives .link-detail').text()).toContain('Last change')
+    expect(articles.find('.sends').text()).toBe('None')
     expect(wrapper.find('.others').text()).toBe('1 other resource does not replicate.')
   })
 
@@ -91,10 +98,16 @@ describe('Replicator page', () => {
     const signups = rows()[1]
     expect(signups.find('.receives .cms-badge').text()).toBe('Reconnecting')
     expect(signups.find('.receives .cms-badge').classes()).toContain('is-error')
-    expect(signups.find('.receives').text()).toContain('The replication peer answered 404')
-    expect(signups.find('.receives').text()).toContain('Next try')
-    expect(signups.find('.sends').text()).toContain('site0002')
-    expect(signups.find('.sends .cms-badge').text()).toBe('Live')
+    expect(signups.find('.receives .link-error').text()).toBe('The replication peer answered 404')
+    expect(signups.find('.receives .link-detail').text()).toContain('Next try')
+    // a peer that pulls from here is named like the link to it: its host, with its machine id
+    const sends = signups.findAll('.sends .link')
+    expect(sends[0].find('.peer').text()).toBe('site-2.internal:9990')
+    expect(sends[0].find('.peer-id').text()).toBe('site0002')
+    expect(sends[0].find('.cms-badge').text()).toBe('Live')
+    // and by its machine id alone when this node does not pull from it
+    expect(sends[1].find('.peer').text()).toBe('site0003')
+    expect(sends[1].find('.link-detail').text()).toBe('No change yet')
   })
 
   it('has nothing to start by hand: no buttons', async () => {

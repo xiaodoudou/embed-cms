@@ -13,11 +13,12 @@ describe('plugin pages added to the menu', () => {
     expect(names({})).not.toContain('Cms Config')
   })
 
-  it('lists Syslog and Sync in the CMS group, with the pages that run the CMS, and the others in System', () => {
+  it('lists Syslog, Replicator and Sync in the CMS group, with the pages that run the CMS, and the others in System', () => {
     expect(pluginPages({})[0]).toEqual({ title: 'Syslog', displayname: 'Syslog', label: 'TL_SYSLOG', group: 'CMS' })
     expect(pluginPages({ import: {} }).slice(1).every((page) => !page.group)).toBe(true)
     expect(pluginPages({ sync: {} }).find((page) => page.displayname === 'Sync Resource')).toEqual({ title: 'SyncResource', displayname: 'Sync Resource', label: 'TL_SYNC_RESOURCE', group: 'CMS' })
-    expect(pluginPages({ import: {}, sync: {}, ...replication }).filter((page) => !page.group).map((page) => page.displayname)).toEqual(['Replicator', 'Cms Import'])
+    expect(pluginPages(replication).find((page) => page.displayname === 'Replicator')).toEqual({ title: 'CmsReplicator', displayname: 'Replicator', label: 'TL_REPLICATOR', group: 'CMS' })
+    expect(pluginPages({ import: {}, sync: {}, ...replication }).filter((page) => !page.group).map((page) => page.displayname)).toEqual(['Cms Import'])
   })
 
   it('gives every page a translation key for its name, and keeps the display name the rights of a group refer to', () => {
@@ -32,7 +33,7 @@ describe('plugin pages added to the menu', () => {
     expect(names({ sync: { disablePlugin: true } })).not.toContain('Sync Resource')
   })
 
-  it('offers the Replicator page, in the System group\'s list, only when /config says replication runs', () => {
+  it('offers the Replicator page, in the CMS group, only when /config says replication runs', () => {
     expect(names(replication)).toContain('Replicator')
     expect(pluginPages(replication).find((page) => page.displayname === 'Replicator').title).toBe('CmsReplicator')
     expect(names({ disableReplication: true })).not.toContain('Replicator')

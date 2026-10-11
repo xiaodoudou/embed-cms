@@ -148,7 +148,7 @@ Users and rights are content too. You'll find them in the **CMS** group of the m
 2. In **Users**, create an account per person, in that group.
 3. Create your own administrator in the `admins` group, sign in with it, and delete `localAdmin`.
 
-The `admins` group gets every right on every resource at each start, so a new resource is never locked away from you. The built-in plugin pages (Syslog in the CMS menu, and Replicator in the System menu when replication runs) are for `admins` only: they're in that group's **plugins** list at every start.
+The `admins` group gets every right on every resource at each start, so a new resource is never locked away from you. The built-in plugin pages (Syslog and, when replication runs, Replicator, both in the CMS menu) are for `admins` only: they're in that group's **plugins** list at every start.
 
 ## 6. Go to production
 

@@ -153,7 +153,7 @@ A site that missed articles, a new one for example, gets them when the central n
 
 ## Starting a sync by hand
 
-When replication runs, the admin has a **Replicator** page in the System menu (for the `admins` group, which gets it by default whenever replication runs). It lists the resources with their type and peers, syncs a resource or one record, and says which peers failed. The same is available over HTTP to any logged-in user (the routes are in `routesToAuth`), and from code:
+When replication runs, the admin has a **Replicator** page in the CMS menu (for the `admins` group, which gets it by default whenever replication runs). It lists the resources with their type and peers, syncs a resource or one record, and says which peers failed. The same is available over HTTP to any logged-in user (the routes are in `routesToAuth`), and from code:
 
 | Route | What it does |
 |---|---|

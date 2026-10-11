@@ -201,7 +201,7 @@ Put a proxy (nginx, Caddy or Traefik) on the machine and give it the https certi
 |---|---|
 | Change a secret (a leak, someone leaves) | Edit `.env`, or empty the line and run `./scripts/env.sh`. Then run `./scripts/start.sh`, and compose replaces the container with one that has the new value. Changing `AUTH_SECRET` or `SESSION_SECRET` signs everybody out and does nothing else. |
 | Upgrade embed-cms | Raise `embed-cms` in `package.json` and run `npm install --package-lock-only`. Then run `./scripts/build.sh` and `./scripts/start.sh`. The data in the volume stays. |
-| Back up | Stop the container first, because the databases are files that are written while it runs. Run `docker compose stop`, then `docker run --rm -v embed-cms-docker_data:/data -v "$PWD":/backup node:22-bookworm-slim tar czf /backup/data.tgz -C /data .`, then `./scripts/start.sh`. |
+| Back up | Stop the container first, because the databases are files that are written while it runs. Run `docker compose stop`, then `docker run --rm -v embed-cms-docker_data:/data -v "$PWD":/backup node:24-bookworm-slim tar czf /backup/data.tgz -C /data .`, then `./scripts/start.sh`. |
 | Use your own project | Copy this folder. Replace `resources/` and `content.json` (and add your site's routes to `server.js`). Keep the rest. Add every variable your code reads to `.env.example`. |
 | Use another store | PostgreSQL and MongoDB read their credentials from the environment ([storage engines](../../reference/CONFIG.md#storage-engines)). Put `POSTGRES_USER` and `POSTGRES_PASSWORD` in `.env` like the other secrets, and add the database as one more service in `compose.yaml`. |
 

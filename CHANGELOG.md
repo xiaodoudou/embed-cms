@@ -6,7 +6,8 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ### Changed
 
-- **Node 24, the newest LTS, is supported.** `engines` was `^22.12.0`, which npm reads as Node 22 only, so installing on Node 24 printed an engine warning. It is now `^22.12.0 || ^24.0.0`, and CI runs the unit, frontend, integration and build steps on Node 24 beside Node 22. The Docker example now runs on Node 24 (`node:24-bookworm-slim`), and so do the commit check, the database drivers job and the npm publish.
+- **Node 24, the newest LTS, is supported.** `engines` was `^22.12.0`, which npm reads as Node 22 only, so installing on Node 24 printed an engine warning. It is now `^22.12.0 || ^24.0.0`, and CI runs the unit, frontend, integration and build steps on Node 24 beside Node 22. The Docker example now runs on Node 24 (`node:24-bookworm-slim`), and so do the commit check, the database drivers job and the npm publish. Running the tests on Node 24 found one bug, now fixed: `cms-import` and `cms-import-remote` crashed on Node 24, instead of answering no, when their input ended right after a wrong answer (`printf 'what
+' | cms-import`).
 
 ## [3.1.0] - 2026-10-11
 

@@ -11,6 +11,7 @@ Every field in a resource's schema has an `input` type, and it's the input that 
 | `text` | `CustomTextarea` | string | [text](fields/text.md) |
 | `phone` | `PhoneField` | international number, `+442071838750` | [phone](fields/phone.md) |
 | `password` | `CustomInput` | string, not hashed | [password](fields/password.md) |
+| `token` | `TokenField` | string, a random value made once | [token](fields/token.md) |
 | `email` | `CustomInput` | string | [email](fields/email.md) |
 | `url` | `CustomInput` | string | [url](fields/url.md) |
 | `number` | `CustomInput` | number | [number](fields/number.md) |

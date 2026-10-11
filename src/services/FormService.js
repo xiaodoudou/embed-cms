@@ -495,6 +495,10 @@ const typeMapper = {
     type: 'PhoneField',
     validator: customValidators.phone
   },
+  // a random value made once, read-only, with Copy and Regenerate (see utils/token.js)
+  token: {
+    type: 'TokenField'
+  },
   // a text written in Markdown, with a toolbar and a preview (see utils/markdown.js)
   markdown: {
     type: 'MarkdownField',

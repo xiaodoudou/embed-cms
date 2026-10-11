@@ -4,6 +4,11 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ## [Unreleased]
 
+### Added
+
+- **A token field.** `input: 'token'` holds a key or a secret that two systems share. Type it, paste it, or make a random one with the **Generate** button, and copy it with **Copy**. `options.length` (random bytes), `options.prefix` and `options.format` (`base64url` or `hex`) shape what Generate makes, and `options.autoGenerate` gives a new record a token by itself, in the admin and over the API. See [token](docs/reference/fields/token.md).
+- **The Token under This CMS in the Sync settings is a token field.** It has a Generate and a Copy button, so the secret no longer has to be invented by hand.
+
 ### Changed
 
 - **Replication is live, and needs no port of its own.** A node keeps a link open to each peer it receives a resource from: the peer sends what the node lacks, then each change as it is written, and the link connects again by itself after an outage. Records go over a websocket on the HTTP port of the CMS, at `/_replicator` next to the REST API, so they travel over `wss://` when the CMS is served over HTTPS; files still go over the REST API. A node a peer connects to only sends, so a connecting peer can no longer write anything. With MongoDB or PostgreSQL, a node pulls again every `replication.pollInterval` (30 seconds). **To upgrade:** remove `netPort`, give each peer the `url` of its REST API, set `replication.secret` on every node, and list on each node the peers it receives from. `settleDelay` and `POST /replicator/sync/:resource/:id` are gone. See [REPLICATION.md](docs/operations/REPLICATION.md#moving-from-3x).

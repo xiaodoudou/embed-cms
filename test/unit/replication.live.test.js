@@ -126,6 +126,29 @@ describe('how a link says what went wrong (unit)', () => {
   })
 })
 
+describe('stopping a link (unit)', function () {
+  this.timeout(15000)
+  const http = require('http')
+  const WebSocket = require('ws')
+
+  it('drops a connection still in its handshake, so a node closes at once', async () => {
+    // a peer that takes the websocket and never says a word: the handshake would wait for its idle timeout (30 seconds)
+    const silent = new WebSocket.WebSocketServer({ noServer: true })
+    const server = http.createServer((req, res) => res.writeHead(404).end())
+    server.on('upgrade', (req, socket, head) => silent.handleUpgrade(req, socket, head, () => {}))
+    await new Promise(resolve => server.listen(0, resolve))
+    const app = await startApp({ replication: { peers: [], peersByResource: { comments: [{ url: `http://localhost:${server.address().port}/api/` }] }, secret: randomSecret() } })
+    const link = app.cms.$replicator.links[0]
+    expect(await waitFor(() => !!link.connecting, 3000)).to.equal(true)
+    const started = Date.now()
+    await app.close()
+    expect(Date.now() - started).to.be.below(5000)
+    expect(link.state).to.equal('stopped')
+    silent.clients.forEach(ws => ws.terminate())
+    await new Promise(resolve => server.close(resolve))
+  })
+})
+
 describe('which resources a node pulls (unit)', () => {
   let app
   afterEach(async () => { if (app) { await app.close(); app = undefined } })

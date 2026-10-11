@@ -63,7 +63,7 @@ describe('live replication (unit)', function () {
     const { body: onB } = await agentB.get('/replicator/resources')
     const comments = onB.find(item => item.name === 'comments')
     expect(comments.receives).to.have.length(1)
-    expect(comments.receives[0]).to.include({ peer: `${a.url}/api/`, state: 'live', error: null })
+    expect(comments.receives[0]).to.include({ peer: `${a.url}/api/`, peerId: 'aaaaaaaa', state: 'live', error: null })
     expect(comments.receives[0].received).to.be.at.least(2)
     expect(onB.find(item => item.name === 'authors').receives).to.deep.equal([])
 

@@ -12,6 +12,12 @@
         <p v-if="loadError" class="load-error cms-callout is-error" role="alert">{{ loadError }}</p>
         <div v-if="loaded && shown.length > 0" class="cms-datatable-scroll">
           <table class="cms-datatable">
+            <colgroup>
+              <col class="col-name">
+              <col class="col-direction">
+              <col class="col-links">
+              <col class="col-links">
+            </colgroup>
             <thead>
               <tr>
                 <th>{{ $filters.translate('TL_RESOURCE') }}</th>
@@ -22,31 +28,40 @@
             </thead>
             <tbody>
               <tr v-for="resource in shown" :key="resource.name">
-                <td class="name">
-                  {{ resource.name }}
-                  <code class="cms-code">{{ resource.type }}</code>
+                <td class="name">{{ resource.name }}</td>
+                <td class="direction">
+                  <span>{{ $filters.translate(directionKey(resource.type)) }}</span>
+                  <span class="type cms-text-sm cms-text-muted">{{ resource.type }}</span>
                 </td>
-                <td>{{ $filters.translate(directionKey(resource.type)) }}</td>
                 <td class="receives">
                   <ul v-if="resource.receives.length > 0" class="links">
                     <li v-for="link in resource.receives" :key="link.peer" class="link">
-                      <span class="cms-badge" :class="`is-${tone(link.state)}`">{{ $filters.translate(stateKey(link.state)) }}</span>
-                      <span class="peer">{{ link.peer }}</span>
-                      <span v-if="link.error" class="cms-text-sm cms-text-error">{{ link.error }}</span>
-                      <span class="cms-text-sm cms-text-muted">{{ receivedText(link) }}</span>
+                      <div class="link-head">
+                        <span class="cms-badge" :class="badgeClass(link.state)">{{ $filters.translate(stateKey(link.state)) }}</span>
+                        <span class="peer" :title="link.peer">{{ peerHost(link.peer) }}</span>
+                        <span v-if="link.peerId" class="peer-id cms-text-sm cms-text-muted">{{ link.peerId }}</span>
+                      </div>
+                      <div v-if="link.error" class="link-error cms-text-sm cms-text-error">{{ link.error }}</div>
+                      <div class="link-detail cms-text-sm cms-text-muted">{{ receivedText(link) }}</div>
                     </li>
                   </ul>
-                  <span v-else class="cms-text-muted">{{ $filters.translate('TL_NO_LINK') }}</span>
+                  <span v-else class="none cms-text-muted">{{ $filters.translate('TL_NONE') }}</span>
                 </td>
                 <td class="sends">
                   <ul v-if="resource.sends.length > 0" class="links">
-                    <li v-for="(peer, index) in resource.sends" :key="`${peer.peer}-${index}`" class="link">
-                      <span class="cms-badge is-success">{{ $filters.translate('TL_LINK_LIVE') }}</span>
-                      <span class="peer">{{ peer.peer }}</span>
-                      <span class="cms-text-sm cms-text-muted">{{ sentText(peer) }}</span>
+                    <li v-for="(peer, index) in resource.sends" :key="peer.peer + '-' + index" class="link">
+                      <div class="link-head">
+                        <span class="cms-badge is-success">{{ $filters.translate('TL_LINK_LIVE') }}</span>
+                        <template v-if="hosts[peer.peer]">
+                          <span class="peer">{{ hosts[peer.peer] }}</span>
+                          <span class="peer-id cms-text-sm cms-text-muted">{{ peer.peer }}</span>
+                        </template>
+                        <span v-else class="peer">{{ peer.peer }}</span>
+                      </div>
+                      <div class="link-detail cms-text-sm cms-text-muted">{{ sentText(peer) }}</div>
                     </li>
                   </ul>
-                  <span v-else class="cms-text-muted">{{ $filters.translate('TL_NO_PEER_PULLING') }}</span>
+                  <span v-else class="none cms-text-muted">{{ $filters.translate('TL_NONE') }}</span>
                 </td>
               </tr>
             </tbody>
@@ -64,7 +79,7 @@
   import relativeTime from 'dayjs/plugin/relativeTime'
   import RequestService from '@s/RequestService'
   import TranslateService from '@s/TranslateService'
-  import { directionKey, linkState, replicatedResources } from '@u/replication'
+  import { directionKey, linkState, replicatedResources, peerHost, hostsById } from '@u/replication'
 
   Dayjs.extend(relativeTime)
 
@@ -76,7 +91,8 @@
 
   /**
    * The state of the replication, live: for each resource that replicates, the peers it receives from (and how each link
-   * is doing) and the peers that pull it from this node. Nothing to start by hand: the links run by themselves.
+   * is doing) and the peers that pull it from this node. Nothing to start by hand: the links run by themselves. A peer is
+   * named by its host, with its machine id next to it, on both sides.
    */
   export default {
     data() {
@@ -95,6 +111,10 @@
       /** @returns {number} how many resources do not replicate */
       others () {
         return replicatedResources(this.resources).others
+      },
+      /** @returns {Object<string, string>} the host of each peer this node pulls from, by machine id */
+      hosts () {
+        return hostsById(this.resources)
       }
     },
     mounted() {
@@ -106,6 +126,7 @@
     },
     methods: {
       directionKey,
+      peerHost,
       /**
        * @param {string} state
        * @returns {string} the translation key of the state of a link
@@ -115,10 +136,10 @@
       },
       /**
        * @param {string} state
-       * @returns {string} the tone of its badge
+       * @returns {string} the class of its badge: its colour
        */
-      tone (state) {
-        return linkState(state).tone
+      badgeClass (state) {
+        return `is-${linkState(state).tone}`
       },
       /**
        * @param {{received: number, lastReceivedAt: number|null, retryAt: number|null, state: string}} link
@@ -161,23 +182,34 @@
     margin: 0 var(--cms-space-6) var(--cms-space-6);
     max-width: var(--cms-content-max);
   }
+  .col-name {
+    width: 18%;
+  }
+  .col-direction {
+    width: 14%;
+  }
+  .col-links {
+    width: 34%;
+  }
+  td {
+    vertical-align: top;
+  }
   .name {
     font-weight: var(--cms-fw-semibold);
-    white-space: nowrap;
-    .cms-code {
-      margin-left: var(--cms-space-2);
-      font-weight: normal;
-    }
+  }
+  .direction .type {
+    display: block;
+    font-family: var(--cms-font-mono);
   }
   .links {
     display: flex;
     flex-direction: column;
-    gap: var(--cms-space-2);
+    gap: var(--cms-space-3);
     margin: 0;
     padding: 0;
     list-style: none;
   }
-  .link {
+  .link-head {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -187,6 +219,10 @@
     font-family: var(--cms-font-mono);
     font-size: var(--cms-fs-sm);
     word-break: break-all;
+  }
+  .link-error,
+  .link-detail {
+    margin-top: 2px;
   }
   .others {
     margin: var(--cms-space-3) 0 0;

@@ -5,6 +5,7 @@ import NotificationsService from '@s/NotificationsService'
 import ResourceService from '@s/ResourceService'
 import { mountComponent } from './helpers/mountField.js'
 import { groupedList, products, returns, pages, notes } from './helpers/navFixtures.js'
+import { buildGroupTree, orderGroups } from '@u/navModel'
 
 vi.mock('@s/ResourceService', async () => {
   const { default: Emitter } = await import('tiny-emitter')
@@ -39,7 +40,55 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
+const resourceOf = (title, group) => ({ title, name: title, displayname: { enUS: title }, group })
+const nestedMenu = () => orderGroups(buildGroupTree([
+  resourceOf('Pages', 'Content'), resourceOf('Posts', ['Content', 'Blog']), resourceOf('Drafts', ['Content', 'Blog', 'Private']), resourceOf('Orders', ['Shop', 'Sales'])
+]), (name) => name, 'enUS')
+
 describe('NavRail (the collapsed sidebar)', () => {
+  describe('nested groups', () => {
+    it('has a badge for the top group only, counting everything inside it', () => {
+      rail({ groupedList: nestedMenu() })
+      expect(wrapper.findAll('.rail-groups .rail-badge')).toHaveLength(2)
+      expect(badge('content').attributes('aria-label')).toContain('3')
+    })
+
+    it('lists the groups inside a group in its flyout, with their names', async () => {
+      rail({ groupedList: nestedMenu() })
+      await badge('content').trigger('click')
+      await settle()
+      expect(flyoutNames()).toEqual(['Pages', 'Posts', 'Drafts'])
+      expect([...document.body.querySelectorAll('.rail-flyout-subhead')].map((head) => head.textContent)).toEqual(['Blog', 'Private'])
+    })
+
+    it('shows the image of a group inside the group in the flyout', async () => {
+      ResourceService.menuIcons.mockReturnValue({ 'Content / Blog': '/blog.png' })
+      rail({ groupedList: nestedMenu() })
+      await badge('content').trigger('click')
+      await settle()
+      const images = [...document.body.querySelectorAll('.rail-flyout-subhead img')]
+      expect(images.map((image) => image.getAttribute('src'))).toEqual(['/blog.png'])
+    })
+
+    it('treats a top group with a single resource, however deep, as a page', async () => {
+      rail({ groupedList: nestedMenu() })
+      await badge('shop').trigger('click')
+      expect(flyout()).toBe(null)
+      expect(selectResource).toHaveBeenCalledWith(expect.objectContaining({ title: 'Orders' }))
+    })
+
+    it('moves with the arrow keys over the resources of every group, not over the names', async () => {
+      rail({ groupedList: nestedMenu() })
+      await badge('content').trigger('click')
+      await settle()
+      const items = [...document.body.querySelectorAll('.rail-flyout-item')]
+      expect(items).toHaveLength(3)
+      items[0].focus()
+      flyout().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }))
+      expect(document.activeElement).toBe(items[1])
+    })
+  })
+
   describe('the badges', () => {
     it('has one badge per group, with initials and a label that says how many resources it holds', () => {
       rail()

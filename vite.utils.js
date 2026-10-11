@@ -146,7 +146,8 @@ ${kit}`
     }
     _.each(this.proxy, (route) => {
       route.ws = true
-      route.changeOrigin = true
+      // keep the Host of the page: the CMS compares it with the Origin of a write and of the updates socket (security.csrf)
+      route.changeOrigin = false
     })
     // console.info('Proxy is', this.proxy)
     return this.proxy

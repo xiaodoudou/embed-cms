@@ -598,13 +598,23 @@ class CMS {
 
   /**
    * Remembers the name of a menu group (a string, or a per-language object: the English name, else the first one).
-   * @param {string|object} group the `group` of a resource
+   * A nested group (a list of names) is remembered with every group on the way down, each as the names joined by " / "
+   * (`Content / Blog`): that is how the Settings menu icons name it.
+   * @param {string|object|Array<string|object>} group the `group` of a resource
    */
   addMenuGroupName = (group) => {
-    const name = _.isString(group) ? group : _.get(group, 'enUS', _.first(_.values(group)))
-    if (_.isString(name) && !_.isEmpty(name) && !_.includes(this._menuGroupNames, name)) {
-      this._menuGroupNames.push(name)
-    }
+    const levels = _.reject(_.isArray(group) ? group : [group], _.isEmpty)
+    const names = _.map(levels, (level) => (_.isString(level) ? level : _.get(level, 'enUS', _.first(_.values(level)))))
+    _.each(names, (name, depth) => {
+      const path = _.take(names, depth + 1)
+      if (!_.every(path, (part) => _.isString(part) && !_.isEmpty(part))) {
+        return
+      }
+      const key = path.join(' / ')
+      if (!_.includes(this._menuGroupNames, key)) {
+        this._menuGroupNames.push(key)
+      }
+    })
   }
 
   /**

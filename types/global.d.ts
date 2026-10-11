@@ -240,8 +240,8 @@ declare namespace EmbedCMS {
   interface ResourceDefinition {
     /** The name shown in the admin */
     displayname?: Translatable
-    /** The heading of the admin menu it is listed under */
-    group?: Translatable
+    /** The heading of the admin menu it is listed under. A list of names nests it: `['Content', 'Blog']` is the group Blog inside Content. */
+    group?: Translatable | Translatable[]
     /** The content languages */
     locales?: string[]
     /** `'table'` shows a grid with a column per field instead of the list */
@@ -251,6 +251,10 @@ declare namespace EmbedCMS {
     type?: ResourceDirection
     /** What each group of nested fields (`address.city`) looks like, keyed by the path of the group: `{ address: { label: 'Address', collapsible: true } }` */
     groups?: Record<string, GroupDefinition>
+    /** A Mustache template that names a record in the list and in the multiple selection; the first field of the schema when left out */
+    displayItem?: string
+    /** `{ field: resource }`: for `displayItem`, the id in `field` is replaced by the record of `resource` it points to */
+    extraSources?: Record<string, string>
     /** The user groups that see it in the admin menu (the API does not enforce this: use the rights of the groups) */
     allowed?: string[]
     schema: FieldDefinition[]

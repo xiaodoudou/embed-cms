@@ -20,6 +20,7 @@
 <script>
   import _ from 'lodash'
   import { getResourceLabel } from '@u/recordLabel'
+  import { groupOf } from '@u/navModel'
 
   /** The resource title bar with the dropdown that lists the other resources of the same group (list and table view). */
   export default {
@@ -33,9 +34,9 @@
       return { opened: false }
     },
     computed: {
-      /** @returns {Object|undefined} the group of the resource */
+      /** @returns {Object|undefined} the group of the resource, the innermost one */
       group () {
-        return _.find(this.groupedList, (resourceGroup) => this.groupSelected(resourceGroup))
+        return this.resource ? groupOf(this.groupedList, this.resource) : undefined
       }
     },
     methods: {
@@ -54,21 +55,6 @@
         if (resource !== this.resource && _.isFunction(this.selectCallback)) {
           this.selectCallback(resource)
         }
-      },
-      /**
-       * @param {Object} resourceGroup
-       * @returns {boolean} whether the resource is in it
-       */
-      groupSelected (resourceGroup) {
-        if (!this.resource) {
-          return false
-        }
-        const selectedItemGroup = _.get(this.resource, 'group.enUS', _.get(this.resource, 'group', false))
-        const groupName = _.get(resourceGroup, 'name.enUS', resourceGroup.name)
-        if (groupName === 'TL_OTHERS' && !selectedItemGroup) {
-          return true
-        }
-        return groupName === selectedItemGroup
       }
     }
   }

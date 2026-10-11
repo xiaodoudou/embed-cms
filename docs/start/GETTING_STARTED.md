@@ -105,7 +105,7 @@ A few things are going on here:
 - **`locales`** gives every field of `articles` one value per language, with a tab per language in the editor. A field that doesn't change with the language says `localised: false`.
 - `source: 'authors'` makes the select offer the records of another resource, and stores the author's `_id`.
 - **`unique`** is checked by the server, and it's how imports and syncs recognise a record. Give every resource one.
-- **`group`** files the resource under a heading in the admin's menu.
+- **`group`** files the resource under a heading in the admin's menu. A list such as `['Content', 'Blog']` files it under a group inside a heading.
 
 Two more resource-level keys you'll meet: `view: 'table'` shows the records as a spreadsheet-like table instead of a list, and `maxCount: 1` turns a resource into a single record (site settings, a home page) with no list at all. All the field types and their options are in [FIELDS.md](../reference/FIELDS.md), and the `resources/` folder of this repository has an example of each.
 

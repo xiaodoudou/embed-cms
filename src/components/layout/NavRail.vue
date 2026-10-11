@@ -46,14 +46,19 @@
           <span class="rail-flyout-title">{{ titleOf(openGroup) }}</span>
         </div>
         <ul class="rail-flyout-list">
-          <li v-for="resource in items" :key="resource.name || resource.title">
-            <button
-              type="button" role="menuitem" class="rail-flyout-item" :class="{selected: isSelected(resource)}" tabindex="-1" :aria-current="isSelected(resource) ? 'page' : undefined"
-              @click="choose(resource)"
-            >
-              <span class="rail-flyout-name">{{ resourceTitle(resource) }}</span>
-            </button>
-          </li>
+          <template v-for="row in flyoutRows" :key="keyOf(row.group)">
+            <li v-if="row.depth > 0" class="rail-flyout-subhead" role="presentation" :style="{'--depth': row.depth}">
+              <img v-if="iconUrl(row.group)" :src="iconUrl(row.group)" class="rail-flyout-image" alt="">{{ titleOf(row.group) }}
+            </li>
+            <li v-for="resource in row.list" :key="resource.name || resource.title" :class="{nested: row.depth > 0}" :style="{'--depth': row.depth}">
+              <button
+                type="button" role="menuitem" class="rail-flyout-item" :class="{selected: isSelected(resource)}" tabindex="-1" :aria-current="isSelected(resource) ? 'page' : undefined"
+                @click="choose(resource)"
+              >
+                <span class="rail-flyout-name">{{ resourceTitle(resource) }}</span>
+              </button>
+            </li>
+          </template>
         </ul>
       </div>
     </teleport>
@@ -68,7 +73,7 @@
   import ResourceService from '@s/ResourceService'
   import { shortcutLabel } from '@u/platform'
   import {
-    railSections, groupSettingsName, groupKey, groupHoldsItem, groupInitials, groupTint, orderResources, moveInList, flyoutPosition
+    railSections, groupMenuName, groupKey, groupHoldsItem, groupItems, groupRows, groupInitials, groupTint, orderResources, moveInList, flyoutPosition
   } from '@u/navModel'
 
   const HOVER_OPEN_DELAY = 90
@@ -110,9 +115,13 @@
       openGroup () {
         return _.find(this.sections.groups, (group) => groupKey(group) === this.openKey) || null
       },
-      /** @returns {Array<Object>} the resources of the open group, ordered by title */
+      /** @returns {Array<{group: Object, depth: number, list: Array<Object>}>} the open group, then each group inside it, with the resources ordered by title */
+      flyoutRows () {
+        return this.openGroup ? groupRows(this.openGroup, (list) => orderResources(list, this.resourceTitle)) : []
+      },
+      /** @returns {Array<Object>} the resources of the open group and the groups inside it, in the order shown */
       items () {
-        return this.openGroup ? orderResources(_.get(this.openGroup, 'list', []), this.resourceTitle) : []
+        return _.flatMap(this.flyoutRows, 'list')
       },
       /** @returns {string} the rail shortcut as the platform writes it */
       shortcutLabel () {
@@ -143,11 +152,11 @@
        * @returns {string} the aria label: the title and the count of resources
        */
       groupLabel (group) {
-        return `${this.titleOf(group)}, ${TranslateService.get(_.size(group.list) === 1 ? 'TL_N_RESOURCES_ONE' : 'TL_N_RESOURCES', { num: _.size(group.list) })}`
+        return `${this.titleOf(group)}, ${TranslateService.get(groupItems(group).length === 1 ? 'TL_N_RESOURCES_ONE' : 'TL_N_RESOURCES', { num: groupItems(group).length })}`
       },
       // the image chosen for this group in Settings, if any
       iconUrl (group) {
-        return this.menuIcons[groupSettingsName(group)]
+        return this.menuIcons[groupMenuName(group)]
       },
       /** @param {string} resource the settings saved: the menu icons follow */
       onResourceCached (resource) {
@@ -250,7 +259,7 @@
       // pins its flyout open (hover only previews it) and highlights the badge; a second click, Escape or a click
       // elsewhere closes it.
       isPage (group) {
-        return _.size(group.list) === 1
+        return groupItems(group).length === 1
       },
       /**
        * @param {Object} group a page is chosen at once, a group opens or closes its flyout
@@ -258,7 +267,7 @@
        */
       onToggle (group, event) {
         if (this.isPage(group)) {
-          this.choose(_.first(group.list))
+          this.choose(_.first(groupItems(group)))
           return
         }
         if (this.pinnedKey === groupKey(group)) {
@@ -274,7 +283,7 @@
        */
       async openWithFocus (group, badge) {
         if (this.isPage(group)) {
-          this.choose(_.first(group.list))
+          this.choose(_.first(groupItems(group)))
           return
         }
         this.pinnedKey = groupKey(group)
@@ -556,6 +565,29 @@
   .rail-flyout-list {
     margin: var(--cms-space-1) 0 0;
     padding: 0;
+  }
+
+  // a group inside the group: its name, then its resources one step in
+  .rail-flyout-subhead {
+    padding: var(--cms-space-2) var(--cms-space-3) var(--cms-space-1) calc(var(--cms-space-3) * var(--depth));
+    color: var(--cms-chrome-muted);
+    font-size: var(--cms-fs-xs);
+    font-weight: var(--cms-fw-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .nested {
+    padding-left: calc(var(--cms-space-3) * var(--depth));
+  }
+
+  .rail-flyout-image {
+    width: 16px;
+    height: 16px;
+    margin-right: var(--cms-space-2);
+    border-radius: var(--cms-radius-sm);
+    object-fit: cover;
+    vertical-align: -3px;
   }
 
   .rail-flyout-item {

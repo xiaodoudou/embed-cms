@@ -125,6 +125,13 @@ describe('CMS class (unit)', () => {
       expect(cms._resourceNames).to.include('code')
       expect(cms._resources.code.options.schema[0].field).to.equal('title')
     })
+    it('offers every group of a nested group for an icon, the ones inside named from the top down', () => {
+      const cms = build()
+      cms.resource('posts', { group: ['Content', { enUS: 'Blog' }, 'Private'], schema: [{ field: 'title', input: 'string' }] })
+      cms.resource('pages', { group: [{ enUS: 'Site', zhCN: '站点' }], schema: [{ field: 'title', input: 'string' }] })
+      expect(cms._menuGroupNames).to.include.members(['Content', 'Content / Blog', 'Content / Blog / Private', 'Site'])
+      expect(cms._menuGroupNames).to.not.include('Blog')
+    })
     it('makes fields localised when the resource has locales, unless a field says otherwise', () => {
       const cms = build({}, {
         'l.js': 'module.exports = { locales: [\'en\', \'fr\'], schema: [{ field: \'a\', input: \'string\' }, { field: \'b\', input: \'string\', localised: false }] }',

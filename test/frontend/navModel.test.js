@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import {
-  resolveNavMode, toggledPref, clampNavWidth, resizeByKey, groupInitials, groupTint, moveInList, flyoutPosition,
-  groupKey, groupHoldsItem, railSections, orderResources, orderGroups, isOthersGroup, NAV_DEFAULT_WIDTH, NAV_MIN_WIDTH, NAV_MAX_WIDTH, NAV_TINT_COUNT
+  resolveNavMode, toggledPref, clampNavWidth, navMaxWidth, resizeByKey, groupInitials, groupTint, moveInList, flyoutPosition,
+  groupKey, groupMenuName, groupHoldsItem, groupOwnsItem, groupLevels, groupNames, groupItems, groupTrail, groupOf, groupRows, buildGroupTree, railSections, orderResources, orderGroups, isOthersGroup, NAV_DEFAULT_WIDTH, NAV_MIN_WIDTH, NAV_MAX_WIDTH, NAV_TINT_COUNT
 } from '../../src/utils/navModel.js'
 
 describe('sidebar mode', () => {
@@ -29,6 +29,16 @@ describe('sidebar width', () => {
     expect(clampNavWidth(999)).toBe(NAV_MAX_WIDTH)
     expect(clampNavWidth(300.4)).toBe(300)
     expect(clampNavWidth('abc')).toBe(NAV_DEFAULT_WIDTH)
+  })
+  it('is no wider than the content needs, within the limits', () => {
+    expect(navMaxWidth([150, 260, 210])).toBe(292)
+    expect(navMaxWidth([40])).toBe(NAV_MIN_WIDTH)
+    expect(navMaxWidth([900])).toBe(NAV_MAX_WIDTH)
+    expect(navMaxWidth([])).toBe(NAV_MAX_WIDTH)
+    expect(clampNavWidth(340, 292)).toBe(292)
+    expect(clampNavWidth(340, 100)).toBe(NAV_MIN_WIDTH)
+    expect(resizeByKey(280, 'ArrowRight', 16, 292)).toBe(292)
+    expect(resizeByKey(280, 'End', 16, 292)).toBe(292)
   })
   it('is adjustable with the keyboard', () => {
     expect(resizeByKey(248, 'ArrowRight')).toBe(264)
@@ -168,5 +178,83 @@ describe('menu group order', () => {
     const copy = [...groups]
     expect(orderGroups(groups, labelIn('enUS'), 'not a tag!')).toHaveLength(groups.length)
     expect(groups).toEqual(copy)
+  })
+})
+
+describe('nested menu groups', () => {
+  const item = (title, group, extra = {}) => ({ title, group, ...extra })
+  const blogPost = item('posts', ['Content', 'Blog'])
+  const blogTag = item('tags', [{ enUS: 'Content', zhCN: '内容' }, { enUS: 'Blog' }])
+  const page = item('pages', 'Content')
+  const deep = item('drafts', ['Content', 'Blog', 'Private'])
+  const loose = item('notes', undefined)
+  const syslog = item('Syslog', undefined, { type: 'plugin' })
+
+  it('reads the levels of a group: a name is one level, a list is a path', () => {
+    expect(groupLevels('Shop')).toEqual(['Shop'])
+    expect(groupLevels(['Content', '', 'Blog'])).toEqual(['Content', 'Blog'])
+    expect(groupLevels([])).toEqual([])
+    expect(groupLevels(undefined)).toEqual([])
+    expect(groupNames([{ enUS: 'Content', zhCN: '内容' }, 'Blog'])).toEqual(['Content', 'Blog'])
+  })
+
+  it('files each resource under the levels of its group, and merges the headings that share a name', () => {
+    const tree = buildGroupTree([blogPost, page, blogTag, deep, loose, syslog])
+    const content = tree.find((group) => group.path[0] === 'Content')
+    expect(tree.map((group) => group.path)).toEqual([['TL_OTHERS'], ['TL_PLUGINS'], ['Content']])
+    expect(content.list).toEqual([page])
+    expect(content.groups.map((group) => group.path)).toEqual([['Content', 'Blog']])
+    expect(content.groups[0].list).toEqual([blogPost, blogTag])
+    expect(content.groups[0].groups[0].path).toEqual(['Content', 'Blog', 'Private'])
+    expect(groupItems(content)).toEqual([page, blogPost, blogTag, deep])
+  })
+
+  it('keeps a heading that only holds groups, and drops the ones with nothing in them', () => {
+    const tree = buildGroupTree([blogPost])
+    expect(tree.map((group) => group.path)).toEqual([['Content']])
+    expect(tree[0].list).toEqual([])
+    expect(groupItems(tree[0])).toEqual([blogPost])
+  })
+
+  it('tells a group that holds the open resource from the one that lists it', () => {
+    const [content] = buildGroupTree([blogPost, page])
+    const blog = content.groups[0]
+    expect(groupHoldsItem(content, blogPost)).toBe(true)
+    expect(groupOwnsItem(content, blogPost)).toBe(false)
+    expect(groupHoldsItem(blog, blogPost)).toBe(true)
+    expect(groupOwnsItem(blog, blogPost)).toBe(true)
+    expect(groupHoldsItem(blog, page)).toBe(false)
+    expect(groupOwnsItem(content, page)).toBe(true)
+  })
+
+  it('names a group for its icon: its own name, or the names down to it for a group inside another', () => {
+    const [content] = buildGroupTree([deep])
+    expect(groupMenuName(content)).toBe('Content')
+    expect(groupMenuName(content.groups[0])).toBe('Content / Blog')
+    expect(groupMenuName(content.groups[0].groups[0])).toBe('Content / Blog / Private')
+    expect(groupMenuName({ name: { enUS: 'Shop' } })).toBe('Shop')
+  })
+
+  it('gives a sub-group a key of its own', () => {
+    const [content] = buildGroupTree([blogPost])
+    expect(groupKey(content)).toBe('content')
+    expect(groupKey(content.groups[0])).toBe('content--blog')
+  })
+
+  it('finds the groups from the top one down to the one that lists the resource', () => {
+    const tree = buildGroupTree([blogPost, page])
+    expect(groupTrail(tree, blogPost).map((group) => group.path)).toEqual([['Content'], ['Content', 'Blog']])
+    expect(groupTrail(tree, page).map((group) => group.path)).toEqual([['Content']])
+    expect(groupTrail(tree, item('other'))).toEqual([])
+    expect(groupOf(tree, blogPost).path).toEqual(['Content', 'Blog'])
+    expect(groupOf(tree, page).path).toEqual(['Content'])
+    expect(groupOf(tree, item('other', 'Nowhere'))).toBeUndefined()
+  })
+
+  it('orders the groups inside a group too, and lists rows top down', () => {
+    const tree = buildGroupTree([item('a', ['Top', 'Zed']), item('b', ['Top', 'Alpha']), item('c', 'Top')])
+    const ordered = orderGroups(tree, (name) => name, 'enUS')
+    expect(ordered[0].groups.map((group) => group.name)).toEqual(['Alpha', 'Zed'])
+    expect(groupRows(ordered[0]).map((row) => [row.group.name, row.depth, row.parents.length])).toEqual([['Top', 0, 0], ['Alpha', 1, 1], ['Zed', 1, 1]])
   })
 })

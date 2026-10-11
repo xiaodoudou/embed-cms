@@ -57,4 +57,3 @@ export function readNumber (name, min, max, fallback, storage) {
   return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback
 }
 
-export default { readPreference, writePreference, readChoice, readNumber }

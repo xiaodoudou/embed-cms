@@ -36,13 +36,13 @@ module.exports = {
 
 Every resource keeps its records apart from the others: its own LevelDB folder (or file, table or collection) and its own folder of files. A record is one item of a resource, say one article, and the CMS gives it an `_id`.
 
-The keys a declaration can have:
+The keys a declaration can have (the full list, with examples, is in [Resource files](../reference/RESOURCES.md)):
 
 | Key | What it does |
 |---|---|
 | `schema` | The [fields](#field). |
 | `displayname` | The name shown in the admin: a string, or one per admin language. |
-| `group` | The [menu group](#group) it's listed under. |
+| `group` | The [menu group](#group) it's listed under: a name, or a list of names to nest it, like `['Content', 'Blog']`. |
 | `locales` | The [content languages](#locale). |
 | `view` | `'table'` for a spreadsheet-like [view](#view) instead of the list. |
 | `maxCount` | The most records it may hold. With `1` it's a single record (site settings, a home page): the admin opens it directly, with no list. Once the limit is reached, a create returns the existing record instead of failing. |
@@ -50,6 +50,8 @@ The keys a declaration can have:
 | `groups` | How groups of nested fields look, keyed by path: `groups: { address: { label: 'Address', collapsible: true } }` (title, `collapsible`, `collapsed`, `layout`: see [Groups](../reference/FIELDS.md#groups)). |
 | `allowed` | User groups that see the resource in the admin's menu. The API doesn't enforce it: use group rights for that. |
 | `layout` | A form layout in lines and widths for the editor. |
+| `displayItem` | A Mustache template that names a record in lists, like `'{{title}} ({{status}})'`. Without it, a record is named by its first field. |
+| `extraSources` | `{ field: resource }`: turns the id in a field into the record it points to, so `displayItem` can use its fields. |
 | `activeField` | A boolean field of which at most one record may be `true` (say, the current campaign). |
 
 ## Field
@@ -118,7 +120,7 @@ Two groups always exist. **`admins`** is given every right on every resource at 
 The word does triple duty:
 
 - a **user group**, as above;
-- a **menu group**, the `group` of a resource: the heading it's filed under in the admin. Groups can get an icon in **Settings**;
+- a **menu group**, the `group` of a resource: the heading it's filed under in the admin. Give a list of names to nest it, from the top down: `group: ['Content', 'Blog']` files the resource under Blog, which sits inside Content. The list can be any length. Each name is a string or one string per language, and a plain string is a single level. Every group can get an icon in **Settings**; a group inside another is named like `Content / Blog` there. The collapsed menu shows a badge for the top group only, and its pop-up lists the groups inside;
 - a **field group**, the heading the form draws over nested fields (`address.city`, `address.zip`).
 
 ## View

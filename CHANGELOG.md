@@ -4,6 +4,22 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-10-11
+
+### Added
+
+- **A resource can nest its menu group.** `group: ['Content', 'Blog']` files a resource in a group inside a group, to any depth. A `group` that is a string, or an object with one name per language, is still one level, so no existing resource changes. The sidebar shows the tree, the collapsed sidebar lists the groups inside a group in the pop-up of its badge, the breadcrumb shows the whole path, and the quick switcher finds a resource at any depth. Every group can get an icon in Settings, and a group inside another is named `Content / Blog` there. See [Resource files](docs/reference/RESOURCES.md#nested-groups).
+- **A page on resource files.** [RESOURCES.md](docs/reference/RESOURCES.md) lists every key of a file in `resources/` with its type and default. It also describes `displayItem` and `extraSources`, which named records in the list but were not documented.
+
+### Changed
+
+- **Resizing the sidebar is lighter, and it stops at the width of its names.** Every pointer move used to re-render the admin, which dragged on a form with big content. Now only the width changes while you drag, and the admin renders once when you let go. The sidebar is also no wider than the longest name shown needs, between 200 and 360 pixels.
+
+### Fixed
+
+- **A block with no summary keeps its title next to the grip.** The title of a block in a block field sat in the middle of its bar when the block had no summary text.
+- **Saving failed when the admin ran from the Vite dev server.** With `npm run dev`, the proxy changed the `Host` header, so the cross-site check refused every save and the updates socket. The proxy now keeps it. This affects people working on the CMS itself.
+
 ## [3.0.7] - 2026-10-09
 
 ### Changed
@@ -205,6 +221,7 @@ The release that turned node-cms into a project that stands on its own: the firs
 - A delete goes to the replication peers right away again, `cms-import` prints no empty progress bars into logs, the xlsx import answers `400` without a file.
 
 [Unreleased]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.5...HEAD
+[3.1.0]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.7...v3.1.0
 [3.0.7]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.6...v3.0.7
 [3.0.6]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.5...v3.0.6
 [3.0.5]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.4...v3.0.5

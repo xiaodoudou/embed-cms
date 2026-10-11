@@ -3,6 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import ResourceSelector from '@c/records/ResourceSelector.vue'
 import { mountComponent } from './helpers/mountField.js'
 import { groupedList, products, orders, notes, syslog } from './helpers/navFixtures.js'
+import { buildGroupTree, orderGroups } from '@u/navModel'
 
 let wrapper
 const selector = async (props = {}) => {
@@ -73,6 +74,15 @@ describe('ResourceSelector (the title with the list of its group)', () => {
     await selector({ resource: { ...orders, group: 'Shop' } })
     await open()
     expect(items()).toHaveLength(3)
+  })
+
+  it('lists the resources of the inner group of a resource whose group is nested', async () => {
+    const posts = { title: 'posts', name: 'posts', displayname: { enUS: 'Posts' }, group: ['Content', 'Blog'] }
+    const tags = { title: 'tags', name: 'tags', displayname: { enUS: 'Tags' }, group: ['Content', 'Blog'] }
+    const page = { title: 'pages', name: 'pages', displayname: { enUS: 'Pages' }, group: 'Content' }
+    await selector({ resource: tags, groupedList: orderGroups(buildGroupTree([page, posts, tags]), (name) => name, 'enUS') })
+    await open()
+    expect(items().map((item) => item.textContent.trim())).toEqual(['Posts', 'Tags'])
   })
 
   it('names a plugin page from its display name', async () => {

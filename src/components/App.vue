@@ -131,7 +131,7 @@
   import NavRail from '@c/layout/NavRail.vue'
   import { readPreference, writePreference, readNumber } from '@u/preferences'
   import { PHONE_QUERY } from '@u/phoneLayout'
-  import { resolveNavMode, toggledPref, clampNavWidth, resizeByKey, orderGroups, NAV_DEFAULT_WIDTH, NAV_MIN_WIDTH, NAV_MAX_WIDTH } from '@u/navModel'
+  import { resolveNavMode, toggledPref, clampNavWidth, navMaxWidth, resizeByKey, orderGroups, buildGroupTree, groupTrail, groupItems, NAV_DEFAULT_WIDTH, NAV_MIN_WIDTH, NAV_MAX_WIDTH } from '@u/navModel'
 
   // Wide screens open the sidebar, narrower ones start as a rail, phones use the off-canvas drawer
   const WIDE_QUERY = '(min-width: 1280px)'
@@ -221,11 +221,11 @@
       currentItem () {
         return this.selectedResource || this.selectedPlugin
       },
-      /** @returns {string} the translated name of the group of the current item, empty when it belongs to none */
+      /** @returns {string} the translated name of the group of the current item, with the groups above it; empty when it belongs to none */
       currentGroupLabel () {
         const item = this.currentItem
-        const group = _.find(this.groupedList, (g) => _.includes(_.get(g, 'list', []), item) || _.some(g.list, (r) => r.title === _.get(item, 'title')))
-        return group ? TranslateService.get(group.name) : ''
+        const trail = groupTrail(this.groupedList, item, (listed) => listed === item || listed.title === _.get(item, 'title'))
+        return _.map(trail, (group) => TranslateService.get(group.name)).join(' / ')
       },
       // the tab: the record, the resource or page open, and the title of the site
       documentTitle () {
@@ -253,61 +253,8 @@
       },
       /** @returns {Array<{name: string, list: Array<Object>}>} the resources and plugins by group; resources without a group go to "others", plugins to "plugins" */
       groupedList () {
-        const others = { name: 'TL_OTHERS' }
-        const plugins = { name: 'TL_PLUGINS' }
-        let groups = [others, plugins]
         const list = _.union(this.resourceList, _.map(this.pluginList, (item) => _.extend(item, {type: 'plugin'})))
-        _.each(list, (item) => {
-          if (_.isEmpty(item.group)) {
-            return
-          }
-          if (!_.isString(item.group)) {
-            const oldGroup = _.find(groups, (group) => {
-              if (_.isEqual(group.name, item.group)) {
-                return group
-              }
-            })
-            if (!oldGroup) {
-              groups.push({ name: item.group })
-            }
-          }
-        })
-        _.each(list, (item) => {
-          if (_.isEmpty(item.group)) {
-            return
-          }
-          if (_.isString(item.group)) {
-            const oldGroup = _.find(groups, (group) => {
-              if (group === item.group || group.name === item.group || _.includes(_.values(group.name), item.group)) {
-                return group
-              }
-            })
-            if (!oldGroup) {
-              groups.push({ name: item.group })
-            }
-          }
-        })
-        _.each(list, (item) => {
-          const oldGroup = _.find(groups, (group) => {
-            if (_.isEqual(group.name, item.group) || group === item.group || group.name === item.group || _.includes(_.values(group.name), item.group)) {
-              return group
-            }
-          })
-          if (oldGroup) {
-            oldGroup.list = oldGroup.list || []
-            oldGroup.list.push(item)
-            return
-          }
-          if (item.type === 'plugin') {
-            plugins.list = plugins.list || []
-            plugins.list.push(item)
-          } else {
-            others.list = others.list || []
-            others.list.push(item)
-          }
-        })
-        groups = orderGroups(groups, (name) => TranslateService.get(name), TranslateService.locale)
-        return _.filter(groups, (group) => group.list && group.list.length !== 0)
+        return orderGroups(buildGroupTree(list), (name) => TranslateService.get(name), TranslateService.locale)
       },
       /** @returns {Array<Object>} the plugins the user is allowed to see */
       pluginList () {
@@ -402,7 +349,7 @@
           this.selectResource(routed)
         } else if (!this.showDesignSystem) {
           // normal navigation starts on the first resource of the first group (the design system page stays empty)
-          this.selectResource(_.first(_.get(_.first(this.groupedList), 'list', [])))
+          this.selectResource(_.first(groupItems(_.first(this.groupedList))))
         }
       } catch (error) {
         console.error('Error while getting resources: ', error)
@@ -451,15 +398,42 @@
         }
       },
       // Sidebar width: drag, arrow keys, double-click to reset. Remembered.
+      /**
+       * The widest the sidebar is worth being, from the names it shows now (the ones in a closed group do not count).
+       * @param {HTMLElement|null} wrap the element that holds the sidebar
+       * @returns {number}
+       */
+      measureNavMax (wrap) {
+        const left = wrap ? wrap.getBoundingClientRect().left : 0
+        const names = wrap ? Array.from(wrap.querySelectorAll('.group-title, .resource-link-title')).filter((el) => el.offsetParent !== null) : []
+        const max = navMaxWidth(names.map((el) => el.getBoundingClientRect().left - left + el.scrollWidth))
+        this.navBounds = { min: NAV_MIN_WIDTH, max }
+        return max
+      },
       startResize (event) {
         event.preventDefault()
         const left = event.currentTarget.parentElement.getBoundingClientRect().left
+        const wrap = event.currentTarget.closest('.cms-nav-wrap')
+        const max = this.measureNavMax(wrap)
+        let width = this.navWidth
+        let frame = 0
+        // while the pointer moves only the CSS variable changes, once per frame: the app re-renders when it is let go
         const onMove = (move) => {
-          this.navWidth = clampNavWidth(move.clientX - left)
+          width = clampNavWidth(move.clientX - left, max)
+          if (wrap && !frame) {
+            frame = window.requestAnimationFrame(() => {
+              frame = 0
+              wrap.style.setProperty('--cms-nav-width', `${width}px`)
+            })
+          } else if (!wrap) {
+            this.navWidth = width
+          }
         }
         const onUp = () => {
           window.removeEventListener('pointermove', onMove)
           window.removeEventListener('pointerup', onUp)
+          window.cancelAnimationFrame(frame)
+          this.navWidth = width
           writePreference('nav.width', this.navWidth)
         }
         window.addEventListener('pointermove', onMove)
@@ -471,7 +445,7 @@
           return
         }
         event.preventDefault()
-        this.navWidth = resizeByKey(this.navWidth, event.key)
+        this.navWidth = resizeByKey(this.navWidth, event.key, 16, this.measureNavMax(event.currentTarget.closest('.cms-nav-wrap')))
         writePreference('nav.width', this.navWidth)
       },
       /** Back to the default width, saved as the preference. */

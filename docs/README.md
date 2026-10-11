@@ -16,6 +16,7 @@ For what changed in each version, and what is on `main` but not released yet, se
 
 ## Reference (`reference/`)
 
+- [Resource files](reference/RESOURCES.md): every key of a file in `resources/`, nested menu groups, and how records are named.
 - [Field types](reference/FIELDS.md): the 24 input types, the options they share, localisation, and what is checked where. Each type has its own page in [`fields/`](reference/fields/), with every variation and a screenshot.
 - [Field catalogue](../resources/README.md): the example resources in `resources/`, one per family of fields, ready to copy from.
 - [Form layout](reference/FORM_LAYOUT.md): fields side by side on a line of the record form.

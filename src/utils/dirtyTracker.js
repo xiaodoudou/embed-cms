@@ -194,7 +194,6 @@ export function unsetSwitchesToFalse (model, resource) {
   return model
 }
 
-export default { normalizeValue, createSnapshot, isDirty, changedParts, missingRequired, isEmptyRichText, isEmptyRequiredValue, isLocalisedField }
 
 /**
  * Accepts the current value of the given field paths as the saved state (mutates and returns the snapshot).

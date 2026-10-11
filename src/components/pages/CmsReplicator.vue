@@ -4,11 +4,8 @@
       <h5>{{ $filters.translate('TL_REPLICATOR') }}</h5>
     </div>
     <p class="intro cms-text cms-text-muted">{{ $filters.translate('TL_REPLICATOR_INTRO') }}</p>
-    <section class="cms-card" aria-labelledby="replicator-resources-title">
-      <header class="cms-card-header">
-        <h2 id="replicator-resources-title" class="cms-h3">{{ $filters.translate('TL_RESOURCES') }}</h2>
-      </header>
-      <div class="cms-card-body">
+    <section class="replicator-body" :aria-label="$filters.translate('TL_RESOURCES')">
+      <div>
         <p v-if="loadError" class="load-error cms-callout is-error" role="alert">{{ loadError }}</p>
         <div v-if="loaded && shown.length > 0" class="cms-datatable-scroll">
           <table class="cms-datatable">
@@ -182,9 +179,13 @@
     margin: 0 var(--cms-space-6) var(--cms-space-4);
     max-width: var(--cms-content-max);
   }
-  .cms-card {
+  // the table is the one box of the page, right under the intro
+  .replicator-body {
     margin: 0 var(--cms-space-6) var(--cms-space-6);
     max-width: var(--cms-content-max);
+  }
+  .load-error {
+    margin: 0 0 var(--cms-space-3);
   }
   .col-name {
     width: 18%;
@@ -195,10 +196,9 @@
   .col-links {
     width: 34%;
   }
-  // a darker head than the boxes of the links, so the columns are found at once
+  // a light grey head, its titles centred so the ones with and without an arrow sit on one line
   thead th {
-    background: var(--cms-surface-3);
-    border-block-end-color: var(--cms-border-strong);
+    background: var(--cms-surface-2);
     vertical-align: middle;
   }
   td {
@@ -291,7 +291,7 @@
 @media (max-width: 599.98px) {
   .cms-replicator {
     .intro,
-    .cms-card {
+    .replicator-body {
       margin-left: var(--cms-space-3);
       margin-right: var(--cms-space-3);
     }

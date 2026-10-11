@@ -178,6 +178,40 @@ describe('replicator (unit)', () => {
       const { peers } = manager.getParams('articles')
       expect(peers).to.have.length(1)
     })
+    it('keeps the resources of the CMS itself out of the global peers list', async () => {
+      // every node makes its own admins group and localAdmin: a node that took another node's could not update them
+      for (const name of ['_users', '_groups', '_settings']) {
+        expect(manager.peersOf(name), name).to.deep.equal([])
+        expect(manager.hasPeers(name), name).to.equal(false)
+        expect(() => manager.getParams(name), name).to.throw(/No replication peers/)
+      }
+      const agent = await loggedIn()
+      const { body } = await agent.get('/replicator/resources')
+      expect(body.find((item) => item.name === '_users').peers).to.deep.equal([])
+      expect(body.find((item) => item.name === 'articles').peers).to.have.length(1)
+    })
+    it('replicates a resource of the CMS when peersByResource names it', async () => {
+      const named = await startApp({ replication: { peers: [], peersByResource: { _settings: [{ url: 'http://localhost:1/api/', direction: 'upstream' }] } } })
+      try {
+        expect(named.cms.$replicator.peersOf('_settings')).to.have.length(1)
+        expect(named.cms.$replicator.peersOf('_users')).to.deep.equal([])
+      } finally {
+        await named.close()
+      }
+    })
+    it('does not send a write to a resource of the CMS to the global peers', async () => {
+      const calls = []
+      const replicator = manager.replicator
+      const original = replicator.replicate
+      replicator.replicate = async (...args) => { calls.push(args); return { records: 0 } }
+      try {
+        await app.cms.api()('_settings').create({}).catch(() => {})
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      } finally {
+        replicator.replicate = original
+      }
+      expect(calls.filter((args) => args[1] === '_settings')).to.have.length(0)
+    })
     // The manager used to read `type` from the Resource object, where it does not exist: every resource counted as
     // 'normal' and the upstream/downstream rules never applied. Reading it from resource.options.type is behind
     // replication.strictTypes, because applying the rules stops the replication of the peers whose direction does not fit.

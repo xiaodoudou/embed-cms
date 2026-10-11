@@ -58,8 +58,8 @@ Replication needs no port of its own: a peer connects to the HTTP port of the CM
 
 | Option | What it does |
 |---|---|
-| `replication.peers` | The peers of every resource. Each peer is `{ url, direction }`: `url` is its REST API, ending in `/api/`. The records go to the websocket next to it (`http://site/cms/api/` gives `ws://site/cms/_replicator`, and `https` gives `wss`), the files to the API itself. |
-| `replication.peersByResource` | Peers per resource name. Replaces `peers` for that resource. |
+| `replication.peers` | The peers of every resource of yours. The resources of the CMS itself (`_users`, `_groups`, `_settings`...) are never in it: they need `peersByResource`. Each peer is `{ url, direction }`: `url` is its REST API, ending in `/api/`. The records go to the websocket next to it (`http://site/cms/api/` gives `ws://site/cms/_replicator`, and `https` gives `wss`), the files to the API itself. |
+| `replication.peersByResource` | Peers per resource name. Replaces `peers` for that resource, and is the only way to replicate a resource of the CMS. |
 | `replication.auth` | `{ username, password }` sent as Basic credentials when downloading files from a peer that requires a login. |
 | `replication.secret` | A shared secret. Both sides prove they know it (HMAC-SHA256 challenge) before any resource is named. Without it the node doesn't listen (`/_replicator` answers 404) and doesn't replicate. |
 | `replication.strictTypes` | Check the `direction` of each peer against the type of the resource ([Directions](#directions)). Off by default. |
@@ -149,7 +149,7 @@ A site that missed articles, a new one for example, gets them when the central n
 
 #### Users, groups and settings
 
-`_users`, `_groups`, `_settings`, `_sync` and `_xlsx` are `downstream`. Every node creates its own `admins` group and `localAdmin` user the first time it starts, and a node can't edit a record that another node created. When two nodes that each started on their own replicate `_groups` and `_users`, the node that fetches receives the other node's `admins` group. It can't update that group, can't set up its `localAdmin`, and its admin login stops working. Replicate your content with `peersByResource`, as above, and keep the users, groups and settings to each node.
+`_users`, `_groups`, `_settings`, `_sync` and `_xlsx` are `downstream`, and the global `replication.peers` list never covers them: they replicate only when `peersByResource` names them. Every node creates its own `admins` group and `localAdmin` user the first time it starts, and a node can't edit a record that another node created. When two nodes that each started on their own replicate `_groups` and `_users`, the node that fetches receives the other node's `admins` group. It can't update that group, can't set up its `localAdmin`, and its admin login stops working. So name them in `peersByResource` only between nodes that don't each hold their own copy of the same records.
 
 ## Starting a sync by hand
 

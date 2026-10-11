@@ -62,7 +62,7 @@ A field is one entry of the `schema`: a value of the record, plus the control th
 { field: 'price', input: 'number', label: 'Price', required: true, options: { min: 0, hint: 'In euros' } }
 ```
 
-`field` is the key in the record and `input` is the type of control. There are 24 of them: text, numbers, dates, choices, images, files, rich text, blocks and more. The type decides what gets stored and how the admin checks it. A dotted key such as `address.city` nests the value and groups the fields in the form.
+`field` is the key in the record and `input` is the type of control. There are 36 of them: text, numbers, dates, choices, images, files, rich text, blocks and more. The type decides what gets stored and how the admin checks it. A dotted key such as `address.city` nests the value and groups the fields in the form.
 
 The admin checks `required`, formats, lengths and patterns before it saves. The server only checks `unique`, so anything that writes over the API is trusted to send valid data. [FIELDS.md](../reference/FIELDS.md) has every type, with screenshots.
 

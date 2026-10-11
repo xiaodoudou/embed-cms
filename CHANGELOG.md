@@ -4,6 +4,11 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ## [Unreleased]
 
+### Added
+
+- **A token field.** `input: 'token'` holds a key or a secret that two systems share. Type it, paste it, or make a random one with the **Generate** button, and copy it with **Copy**. `options.length` (random bytes), `options.prefix` and `options.format` (`base64url` or `hex`) shape what Generate makes, and `options.autoGenerate` gives a new record a token by itself, in the admin and over the API. See [token](docs/reference/fields/token.md).
+- **The Token under This CMS in the Sync settings is a token field.** It has a Generate and a Copy button, so the secret no longer has to be invented by hand.
+
 ## [3.1.1] - 2026-10-11
 
 ### Changed

@@ -4,6 +4,10 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ## [Unreleased]
 
+### Added
+
+- **A token field.** `input: 'token'` holds a random value made once, for a key or an id another system uses. A new record gets one as its form opens, and the server makes one for a record created over the API without it. The field is read-only, with a button to copy the token and one to make a new one. `options.length` (random bytes), `options.prefix` and `options.format` (`base64url` or `hex`) shape it. See [token](docs/reference/fields/token.md).
+
 ## [3.1.1] - 2026-10-11
 
 ### Changed

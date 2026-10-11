@@ -68,7 +68,6 @@
           </table>
         </div>
         <p v-if="loaded && shown.length === 0" class="cms-text-muted">{{ $filters.translate('TL_NO_REPLICATED_RESOURCES') }}</p>
-        <p v-if="loaded && others > 0" class="others cms-text-sm cms-text-muted">{{ $filters.translate(others === 1 ? 'TL_N_OTHER_RESOURCES_ONE' : 'TL_N_OTHER_RESOURCES', { num: others }) }}</p>
       </div>
     </section>
   </div>
@@ -106,11 +105,7 @@
     computed: {
       /** @returns {Array<object>} the resources that replicate */
       shown () {
-        return replicatedResources(this.resources).shown
-      },
-      /** @returns {number} how many resources do not replicate */
-      others () {
-        return replicatedResources(this.resources).others
+        return replicatedResources(this.resources)
       },
       /** @returns {Object<string, string>} the host of each peer this node pulls from, by machine id */
       hosts () {
@@ -282,9 +277,6 @@
   .link-error,
   .link-detail {
     margin-top: 2px;
-  }
-  .others {
-    margin: var(--cms-space-3) 0 0;
   }
 }
 

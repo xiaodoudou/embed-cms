@@ -40,11 +40,10 @@ export function linkState (state) {
 /**
  * The resources the page lists: those that have peers, a link, or a peer pulling them from here.
  * @param {Array<object>} resources the answer of GET /replicator/resources
- * @returns {{shown: Array<object>, others: number}} the resources to list, and how many others do not replicate
+ * @returns {Array<object>} the resources that replicate
  */
 export function replicatedResources (resources) {
-  const shown = _.filter(resources, (resource) => !_.isEmpty(resource.peers) || !_.isEmpty(resource.receives) || !_.isEmpty(resource.sends))
-  return { shown, others: _.size(resources) - shown.length }
+  return _.filter(resources, (resource) => !_.isEmpty(resource.peers) || !_.isEmpty(resource.receives) || !_.isEmpty(resource.sends))
 }
 
 /**

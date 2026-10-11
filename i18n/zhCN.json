@@ -573,7 +573,5 @@
     "TL_LAST_CHANGE": "最近更改 {{{ time }}}",
     "TL_NO_CHANGE_YET": "尚无更改",
     "TL_NEXT_TRY": "下次尝试 {{{ time }}}",
-    "TL_N_OTHER_RESOURCES": "另有 {{ num }} 个资源不复制。",
-    "TL_N_OTHER_RESOURCES_ONE": "另有 1 个资源不复制。",
     "TL_COPY_ERRORS": "复制错误信息"
 }

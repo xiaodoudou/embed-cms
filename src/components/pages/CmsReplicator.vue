@@ -195,6 +195,12 @@
   .col-links {
     width: 34%;
   }
+  // a darker head than the boxes of the links, so the columns are found at once
+  thead th {
+    background: var(--cms-surface-3);
+    border-block-end-color: var(--cms-border-strong);
+    vertical-align: middle;
+  }
   td {
     vertical-align: top;
   }

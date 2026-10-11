@@ -4,14 +4,14 @@
 # Built by scripts/build.sh.
 
 # --- the modules: the only stage that needs the network and a compiler's worth of tools -----------------------------------
-FROM node:22-bookworm-slim AS modules
+FROM node:24-bookworm-slim AS modules
 WORKDIR /app
 # the lock file first: this layer is only made again when the dependencies change
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund
 
 # --- the image that runs -------------------------------------------------------------------------------------------------
-FROM node:22-bookworm-slim
+FROM node:24-bookworm-slim
 ENV NODE_ENV=production \
     PORT=3000 \
     DATA_DIR=/data

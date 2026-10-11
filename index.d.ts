@@ -173,7 +173,11 @@ declare module 'embed-cms' {
       auth?: { username: string; password: string }
       /** Shared secret of the replication websocket: without it the node does not listen for peers, nor replicate */
       secret?: string
+      /** Open links only to the peers marked upstream or normal, the ones this node takes from */
       strictTypes?: boolean
+      /** Milliseconds between two pulls from a peer whose store cannot keep a link open (MongoDB, PostgreSQL). Default 30000. */
+      pollInterval?: number
+      /** @deprecated replication is live: ignored */
       settleDelay?: number
       maxRecordBytes?: number
       [setting: string]: any

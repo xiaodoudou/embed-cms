@@ -63,7 +63,7 @@ Each protection is one setting in the `security` block of `cms.json`. All of the
 | `limits.json` | `"100kb"` | Size of a JSON request body, on every route (REST, sync, import, the admin): it is the only JSON limit. A larger body answers `413` with a JSON message naming this setting. 100kb is what every route accepted before the option existed |
 | `limits.upload` | `{ fileSize: "256mb", files: 20, fields: 200, fieldSize: "1mb", parts: 260 }` | Limits of multipart uploads; a value given here replaces the matching default |
 | `restrictRemoteUrls` | `true` | `importFromRemote` only fetches attachments from the remote it imports from (and `allowedHosts` of its `remote` block) |
-| `strictReplication` | `true` | Peers may only ask for resources this node has, and changes from a peer are validated. The replication websocket always needs `replication.secret` |
+| `strictReplication` | `true` | Peers may only ask for resources this node has, and each record a node pulls from a peer is validated before it is stored. The replication websocket always needs `replication.secret` |
 | `wsAuth` | `true` | The record update websocket needs a login and a same-origin (or listed) page |
 | `wsMaxPayload` | `16384` | Largest message a websocket client may send |
 | `authCacheTtl` | `60000` | Milliseconds a verified password stays verified in memory (Basic authentication runs the hash once per minute, not per request); `0` turns it off |
@@ -77,11 +77,11 @@ Each protection is one setting in the `security` block of `cms.json`. All of the
 | `attachmentCleanupGrace` | `300000` | Milliseconds a file must have been idle before `cleanAttachment` may remove it as an orphan |
 | `replication.secret` | not set | Shared secret of the replication websocket (`/_replicator` on the HTTP port). Both sides prove they know it with an HMAC-SHA256 challenge before any resource is named; without it the node doesn't listen for peers |
 | `replication.strictTypes` | `false` | Read the type (`normal`, `upstream`, `downstream`) of a resource from its options, so the `direction` of each peer is checked against it. Off, every peer is used for every resource |
-| `replication.settleDelay` | `2000` | Milliseconds `replicate()` waits for a peer to flush before it syncs attachments |
+| `replication.pollInterval` | `30000` | Milliseconds between two pulls from a peer whose store can't keep a link open (MongoDB, PostgreSQL) |
 | `replication.maxRecordBytes` | `4194304` | Largest record accepted from a peer with `strictReplication` |
 | `importFromRemote.remote.restrictUrls` / `.allowedHosts` | `false` / `[]` | Per remote, in addition to `restrictRemoteUrls` |
 
-`replication.strictTypes` is worth a word. The replication manager reads the type of a resource from its options. Off, every peer is used for every resource, and the `direction` of a peer never matters; the type still decides which side of a sync sends. With the option on, a `downstream` resource (`_users`, `_groups`, `_settings` and the resources you declared so) is only synced with peers whose `direction` is `upstream` or `normal`, and an `upstream` resource with peers of direction `downstream` or `normal`. A peer without `direction` then syncs `normal` resources only. Give every peer a direction before turning it on. [REPLICATION.md](docs/operations/REPLICATION.md#directions) explains the types and the directions.
+`replication.strictTypes` is worth a word. A node pulls each resource from the peers it lists, except a resource of type `upstream`, which it only sends. Off, a node opens a link to every peer it lists. With the option on, it opens links only to peers whose `direction` is `upstream` or `normal`, the peers it takes from; a peer without `direction` then gets no link. Give every peer a direction before turning it on. A peer that connects to a node can pull from it but never writes to it, with or without the option. [REPLICATION.md](docs/operations/REPLICATION.md#directions) explains the types and the directions.
 
 ### Always on
 
@@ -206,7 +206,7 @@ Options added, with defaults (see the tables above):
 
 - `strongSecrets`, `generateSecrets`, `localAdmin`, `passwordHash`, `hideCredentials`, `genericLockout`, `csrf`, `allowedOrigins`, `cookies`, `strictSessions`, `redactConfig`, `strictAdmin`, `headers`, `contentSecurityPolicy`, `sseCors`, `safeRegex`, `uniformErrors`, `safeAttachments`, `inlineTypes`, `strictUploads`, `restrictRemoteUrls`, `strictReplication`, `wsAuth`, `wsMaxPayload`, `authCacheTtl`, `limits.json`, `limits.upload`
 - top level: `trustProxy`, `imageConcurrency`, `attachmentCleanupGrace`; `blockRetry: false` turns the lockout off
-- `replication.secret`, `replication.strictTypes`, `replication.settleDelay`, `replication.maxRecordBytes`
+- `replication.secret`, `replication.strictTypes`, `replication.pollInterval`, `replication.maxRecordBytes`
 - `importFromRemote.remote.restrictUrls`, `importFromRemote.remote.allowedHosts`
 
 Files written by the backend: `<data>/.secrets.json` (only with `generateSecrets`), `<data>/.revoked-tokens.json`, `<data>/<resource>/json/db.json.corrupt-<time>` (only when a store file could not be read).

@@ -5,162 +5,148 @@
     </div>
     <p class="intro cms-text cms-text-muted">{{ $filters.translate('TL_REPLICATOR_INTRO') }}</p>
     <section class="cms-card" aria-labelledby="replicator-resources-title">
-      <header class="cms-card-header cms-row is-between">
+      <header class="cms-card-header">
         <h2 id="replicator-resources-title" class="cms-h3">{{ $filters.translate('TL_RESOURCES') }}</h2>
-        <button type="button" class="refresh cms-btn is-secondary is-sm" :disabled="loading" @click="fetchResources">
-          <span v-if="loading" class="cms-spinner" aria-hidden="true" />
-          <v-icon v-else icon="$refresh" size="small" />
-          {{ $filters.translate('TL_REFRESH') }}
-        </button>
       </header>
       <div class="cms-card-body">
         <p v-if="loadError" class="load-error cms-callout is-error" role="alert">{{ loadError }}</p>
-        <div v-else class="cms-datatable-scroll">
-          <table class="cms-datatable is-hover">
+        <div v-if="loaded && shown.length > 0" class="cms-datatable-scroll">
+          <table class="cms-datatable">
             <thead>
               <tr>
                 <th>{{ $filters.translate('TL_RESOURCE') }}</th>
-                <th>{{ $filters.translate('TL_REPLICATION_TYPE') }}</th>
                 <th>{{ $filters.translate('TL_DIRECTION') }}</th>
-                <th>{{ $filters.translate('TL_PEERS') }}</th>
-                <th>{{ $filters.translate('TL_ACTIONS') }}</th>
+                <th>{{ $filters.translate('TL_RECEIVES_FROM') }}</th>
+                <th>{{ $filters.translate('TL_SENDS_TO') }}</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="resource in resources" :key="resource.name">
-                <td class="name">{{ resource.name }}</td>
-                <td><code class="cms-code">{{ resource.type }}</code></td>
+              <tr v-for="resource in shown" :key="resource.name">
+                <td class="name">
+                  {{ resource.name }}
+                  <code class="cms-code">{{ resource.type }}</code>
+                </td>
                 <td>{{ $filters.translate(directionKey(resource.type)) }}</td>
-                <td class="peers">
-                  <template v-if="hasPeers(resource)">{{ peersOf(resource) }}</template>
-                  <span v-else class="cms-text-muted">{{ $filters.translate('TL_NO_PEERS') }}</span>
+                <td class="receives">
+                  <ul v-if="resource.receives.length > 0" class="links">
+                    <li v-for="link in resource.receives" :key="link.peer" class="link">
+                      <span class="cms-badge" :class="`is-${tone(link.state)}`">{{ $filters.translate(stateKey(link.state)) }}</span>
+                      <span class="peer">{{ link.peer }}</span>
+                      <span v-if="link.error" class="cms-text-sm cms-text-error">{{ link.error }}</span>
+                      <span class="cms-text-sm cms-text-muted">{{ receivedText(link) }}</span>
+                    </li>
+                  </ul>
+                  <span v-else class="cms-text-muted">{{ $filters.translate('TL_NO_LINK') }}</span>
                 </td>
-                <td class="actions">
-                  <button type="button" class="sync-all cms-btn is-secondary is-sm" :disabled="!hasPeers(resource)" @click="syncResource(resource.name)">{{ $filters.translate('TL_SYNC_ALL') }}</button>
-                  <button type="button" class="sync-record cms-btn is-tertiary is-sm" :disabled="!hasPeers(resource)" @click="syncRecordPrompt(resource.name)">{{ $filters.translate('TL_SYNC_RECORD') }}</button>
+                <td class="sends">
+                  <ul v-if="resource.sends.length > 0" class="links">
+                    <li v-for="(peer, index) in resource.sends" :key="`${peer.peer}-${index}`" class="link">
+                      <span class="cms-badge is-success">{{ $filters.translate('TL_LINK_LIVE') }}</span>
+                      <span class="peer">{{ peer.peer }}</span>
+                      <span class="cms-text-sm cms-text-muted">{{ sentText(peer) }}</span>
+                    </li>
+                  </ul>
+                  <span v-else class="cms-text-muted">{{ $filters.translate('TL_NO_PEER_PULLING') }}</span>
                 </td>
-              </tr>
-              <tr v-if="!loading && resources.length === 0">
-                <td colspan="5" class="cms-text-muted">{{ $filters.translate('TL_NO_REPLICATED_RESOURCES') }}</td>
               </tr>
             </tbody>
           </table>
         </div>
+        <p v-if="loaded && shown.length === 0" class="cms-text-muted">{{ $filters.translate('TL_NO_REPLICATED_RESOURCES') }}</p>
+        <p v-if="loaded && others > 0" class="others cms-text-sm cms-text-muted">{{ $filters.translate(others === 1 ? 'TL_N_OTHER_RESOURCES_ONE' : 'TL_N_OTHER_RESOURCES', { num: others }) }}</p>
       </div>
     </section>
-    <app-dialog
-      :model-value="showDialog" :title="$filters.translate('TL_SYNC_RECORD')" type="info" :confirm-text="$filters.translate('TL_SYNC')" :cancel-text="$filters.translate('TL_CANCEL')"
-      @confirm="doSyncRecord" @cancel="showDialog = false"
-    >
-      <div class="cms-field">
-        <label class="cms-label" for="replicator-record-id">{{ $filters.translate('TL_RECORD_ID') }}</label>
-        <input id="replicator-record-id" v-model="recordId" class="cms-input" type="text" autocomplete="off" @keydown.enter="doSyncRecord">
-      </div>
-    </app-dialog>
   </div>
 </template>
 <script>
   import _ from 'lodash'
-  import AppDialog from '@c/feedback/AppDialog.vue'
-  import NotificationsService from '@s/NotificationsService'
+  import Dayjs from 'dayjs'
+  import relativeTime from 'dayjs/plugin/relativeTime'
   import RequestService from '@s/RequestService'
   import TranslateService from '@s/TranslateService'
-  import { peerLabel, directionKey, syncOutcome } from '@u/replication'
+  import { directionKey, linkState, replicatedResources } from '@u/replication'
+
+  Dayjs.extend(relativeTime)
+
+  // how often the page asks the server how the links are doing
+  const REFRESH = 2000
 
   // RequestService rejects with the fetch Response (no JSON) or the parsed JSON body ({ error })
   const errorText = (error) => _.get(error, 'error') || _.get(error, 'message') || (_.get(error, 'status') ? `HTTP ${error.status}` : _.toString(error))
 
+  /**
+   * The state of the replication, live: for each resource that replicates, the peers it receives from (and how each link
+   * is doing) and the peers that pull it from this node. Nothing to start by hand: the links run by themselves.
+   */
   export default {
-    components: { AppDialog },
     data() {
       return {
         resources: [],
-        loading: false,
+        loaded: false,
         loadError: '',
-        showDialog: false,
-        recordId: '',
-        recordResource: ''
+        timer: null
+      }
+    },
+    computed: {
+      /** @returns {Array<object>} the resources that replicate */
+      shown () {
+        return replicatedResources(this.resources).shown
+      },
+      /** @returns {number} how many resources do not replicate */
+      others () {
+        return replicatedResources(this.resources).others
       }
     },
     mounted() {
-      this.fetchResources()
+      this.refresh()
+      this.timer = setInterval(() => this.refresh(), REFRESH)
+    },
+    beforeUnmount() {
+      clearInterval(this.timer)
     },
     methods: {
       directionKey,
       /**
-       * @param {{peers: Array}} resource
-       * @returns {boolean}
+       * @param {string} state
+       * @returns {string} the translation key of the state of a link
        */
-      hasPeers(resource) {
-        return !_.isEmpty(resource.peers)
+      stateKey (state) {
+        return linkState(state).key
       },
       /**
-       * @param {{peers: Array}} resource
-       * @returns {string} their labels, comma separated
+       * @param {string} state
+       * @returns {string} the tone of its badge
        */
-      peersOf(resource) {
-        return _.map(resource.peers, peerLabel).join(', ')
+      tone (state) {
+        return linkState(state).tone
       },
-      /** Loads the resources and their peers from the replicator plugin. */
-      async fetchResources() {
-        this.loading = true
-        this.loadError = ''
+      /**
+       * @param {{received: number, lastReceivedAt: number|null, retryAt: number|null, state: string}} link
+       * @returns {string} when the last change came in, or when the next try is
+       */
+      receivedText (link) {
+        if (link.state === 'reconnecting' && link.retryAt) {
+          return TranslateService.get('TL_NEXT_TRY', { time: Dayjs(link.retryAt).fromNow() })
+        }
+        return link.lastReceivedAt ? TranslateService.get('TL_LAST_CHANGE', { time: Dayjs(link.lastReceivedAt).fromNow() }) : TranslateService.get('TL_NO_CHANGE_YET')
+      },
+      /**
+       * @param {{lastSentAt: number|null}} peer
+       * @returns {string} when the last change went out to that peer
+       */
+      sentText (peer) {
+        return peer.lastSentAt ? TranslateService.get('TL_LAST_CHANGE', { time: Dayjs(peer.lastSentAt).fromNow() }) : TranslateService.get('TL_NO_CHANGE_YET')
+      },
+      /** Asks the server how the replication is doing; a failure keeps what was shown and says why. */
+      async refresh() {
         try {
           this.resources = await RequestService.get('../replicator/resources')
+          this.loadError = ''
         } catch (error) {
-          this.resources = []
           this.loadError = TranslateService.get('TL_REPLICATOR_LOAD_FAILED', { error: errorText(error) })
         } finally {
-          this.loading = false
+          this.loaded = true
         }
-      },
-      // the server answers 200 even when peers failed: the toast follows the result of each peer
-      async runSync(url, name, retry) {
-        NotificationsService.send(TranslateService.get('TL_SYNC_STARTED', { name }), 'info')
-        try {
-          const outcome = syncOutcome(await RequestService.post(url))
-          if (outcome.status === 'ok') {
-            NotificationsService.send(TranslateService.get('TL_SYNC_FINISHED', { name }), 'success')
-          } else if (outcome.status === 'none') {
-            NotificationsService.send(TranslateService.get('TL_SYNC_NO_PEER', { name }), 'warn')
-          } else {
-            NotificationsService.send(TranslateService.get('TL_SYNC_PEERS_FAILED', { name, failed: outcome.failed.length, total: outcome.total }), 'error', {
-              detail: _.map(outcome.failed, (entry) => `${entry.peer}: ${entry.error}`).join('\n'),
-              detailLabel: 'TL_COPY_ERRORS',
-              actionLabel: TranslateService.get('TL_RETRY'),
-              action: retry
-            })
-          }
-        } catch (error) {
-          NotificationsService.send(TranslateService.get('TL_SYNC_FAILED', { name, error: errorText(error) }), 'error', { actionLabel: TranslateService.get('TL_RETRY'), action: retry })
-        }
-      },
-      /**
-       * @param {string} resource its name
-       * @returns {Promise}
-       */
-      syncResource(resource) {
-        return this.runSync(`../replicator/sync/${encodeURIComponent(resource)}`, resource, () => this.syncResource(resource))
-      },
-      /** @param {string} resource opens the dialog asking for a record id */
-      syncRecordPrompt(resource) {
-        this.recordResource = resource
-        this.showDialog = true
-        this.recordId = ''
-      },
-      /**
-       * Syncs the record whose id was typed; nothing without one.
-       * @returns {Promise|undefined}
-       */
-      doSyncRecord() {
-        if (!this.recordId) {
-          return
-        }
-        const resource = this.recordResource
-        const recordId = this.recordId
-        this.showDialog = false
-        const sync = () => this.runSync(`../replicator/sync/${encodeURIComponent(resource)}/${encodeURIComponent(recordId)}`, `${resource} ${recordId}`, sync)
-        return sync()
       }
     }
   }
@@ -177,12 +163,33 @@
   }
   .name {
     font-weight: var(--cms-fw-semibold);
-  }
-  .actions {
     white-space: nowrap;
-    .cms-btn + .cms-btn {
+    .cms-code {
       margin-left: var(--cms-space-2);
+      font-weight: normal;
     }
+  }
+  .links {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cms-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .link {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--cms-space-1) var(--cms-space-2);
+  }
+  .peer {
+    font-family: var(--cms-font-mono);
+    font-size: var(--cms-fs-sm);
+    word-break: break-all;
+  }
+  .others {
+    margin: var(--cms-space-3) 0 0;
   }
 }
 

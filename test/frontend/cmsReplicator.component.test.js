@@ -69,10 +69,8 @@ describe('Replicator helpers', () => {
     expect(peerHost('not a url')).toBe('not a url')
     expect(hostsById(RESOURCES)).toEqual({ central1: 'central.internal:9990', site0002: 'site-2.internal:9990' })
   })
-  it('lists the resources that replicate, and counts the others', () => {
-    const { shown, others } = replicatedResources(RESOURCES)
-    expect(shown.map((resource) => resource.name)).toEqual(['articles', 'signups'])
-    expect(others).toBe(1)
+  it('lists the resources that replicate', () => {
+    expect(replicatedResources(RESOURCES).map((resource) => resource.name)).toEqual(['articles', 'signups'])
   })
 })
 
@@ -95,7 +93,9 @@ describe('Replicator page', () => {
     expect(articles.find('.receives .peer-id').text()).toBe('central1')
     expect(articles.find('.receives .link-detail').text()).toContain('Last change')
     expect(articles.find('.sends').text()).toBe('None')
-    expect(wrapper.find('.others').text()).toBe('1 other resource does not replicate.')
+    // the resources that do not replicate are not listed, nor counted
+    expect(wrapper.text()).not.toContain('drafts')
+    expect(wrapper.text()).not.toContain('do not replicate')
   })
 
   it('shows a link that is down with its error and its next try, and the peers that pull from here', async () => {

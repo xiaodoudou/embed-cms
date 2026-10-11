@@ -279,6 +279,8 @@ describe('replication security', () => {
     let node, existing, fakeHttp, fake
     // what the fake peer sends to the node as soon as the node connects to pull
     let frames = []
+    // how many times the node connected to the fake peer: a test waits for its own connection, not a fixed time
+    let served = 0
     const otherRecordId = 'lkjhgfdscccccccc12345678' // 8 characters of time, machine cccccccc, 8 of random
 
     before(async () => {
@@ -290,10 +292,13 @@ describe('replication security', () => {
         const encode = mps.createEncodeStream()
         encode.pipe(stream)
         frames.forEach(item => encode.write(item))
+        served += 1
       }, { secret })
       const peer = { url: `http://localhost:${fakeHttp.address().port}/api/`, direction: 'upstream' }
       node = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: { comments: [peer] }, secret } }))
       existing = await node.cms.api()('comments').create({ title: { enUS: 'mine' } })
+      // the link connects at start-up: the tests begin once it is live, so that each restart is theirs
+      expect(await waitFor(() => served > 0 && link().state === 'live', 10000)).to.equal(true)
     })
     after(async () => {
       await node.close()
@@ -305,12 +310,12 @@ describe('replication security', () => {
      * Makes the fake peer send these frames: the link of the node connects again, and takes them.
      * @param {object[]} list
      */
+    const link = () => node.cms.$replicator.links.find(item => item.name === 'comments')
     const send = async (list) => {
       frames = list
-      const link = node.cms.$replicator.links.find(item => item.name === 'comments')
-      const before = link.since
-      link.restart()
-      await waitFor(() => link.since !== before && link.state === 'live')
+      const before = served
+      link().restart()
+      expect(await waitFor(() => served > before && link().state === 'live', 10000)).to.equal(true)
       await sleep(400)
     }
     const stored = async (key) => {
@@ -325,7 +330,7 @@ describe('replication security', () => {
     it('takes a well formed change for a record of that peer', async () => {
       const value = JSON.stringify({ _id: otherRecordId, _createdAt: 1, _updatedAt: 1, title: { enUS: 'from C' } })
       await send([{ op: 'put', key: replicaKey('cccccccc', otherRecordId), value }])
-      expect(await stored(otherRecordId)).to.be.ok
+      expect(await waitFor(async () => !!(await stored(otherRecordId)))).to.equal(true)
     })
 
     it('ignores a put that overwrites a record of this node', async () => {

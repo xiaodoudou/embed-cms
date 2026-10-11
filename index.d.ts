@@ -155,10 +155,13 @@ declare module 'embed-cms' {
     }
 
     interface ReplicationPeer {
-      host?: string
-      port?: number
-      url?: string
+      /** The url of its REST API, ending in /api/: the records go to the websocket next to it (/_replicator), the files to the API */
+      url: string
       direction?: 'normal' | 'upstream' | 'downstream'
+      /** @deprecated the TCP port is gone: ignored */
+      host?: string
+      /** @deprecated the TCP port is gone: ignored */
+      port?: number
     }
 
     interface ReplicationOptions {
@@ -168,7 +171,7 @@ declare module 'embed-cms' {
       peersByResource?: Record<string, ReplicationPeer[]>
       /** Basic credentials used to download files from a peer that needs a login */
       auth?: { username: string; password: string }
-      /** Shared secret of the replication port, required when `netPort` is set */
+      /** Shared secret of the replication websocket: without it the node does not listen for peers, nor replicate */
       secret?: string
       strictTypes?: boolean
       settleDelay?: number
@@ -326,7 +329,7 @@ declare module 'embed-cms' {
       attachmentCleanupGrace?: number
 
       // ---- replication and logs
-      /** Port to listen on for replication peers. Without it the node does not listen. */
+      /** @deprecated replication goes over the HTTP port (/_replicator): ignored, with a warning */
       netPort?: number
       replication?: ReplicationOptions
       syslog?: SyslogOptions

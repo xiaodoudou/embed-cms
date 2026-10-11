@@ -4,6 +4,10 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ## [Unreleased]
 
+### Changed
+
+- **Replication needs no port of its own.** Records went over a TCP port, `netPort`. They now go over a websocket on the HTTP port of the CMS, at `/_replicator` next to the REST API, so they travel over `wss://` when the CMS is served over HTTPS. **To upgrade:** remove `netPort`, give each peer the `url` of its REST API (`host` and `port` are ignored), and set `replication.secret` on every node: a node no longer listens for peers without it. A proxy in front of a node must let websocket upgrades through on `/_replicator`. Files still go over the REST API. The Diffie-Hellman step of the handshake is gone: it protected nothing, and the HMAC challenge with the secret is unchanged. See [REPLICATION.md](docs/operations/REPLICATION.md#moving-from-netport).
+
 ## [3.1.1] - 2026-10-11
 
 ### Changed

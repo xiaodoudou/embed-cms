@@ -6,7 +6,7 @@ Thanks for helping. This page gets you from a clone to a change that passes CI: 
 
 ## Setting up
 
-You need Node.js 22.12 or later on the 22 line, or Node.js 24 (CI runs both), and git.
+You need Node.js 24 (the version CI runs) and git.
 
 ```sh
 git clone https://github.com/xiaodoudou/embed-cms.git embed-cms

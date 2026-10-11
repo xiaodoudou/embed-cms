@@ -12,14 +12,14 @@ Every record id carries the [`mid`](../reference/CONFIG.md#core) of the node tha
 
 A sync between two nodes has two parts:
 
-1. **Records** go over a TCP connection. The node that starts the sync connects to the peer's replication port and names a resource; both sides then exchange the changes the other hasn't seen yet, using an index of changes per machine.
+1. **Records** go over a websocket on the HTTP port, at `/_replicator` next to the REST API. The node that starts the sync connects to the peer and names a resource; both sides then exchange the changes the other hasn't seen yet, using an index of changes per machine.
 2. **Files** go over HTTP. Once the records are in, the node compares the attachments of the records it received with what it has (by MD5), downloads the missing or changed ones from the peer's REST API, and removes those that are gone.
 
 ```mermaid
 sequenceDiagram
   participant A as This node
   participant B as Peer
-  A->>B: connect to netPort (TCP)
+  A->>B: open a websocket to /_replicator (HTTP port)
   A->>B: HMAC challenge and answer, both ways (replication.secret)
   A->>B: resource name
   A->>B: records B has not seen
@@ -36,21 +36,22 @@ A sync starts after each create, update or remove of a record whose resource has
 
 The replication plugin is **on by default** (`disableReplication: false`), and with no peers it has nothing to do. Two settings make it useful:
 
-- `netPort`: the TCP port this node listens on, so peers can connect to it. Without it, the node can still push to and pull from peers, but no peer can start a sync with it.
-- `replication.peers` (or `replication.peersByResource`): the nodes this one syncs with.
+- `replication.secret`: the same long random string on every node. A node listens for peers only when it is set, and only replicates with a peer that proves it knows it.
+- `replication.peers` (or `replication.peersByResource`): the nodes this one syncs with, each by the url of its REST API.
+
+Replication needs no port of its own: a peer connects to the HTTP port of the CMS, the one its REST API answers on.
 
 ```json
 {
   "mid": "editnode",
-  "netPort": 9000,
   "replication": {
     "secret": "the-same-long-random-string-on-every-node",
     "peers": [
-      { "host": "site-1.internal", "port": 9000, "url": "http://site-1.internal:9990/api/", "direction": "downstream" }
+      { "url": "http://site-1.internal:9990/api/", "direction": "downstream" }
     ],
     "peersByResource": {
       "signups": [
-        { "host": "site-1.internal", "port": 9000, "url": "http://site-1.internal:9990/api/", "direction": "upstream" }
+        { "url": "http://site-1.internal:9990/api/", "direction": "upstream" }
       ]
     },
     "auth": { "username": "replicator", "password": "…" }
@@ -60,14 +61,23 @@ The replication plugin is **on by default** (`disableReplication: false`), and w
 
 | Option | What it does |
 |---|---|
-| `netPort` | Port to listen on for peers. No default: without it the node doesn't listen. |
-| `replication.peers` | The peers of every resource. Each peer is `{ host, port, url, direction }`: `host` and `port` reach its `netPort`, `url` is its REST API, ending in `/api/`, for files. |
+| `replication.peers` | The peers of every resource. Each peer is `{ url, direction }`: `url` is its REST API, ending in `/api/`. The records go to the websocket next to it (`http://site/cms/api/` gives `ws://site/cms/_replicator`, and `https` gives `wss`), the files to the API itself. |
 | `replication.peersByResource` | Peers per resource name. Replaces `peers` for that resource. |
 | `replication.auth` | `{ username, password }` sent as Basic credentials when downloading files from a peer that requires a login. |
-| `replication.secret` | A shared secret. Both sides prove they know it (HMAC-SHA256 challenge) before any resource is named. Required when `netPort` is set (unless `security.strictReplication` is turned off). |
+| `replication.secret` | A shared secret. Both sides prove they know it (HMAC-SHA256 challenge) before any resource is named. Without it the node doesn't listen (`/_replicator` answers 404) and doesn't replicate. |
 | `replication.strictTypes` | Make `direction` matter (see below). Off by default. |
 | `replication.settleDelay` | Milliseconds to wait for the peer to flush before syncing files (`2000`). |
 | `replication.maxRecordBytes` | Largest record accepted from a peer with `strictReplication` (4 MB). |
+
+### Moving from `netPort`
+
+Earlier versions replicated over a TCP port of their own, `netPort`, with `host` and `port` on each peer. Now:
+
+- Remove `netPort`. A node that still has it logs a warning and ignores it.
+- Give each peer its `url`, the address of its REST API. `host` and `port` are ignored.
+- Set `replication.secret` on every node: without it, a node doesn't listen.
+- A proxy or load balancer in front of a node must let websocket upgrades through on `/_replicator`, as it does for `/_updates`.
+- Close the old replication port in the firewall: nothing listens on it any more.
 
 ### Directions
 
@@ -108,7 +118,7 @@ await cms.$replicator.syncResource('articles')
 
 ## What can go wrong
 
-- Nothing arrives. Check that the peer has `netPort` set and that a firewall lets you reach it, that `host` and `port` point to that port (not to the HTTP port), and that both nodes have the same `replication.secret`.
+- Nothing arrives. The error says what the peer answered. A `404` means the peer has no `replication.secret`, or `url` isn't its REST API. A refused secret means the two nodes don't share the same `replication.secret`. A proxy in front of the peer must let websocket upgrades through on `/_replicator`.
 - Records arrive, files don't. `url` must be the peer's REST API ending in `/api/`, reachable from this node. If the peer requires a login to read the resource, set `replication.auth`. Look in the log for MD5 mismatches.
 - "Can't modify foreign records". The record was created on another node. Edit it there.
 - Two nodes clash. They share a `mid`. Give each node its own, before it creates records.
@@ -116,4 +126,4 @@ await cms.$replicator.syncResource('articles')
 
 ## Security
 
-The replication port can read and write every record of the resources it serves. Set `replication.secret` on every node, firewall the port to the peers, and run it on a private network or a tunnel: the secret authenticates peers, it doesn't encrypt the traffic. With `strictReplication` (on by default), a peer may only ask for resources this node has, and what it sends is validated. Details in [SECURITY.md](../../SECURITY.md).
+The replication websocket can read and write every record of the resources it serves. Set a long `replication.secret` on every node: the secret authenticates peers, it doesn't encrypt the traffic. Serve the CMS over HTTPS and give the peers `https://` urls, so the records travel over `wss://`. With `strictReplication` (on by default), a peer may only ask for resources this node has, and what it sends is validated. Details in [SECURITY.md](../../SECURITY.md).

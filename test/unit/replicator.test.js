@@ -1,4 +1,5 @@
 const fs = require('fs')
+const http = require('http')
 const net = require('net')
 const path = require('path')
 const { PassThrough } = require('stream')
@@ -61,31 +62,62 @@ describe('replicator (unit)', () => {
   })
 
   describe('protocol handshake', () => {
-    it('exchanges resource name and machine id between client and server', async () => {
-      const port = await freePort()
+    const SECRET = 'a-shared-replication-secret-for-the-test'
+    // an HTTP server, as the CMS has: the replication is an upgrade on it
+    const httpServer = () => new Promise((resolve) => {
+      const server = http.createServer((req, res) => res.writeHead(404).end())
+      server.listen(0, () => resolve(server))
+    })
+
+    it('exchanges resource name and machine id between client and server, over the HTTP port', async () => {
+      const server = await httpServer()
+      const { port } = server.address()
       const seenByServer = new Promise(resolve => {
-        protocol.Server(port, 'SERVERID', (error, socket, name, id) => resolve({ error, name, id, socket }))
+        protocol.Server(server, 'SERVERID', (error, socket, name, id) => resolve({ error, name, id, socket }), { secret: SECRET })
       })
-      await new Promise(resolve => setTimeout(resolve, 50))
       const seenByClient = new Promise((resolve, reject) => {
-        protocol.Client('localhost', port, 'articles', 'CLIENTID', (error, socket, id) => {
+        protocol.Client(`ws://localhost:${port}/_replicator`, 'articles', 'CLIENTID', (error, socket, id) => {
           if (error) return reject(error)
           resolve({ id, socket })
-        })
+        }, { secret: SECRET })
       })
-      const server = await seenByServer
+      const seen = await seenByServer
       const client = await seenByClient
-      expect(server.error).to.equal(null)
-      expect(server.name).to.equal('articles')
-      expect(server.id).to.equal('CLIENTID')
+      expect(seen.error).to.equal(null)
+      expect(seen.name).to.equal('articles')
+      expect(seen.id).to.equal('CLIENTID')
       expect(client.id).to.equal('SERVERID')
-      server.socket.destroy()
+      seen.socket.destroy()
       client.socket.destroy()
+      server.close()
     })
+
     it('reports an error when nothing listens on the port', async () => {
       const port = await freePort()
-      const error = await new Promise(resolve => protocol.Client('localhost', port, 'articles', 'CLIENTID', resolve))
+      const error = await new Promise(resolve => protocol.Client(`ws://localhost:${port}/_replicator`, 'articles', 'CLIENTID', resolve, { secret: SECRET }))
       expect(error).to.be.ok
+    })
+
+    it('says what the peer answered when nothing replicates at that address', async () => {
+      const server = await httpServer()
+      const error = await new Promise(resolve => protocol.Client(`ws://localhost:${server.address().port}/_replicator`, 'articles', 'CLIENTID', resolve, { secret: SECRET }))
+      expect(error.message).to.match(/answered 404/)
+      server.close()
+    })
+
+    it('needs a secret on both sides', () => {
+      expect(() => protocol.Server(http.createServer(), 'SERVERID', () => {}, {})).to.throw(/replication.secret/)
+      let error
+      protocol.Client('ws://localhost:1/_replicator', 'articles', 'CLIENTID', (e) => { error = e }, {})
+      expect(error.message).to.match(/replication.secret/)
+    })
+
+    it('finds the websocket of a peer from the url of its REST API, under a mount path too', () => {
+      expect(protocol.replicationUrl('http://site-1.internal:9990/api/')).to.equal('ws://site-1.internal:9990/_replicator')
+      expect(protocol.replicationUrl('https://example.com/cms/api')).to.equal('wss://example.com/cms/_replicator')
+      expect(() => protocol.replicationUrl('http://site/files/')).to.throw(/ending in \/api\//)
+      expect(() => protocol.replicationUrl('ftp://site/api/')).to.throw(/http/)
+      expect(() => protocol.replicationUrl(undefined)).to.throw(/not an address/)
     })
   })
 

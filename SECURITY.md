@@ -63,7 +63,7 @@ Each protection is one setting in the `security` block of `cms.json`. All of the
 | `limits.json` | `"100kb"` | Size of a JSON request body, on every route (REST, sync, import, the admin): it is the only JSON limit. A larger body answers `413` with a JSON message naming this setting. 100kb is what every route accepted before the option existed |
 | `limits.upload` | `{ fileSize: "256mb", files: 20, fields: 200, fieldSize: "1mb", parts: 260 }` | Limits of multipart uploads; a value given here replaces the matching default |
 | `restrictRemoteUrls` | `true` | `importFromRemote` only fetches attachments from the remote it imports from (and `allowedHosts` of its `remote` block) |
-| `strictReplication` | `true` | The replication port needs `replication.secret`, peers may only ask for resources this node has, changes from a peer are validated |
+| `strictReplication` | `true` | Peers may only ask for resources this node has, and changes from a peer are validated. The replication websocket always needs `replication.secret` |
 | `wsAuth` | `true` | The record update websocket needs a login and a same-origin (or listed) page |
 | `wsMaxPayload` | `16384` | Largest message a websocket client may send |
 | `authCacheTtl` | `60000` | Milliseconds a verified password stays verified in memory (Basic authentication runs the hash once per minute, not per request); `0` turns it off |
@@ -75,7 +75,7 @@ Each protection is one setting in the `security` block of `cms.json`. All of the
 | `trustProxy` | not set | Passed to Express `trust proxy`: `req.ip`, `req.secure` and the login lockout follow the proxy chain. Set it to the number of proxies in front of the CMS; without it the address of the TCP peer is used |
 | `imageConcurrency` | number of cores | Image operations (resize, crop, smart crop) that run at once; the others wait. `0` means no limit. At most 100 may wait, the next request gets 503 |
 | `attachmentCleanupGrace` | `300000` | Milliseconds a file must have been idle before `cleanAttachment` may remove it as an orphan |
-| `replication.secret` | not set | Shared secret of the replication port. Both sides prove they know it with an HMAC-SHA256 challenge before any resource is named |
+| `replication.secret` | not set | Shared secret of the replication websocket (`/_replicator` on the HTTP port). Both sides prove they know it with an HMAC-SHA256 challenge before any resource is named; without it the node doesn't listen for peers |
 | `replication.strictTypes` | `false` | Read the type (`normal`, `upstream`, `downstream`) of a resource from its options, so the direction rules of `replication.peers` apply. Off, every resource counts as `normal`, as in earlier releases |
 | `replication.settleDelay` | `2000` | Milliseconds `replicate()` waits for a peer to flush before it syncs attachments |
 | `replication.maxRecordBytes` | `4194304` | Largest record accepted from a peer with `strictReplication` |
@@ -176,7 +176,7 @@ Run with `NODE_ENV=production`, then check:
 3. Password hashes. Leave `passwordHash` on `scrypt`. If nodes replicate `_users`, upgrade every node first: a node that runs an earlier release cannot verify an scrypt hash.
 4. Proxy. Behind a reverse proxy, set `trustProxy` to the number of proxies, forward `X-Forwarded-Proto`, and serve the admin app over https (cookies get `Secure`, HSTS is sent).
 5. CSRF and origins. If the admin app is served from another origin than the API, list it in `allowedOrigins`.
-6. Replication. Set the same `replication.secret` on every node, firewall the replication port to the peers, and set a `direction` on every peer before turning on `replication.strictTypes`.
+6. Replication. Set the same `replication.secret` on every node, serve the CMS over HTTPS so peers replicate over `wss://`, and set a `direction` on every peer before turning on `replication.strictTypes`.
 7. Uploads. Tune `limits.upload` to what your editors need. Do not add `text/html` or `image/svg+xml` to `inlineTypes` unless you trust everyone who can upload.
 8. Configuration. `cms.json` is not editable from the admin: nothing on the web can read or rewrite the secrets.
 9. Logs. `/api/_syslog` shows the log to every user who can log in: keep secrets out of log lines (the backend does not write passwords or tokens) and give the `plugins` right of the group only to administrators. The log page and the log file are bounded by `syslog.maxLineLength`, `syslog.maxFileSize` and `syslog.maxClientBuffer`.
@@ -185,7 +185,7 @@ Run with `NODE_ENV=production`, then check:
 ## Not covered
 
 - The frontend (`src/`) was not changed by this work. Its own protections (DOMPurify) are separate.
-- Transport encryption of the replication port: the shared secret authenticates the peers, it does not encrypt what they exchange. Run the replication port on a private network or through a tunnel.
+- Transport encryption of the replication: the shared secret authenticates the peers, it does not encrypt what they exchange. Serve the CMS over HTTPS (peers then use `wss://`), or keep the nodes on a private network or a tunnel.
 - MongoDB and PostgreSQL servers are configured by their operators; the CMS only guarantees the queries it sends.
 - Regular expressions are checked, not sandboxed: a pattern that passes the check can still be slow on a very long text field. If that matters to you, keep `limits.json` small and consider a regular expression engine with a linear time guarantee in front of the query filter.
 

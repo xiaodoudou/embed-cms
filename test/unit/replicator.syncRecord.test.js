@@ -36,9 +36,9 @@ describe('replicator: syncing one record (unit)', () => {
     resource.json.sync = async (...args) => { calls.push(args); throw new Error('stop here') }
     const protocol = require('../../lib/plugins/replicator/protocol')
     const client = protocol.Client
-    protocol.Client = (host, port, name, mid, callback) => callback(null, { destroy () {} }, 'peer0001')
+    protocol.Client = (url, name, mid, callback) => callback(null, { destroy () {} }, 'peer0001')
     try {
-      await app.cms.$replicator.replicator.replicate('localhost', 1, 'http://localhost/api/', 'articles', 'some-record').catch(() => {})
+      await app.cms.$replicator.replicator.replicate({ url: 'http://localhost/api/' }, 'articles', 'some-record').catch(() => {})
     } finally {
       resource.json.sync = original
       protocol.Client = client

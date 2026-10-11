@@ -119,7 +119,7 @@ The record goes back up the same way, as JSON. The REST plugin folds the attachm
 
 Meanwhile the broadcast of step 4 reaches `UpdatesManager` (`lib/UpdatesManager.js`), which sends `{ action, data: { resource, _id, _updatedBy } }` over a websocket to every open admin. Another editor looking at the same list sees it refresh. Resources whose name starts with `_` are not broadcast.
 
-If the resource has peers and a replication type, the replicator (`lib/plugins/replicator`) now syncs the change to the other nodes: records over its TCP protocol, files over HTTP. See [REPLICATION.md](../operations/REPLICATION.md).
+If the resource has peers and a replication type, the replicator (`lib/plugins/replicator`) now syncs the change to the other nodes: records over a websocket on the HTTP port, files over HTTP. See [REPLICATION.md](../operations/REPLICATION.md).
 
 ## Where things live
 

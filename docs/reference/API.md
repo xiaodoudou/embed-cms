@@ -40,7 +40,7 @@ A record is the object you saved, with a few fields the CMS adds. Every added fi
 
 | Field | Meaning |
 |---|---|
-| `_id` | 24 characters: a timestamp, the [`mid`](CONFIG.md#core) of the node that created it, and a sequence. Ids of one node sort in creation order. |
+| `_id` | 24 characters in base 36: the creation time, the [`mid`](CONFIG.md#core) of the node that created it, then a number that grows, 8 characters each. Ids of one node sort in creation order. A record whose id carries another node's `mid` is foreign and read-only here ([REPLICATION.md](../operations/REPLICATION.md#records-of-another-node)). |
 | `_createdAt`, `_updatedAt` | Milliseconds since 1970 (UTC). |
 | `_publishedAt` | `null` when the record is created. |
 | `_updatedBy` | `<group>~<username>` of the last REST write. Writes made through the JavaScript API don't set it. |

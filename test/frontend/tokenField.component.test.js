@@ -45,8 +45,11 @@ describe('TokenField', () => {
     await flushPromises()
     expect(input().element.value).toBe('')
     expect(wrapper.text()).toContain('Key')
+    // nothing to copy yet: the Copy button comes with a token
+    expect(wrapper.find('.token-copy').exists()).toBe(false)
     await wrapper.get('.token-generate').trigger('click')
     expect(input().element.value).toMatch(/^key_[0-9a-f]{16}$/)
+    expect(wrapper.find('.token-copy').exists()).toBe(true)
   })
 
   it('takes a token typed or pasted in', async () => {

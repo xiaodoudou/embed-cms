@@ -11,7 +11,7 @@
       <template #prepend><field-label :schema="schema" :disabled="disabled" :input-id="inputId" /></template>
       <template #append-inner>
         <v-btn
-          class="token-copy" icon variant="text" size="small" :disabled="!_value || disabled"
+          v-if="_value" class="token-copy" icon variant="text" size="small" :disabled="disabled"
           :aria-label="$filters.translate('TL_TOKEN_COPY')" :title="$filters.translate('TL_TOKEN_COPY')" @click="copy"
         >
           <v-icon icon="$contentCopy" />

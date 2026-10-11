@@ -22,20 +22,23 @@
               <tr>
                 <th>{{ $filters.translate('TL_RESOURCE') }}</th>
                 <th>{{ $filters.translate('TL_DIRECTION') }}</th>
-                <th>{{ $filters.translate('TL_RECEIVES_FROM') }}</th>
-                <th>{{ $filters.translate('TL_SENDS_TO') }}</th>
+                <th><span class="side-head is-receives"><v-icon icon="$arrowDown" size="small" />{{ $filters.translate('TL_RECEIVES_FROM') }}</span></th>
+                <th><span class="side-head is-sends"><v-icon icon="$arrowUp" size="small" />{{ $filters.translate('TL_SENDS_TO') }}</span></th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="resource in shown" :key="resource.name">
                 <td class="name">{{ resource.name }}</td>
                 <td class="direction">
-                  <span>{{ $filters.translate(directionKey(resource.type)) }}</span>
+                  <span class="direction-pill" :class="`is-${resource.type}`">
+                    <v-icon :icon="directionIcon(resource.type)" size="small" />
+                    {{ $filters.translate(directionKey(resource.type)) }}
+                  </span>
                   <span class="type cms-text-sm cms-text-muted">{{ resource.type }}</span>
                 </td>
                 <td class="receives">
                   <ul v-if="resource.receives.length > 0" class="links">
-                    <li v-for="link in resource.receives" :key="link.peer" class="link">
+                    <li v-for="link in resource.receives" :key="link.peer" class="link is-receives">
                       <div class="link-head">
                         <span class="cms-badge" :class="badgeClass(link.state)">{{ $filters.translate(stateKey(link.state)) }}</span>
                         <span class="peer" :title="link.peer">{{ peerHost(link.peer) }}</span>
@@ -49,7 +52,7 @@
                 </td>
                 <td class="sends">
                   <ul v-if="resource.sends.length > 0" class="links">
-                    <li v-for="(peer, index) in resource.sends" :key="peer.peer + '-' + index" class="link">
+                    <li v-for="(peer, index) in resource.sends" :key="peer.peer + '-' + index" class="link is-sends">
                       <div class="link-head">
                         <span class="cms-badge is-success">{{ $filters.translate('TL_LINK_LIVE') }}</span>
                         <template v-if="hosts[peer.peer]">
@@ -79,7 +82,7 @@
   import relativeTime from 'dayjs/plugin/relativeTime'
   import RequestService from '@s/RequestService'
   import TranslateService from '@s/TranslateService'
-  import { directionKey, linkState, replicatedResources, peerHost, hostsById } from '@u/replication'
+  import { directionKey, directionIcon, linkState, replicatedResources, peerHost, hostsById } from '@u/replication'
 
   Dayjs.extend(relativeTime)
 
@@ -126,6 +129,7 @@
     },
     methods: {
       directionKey,
+      directionIcon,
       peerHost,
       /**
        * @param {string} state
@@ -197,17 +201,66 @@
   .name {
     font-weight: var(--cms-fw-semibold);
   }
+  // one colour per side: what comes in (receives, downstream) is blue, what goes out (sends, upstream) is indigo; green stays
+  // the colour of a live link
+  .side-head {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cms-space-1);
+    &.is-receives .v-icon {
+      color: var(--cms-info);
+    }
+    &.is-sends .v-icon {
+      color: var(--cms-primary);
+    }
+  }
+  .direction-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cms-space-1);
+    padding: 2px var(--cms-space-2) 2px var(--cms-space-1);
+    border-radius: var(--cms-radius-pill);
+    font-size: var(--cms-fs-sm);
+    font-weight: var(--cms-fw-semibold);
+    &.is-downstream {
+      background: var(--cms-info-soft);
+      color: var(--cms-info);
+    }
+    &.is-upstream {
+      background: var(--cms-primary-soft);
+      color: var(--cms-on-primary-soft);
+    }
+    &.is-normal {
+      background: var(--cms-surface-2);
+      color: var(--cms-text);
+    }
+  }
   .direction .type {
     display: block;
+    margin-top: var(--cms-space-1);
+    padding-left: var(--cms-space-1);
     font-family: var(--cms-font-mono);
   }
   .links {
     display: flex;
     flex-direction: column;
-    gap: var(--cms-space-3);
+    gap: var(--cms-space-2);
     margin: 0;
     padding: 0;
     list-style: none;
+  }
+  // each link is a small box on the inset surface, edged with the colour of its side
+  .link {
+    padding: var(--cms-space-2) var(--cms-space-3);
+    border-left: 3px solid transparent;
+    border-radius: var(--cms-radius-sm);
+    background: var(--cms-surface-2);
+    &.is-receives {
+      border-left-color: var(--cms-info);
+    }
+    &.is-sends {
+      border-left-color: var(--cms-primary);
+    }
   }
   .link-head {
     display: flex;

@@ -165,25 +165,17 @@ describe('replicator (unit)', () => {
       await app.close()
     })
 
-    it('directionIsValid follows the upstream/downstream rules', () => {
-      const ok = manager.directionIsValid
-      expect(ok('upstream', { direction: 'downstream' })).to.equal(true)
-      expect(ok('downstream', { direction: 'upstream' })).to.equal(true)
-      expect(ok('upstream', { direction: 'upstream' })).to.equal(false)
-      expect(ok('downstream', { direction: 'downstream' })).to.equal(false)
-      expect(ok('normal', { direction: 'upstream' })).to.equal(true)
-      expect(ok('upstream', { direction: 'normal' })).to.equal(true)
-    })
-    it('getParams falls back to the global peers list', () => {
-      const { peers } = manager.getParams('articles')
-      expect(peers).to.have.length(1)
+    it('takes the peers of a resource from its own list, else from the global one', () => {
+      expect(manager.peersOf('articles')).to.have.length(1)
+      // authors has a list of its own, empty
+      expect(manager.peersOf('authors')).to.deep.equal([])
+      expect(manager.hasPeers('authors')).to.equal(false)
     })
     it('keeps the resources of the CMS itself out of the global peers list', async () => {
       // every node makes its own admins group and localAdmin: a node that took another node's could not update them
       for (const name of ['_users', '_groups', '_settings']) {
         expect(manager.peersOf(name), name).to.deep.equal([])
         expect(manager.hasPeers(name), name).to.equal(false)
-        expect(() => manager.getParams(name), name).to.throw(/No replication peers/)
       }
       const agent = await loggedIn()
       const { body } = await agent.get('/replicator/resources')
@@ -199,53 +191,31 @@ describe('replicator (unit)', () => {
         await named.close()
       }
     })
-    it('does not send a write to a resource of the CMS to the global peers', async () => {
-      const calls = []
-      const replicator = manager.replicator
-      const original = replicator.replicate
-      replicator.replicate = async (...args) => { calls.push(args); return { records: 0 } }
-      try {
-        await app.cms.api()('_settings').create({}).catch(() => {})
-        await new Promise((resolve) => setTimeout(resolve, 100))
-      } finally {
-        replicator.replicate = original
-      }
-      expect(calls.filter((args) => args[1] === '_settings')).to.have.length(0)
+    it('reads the type of a resource from its declaration', () => {
+      expect(manager.typeOf(app.cms._resources.articles)).to.equal('downstream')
+      expect(manager.typeOf(app.cms._resources.authors)).to.equal('normal')
     })
-    // The manager used to read `type` from the Resource object, where it does not exist: every resource counted as
-    // 'normal' and the upstream/downstream rules never applied. Reading it from resource.options.type is behind
-    // replication.strictTypes, because applying the rules stops the replication of the peers whose direction does not fit.
-    it('reads the resource type from its options when replication.strictTypes is on, and keeps "normal" otherwise', async () => {
-      expect(manager.getParams('articles').type).to.equal('normal')
-      const strict = await startApp({ replication: { peers: [{ url: 'http://localhost:1/', direction: 'normal' }], peersByResource: {}, strictTypes: true } })
-      try {
-        expect(strict.cms.$replicator.getParams('articles').type).to.equal('downstream')
-      } finally {
-        await strict.close()
-      }
-    })
-    it('getParams refuses unknown resources and resources without peers', () => {
-      expect(() => manager.getParams('nothere')).to.throw(/not found/)
-      expect(() => manager.getParams('authors')).to.throw(/No replication peers/)
-    })
-    it('lists resources with their peers through the API', async () => {
+    it('lists each resource with its type, its peers and its links through the API', async () => {
       const agent = await loggedIn()
       const res = await agent.get('/replicator/resources')
       expect(res.status).to.equal(200)
       const articles = res.body.find(r => r.name === 'articles')
-      expect(articles).to.have.property('peers').that.has.length(1)
+      expect(articles).to.include({ type: 'downstream' })
+      expect(articles.peers).to.have.length(1)
+      // no replication.secret here: no link is opened, and no peer pulls from this node
+      expect(articles.receives).to.deep.equal([])
+      expect(articles.sends).to.deep.equal([])
     })
-    it('answers 500 with a message when syncing a resource without peers', async () => {
+    it('answers 500 with a message when asked to resync a resource it pulls from no peer', async () => {
       const agent = await loggedIn()
       const res = await agent.post('/replicator/sync/authors')
       expect(res.status).to.equal(500)
-      expect(res.body.error).to.match(/No replication peers/)
+      expect(res.body.error).to.match(/no peer/)
     })
     it('answers 401 for anonymous callers on every route', async () => {
       const list = await request(app.url).get('/replicator/resources')
       const sync = await request(app.url).post('/replicator/sync/articles')
-      const record = await request(app.url).post('/replicator/sync/articles/abc')
-      for (const res of [list, sync, record]) {
+      for (const res of [list, sync]) {
         expect(res.status).to.be.oneOf([401, 403])
       }
     })

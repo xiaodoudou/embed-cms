@@ -115,6 +115,17 @@ describe('live replication (unit)', function () {
 
 })
 
+describe('how a link says what went wrong (unit)', () => {
+  const { errorText } = require('../../lib/plugins/replicator/links')
+  it('gives the codes of a connection that failed on every address, not an empty AggregateError', () => {
+    const refused = (address) => Object.assign(new Error(''), { code: 'ECONNREFUSED', address, port: 9997 })
+    expect(errorText(new AggregateError([refused('::1'), refused('127.0.0.1')]))).to.equal('ECONNREFUSED (port 9997)')
+    expect(errorText(new Error('The replication peer answered 404'))).to.equal('The replication peer answered 404')
+    expect(errorText(Object.assign(new Error(''), { code: 'ENOTFOUND' }))).to.equal('ENOTFOUND')
+    expect(errorText('plain')).to.equal('plain')
+  })
+})
+
 describe('which resources a node pulls (unit)', () => {
   let app
   afterEach(async () => { if (app) { await app.close(); app = undefined } })

@@ -64,13 +64,13 @@ describe('Replicator page', () => {
     const first = rows()[0].findAll('td').map((td) => td.text())
     expect(first.slice(0, 4)).toEqual(['articles', 'downstream', 'From peers', 'http://site-1.internal:9990/api/, site-2.internal:9000'])
     expect(rows()[1].find('.peers').text()).toBe('No peers')
-    expect(rows()[1].find('.actions .v-btn').attributes('disabled')).toBeDefined()
+    expect(rows()[1].find('.actions .cms-btn').attributes('disabled')).toBeDefined()
   })
 
   it('says so when a peer failed, although the server answered 200', async () => {
     RequestService.post.mockResolvedValue({ ok: true, result: { resource: 'articles', results: [{ peer: PEER_A, status: 'ok' }, { peer: PEER_B, status: 'error', error: 'ECONNREFUSED' }] } })
     await mountPage()
-    await rows()[0].find('.actions .v-btn').trigger('click')
+    await rows()[0].find('.actions .cms-btn').trigger('click')
     await flushPromises()
     expect(RequestService.post).toHaveBeenCalledWith('../replicator/sync/articles')
     expect(lastToast()).toMatchObject({ type: 'error', message: 'Sync of articles failed with 1 of 2 peers', detail: 'site-2.internal:9000: ECONNREFUSED', detailLabel: 'TL_COPY_ERRORS', actionLabel: 'Retry' })

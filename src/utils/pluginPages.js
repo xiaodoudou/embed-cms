@@ -13,7 +13,8 @@ export function pluginPages (config = {}) {
   // the log belongs with the other pages that run the CMS itself (Users, Groups, Settings...)
   const pages = [['Syslog', 'Syslog', 'TL_SYSLOG', 'CMS']]
   if (_.get(config, 'disableReplication') === false) {
-    pages.push(['CmsReplicator', 'Replicator', 'TL_REPLICATOR'])
+    // with the other pages that run the CMS, like the log and Sync
+    pages.push(['CmsReplicator', 'Replicator', 'TL_REPLICATOR', 'CMS'])
   }
   if (_.get(config, 'import')) {
     pages.push(['CmsImport', 'Cms Import', 'TL_CMS_IMPORT'])

@@ -1,49 +1,61 @@
 <template>
-  <div class="plugin-wrapper">
+  <div class="plugin-wrapper cms-replicator">
     <div class="plugin-title">
       <h5>{{ $filters.translate('TL_REPLICATOR') }}</h5>
     </div>
-    <v-card elevation="0" class="cms-replicator">
-      <div class="replicator-head">
-        <p class="intro">{{ $filters.translate('TL_REPLICATOR_INTRO') }}</p>
-        <v-btn variant="tonal" rounded density="comfortable" prepend-icon="$refresh" :loading="loading" @click="fetchResources">{{ $filters.translate('TL_REFRESH') }}</v-btn>
+    <p class="intro cms-text cms-text-muted">{{ $filters.translate('TL_REPLICATOR_INTRO') }}</p>
+    <section class="cms-card" aria-labelledby="replicator-resources-title">
+      <header class="cms-card-header cms-row is-between">
+        <h2 id="replicator-resources-title" class="cms-h3">{{ $filters.translate('TL_RESOURCES') }}</h2>
+        <button type="button" class="refresh cms-btn is-secondary is-sm" :disabled="loading" @click="fetchResources">
+          <span v-if="loading" class="cms-spinner" aria-hidden="true" />
+          <v-icon v-else icon="$refresh" size="small" />
+          {{ $filters.translate('TL_REFRESH') }}
+        </button>
+      </header>
+      <div class="cms-card-body">
+        <p v-if="loadError" class="load-error cms-callout is-error" role="alert">{{ loadError }}</p>
+        <div v-else class="cms-datatable-scroll">
+          <table class="cms-datatable is-hover">
+            <thead>
+              <tr>
+                <th>{{ $filters.translate('TL_RESOURCE') }}</th>
+                <th>{{ $filters.translate('TL_REPLICATION_TYPE') }}</th>
+                <th>{{ $filters.translate('TL_DIRECTION') }}</th>
+                <th>{{ $filters.translate('TL_PEERS') }}</th>
+                <th>{{ $filters.translate('TL_ACTIONS') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="resource in resources" :key="resource.name">
+                <td class="name">{{ resource.name }}</td>
+                <td><code class="cms-code">{{ resource.type }}</code></td>
+                <td>{{ $filters.translate(directionKey(resource.type)) }}</td>
+                <td class="peers">
+                  <template v-if="hasPeers(resource)">{{ peersOf(resource) }}</template>
+                  <span v-else class="cms-text-muted">{{ $filters.translate('TL_NO_PEERS') }}</span>
+                </td>
+                <td class="actions">
+                  <button type="button" class="sync-all cms-btn is-secondary is-sm" :disabled="!hasPeers(resource)" @click="syncResource(resource.name)">{{ $filters.translate('TL_SYNC_ALL') }}</button>
+                  <button type="button" class="sync-record cms-btn is-tertiary is-sm" :disabled="!hasPeers(resource)" @click="syncRecordPrompt(resource.name)">{{ $filters.translate('TL_SYNC_RECORD') }}</button>
+                </td>
+              </tr>
+              <tr v-if="!loading && resources.length === 0">
+                <td colspan="5" class="cms-text-muted">{{ $filters.translate('TL_NO_REPLICATED_RESOURCES') }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-      <p v-if="loadError" class="load-error" role="alert">{{ loadError }}</p>
-      <v-table v-else density="comfortable">
-        <thead>
-          <tr>
-            <th>{{ $filters.translate('TL_RESOURCE') }}</th>
-            <th>{{ $filters.translate('TL_REPLICATION_TYPE') }}</th>
-            <th>{{ $filters.translate('TL_DIRECTION') }}</th>
-            <th>{{ $filters.translate('TL_PEERS') }}</th>
-            <th>{{ $filters.translate('TL_ACTIONS') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="resource in resources" :key="resource.name">
-            <td class="name">{{ resource.name }}</td>
-            <td><code>{{ resource.type }}</code></td>
-            <td>{{ $filters.translate(directionKey(resource.type)) }}</td>
-            <td class="peers">
-              <template v-if="hasPeers(resource)">{{ peersOf(resource) }}</template>
-              <span v-else class="muted">{{ $filters.translate('TL_NO_PEERS') }}</span>
-            </td>
-            <td class="actions">
-              <v-btn size="small" variant="tonal" rounded :disabled="!hasPeers(resource)" @click="syncResource(resource.name)">{{ $filters.translate('TL_SYNC_ALL') }}</v-btn>
-              <v-btn size="small" variant="text" rounded :disabled="!hasPeers(resource)" @click="syncRecordPrompt(resource.name)">{{ $filters.translate('TL_SYNC_RECORD') }}</v-btn>
-            </td>
-          </tr>
-          <tr v-if="!loading && resources.length === 0">
-            <td colspan="5" class="muted">{{ $filters.translate('TL_NO_REPLICATED_RESOURCES') }}</td>
-          </tr>
-        </tbody>
-      </v-table>
-    </v-card>
+    </section>
     <app-dialog
       :model-value="showDialog" :title="$filters.translate('TL_SYNC_RECORD')" type="info" :confirm-text="$filters.translate('TL_SYNC')" :cancel-text="$filters.translate('TL_CANCEL')"
       @confirm="doSyncRecord" @cancel="showDialog = false"
     >
-      <v-text-field v-model="recordId" :label="$filters.translate('TL_RECORD_ID')" @keydown.enter="doSyncRecord" />
+      <div class="cms-field">
+        <label class="cms-label" for="replicator-record-id">{{ $filters.translate('TL_RECORD_ID') }}</label>
+        <input id="replicator-record-id" v-model="recordId" class="cms-input" type="text" autocomplete="off" @keydown.enter="doSyncRecord">
+      </div>
     </app-dialog>
   </div>
 </template>
@@ -154,42 +166,21 @@
   }
 </script>
 <style lang="scss" scoped>
-@use '@a/scss/variables.scss' as *;
 .cms-replicator {
-  margin: var(--cms-space-4) var(--cms-space-6) var(--cms-space-6);
-  padding: var(--cms-space-6);
-  max-width: var(--cms-content-max);
-  background-color: $layout-card-background;
-  border: 1px solid var(--cms-border);
-  border-radius: var(--cms-radius-lg);
-  .replicator-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--cms-space-4);
-    margin-bottom: var(--cms-space-4);
-  }
   .intro {
-    margin: 0;
-    color: var(--cms-text-muted);
-    font-size: var(--cms-fs-sm);
+    margin: 0 var(--cms-space-6) var(--cms-space-4);
+    max-width: var(--cms-content-max);
   }
-  .load-error {
-    color: var(--cms-error);
+  .cms-card {
+    margin: 0 var(--cms-space-6) var(--cms-space-6);
+    max-width: var(--cms-content-max);
   }
   .name {
     font-weight: var(--cms-fw-semibold);
   }
-  .muted {
-    color: var(--cms-text-muted);
-  }
-  code {
-    font-family: var(--cms-font-mono);
-    font-size: var(--cms-fs-sm);
-  }
   .actions {
     white-space: nowrap;
-    .v-btn + .v-btn {
+    .cms-btn + .cms-btn {
       margin-left: var(--cms-space-2);
     }
   }
@@ -197,10 +188,10 @@
 
 @media (max-width: 599.98px) {
   .cms-replicator {
-    margin: var(--cms-space-3);
-    padding: var(--cms-space-4);
-    .replicator-head {
-      flex-direction: column;
+    .intro,
+    .cms-card {
+      margin-left: var(--cms-space-3);
+      margin-right: var(--cms-space-3);
     }
   }
 }

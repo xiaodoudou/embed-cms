@@ -46,12 +46,9 @@ Replication needs no port of its own: a peer connects to the HTTP port of the CM
   "mid": "editnode",
   "replication": {
     "secret": "the-same-long-random-string-on-every-node",
-    "peers": [
-      { "url": "http://site-1.internal:9990/api/", "direction": "downstream" }
-    ],
     "peersByResource": {
-      "signups": [
-        { "url": "http://site-1.internal:9990/api/", "direction": "upstream" }
+      "articles": [
+        { "url": "http://site-1.internal:9990/api/", "direction": "downstream" }
       ]
     },
     "auth": { "username": "replicator", "password": "…" }
@@ -65,7 +62,7 @@ Replication needs no port of its own: a peer connects to the HTTP port of the CM
 | `replication.peersByResource` | Peers per resource name. Replaces `peers` for that resource. |
 | `replication.auth` | `{ username, password }` sent as Basic credentials when downloading files from a peer that requires a login. |
 | `replication.secret` | A shared secret. Both sides prove they know it (HMAC-SHA256 challenge) before any resource is named. Without it the node doesn't listen (`/_replicator` answers 404) and doesn't replicate. |
-| `replication.strictTypes` | Make `direction` matter (see below). Off by default. |
+| `replication.strictTypes` | Check the `direction` of each peer against the type of the resource ([Directions](#directions)). Off by default. |
 | `replication.settleDelay` | Milliseconds to wait for the peer to flush before syncing files (`2000`). |
 | `replication.maxRecordBytes` | Largest record accepted from a peer with `strictReplication` (4 MB). |
 
@@ -81,26 +78,78 @@ Earlier versions replicated over a TCP port of their own, `netPort`, with `host`
 
 ### Directions
 
-A resource declares how its data flows with `type` in its declaration:
+Each node reads the `type` of a resource from its own declaration, so declare the same type on every node. The type says what the node that starts a sync does:
 
-| `type` | Meaning | Typical use |
+| `type` | The node that starts the sync | A write starts a sync |
 |---|---|---|
-| `normal` (default) | Both ways. | Content edited on several nodes. |
-| `downstream` | From the central node down to the others. | Content edited centrally and shown on every site; `_users`, `_groups` and `_settings` are downstream. |
-| `upstream` | From the nodes up to the central one. | Logs, analytics, form submissions collected on each site. |
+| `normal` (default) | Sends its changes and takes the other node's | No: it syncs when you ask |
+| `upstream` | Sends its changes, and the other node takes them | Yes |
+| `downstream` | Takes the other node's changes, and sends none | Yes |
+
+A write to an `upstream` or `downstream` resource that has peers starts a sync on the node where it was written. With `upstream`, the record leaves at once. With `downstream`, the node fetches from its peers, and its own write waits until a peer starts a sync of that resource.
+
+The `direction` of a peer says which way the peer is from this node:
+
+| `direction` | The peer is |
+|---|---|
+| `downstream` | A node this one sends to |
+| `upstream` | A node this one fetches from |
+| `normal` | Both |
+
+The directions are checked only with `replication.strictTypes: true`. An `upstream` resource then goes only to `downstream` peers, and a `downstream` resource comes only from `upstream` peers. A `normal` resource, or a peer marked `normal`, always passes. A peer without a `direction` is used for `normal` resources only. Without `strictTypes`, every peer is used for every resource, and the type still decides which side sends.
+
+#### A central node and its sites
+
+Editors write articles on the central node, and every site shows them. Visitors sign up on the sites, and the central node collects the signups. Each resource is written in one place and sent from there, so both are `upstream`, on every node:
+
+```js
+// resources/articles.js and resources/signups.js, the same on every node
+module.exports = { type: 'upstream', schema: [ /* … */ ] }
+```
+
+The central node sends the articles to the site:
+
+```json
+{
+  "mid": "central1",
+  "replication": {
+    "secret": "the-same-long-random-string-on-every-node",
+    "strictTypes": true,
+    "peersByResource": {
+      "articles": [{ "url": "http://site-1.internal:9990/api/", "direction": "downstream" }]
+    }
+  }
+}
+```
+
+The site sends the signups to the central node:
+
+```json
+{
+  "mid": "site0001",
+  "replication": {
+    "secret": "the-same-long-random-string-on-every-node",
+    "strictTypes": true,
+    "peersByResource": {
+      "signups": [{ "url": "http://central.internal:9990/api/", "direction": "downstream" }]
+    }
+  }
+}
+```
 
 ```mermaid
 flowchart LR
   central["Central node<br/>(editors work here)"]
-  site1["Site node 1"]
-  site2["Site node 2"]
-  central -- "downstream: articles, _users, _groups, _settings" --> site1
-  central -- "downstream" --> site2
-  site1 -- "upstream: signups, logs" --> central
-  site2 -- "upstream" --> central
+  site["Site node"]
+  central -- "articles, sent when written" --> site
+  site -- "signups, sent when written" --> central
 ```
 
-Two things to know. First, only resources whose `type` isn't `normal` sync automatically after a write; a `normal` resource syncs when you ask. Second, the direction rules of peers are only applied with `replication.strictTypes: true`. Without it every resource is treated as `normal`, as in earlier releases. Before you turn it on, give every peer a `direction`, or it stops syncing `_users`, `_groups` and `_settings` ([SECURITY.md](../../SECURITY.md#other-options-added) explains why).
+A site that missed articles, a new one for example, gets them when the central node starts a sync of `articles`: **Sync all** on its Replicator page, or `POST /replicator/sync/articles`.
+
+#### Users, groups and settings
+
+`_users`, `_groups`, `_settings`, `_sync` and `_xlsx` are `downstream`. Every node creates its own `admins` group and `localAdmin` user the first time it starts, and a node can't edit a record that another node created. When two nodes that each started on their own replicate `_groups` and `_users`, the node that fetches receives the other node's `admins` group. It can't update that group, can't set up its `localAdmin`, and its admin login stops working. Replicate your content with `peersByResource`, as above, and keep the users, groups and settings to each node.
 
 ## Starting a sync by hand
 

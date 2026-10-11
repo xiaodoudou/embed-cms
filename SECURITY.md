@@ -76,12 +76,12 @@ Each protection is one setting in the `security` block of `cms.json`. All of the
 | `imageConcurrency` | number of cores | Image operations (resize, crop, smart crop) that run at once; the others wait. `0` means no limit. At most 100 may wait, the next request gets 503 |
 | `attachmentCleanupGrace` | `300000` | Milliseconds a file must have been idle before `cleanAttachment` may remove it as an orphan |
 | `replication.secret` | not set | Shared secret of the replication websocket (`/_replicator` on the HTTP port). Both sides prove they know it with an HMAC-SHA256 challenge before any resource is named; without it the node doesn't listen for peers |
-| `replication.strictTypes` | `false` | Read the type (`normal`, `upstream`, `downstream`) of a resource from its options, so the direction rules of `replication.peers` apply. Off, every resource counts as `normal`, as in earlier releases |
+| `replication.strictTypes` | `false` | Read the type (`normal`, `upstream`, `downstream`) of a resource from its options, so the `direction` of each peer is checked against it. Off, every peer is used for every resource |
 | `replication.settleDelay` | `2000` | Milliseconds `replicate()` waits for a peer to flush before it syncs attachments |
 | `replication.maxRecordBytes` | `4194304` | Largest record accepted from a peer with `strictReplication` |
 | `importFromRemote.remote.restrictUrls` / `.allowedHosts` | `false` / `[]` | Per remote, in addition to `restrictRemoteUrls` |
 
-`replication.strictTypes` is worth a word. The replication manager reads the type of a resource from its options. Off, every resource counts as `normal` and the `direction` of a peer never matters. With the option on, a `downstream` resource (`_users`, `_groups`, `_settings` and the resources you declared so) is only synced with peers whose `direction` is `upstream` or `normal`, and an `upstream` resource with peers of direction `downstream` or `normal`. A peer without `direction` then stops syncing typed resources. Give every peer a direction before turning it on.
+`replication.strictTypes` is worth a word. The replication manager reads the type of a resource from its options. Off, every peer is used for every resource, and the `direction` of a peer never matters; the type still decides which side of a sync sends. With the option on, a `downstream` resource (`_users`, `_groups`, `_settings` and the resources you declared so) is only synced with peers whose `direction` is `upstream` or `normal`, and an `upstream` resource with peers of direction `downstream` or `normal`. A peer without `direction` then syncs `normal` resources only. Give every peer a direction before turning it on. [REPLICATION.md](docs/operations/REPLICATION.md#directions) explains the types and the directions.
 
 ### Always on
 
@@ -157,7 +157,7 @@ The values that depend on your setup:
 - `trustProxy` is the number of reverse proxies in front of the CMS; change `1` to the real number.
 - `allowedOrigins` takes the origin of the admin app when it is served from another host than the API.
 - `limits.json` is `"100kb"`, the size of the largest JSON body (a record, an import); raise it when a record is bigger.
-- `replication.strictTypes` is on, so every peer needs a `direction`, or it stops syncing `_users`, `_groups` and `_settings`.
+- `replication.strictTypes` is on, so every peer needs a `direction`, or it syncs `normal` resources only.
 - `localAdmin` is off. A `localAdmin` record that already exists stays, and every boot logs an error while it has its default password: change that password or delete the account.
 - `safeAttachments` and `strictUploads` are on. Turning `safeAttachments` off displays HTML and SVG attachments inline, with the privileges of the site for whoever opens them. Turning `strictUploads` off removes the file name sanitising, the content-based type and the upload limits.
 

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import CmsReplicator from '@c/pages/CmsReplicator.vue'
 import RequestService from '@s/RequestService'
-import { peerLabel, directionKey, linkState, replicatedResources, peerHost, hostsById } from '../../src/utils/replication.js'
+import { peerLabel, directionKey, directionIcon, linkState, replicatedResources, peerHost, hostsById } from '../../src/utils/replication.js'
 import { mountComponent, TranslateService } from './helpers/mountField.js'
 
 vi.mock('@s/RequestService', () => ({ default: { get: vi.fn(), post: vi.fn() } }))
@@ -55,6 +55,9 @@ describe('Replicator helpers', () => {
   it('translates the direction of each type: downstream is received, upstream sent', () => {
     expect([directionKey('downstream'), directionKey('upstream'), directionKey('normal')]).toEqual(['TL_DIRECTION_FROM_PEERS', 'TL_DIRECTION_TO_PEERS', 'TL_DIRECTION_BOTH'])
   })
+  it('gives each direction its icon: up for what is sent, down for what is received', () => {
+    expect([directionIcon('upstream'), directionIcon('downstream'), directionIcon('normal')]).toEqual(['$arrowUp', '$arrowDown', '$swapVertical'])
+  })
   it('names and colours the state of a link', () => {
     expect(linkState('live')).toEqual({ key: 'TL_LINK_LIVE', tone: 'success' })
     expect(linkState('reconnecting').tone).toBe('error')
@@ -81,7 +84,9 @@ describe('Replicator page', () => {
     expect(rows()).toHaveLength(2)
     const articles = rows()[0]
     expect(articles.find('.name').text()).toBe('articles')
-    expect(articles.find('.direction').text()).toContain('From peers')
+    expect(articles.find('.direction-pill').text()).toBe('Receives')
+    expect(articles.find('.direction-pill').classes()).toContain('is-downstream')
+    expect(articles.find('.receives .link').classes()).toContain('is-receives')
     expect(articles.find('.direction .type').text()).toBe('downstream')
     expect(articles.find('.receives .cms-badge').text()).toBe('Live')
     expect(articles.find('.receives .cms-badge').classes()).toContain('is-success')

@@ -76,3 +76,14 @@ export function hostsById (resources) {
   })
   return hosts
 }
+
+/**
+ * @param {string} type the replication type of a resource
+ * @returns {string} the icon of its direction: up for what is sent, down for what is received, both for normal
+ */
+export function directionIcon (type) {
+  if (type === 'upstream') {
+    return '$arrowUp'
+  }
+  return type === 'downstream' ? '$arrowDown' : '$swapVertical'
+}

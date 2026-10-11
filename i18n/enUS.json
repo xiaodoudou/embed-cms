@@ -431,6 +431,8 @@
     "TL_UNSAVED_CHANGES": "Unsaved changes",
     "TL_UNSAVED_CHANGES_HINT": "You have edits that are not saved yet. Create or Save keeps them, Discard drops them.",
     "TL_ALL_SAVED": "All changes saved",
+    "TL_FOREIGN_RECORD": "Read-only, made on {{ mid }}",
+    "TL_FOREIGN_RECORD_HINT": "This record was made on another node. Edit it on {{ mid }}.",
     "TL_JUMP_TO": "Jump to field",
     "TL_JUMP_TO_SEARCH": "Find a field",
     "TL_INCOMPLETE": "incomplete",

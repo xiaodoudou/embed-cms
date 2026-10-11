@@ -21,8 +21,8 @@ module.exports = {
     { field: 'readOnlyEmail', input: 'email', label: 'Read-only email', localised: false, options: { readonly: true, hint: 'Read-only: visible and copyable, not editable' } },
     { field: 'readOnlyPhone', input: 'phone', label: 'Read-only phone', localised: false, options: { readonly: true, hint: 'Read-only: visible and copyable, not editable' } },
     { field: 'disabledPhone', input: 'phone', label: 'Disabled phone', localised: false, options: { disabled: true, hint: 'Disabled: greyed out and not focusable' } },
-    { field: 'apiKey', input: 'token', label: 'API key', localised: false, options: { prefix: 'key_', hint: 'Made when the record is created; copy it, or make a new one before saving' } },
-    { field: 'hexToken', input: 'token', label: 'Short hex token', localised: false, options: { length: 8, format: 'hex', hint: '8 random bytes, written in hexadecimal' } },
+    { field: 'apiKey', input: 'token', label: 'API key', localised: false, options: { prefix: 'key_', hint: 'Type or paste a key, or make one with the Generate button; Copy copies it' } },
+    { field: 'hexToken', input: 'token', label: 'Short hex token', localised: false, options: { length: 8, format: 'hex', autoGenerate: true, hint: 'Filled when the record is created: 8 random bytes, written in hexadecimal' } },
     { field: 'disabledUrl', input: 'url', label: 'Disabled website', localised: false, options: { disabled: true, hint: 'Disabled: greyed out and not focusable' } }
   ]
 }

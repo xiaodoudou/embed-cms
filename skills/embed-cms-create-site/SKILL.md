@@ -11,7 +11,7 @@ The docs are in the `docs/` folder of https://github.com/xiaodoudou/embed-cms, n
 
 ## Steps
 
-1. **Ask only what you need**: what the site is for, the content types, one language or several (`enUS`, `zhCN`). Node must be `^22.12.0`.
+1. **Ask only what you need**: what the site is for, the content types, one language or several (`enUS`, `zhCN`). Node must be 22.12 or later on the 22 line, or 24.
 2. **Scaffold** in the project folder:
    ```sh
    npm init -y && npm install embed-cms express

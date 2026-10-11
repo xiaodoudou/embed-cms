@@ -66,6 +66,28 @@ jobs:
       - name: Dependency audit
         run: npm audit --omit=dev --audit-level=high
 
+  # The same tests on the newest LTS line of Node. A separate job, not a matrix of `test`, because the rules of `main` ask for the checks
+  # named `test` and `drivers`. Lint and the audit do not depend on the version of Node, so they run once, in `test`.
+  node-24:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Backend unit and security tests
+        run: npm run test:unit
+      - name: Frontend tests
+        run: npm run test:frontend
+      - name: Legacy integration suite
+        run: npm test
+        env:
+          TEST_PORT: 9985
+      - name: Production build
+        run: npm run build
+
   # The driver contract suite (test/unit/drivers.contract.test.js) runs the same tests against the json file store,
   # PostgreSQL and MongoDB. Here both servers are service containers, and a server that does not answer fails the job
   # (REQUIRE_DATABASES) instead of skipping its part of the suite.

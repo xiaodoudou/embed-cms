@@ -4,7 +4,7 @@
 
 > A headless CMS for Node.js: describe your content in JavaScript files, get an admin app, a REST API and a JavaScript API
 
-[![License](https://img.shields.io/badge/License-GPL--3.0--only-blue?style=flat-square)](LICENSE) [![Node](https://img.shields.io/badge/Node-%3E%3D22.12-339933?style=flat-square)](#try-it-in-five-minutes) [![Storage](https://img.shields.io/badge/Storage-JSON%20%7C%20MongoDB%20%7C%20PostgreSQL-orange?style=flat-square)](docs/reference/CONFIG.md) [![Express](https://img.shields.io/badge/Express-mountable-lightgrey?style=flat-square)](docs/start/GETTING_STARTED.md) [![Locales](https://img.shields.io/badge/Content-translatable-blueviolet?style=flat-square)](docs/start/CONCEPTS.md) [![Tests](https://img.shields.io/badge/Tests-unit%20%7C%20security%20%7C%20frontend-brightgreen?style=flat-square)](docs/contributing/TESTING.md)
+[![License](https://img.shields.io/badge/License-GPL--3.0--only-blue?style=flat-square)](LICENSE) [![Node](https://img.shields.io/badge/Node-22.12%2B%20%7C%2024-339933?style=flat-square)](#try-it-in-five-minutes) [![Storage](https://img.shields.io/badge/Storage-JSON%20%7C%20MongoDB%20%7C%20PostgreSQL-orange?style=flat-square)](docs/reference/CONFIG.md) [![Express](https://img.shields.io/badge/Express-mountable-lightgrey?style=flat-square)](docs/start/GETTING_STARTED.md) [![Locales](https://img.shields.io/badge/Content-translatable-blueviolet?style=flat-square)](docs/start/CONCEPTS.md) [![Tests](https://img.shields.io/badge/Tests-unit%20%7C%20security%20%7C%20frontend-brightgreen?style=flat-square)](docs/contributing/TESTING.md)
 
 You describe your content in plain JavaScript files, one per resource, and Embed CMS gives you three things from them: an admin app where editors write and translate that content, a REST API that serves it to your sites and apps, and a JavaScript API for your own server code.
 
@@ -18,7 +18,7 @@ It keeps your content in a LevelDB database on disk by default, so there is no d
 
 ## Try it in five minutes
 
-You need [Node.js](https://nodejs.org/) 22.12 or later and git.
+You need [Node.js](https://nodejs.org/) 22.12 or later on the 22 line, or Node.js 24, and git.
 
 ```sh
 git clone https://github.com/xiaodoudou/embed-cms.git embed-cms

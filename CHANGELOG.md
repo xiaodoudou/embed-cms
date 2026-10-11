@@ -4,6 +4,10 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ## [Unreleased]
 
+### Changed
+
+- **Node 24, the newest LTS, is supported.** `engines` was `^22.12.0`, which npm reads as Node 22 only, so installing on Node 24 printed an engine warning. It is now `^22.12.0 || ^24.0.0`, and CI runs the unit, frontend, integration and build steps on Node 24 beside Node 22.
+
 ## [3.1.0] - 2026-10-11
 
 ### Added

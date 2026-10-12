@@ -4,6 +4,20 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-10-12
+
+### Added
+
+- **A token field.** `input: 'token'` holds a key or a secret that two systems share. Type it, paste it, or make a random one with the **Generate** button, and copy it with **Copy**. `options.length` (random bytes), `options.prefix` and `options.format` (`base64url` or `hex`) shape what Generate makes, and `options.autoGenerate` gives a new record a token by itself, in the admin and over the API. See [token](docs/reference/fields/token.md).
+- **The Token under This CMS in the Sync settings is a token field.** It has a Generate and a Copy button, so the secret no longer has to be invented by hand.
+
+### Changed
+
+- **Replication is live, and needs no port of its own.** A node keeps a link open to each peer it receives a resource from: the peer sends what the node lacks, then each change as it is written, and the link connects again by itself after an outage. Records go over a websocket on the HTTP port of the CMS, at `/_replicator` next to the REST API, so they travel over `wss://` when the CMS is served over HTTPS; files still go over the REST API. A node a peer connects to only sends, so a connecting peer can no longer write anything. With MongoDB or PostgreSQL, a node pulls again every `replication.pollInterval` (30 seconds). **To upgrade:** remove `netPort`, give each peer the `url` of its REST API, set `replication.secret` on every node, and list on each node the peers it receives from. `settleDelay` and `POST /replicator/sync/:resource/:id` are gone. See [REPLICATION.md](docs/operations/REPLICATION.md#moving-from-31-or-earlier).
+- **The resources of the CMS stay out of the global peers list.** `_users`, `_groups`, `_settings`, `_sync` and `_xlsx` now replicate only when `replication.peersByResource` names them. Every node makes its own `admins` group and `localAdmin` on its first start, and a node that fetched another node's `admins` group could no longer update it, so its admin login stopped working. See [REPLICATION.md](docs/operations/REPLICATION.md#users-groups-and-settings).
+- **The Replicator page shows the replication, live, and starts nothing.** For each resource that replicates, it shows the peers this node pulls it from, the state of each link (live, reconnecting with the error and the next try) and its last change, and the peers that pull it from here. The Sync all and Sync a record buttons are gone. The page moved from the System menu to the CMS menu, and is drawn with the plugin kit.
+- **A record made on another node says so in the editor.** Its form showed "All changes saved" above fields that can't be edited. It now reads "Read-only, made on" and the `mid` of the node to edit it on. See [REPLICATION.md](docs/operations/REPLICATION.md#records-of-another-node).
+
 ## [3.1.1] - 2026-10-11
 
 ### Changed
@@ -230,7 +244,8 @@ The release that turned node-cms into a project that stands on its own: the firs
 - The bugs the component tests found: a new record opens a blank editor again, a refused request is not logged as a server error, record names and labels after the mustache 4 update, a record whose id overlaps the machine id can be changed and removed, and `remove` and `update` throw instead of failing silently.
 - A delete goes to the replication peers right away again, `cms-import` prints no empty progress bars into logs, the xlsx import answers `400` without a file.
 
-[Unreleased]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.5...HEAD
+[Unreleased]: https://github.com/xiaodoudou/embed-cms/compare/v3.2.0...HEAD
+[3.2.0]: https://github.com/xiaodoudou/embed-cms/compare/v3.1.1...v3.2.0
 [3.1.1]: https://github.com/xiaodoudou/embed-cms/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.7...v3.1.0
 [3.0.7]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.6...v3.0.7

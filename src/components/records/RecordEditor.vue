@@ -4,6 +4,8 @@
       <top-bar-locale-list :locales="resource.locales" :locale="locale" :select-locale="selectLocale" :back="back" :dirty-locales="dirtyLocales" :missing="visibleMissing" />
       <div class="editor-status" role="status" aria-live="polite">
         <span v-if="isDirty" class="status-dirty" :title="$filters.translate('TL_UNSAVED_CHANGES_HINT')"><span class="status-dot" aria-hidden="true" />{{ $filters.translate('TL_UNSAVED_CHANGES') }}</span>
+        <!-- a record made on another node of a replicated setup: nothing here is saved, so say why and where to edit it -->
+        <span v-else-if="foreignMid" class="status-foreign" :title="$filters.translate('TL_FOREIGN_RECORD_HINT', { mid: foreignMid })"><v-icon size="14" icon="$lockOutline" aria-hidden="true" />{{ $filters.translate('TL_FOREIGN_RECORD', { mid: foreignMid }) }}</span>
         <span v-else-if="editingRecord._id" class="status-saved">{{ $filters.translate('TL_ALL_SAVED') }}</span>
         <!-- after a failed save: how many required fields are empty (the locale tabs only count the localised ones) -->
         <button v-if="attempted && missing.total > 0" type="button" class="status-missing" @click="focusFirstMissing">
@@ -139,6 +141,11 @@
       }
     },
     computed: {
+      // The node that made a record of another node: its id is 8 characters of time, then that node's mid (lib/util/localId.js)
+      foreignMid () {
+        const id = _.get(this.record, '_id')
+        return id && this.record._local === false ? String(id).slice(8, 16) : ''
+      },
       // Required fields still empty, per locale and shared (see utils/dirtyTracker.js)
       missing () {
         return missingRequired(this.editingRecord, this.resource)

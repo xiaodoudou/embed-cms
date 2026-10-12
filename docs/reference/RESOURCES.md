@@ -46,7 +46,7 @@ Only `schema` is required. Every other key has a default, and the file works wit
 | `groups` | `object`, `{ path: options }` | none | The look of groups of nested fields (`address.city`): a title, `collapsible`, `collapsed` and a `layout` of their own. See [Groups](FIELDS.md#groups). |
 | `layout` | `object`, `{ lines: [...] }` | one field per line | Puts fields side by side in the record form. See [Form layout](FORM_LAYOUT.md). |
 | `activeField` | `string`, the name of a boolean field | none | At most one record has this field set to `true`. Setting it on a record clears it on the others, and when the active record is removed, the first other one becomes active. |
-| `type` | `'normal'`, `'downstream'` or `'upstream'` | `'normal'` | The direction records travel when [replication](../operations/REPLICATION.md#directions) runs. |
+| `type` | `'normal'`, `'downstream'` or `'upstream'` | `'normal'` | What this node does with the resource in [replication](../operations/REPLICATION.md#directions): `upstream` is only sent from here, the others are also pulled from the peers. |
 
 ## Nested groups
 

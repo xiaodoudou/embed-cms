@@ -8,49 +8,70 @@ It works at the level of the store, record by record, and it knows which node cr
 
 ## How it works
 
-Every record id carries the [`mid`](../reference/CONFIG.md#core) of the node that created it. A node only edits its own records; the others it receives from peers are read-only (`_local: false`). This is what keeps two nodes from overwriting each other, and why every node needs its own 8-character `mid`.
+Every record id carries the [`mid`](../reference/CONFIG.md#core) of the node that created it. A node edits only its own records. The ones it receives from peers are read-only here ([Records of another node](#records-of-another-node)), which keeps two nodes from overwriting each other.
 
-A sync between two nodes has two parts:
+Replication is live. A node keeps a link open to each peer it receives a resource from, and the link pulls:
 
-1. **Records** go over a TCP connection. The node that starts the sync connects to the peer's replication port and names a resource; both sides then exchange the changes the other hasn't seen yet, using an index of changes per machine.
-2. **Files** go over HTTP. Once the records are in, the node compares the attachments of the records it received with what it has (by MD5), downloads the missing or changed ones from the peer's REST API, and removes those that are gone.
+1. **Records.** The node opens a websocket to the peer, on the HTTP port at `/_replicator` next to the REST API, and names the resource. The peer sends the changes the node hasn't seen yet, then each new change as it is written. The link stays open.
+2. **Files.** Half a second after records arrive, the node compares their attachments with what it has (by MD5), downloads the missing or changed files from the peer's REST API, and removes those that are gone.
 
 ```mermaid
 sequenceDiagram
   participant A as This node
   participant B as Peer
-  A->>B: connect to netPort (TCP)
+  A->>B: open a websocket to /_replicator (HTTP port)
   A->>B: HMAC challenge and answer, both ways (replication.secret)
   A->>B: resource name
-  A->>B: records B has not seen
-  B-->>A: records A has not seen
-  A->>A: list attachments that are missing or whose MD5 differs
-  A->>B: GET files over HTTP (peer url, /api/)
+  B-->>A: the changes A has not seen
+  Note over A,B: the link stays open
+  B-->>A: each new change, as it is written on B
+  A->>B: GET the files of the records received (peer url, /api/)
   B-->>A: files
-  A->>A: remove files of deleted attachments
 ```
 
-A sync starts after each create, update or remove of a record whose resource has a `type` other than `normal` (if that resource has peers), or when you ask for it over HTTP or from code.
+A link that drops connects again by itself, after 1, 2, 5, 10, then 30 seconds while it keeps failing, and takes what it missed. The peer pings every 15 seconds; a node that hears nothing from a peer for 45 seconds drops the link and connects again.
+
+A store on MongoDB or PostgreSQL can't keep a link open: it sends what it has and ends. A node pulling from such a peer asks again every `replication.pollInterval` (30 seconds by default).
+
+The node a peer connects to only sends. Nothing a connecting peer sends is stored, so a node changes only through the links it opened itself, to the peers it lists.
+
+### Records of another node
+
+A record id is 24 characters in base 36, in three parts of 8:
+
+| Characters | What they are | In `muosrfetwebnode1y000gql4` |
+|---|---|---|
+| 1 to 8 | The time the record was created, in milliseconds | `muosrfet` |
+| 9 to 16 | The `mid` of the node that created it | `webnode1` |
+| 17 to 24 | A random number that only grows within a millisecond, so the ids of one node sort in creation order | `y000gql4` |
+
+A node owns the records whose id carries its own `mid`. The others are foreign records. It receives them from a peer, stores them and serves them, but it can't edit or delete them. That's why every node needs its own `mid`, and why it must keep it: change it once records exist, and they all turn foreign.
+
+On a foreign record:
+
+- The REST API answers `_local: false`. A `PUT` or `DELETE` answers `403` with `Can't modify foreign records`, and the record stays as it was.
+- The record list of the admin shows it greyed out, with a lock and "Read-only" before who updated it.
+- Its form says "Read-only, made on sitenode", with the `mid` of the node to edit it on. Every field is disabled, and there is no Save or Delete button.
+
+To change a foreign record, edit it on the node that created it. The change reaches this node through its link, like any other.
 
 ## Setting it up
 
 The replication plugin is **on by default** (`disableReplication: false`), and with no peers it has nothing to do. Two settings make it useful:
 
-- `netPort`: the TCP port this node listens on, so peers can connect to it. Without it, the node can still push to and pull from peers, but no peer can start a sync with it.
-- `replication.peers` (or `replication.peersByResource`): the nodes this one syncs with.
+- `replication.secret`: the same long random string on every node. A node listens for peers only when it is set, and opens no link without it.
+- `replication.peers` (or `replication.peersByResource`): the nodes this one receives from, each by the url of its REST API.
+
+Replication needs no port of its own: a peer connects to the HTTP port of the CMS, the one its REST API answers on.
 
 ```json
 {
-  "mid": "editnode",
-  "netPort": 9000,
+  "mid": "site0001",
   "replication": {
     "secret": "the-same-long-random-string-on-every-node",
-    "peers": [
-      { "host": "site-1.internal", "port": 9000, "url": "http://site-1.internal:9990/api/", "direction": "downstream" }
-    ],
     "peersByResource": {
-      "signups": [
-        { "host": "site-1.internal", "port": 9000, "url": "http://site-1.internal:9990/api/", "direction": "upstream" }
+      "articles": [
+        { "url": "http://central.internal:9990/api/", "direction": "upstream" }
       ]
     },
     "auth": { "username": "replicator", "password": "…" }
@@ -60,60 +81,126 @@ The replication plugin is **on by default** (`disableReplication: false`), and w
 
 | Option | What it does |
 |---|---|
-| `netPort` | Port to listen on for peers. No default: without it the node doesn't listen. |
-| `replication.peers` | The peers of every resource. Each peer is `{ host, port, url, direction }`: `host` and `port` reach its `netPort`, `url` is its REST API, ending in `/api/`, for files. |
-| `replication.peersByResource` | Peers per resource name. Replaces `peers` for that resource. |
+| `replication.peers` | The peers of every resource of yours. The resources of the CMS itself (`_users`, `_groups`, `_settings`...) are never in it: they need `peersByResource`. Each peer is `{ url, direction }`: `url` is its REST API, ending in `/api/`. The records come from the websocket next to it (`http://site/cms/api/` gives `ws://site/cms/_replicator`, and `https` gives `wss`), the files from the API itself. |
+| `replication.peersByResource` | Peers per resource name. Replaces `peers` for that resource, and is the only way to replicate a resource of the CMS. |
 | `replication.auth` | `{ username, password }` sent as Basic credentials when downloading files from a peer that requires a login. |
-| `replication.secret` | A shared secret. Both sides prove they know it (HMAC-SHA256 challenge) before any resource is named. Required when `netPort` is set (unless `security.strictReplication` is turned off). |
-| `replication.strictTypes` | Make `direction` matter (see below). Off by default. |
-| `replication.settleDelay` | Milliseconds to wait for the peer to flush before syncing files (`2000`). |
+| `replication.secret` | A shared secret. Both sides prove they know it (HMAC-SHA256 challenge) before any resource is named. Without it the node doesn't listen (`/_replicator` answers 404) and opens no link. |
+| `replication.strictTypes` | Open links only to the peers whose `direction` says this node takes from them ([Directions](#directions)). Off by default. |
+| `replication.pollInterval` | Milliseconds between two pulls from a peer whose store can't keep a link open (MongoDB, PostgreSQL). `30000` by default. |
 | `replication.maxRecordBytes` | Largest record accepted from a peer with `strictReplication` (4 MB). |
+
+### Moving from 3.1 or earlier
+
+Earlier versions replicated over a TCP port of their own, `netPort`, and only after a write or when someone asked. Now:
+
+- Remove `netPort`. A node that still has it logs a warning and ignores it.
+- Give each peer its `url`, the address of its REST API. `host` and `port` are ignored.
+- Set `replication.secret` on every node: without it, a node neither listens nor opens links.
+- On each node, list the peers it receives from: a node pulls, and nothing is pushed to a peer that doesn't list this node.
+- A proxy or load balancer in front of a node must let websocket upgrades through on `/_replicator`, as it does for `/_updates`.
+- `replication.settleDelay` and `POST /replicator/sync/:resource/:id` are gone. Close the old replication port in the firewall.
 
 ### Directions
 
-A resource declares how its data flows with `type` in its declaration:
+The `type` of a resource says what this node does with it, so it can differ from one node to another:
 
-| `type` | Meaning | Typical use |
+| `type` | This node pulls it from its peers | Peers can pull it from this node |
 |---|---|---|
-| `normal` (default) | Both ways. | Content edited on several nodes. |
-| `downstream` | From the central node down to the others. | Content edited centrally and shown on every site; `_users`, `_groups` and `_settings` are downstream. |
-| `upstream` | From the nodes up to the central one. | Logs, analytics, form submissions collected on each site. |
+| `normal` (default) | Yes | Yes |
+| `downstream` | Yes | Yes |
+| `upstream` | No | Yes |
+
+`downstream` behaves as `normal`. It marks a resource this node only receives, and it is the type of the resources of the CMS. `upstream` marks a resource this node only sends: it never pulls it, even from a peer it lists.
+
+The `direction` of a peer says which way the data goes between it and this node:
+
+| `direction` | The peer is |
+|---|---|
+| `upstream` | A node this one pulls from |
+| `downstream` | A node that pulls from this one: listing it opens no link |
+| `normal` | Both |
+
+The directions are checked only with `replication.strictTypes: true`. A node then opens links only to peers marked `upstream` or `normal`; a peer without a `direction` gets no link. Without `strictTypes`, a node opens a link to every peer it lists, for every resource it pulls.
+
+#### A central node and its sites
+
+Editors write articles on the central node, and every site shows them. Visitors sign up on the sites, and the central node collects the signups. Each node pulls what it receives, so the types differ between the two:
+
+| Resource | Type on the central node | Type on a site |
+|---|---|---|
+| `articles` | `upstream` | `downstream` |
+| `signups` | `downstream` | `upstream` |
+
+The site pulls the articles from the central node:
+
+```json
+{
+  "mid": "site0001",
+  "replication": {
+    "secret": "the-same-long-random-string-on-every-node",
+    "strictTypes": true,
+    "peersByResource": {
+      "articles": [{ "url": "http://central.internal:9990/api/", "direction": "upstream" }]
+    }
+  }
+}
+```
+
+The central node pulls the signups from the site:
+
+```json
+{
+  "mid": "central1",
+  "replication": {
+    "secret": "the-same-long-random-string-on-every-node",
+    "strictTypes": true,
+    "peersByResource": {
+      "signups": [{ "url": "http://site-1.internal:9990/api/", "direction": "upstream" }]
+    }
+  }
+}
+```
 
 ```mermaid
 flowchart LR
   central["Central node<br/>(editors work here)"]
-  site1["Site node 1"]
-  site2["Site node 2"]
-  central -- "downstream: articles, _users, _groups, _settings" --> site1
-  central -- "downstream" --> site2
-  site1 -- "upstream: signups, logs" --> central
-  site2 -- "upstream" --> central
+  site["Site node"]
+  central -- "articles, live" --> site
+  site -- "signups, live" --> central
 ```
 
-Two things to know. First, only resources whose `type` isn't `normal` sync automatically after a write; a `normal` resource syncs when you ask. Second, the direction rules of peers are only applied with `replication.strictTypes: true`. Without it every resource is treated as `normal`, as in earlier releases. Before you turn it on, give every peer a `direction`, or it stops syncing `_users`, `_groups` and `_settings` ([SECURITY.md](../../SECURITY.md#other-options-added) explains why).
+A new site gets every article as soon as its link connects: the first thing a link does is take what the node lacks.
 
-## Starting a sync by hand
+#### Users, groups and settings
 
-When replication runs, the admin has a **Replicator** page in the System menu (for the `admins` group, which gets it by default whenever replication runs). It lists the resources with their type and peers, syncs a resource or one record, and says which peers failed. The same is available over HTTP to any logged-in user (the routes are in `routesToAuth`), and from code:
+`_users`, `_groups`, `_settings`, `_sync` and `_xlsx` are `downstream`, and the global `replication.peers` list never covers them: a node pulls them only from the peers `peersByResource` names for them. Every node creates its own `admins` group and `localAdmin` user the first time it starts, and a node can't edit a record that another node created. When a node pulls `_groups` and `_users` from a node that started on its own, it receives the other node's `admins` group. It can't update that group, can't set up its `localAdmin`, and its admin login stops working. So name them in `peersByResource` only between nodes that don't each hold their own copy of the same records.
+
+## Watching it
+
+When replication runs, the admin has a **Replicator** page in the CMS menu (for the `admins` group, which gets it by default whenever replication runs). There is nothing to start there: it shows, and refreshes every two seconds, each resource that replicates, the peers this node pulls it from with the state of each link (**Live**, **Connecting**, **Reconnecting** with the error and the next try, **Polling** or **Waiting** for a MongoDB or PostgreSQL peer) and the time of the last change it brought, and the peers that pull it from this node.
+
+![The Replicator page: articles sent to a site, notes both ways with one peer reconnecting, signups received](../img/replicator.png)
+
+The same is available over HTTP to any logged-in user (the routes are in `routesToAuth`), and from code:
 
 | Route | What it does |
 |---|---|
-| `GET /replicator/resources` | Resources with their type and peers. |
-| `POST /replicator/sync/:resource` | Sync a resource with its peers. |
-| `POST /replicator/sync/:resource/:id` | Bring one record to the peers: `404` if this node doesn't have it. The record travels with any other change of the resource the peer hasn't seen yet (the protocol exchanges changes, so nothing is sent twice); only that record's attachments are synced. |
+| `GET /replicator/resources` | Each resource with its type, its peers, its links (`receives`) and the peers pulling from this node (`sends`). |
+| `POST /replicator/sync/:resource` | Connects the links of a resource again now, so they catch up at once after a change of configuration or an outage. `404` for a resource this node doesn't have, `500` when it pulls the resource from no peer. |
 
 ```js
-await cms.$replicator.syncResource('articles')
+cms.$replicator.status()
+cms.$replicator.syncResource('articles')
 ```
 
 ## What can go wrong
 
-- Nothing arrives. Check that the peer has `netPort` set and that a firewall lets you reach it, that `host` and `port` point to that port (not to the HTTP port), and that both nodes have the same `replication.secret`.
+- A link stays **Reconnecting**. Its error says what the peer answered. A `404` means the peer has no `replication.secret`, or `url` isn't its REST API. A refused secret means the two nodes don't share the same `replication.secret`. A proxy in front of the peer must let websocket upgrades through on `/_replicator`.
+- A resource has no link. This node doesn't list a peer for it, the resource is `upstream` here, or `strictTypes` is on and no peer is marked `upstream` or `normal`.
 - Records arrive, files don't. `url` must be the peer's REST API ending in `/api/`, reachable from this node. If the peer requires a login to read the resource, set `replication.auth`. Look in the log for MD5 mismatches.
 - "Can't modify foreign records". The record was created on another node. Edit it there.
 - Two nodes clash. They share a `mid`. Give each node its own, before it creates records.
-- `POST /replicator/sync/…` answers 200 but nothing changed. Errors of each peer are collected into the answer instead of failing the request. Read the body (the Replicator page shows them), and the server log.
 
 ## Security
 
-The replication port can read and write every record of the resources it serves. Set `replication.secret` on every node, firewall the port to the peers, and run it on a private network or a tunnel: the secret authenticates peers, it doesn't encrypt the traffic. With `strictReplication` (on by default), a peer may only ask for resources this node has, and what it sends is validated. Details in [SECURITY.md](../../SECURITY.md).
+A peer that knows `replication.secret` can pull every resource this node has. It can't write: the node it connects to only sends, and a node stores only what it pulls through its own links. Set a long secret on every node: it authenticates peers, it doesn't encrypt the traffic. Serve the CMS over HTTPS and give the peers `https://` urls, so the records travel over `wss://`. With `strictReplication` (on by default), a peer may only ask for resources this node has, and each record a node pulls is checked before it is stored. Details in [SECURITY.md](../../SECURITY.md).

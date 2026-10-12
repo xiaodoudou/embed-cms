@@ -416,6 +416,9 @@ class CMS {
    */
   _closeSockets() {
     if (this.wss) {
+      if (this.removeUpdatesRoute) {
+        this.removeUpdatesRoute()
+      }
       this.wss.clients.forEach(client => client.terminate())
       this.wss.close()
     }

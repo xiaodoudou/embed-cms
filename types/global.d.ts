@@ -70,7 +70,7 @@ declare namespace EmbedCMS {
   type FieldInput =
     | 'string' | 'transliterate' | 'text' | 'password' | 'email' | 'url'
     | 'number' | 'integer' | 'double'
-    | 'checkbox' | 'radio' | 'segmented' | 'color' | 'rating' | 'duration' | 'money' | 'phone' | 'markdown'
+    | 'checkbox' | 'radio' | 'segmented' | 'color' | 'rating' | 'duration' | 'money' | 'phone' | 'markdown' | 'token'
     | 'date' | 'daterange' | 'time' | 'datetime' | 'geopoint'
     | 'pillbox' | 'select' | 'multiselect'
     | 'json' | 'object' | 'code' | 'wysiwyg'

@@ -147,6 +147,19 @@
     .status-saved {
       color: var(--cms-text-muted);
     }
+    // a record of another node: a quiet pill, the colours of a read-only field, with the lock
+    .status-foreign {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--cms-space-1);
+      min-width: 0;
+      padding: 3px var(--cms-space-3);
+      border: 1px solid var(--cms-border);
+      border-radius: var(--cms-radius-pill);
+      background: var(--cms-surface-2);
+      color: var(--cms-text);
+      font-weight: var(--cms-fw-semibold);
+    }
   }
 
   .buttons {

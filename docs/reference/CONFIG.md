@@ -84,7 +84,7 @@ The `maps` option points the map at other servers, or turns it off:
 |---|---|---|
 | `disableREST` | `false` | Turn off the REST API under `/api`. |
 | `disableAdmin` | `false` | Turn off the admin app under `/admin`. |
-| `disableReplication` | `false` | Turn off the replication plugin. It is on by default: its routes are mounted and records sync to any peers you list. `netPort` additionally opens a TCP port for peers to connect to. See [REPLICATION.md](../operations/REPLICATION.md). |
+| `disableReplication` | `false` | Turn off the replication plugin. It is on by default: its routes are mounted and, once `replication.secret` is set, the node pulls each resource live from the peers it lists and lets them pull from it over `/_replicator` on the HTTP port. See [REPLICATION.md](../operations/REPLICATION.md). |
 | `sync` | not set | Turn on the sync plugin by giving it a block. See [SYNC.md](../operations/SYNC.md). An empty block (`{}`) turns it on too. `sync.resources` lists the resources to sync until some are chosen in the admin, and `sync.schedule` (`{ "push": "0 3 * * *", "pull": "*/30 * * * *" }`) runs a push or a pull on its own. |
 | `import` | not set | Turn on the Google Sheets import by giving it a block. See [IMPORT.md](../operations/IMPORT.md). |
 | `importFromRemote` | `true` | The plugin that copies records from another embed-cms. See [IMPORT.md](../operations/IMPORT.md). |

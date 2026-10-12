@@ -1,206 +1,291 @@
 <template>
-  <div class="plugin-wrapper">
+  <div class="plugin-wrapper cms-replicator">
     <div class="plugin-title">
       <h5>{{ $filters.translate('TL_REPLICATOR') }}</h5>
     </div>
-    <v-card elevation="0" class="cms-replicator">
-      <div class="replicator-head">
-        <p class="intro">{{ $filters.translate('TL_REPLICATOR_INTRO') }}</p>
-        <v-btn variant="tonal" rounded density="comfortable" prepend-icon="$refresh" :loading="loading" @click="fetchResources">{{ $filters.translate('TL_REFRESH') }}</v-btn>
+    <p class="intro cms-text cms-text-muted">{{ $filters.translate('TL_REPLICATOR_INTRO') }}</p>
+    <section class="replicator-body" :aria-label="$filters.translate('TL_RESOURCES')">
+      <div>
+        <p v-if="loadError" class="load-error cms-callout is-error" role="alert">{{ loadError }}</p>
+        <div v-if="loaded && shown.length > 0" class="cms-datatable-scroll">
+          <table class="cms-datatable">
+            <colgroup>
+              <col class="col-name">
+              <col class="col-direction">
+              <col class="col-links">
+              <col class="col-links">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>{{ $filters.translate('TL_RESOURCE') }}</th>
+                <th>{{ $filters.translate('TL_DIRECTION') }}</th>
+                <th><span class="side-head is-receives"><v-icon icon="$arrowDown" size="small" />{{ $filters.translate('TL_RECEIVES_FROM') }}</span></th>
+                <th><span class="side-head is-sends"><v-icon icon="$arrowUp" size="small" />{{ $filters.translate('TL_SENDS_TO') }}</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="resource in shown" :key="resource.name">
+                <td class="name">{{ resource.name }}</td>
+                <td class="direction">
+                  <span class="direction-pill" :class="`is-${resource.type}`">
+                    <v-icon :icon="directionIcon(resource.type)" size="small" />
+                    {{ $filters.translate(directionKey(resource.type)) }}
+                  </span>
+                  <span class="type cms-text-sm cms-text-muted">{{ resource.type }}</span>
+                </td>
+                <td class="receives">
+                  <ul v-if="resource.receives.length > 0" class="links">
+                    <li v-for="link in resource.receives" :key="link.peer" class="link is-receives">
+                      <div class="link-head">
+                        <span class="cms-badge" :class="badgeClass(link.state)">{{ $filters.translate(stateKey(link.state)) }}</span>
+                        <span class="peer" :title="link.peer">{{ peerHost(link.peer) }}</span>
+                        <span v-if="link.peerId" class="peer-id cms-text-sm cms-text-muted">{{ link.peerId }}</span>
+                      </div>
+                      <div v-if="link.error" class="link-error cms-text-sm cms-text-error">{{ link.error }}</div>
+                      <div class="link-detail cms-text-sm cms-text-muted">{{ receivedText(link) }}</div>
+                    </li>
+                  </ul>
+                  <span v-else class="none cms-text-muted">{{ $filters.translate('TL_NONE') }}</span>
+                </td>
+                <td class="sends">
+                  <ul v-if="resource.sends.length > 0" class="links">
+                    <li v-for="(peer, index) in resource.sends" :key="peer.peer + '-' + index" class="link is-sends">
+                      <div class="link-head">
+                        <span class="cms-badge is-success">{{ $filters.translate('TL_LINK_LIVE') }}</span>
+                        <template v-if="hosts[peer.peer]">
+                          <span class="peer">{{ hosts[peer.peer] }}</span>
+                          <span class="peer-id cms-text-sm cms-text-muted">{{ peer.peer }}</span>
+                        </template>
+                        <span v-else class="peer">{{ peer.peer }}</span>
+                      </div>
+                      <div class="link-detail cms-text-sm cms-text-muted">{{ sentText(peer) }}</div>
+                    </li>
+                  </ul>
+                  <span v-else class="none cms-text-muted">{{ $filters.translate('TL_NONE') }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p v-if="loaded && shown.length === 0" class="cms-text-muted">{{ $filters.translate('TL_NO_REPLICATED_RESOURCES') }}</p>
       </div>
-      <p v-if="loadError" class="load-error" role="alert">{{ loadError }}</p>
-      <v-table v-else density="comfortable">
-        <thead>
-          <tr>
-            <th>{{ $filters.translate('TL_RESOURCE') }}</th>
-            <th>{{ $filters.translate('TL_REPLICATION_TYPE') }}</th>
-            <th>{{ $filters.translate('TL_DIRECTION') }}</th>
-            <th>{{ $filters.translate('TL_PEERS') }}</th>
-            <th>{{ $filters.translate('TL_ACTIONS') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="resource in resources" :key="resource.name">
-            <td class="name">{{ resource.name }}</td>
-            <td><code>{{ resource.type }}</code></td>
-            <td>{{ $filters.translate(directionKey(resource.type)) }}</td>
-            <td class="peers">
-              <template v-if="hasPeers(resource)">{{ peersOf(resource) }}</template>
-              <span v-else class="muted">{{ $filters.translate('TL_NO_PEERS') }}</span>
-            </td>
-            <td class="actions">
-              <v-btn size="small" variant="tonal" rounded :disabled="!hasPeers(resource)" @click="syncResource(resource.name)">{{ $filters.translate('TL_SYNC_ALL') }}</v-btn>
-              <v-btn size="small" variant="text" rounded :disabled="!hasPeers(resource)" @click="syncRecordPrompt(resource.name)">{{ $filters.translate('TL_SYNC_RECORD') }}</v-btn>
-            </td>
-          </tr>
-          <tr v-if="!loading && resources.length === 0">
-            <td colspan="5" class="muted">{{ $filters.translate('TL_NO_REPLICATED_RESOURCES') }}</td>
-          </tr>
-        </tbody>
-      </v-table>
-    </v-card>
-    <app-dialog
-      :model-value="showDialog" :title="$filters.translate('TL_SYNC_RECORD')" type="info" :confirm-text="$filters.translate('TL_SYNC')" :cancel-text="$filters.translate('TL_CANCEL')"
-      @confirm="doSyncRecord" @cancel="showDialog = false"
-    >
-      <v-text-field v-model="recordId" :label="$filters.translate('TL_RECORD_ID')" @keydown.enter="doSyncRecord" />
-    </app-dialog>
+    </section>
   </div>
 </template>
 <script>
   import _ from 'lodash'
-  import AppDialog from '@c/feedback/AppDialog.vue'
-  import NotificationsService from '@s/NotificationsService'
+  import Dayjs from 'dayjs'
+  import relativeTime from 'dayjs/plugin/relativeTime'
   import RequestService from '@s/RequestService'
   import TranslateService from '@s/TranslateService'
-  import { peerLabel, directionKey, syncOutcome } from '@u/replication'
+  import { directionKey, directionIcon, linkState, replicatedResources, peerHost, hostsById } from '@u/replication'
+
+  Dayjs.extend(relativeTime)
+
+  // how often the page asks the server how the links are doing
+  const REFRESH = 2000
 
   // RequestService rejects with the fetch Response (no JSON) or the parsed JSON body ({ error })
   const errorText = (error) => _.get(error, 'error') || _.get(error, 'message') || (_.get(error, 'status') ? `HTTP ${error.status}` : _.toString(error))
 
+  /**
+   * The state of the replication, live: for each resource that replicates, the peers it receives from (and how each link
+   * is doing) and the peers that pull it from this node. Nothing to start by hand: the links run by themselves. A peer is
+   * named by its host, with its machine id next to it, on both sides.
+   */
   export default {
-    components: { AppDialog },
     data() {
       return {
         resources: [],
-        loading: false,
+        loaded: false,
         loadError: '',
-        showDialog: false,
-        recordId: '',
-        recordResource: ''
+        timer: null
+      }
+    },
+    computed: {
+      /** @returns {Array<object>} the resources that replicate */
+      shown () {
+        return replicatedResources(this.resources)
+      },
+      /** @returns {Object<string, string>} the host of each peer this node pulls from, by machine id */
+      hosts () {
+        return hostsById(this.resources)
       }
     },
     mounted() {
-      this.fetchResources()
+      this.refresh()
+      this.timer = setInterval(() => this.refresh(), REFRESH)
+    },
+    beforeUnmount() {
+      clearInterval(this.timer)
     },
     methods: {
       directionKey,
+      directionIcon,
+      peerHost,
       /**
-       * @param {{peers: Array}} resource
-       * @returns {boolean}
+       * @param {string} state
+       * @returns {string} the translation key of the state of a link
        */
-      hasPeers(resource) {
-        return !_.isEmpty(resource.peers)
+      stateKey (state) {
+        return linkState(state).key
       },
       /**
-       * @param {{peers: Array}} resource
-       * @returns {string} their labels, comma separated
+       * @param {string} state
+       * @returns {string} the class of its badge: its colour
        */
-      peersOf(resource) {
-        return _.map(resource.peers, peerLabel).join(', ')
+      badgeClass (state) {
+        return `is-${linkState(state).tone}`
       },
-      /** Loads the resources and their peers from the replicator plugin. */
-      async fetchResources() {
-        this.loading = true
-        this.loadError = ''
+      /**
+       * @param {{received: number, lastReceivedAt: number|null, retryAt: number|null, state: string}} link
+       * @returns {string} when the last change came in, or when the next try is
+       */
+      receivedText (link) {
+        if (link.state === 'reconnecting' && link.retryAt) {
+          return TranslateService.get('TL_NEXT_TRY', { time: Dayjs(link.retryAt).fromNow() })
+        }
+        return link.lastReceivedAt ? TranslateService.get('TL_LAST_CHANGE', { time: Dayjs(link.lastReceivedAt).fromNow() }) : TranslateService.get('TL_NO_CHANGE_YET')
+      },
+      /**
+       * @param {{lastSentAt: number|null}} peer
+       * @returns {string} when the last change went out to that peer
+       */
+      sentText (peer) {
+        return peer.lastSentAt ? TranslateService.get('TL_LAST_CHANGE', { time: Dayjs(peer.lastSentAt).fromNow() }) : TranslateService.get('TL_NO_CHANGE_YET')
+      },
+      /** Asks the server how the replication is doing; a failure keeps what was shown and says why. */
+      async refresh() {
         try {
           this.resources = await RequestService.get('../replicator/resources')
+          this.loadError = ''
         } catch (error) {
-          this.resources = []
           this.loadError = TranslateService.get('TL_REPLICATOR_LOAD_FAILED', { error: errorText(error) })
         } finally {
-          this.loading = false
+          this.loaded = true
         }
-      },
-      // the server answers 200 even when peers failed: the toast follows the result of each peer
-      async runSync(url, name, retry) {
-        NotificationsService.send(TranslateService.get('TL_SYNC_STARTED', { name }), 'info')
-        try {
-          const outcome = syncOutcome(await RequestService.post(url))
-          if (outcome.status === 'ok') {
-            NotificationsService.send(TranslateService.get('TL_SYNC_FINISHED', { name }), 'success')
-          } else if (outcome.status === 'none') {
-            NotificationsService.send(TranslateService.get('TL_SYNC_NO_PEER', { name }), 'warn')
-          } else {
-            NotificationsService.send(TranslateService.get('TL_SYNC_PEERS_FAILED', { name, failed: outcome.failed.length, total: outcome.total }), 'error', {
-              detail: _.map(outcome.failed, (entry) => `${entry.peer}: ${entry.error}`).join('\n'),
-              detailLabel: 'TL_COPY_ERRORS',
-              actionLabel: TranslateService.get('TL_RETRY'),
-              action: retry
-            })
-          }
-        } catch (error) {
-          NotificationsService.send(TranslateService.get('TL_SYNC_FAILED', { name, error: errorText(error) }), 'error', { actionLabel: TranslateService.get('TL_RETRY'), action: retry })
-        }
-      },
-      /**
-       * @param {string} resource its name
-       * @returns {Promise}
-       */
-      syncResource(resource) {
-        return this.runSync(`../replicator/sync/${encodeURIComponent(resource)}`, resource, () => this.syncResource(resource))
-      },
-      /** @param {string} resource opens the dialog asking for a record id */
-      syncRecordPrompt(resource) {
-        this.recordResource = resource
-        this.showDialog = true
-        this.recordId = ''
-      },
-      /**
-       * Syncs the record whose id was typed; nothing without one.
-       * @returns {Promise|undefined}
-       */
-      doSyncRecord() {
-        if (!this.recordId) {
-          return
-        }
-        const resource = this.recordResource
-        const recordId = this.recordId
-        this.showDialog = false
-        const sync = () => this.runSync(`../replicator/sync/${encodeURIComponent(resource)}/${encodeURIComponent(recordId)}`, `${resource} ${recordId}`, sync)
-        return sync()
       }
     }
   }
 </script>
 <style lang="scss" scoped>
-@use '@a/scss/variables.scss' as *;
 .cms-replicator {
-  margin: var(--cms-space-4) var(--cms-space-6) var(--cms-space-6);
-  padding: var(--cms-space-6);
-  max-width: var(--cms-content-max);
-  background-color: $layout-card-background;
-  border: 1px solid var(--cms-border);
-  border-radius: var(--cms-radius-lg);
-  .replicator-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--cms-space-4);
-    margin-bottom: var(--cms-space-4);
-  }
   .intro {
-    margin: 0;
-    color: var(--cms-text-muted);
-    font-size: var(--cms-fs-sm);
+    margin: 0 var(--cms-space-6) var(--cms-space-4);
+    max-width: var(--cms-content-max);
+  }
+  // the table is the one box of the page, right under the intro
+  .replicator-body {
+    margin: 0 var(--cms-space-6) var(--cms-space-6);
+    max-width: var(--cms-content-max);
   }
   .load-error {
-    color: var(--cms-error);
+    margin: 0 0 var(--cms-space-3);
+  }
+  .col-name {
+    width: 18%;
+  }
+  .col-direction {
+    width: 14%;
+  }
+  .col-links {
+    width: 34%;
+  }
+  // a light grey head, its titles centred so the ones with and without an arrow sit on one line
+  thead th {
+    background: var(--cms-surface-2);
+    vertical-align: middle;
+  }
+  td {
+    vertical-align: top;
   }
   .name {
     font-weight: var(--cms-fw-semibold);
   }
-  .muted {
-    color: var(--cms-text-muted);
+  // one colour per side: what comes in (receives, downstream) is blue, what goes out (sends, upstream) is indigo; green stays
+  // the colour of a live link
+  .side-head {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cms-space-1);
+    &.is-receives .v-icon {
+      color: var(--cms-info);
+    }
+    &.is-sends .v-icon {
+      color: var(--cms-primary);
+    }
   }
-  code {
+  .direction-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cms-space-1);
+    padding: 2px var(--cms-space-2) 2px var(--cms-space-1);
+    border-radius: var(--cms-radius-pill);
+    font-size: var(--cms-fs-sm);
+    font-weight: var(--cms-fw-semibold);
+    &.is-downstream {
+      background: var(--cms-info-soft);
+      color: var(--cms-info);
+    }
+    &.is-upstream {
+      background: var(--cms-primary-soft);
+      color: var(--cms-on-primary-soft);
+    }
+    &.is-normal {
+      background: var(--cms-surface-2);
+      color: var(--cms-text);
+    }
+  }
+  .direction .type {
+    display: block;
+    margin-top: var(--cms-space-1);
+    padding-left: var(--cms-space-1);
+    font-family: var(--cms-font-mono);
+  }
+  .links {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cms-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  // each link is a small box on the inset surface, edged with the colour of its side
+  .link {
+    padding: var(--cms-space-2) var(--cms-space-3);
+    border-left: 3px solid transparent;
+    border-radius: var(--cms-radius-sm);
+    background: var(--cms-surface-2);
+    &.is-receives {
+      border-left-color: var(--cms-info);
+    }
+    &.is-sends {
+      border-left-color: var(--cms-primary);
+    }
+  }
+  .link-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--cms-space-1) var(--cms-space-2);
+  }
+  .peer {
     font-family: var(--cms-font-mono);
     font-size: var(--cms-fs-sm);
+    word-break: break-all;
   }
-  .actions {
-    white-space: nowrap;
-    .v-btn + .v-btn {
-      margin-left: var(--cms-space-2);
-    }
+  .link-error,
+  .link-detail {
+    margin-top: 2px;
   }
 }
 
 @media (max-width: 599.98px) {
   .cms-replicator {
-    margin: var(--cms-space-3);
-    padding: var(--cms-space-4);
-    .replicator-head {
-      flex-direction: column;
+    .intro,
+    .replicator-body {
+      margin-left: var(--cms-space-3);
+      margin-right: var(--cms-space-3);
     }
   }
 }

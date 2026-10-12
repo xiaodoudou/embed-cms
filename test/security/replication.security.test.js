@@ -1,9 +1,10 @@
-const net = require('net')
+const http = require('http')
 const os = require('os')
 const path = require('path')
 const crypto = require('crypto')
 const fs = require('fs-extra')
 const mps = require('msgpack-stream')
+const WebSocket = require('ws')
 const request = require('supertest')
 const { expect } = require('chai')
 const protocol = require('../../lib/plugins/replicator/protocol')
@@ -11,27 +12,46 @@ const { startApp, hardened, randomSecret } = require('../helpers/app')
 
 const REPLICA_PREFIX = '\xFDreplica\xFD'
 
-const freePort = () => new Promise((resolve) => {
-  const server = net.createServer().listen(0, () => {
-    const { port } = server.address()
-    server.close(() => resolve(port))
-  })
-})
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 /**
- * Starts a node that listens for replication on a free port.
+ * Starts a node: replication goes over its HTTP port, at /_replicator.
  * @param {string} mid - machine id (8 characters)
  * @param {object} [overrides]
  */
 async function startNode (mid, overrides = {}) {
-  const netPort = await freePort()
-  const app = await startApp({ mid, netPort, ...overrides })
-  return Object.assign(app, { netPort })
+  const app = await startApp({ mid, ...overrides })
+  return Object.assign(app, { replicationUrl: `${app.url.replace(/^http/, 'ws')}/_replicator` })
 }
 
-const replicate = (from, to, resource = 'comments') =>
-  from.cms.$replicator.replicator.replicate('localhost', to.netPort, `${to.url}/api/`, resource)
+/** The peers of a node that pulls the comments of another one */
+const pullsCommentsFrom = (node) => ({ comments: [{ url: `${node.url}/api/`, direction: 'upstream' }] })
+
+/** An HTTP server on a free port, as the CMS has one: the replication is an upgrade on it */
+const httpServer = () => new Promise((resolve) => {
+  const server = http.createServer((req, res) => res.writeHead(404).end())
+  server.listen(0, () => resolve(server))
+})
+
+/** One frame of the handshake: a length byte, then the text */
+const frame = (text) => Buffer.concat([Buffer.from([text.length]), Buffer.from(text)])
+
+/**
+ * Opens a raw websocket to a replication address, sends what it is given, and gives back what came in before it ends.
+ * @param {string} url
+ * @param {Buffer[]} messages
+ * @param {number} [wait]
+ */
+const rawPeer = (url, messages, wait = 300) => new Promise((resolve) => {
+  const seen = []
+  const ws = new WebSocket(url)
+  ws.on('error', () => resolve(Buffer.concat(seen)))
+  ws.on('message', (data) => seen.push(Buffer.from(data)))
+  ws.on('open', () => {
+    messages.forEach(message => ws.send(message))
+    setTimeout(() => { ws.terminate(); resolve(Buffer.concat(seen)) }, wait)
+  })
+})
 
 const waitFor = async (check, timeout = 4000) => {
   const end = Date.now() + timeout
@@ -47,20 +67,23 @@ const waitFor = async (check, timeout = 4000) => {
 describe('replication security', () => {
   describe('handshake with a shared secret (protocol)', () => {
     const secret = randomSecret()
-    let server, port, accepted
+    let http1, server, url, accepted
     beforeEach(async () => {
-      port = await freePort()
+      http1 = await httpServer()
+      url = `ws://localhost:${http1.address().port}/_replicator`
       accepted = []
-      server = protocol.Server(port, 'SERVERID', (error, socket, name, id) => {
+      server = protocol.Server(http1, 'SERVERID', (error, socket, name, id) => {
         accepted.push({ error, name, id })
         socket.destroy()
       }, { secret })
-      await sleep(30)
     })
-    afterEach(() => server.closeAll())
+    afterEach(async () => {
+      await server.close()
+      http1.close()
+    })
 
     const connect = (options) => new Promise((resolve) => {
-      protocol.Client('localhost', port, 'articles', 'CLIENTID', (error, socket, id) => {
+      protocol.Client(url, 'articles', 'CLIENTID', (error, socket, id) => {
         if (socket) {
           socket.destroy()
         }
@@ -83,23 +106,21 @@ describe('replication security', () => {
       expect(accepted).to.have.length(0)
     })
 
-    it('rejects a peer that does not authenticate at all (an old node)', async () => {
-      // the old client cannot know it was refused, so only the server side is asserted
-      await connect(undefined)
+    it('rejects a peer that names itself without authenticating', async () => {
+      await rawPeer(url, [frame('CLIENTIDarticles')])
       await sleep(100)
       expect(accepted).to.have.length(0)
     })
 
     it('rejects a peer that sends garbage instead of a proof', async () => {
-      await new Promise((resolve) => {
-        const socket = net.connect(port, 'localhost')
-        socket.on('error', resolve)
-        socket.on('close', resolve)
-        // read what the server sends, or the end of the connection is never noticed
-        socket.on('data', () => {})
-        socket.on('connect', () => socket.write(Buffer.alloc(300, 0x41)))
-      })
+      await rawPeer(url, [Buffer.alloc(300, 0x41)])
       await sleep(100)
+      expect(accepted).to.have.length(0)
+    })
+
+    it('has no client that skips the secret', async () => {
+      const result = await connect(undefined)
+      expect(result.error.message).to.match(/replication\.secret/)
       expect(accepted).to.have.length(0)
     })
 
@@ -117,12 +138,13 @@ describe('replication security', () => {
     })
 
     it('a client with a secret refuses a server that does not authenticate', async () => {
-      const plainPort = await freePort()
-      const plain = protocol.Server(plainPort, 'PLAINID1', () => {})
-      await sleep(30)
+      // a server that names itself at once, with no challenge
+      const plainHttp = await httpServer()
+      const plain = new WebSocket.WebSocketServer({ server: plainHttp })
+      plain.on('connection', (ws) => ws.send(frame('PLAINID1')))
       try {
         const result = await new Promise(resolve => {
-          protocol.Client('localhost', plainPort, 'articles', 'CLIENTID', (error, socket) => {
+          protocol.Client(`ws://localhost:${plainHttp.address().port}/_replicator`, 'articles', 'CLIENTID', (error, socket) => {
             if (socket) {
               socket.destroy()
             }
@@ -132,7 +154,8 @@ describe('replication security', () => {
         expect(result.error).to.be.ok
         expect(result.socket).to.equal(undefined)
       } finally {
-        await plain.closeAll()
+        plain.close()
+        plainHttp.close()
       }
     })
   })
@@ -141,42 +164,74 @@ describe('replication security', () => {
     const secret = randomSecret()
     let a, b
     afterEach(async () => {
-      await Promise.all([a, b].filter(Boolean).map(node => node.close()))
+      // the node that pulls first, so that no link is still connected to a node that is gone
+      if (b) {
+        await b.close()
+      }
+      if (a) {
+        await a.close()
+      }
       a = b = undefined
     })
 
     it('replicate a record from one node to the other when they share the secret', async () => {
-      a = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: {}, secret, settleDelay: 0 } }))
-      b = await startNode('bbbbbbbb', hardened({ replication: { peers: [], peersByResource: {}, secret, settleDelay: 0 } }))
+      a = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: {}, secret } }))
       const record = await a.cms.api()('comments').create({ title: { enUS: 'from A' } })
-      await replicate(b, a)
+      b = await startNode('bbbbbbbb', hardened({ replication: { peers: [], peersByResource: pullsCommentsFrom(a), secret } }))
       expect(await waitFor(async () => (await b.cms.api()('comments').list()).some(item => item._id === record._id))).to.equal(true)
     })
 
     it('refuse to replicate when the secrets differ', async () => {
-      a = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: {}, secret, settleDelay: 0 } }))
-      b = await startNode('bbbbbbbb', hardened({ replication: { peers: [], peersByResource: {}, secret: randomSecret(), settleDelay: 0 } }))
+      a = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: {}, secret } }))
       await a.cms.api()('comments').create({ title: { enUS: 'from A' } })
-      let error
-      try {
-        await replicate(b, a)
-      } catch (e) {
-        error = e
-      }
-      expect(error).to.be.ok
+      b = await startNode('bbbbbbbb', hardened({ replication: { peers: [], peersByResource: pullsCommentsFrom(a), secret: randomSecret() } }))
+      const link = b.cms.$replicator.links[0]
+      expect(await waitFor(() => link.state === 'reconnecting' && !!link.error)).to.equal(true)
       await sleep(200)
       expect(await b.cms.api()('comments').list()).to.have.length(0)
     })
 
-    it('refuse to boot with a replication port and no secret by default', async () => {
-      let error
+    it('do not listen for peers without a secret', async () => {
+      a = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: {} } }))
+      b = await startNode('bbbbbbbb', hardened({ replication: { peers: [], peersByResource: pullsCommentsFrom(a), secret } }))
+      const link = b.cms.$replicator.links[0]
+      expect(await waitFor(() => /answered 404/.test(link.error || ''))).to.equal(true)
+    })
+
+    it('keep the record updates socket on the same port', async () => {
+      a = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: {}, secret } }))
+      // the replication takes its path; any other path is still the updates socket, which asks for a login
+      const answer = await new Promise((resolve) => {
+        const ws = new WebSocket(`${a.url.replace(/^http/, 'ws')}/_updates`)
+        ws.on('unexpected-response', (req, res) => resolve(res.statusCode))
+        ws.on('open', () => { ws.terminate(); resolve('open') })
+        ws.on('error', () => resolve('error'))
+      })
+      expect(answer).to.equal(401)
+    })
+
+    it('never take a write from a peer that connects to them, even one that knows the secret', async () => {
+      a = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: {}, secret } }))
+      const socket = await new Promise((resolve, reject) => {
+        protocol.Client(a.replicationUrl, 'comments', 'cccccccc', (error, stream) => error ? reject(error) : resolve(stream), { secret })
+      })
+      socket.on('error', () => {})
+      socket.on('data', () => {})
+      const encode = mps.createEncodeStream()
+      encode.pipe(socket)
+      // a well formed change of a record of that peer: a node that pulls would take it, the node it connected to does not
+      const id = 'lkjhgfdscccccccc12345678'
+      const value = JSON.stringify({ _id: id, _createdAt: 1, _updatedAt: 1, title: { enUS: 'pushed by C' } })
+      encode.write({ op: 'put', key: [REPLICA_PREFIX, 'cccccccc', String(Date.now()), id].join(' '), value })
+      await sleep(400)
+      socket.destroy()
+      let stored
       try {
-        a = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: {} } }))
-      } catch (e) {
-        error = e
+        stored = await a.cms.resource('comments').json._db.get(id)
+      } catch {
+        stored = undefined
       }
-      expect(error, 'startup must fail').to.be.an('error')
-      expect(error.message).to.match(/replication\.secret/)
+      expect(stored).to.equal(undefined)
     })
   })
 
@@ -191,8 +246,8 @@ describe('replication security', () => {
       await fs.remove(outside)
     })
 
-    const nameResource = (port, name, options) => new Promise((resolve) => {
-      protocol.Client('localhost', port, name, 'PEERID00', (error, socket) => {
+    const nameResource = (target, name, options) => new Promise((resolve) => {
+      protocol.Client(target.replicationUrl, name, 'PEERID00', (error, socket) => {
         if (socket) {
           socket.destroy()
         }
@@ -204,7 +259,7 @@ describe('replication security', () => {
       const secret = randomSecret()
       node = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: {}, secret, settleDelay: 0 } }))
       const before = [...node.cms._resourceNames]
-      await nameResource(node.netPort, 'somethingnew', { secret })
+      await nameResource(node, 'somethingnew', { secret })
       await sleep(300)
       expect(node.cms._resourceNames).to.deep.equal(before)
       expect(fs.existsSync(path.join(node.dataDir, 'somethingnew'))).to.equal(false)
@@ -213,47 +268,55 @@ describe('replication security', () => {
     it('cannot read anything without the secret', async () => {
       const secret = randomSecret()
       node = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: {}, secret, settleDelay: 0 } }))
-      const seen = []
-      await new Promise((resolve) => {
-        protocol.Client('localhost', node.netPort, '_users', 'PEERID00', (error, socket) => {
-          if (socket) {
-            socket.on('data', chunk => seen.push(chunk))
-            setTimeout(() => { socket.destroy(); resolve() }, 400)
-          } else {
-            resolve()
-          }
-        })
-      })
-      expect(Buffer.concat(seen).toString('latin1')).to.not.match(/password|salt/)
+      // a peer that names the users without the handshake: it gets the challenge, and nothing else
+      const seen = await rawPeer(node.replicationUrl, [frame('PEERID00_users')], 400)
+      expect(seen.toString('latin1')).to.not.match(/password|salt/)
     })
   })
 
-  describe('records sent by an authenticated peer', () => {
+  describe('records sent by a peer this node pulls from', () => {
     const secret = randomSecret()
-    let node, existing
+    let node, existing, fakeHttp, fake
+    // what the fake peer sends to the node as soon as the node connects to pull
+    let frames = []
+    // how many times the node connected to the fake peer: a test waits for its own connection, not a fixed time
+    let served = 0
     const otherRecordId = 'lkjhgfdscccccccc12345678' // 8 characters of time, machine cccccccc, 8 of random
 
     before(async () => {
-      node = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: {}, secret, settleDelay: 0 } }))
+      fakeHttp = await httpServer()
+      fake = protocol.Server(fakeHttp, 'cccccccc', (error, stream) => {
+        stream.on('error', () => {})
+        // the node asks with its clock: read it, the answer is the frames of the test
+        stream.on('data', () => {})
+        const encode = mps.createEncodeStream()
+        encode.pipe(stream)
+        frames.forEach(item => encode.write(item))
+        served += 1
+      }, { secret })
+      const peer = { url: `http://localhost:${fakeHttp.address().port}/api/`, direction: 'upstream' }
+      node = await startNode('aaaaaaaa', hardened({ replication: { peers: [], peersByResource: { comments: [peer] }, secret } }))
       existing = await node.cms.api()('comments').create({ title: { enUS: 'mine' } })
+      // the link connects at start-up: the tests begin once it is live, so that each restart is theirs
+      expect(await waitFor(() => served > 0 && link().state === 'live', 10000)).to.equal(true)
     })
-    after(async () => { await node.close() })
+    after(async () => {
+      await node.close()
+      await fake.close()
+      fakeHttp.close()
+    })
 
     /**
-     * Connects as a peer that knows the secret and sends the given frames.
-     * @param {object[]} frames
+     * Makes the fake peer send these frames: the link of the node connects again, and takes them.
+     * @param {object[]} list
      */
-    const send = async (frames) => {
-      const socket = await new Promise((resolve, reject) => {
-        protocol.Client('localhost', node.netPort, 'comments', 'cccccccc', (error, s) => error ? reject(error) : resolve(s), { secret })
-      })
-      const encode = mps.createEncodeStream()
-      encode.pipe(socket)
-      socket.on('error', () => {})
-      socket.on('data', () => {})
-      frames.forEach(frame => encode.write(frame))
+    const link = () => node.cms.$replicator.links.find(item => item.name === 'comments')
+    const send = async (list) => {
+      frames = list
+      const before = served
+      link().restart()
+      expect(await waitFor(() => served > before && link().state === 'live', 10000)).to.equal(true)
       await sleep(400)
-      socket.destroy()
     }
     const stored = async (key) => {
       try {
@@ -264,10 +327,10 @@ describe('replication security', () => {
     }
     const replicaKey = (namespace, key) => [REPLICA_PREFIX, namespace, String(Date.now()), key].join(' ')
 
-    it('accepts a well formed change for a record of that peer', async () => {
+    it('takes a well formed change for a record of that peer', async () => {
       const value = JSON.stringify({ _id: otherRecordId, _createdAt: 1, _updatedAt: 1, title: { enUS: 'from C' } })
       await send([{ op: 'put', key: replicaKey('cccccccc', otherRecordId), value }])
-      expect(await stored(otherRecordId)).to.be.ok
+      expect(await waitFor(async () => !!(await stored(otherRecordId)))).to.equal(true)
     })
 
     it('ignores a put that overwrites a record of this node', async () => {
@@ -324,48 +387,36 @@ describe('replication security', () => {
       expect(await stored(key)).to.equal(undefined)
     })
 
-    it('does not bring the server down with a clock that is not a clock', async () => {
+    it('does not bring the node down with a clock that is not a clock', async () => {
       await send([{ op: 'clock', value: null }, { op: 'clock', value: 'x' }, 'not even an object', { op: 'nonsense' }])
       expect(await stored(existing._id)).to.be.ok
     })
   })
 
   describe('replication.strictTypes', () => {
-    const peers = [{ host: 'localhost', port: 1, url: 'http://localhost:1/api/' }]
+    const secret = randomSecret()
+    const peer = (direction) => ({ url: 'http://localhost:1/api/', direction })
+    const directionsOf = (app, name) => app.cms.$replicator.links.filter(link => link.name === name).map(link => link.peer.direction).sort()
     let app
     afterEach(async () => { if (app) { await app.close(); app = undefined } })
 
-    it('treats every resource as normal by default (existing behaviour)', async () => {
-      app = await startApp({ replication: { peers, peersByResource: {} } })
-      expect(app.cms.$replicator.getParams('articles').type).to.equal('normal')
+    it('opens a link to every peer without it', async () => {
+      app = await startApp({ replication: { peers: [peer('downstream'), peer('upstream'), peer('normal')], peersByResource: {}, secret } })
+      expect(directionsOf(app, 'comments')).to.deep.equal(['downstream', 'normal', 'upstream'])
     })
 
-    it('reads the type of the resource from its options when it is on', async () => {
-      app = await startApp({ replication: { peers, peersByResource: {}, strictTypes: true } })
-      expect(app.cms.$replicator.getParams('articles').type).to.equal('downstream')
-      expect(app.cms.$replicator.getParams('authors').type).to.equal('normal')
+    it('then opens links only to the peers this node takes from: upstream and normal', async () => {
+      app = await startApp({ replication: { peers: [peer('downstream'), peer('upstream'), peer('normal')], peersByResource: {}, strictTypes: true, secret } })
+      expect(directionsOf(app, 'comments')).to.deep.equal(['normal', 'upstream'])
+      expect(directionsOf(app, 'articles')).to.deep.equal(['normal', 'upstream'])
     })
 
-    it('then skips the peers whose direction does not fit the type', async () => {
-      app = await startApp({
-        replication: {
-          peers: [{ ...peers[0], direction: 'downstream' }, { ...peers[0], direction: 'upstream' }, { ...peers[0], direction: 'normal' }],
-          peersByResource: {},
-          strictTypes: true
-        }
-      })
-      const result = await app.cms.$replicator.syncResource('articles')
-      // articles is downstream: it takes from an upstream peer and from a normal one, not from a downstream one
-      expect(result.results.map(item => item.peer.direction).sort()).to.deep.equal(['normal', 'upstream'])
-    })
-
-    it('reports the real type through the resource list', async () => {
-      app = await startApp({ replication: { peers, peersByResource: {}, strictTypes: true } })
+    it('reports the type through the resource list', async () => {
+      app = await startApp({ replication: { peers: [peer('upstream')], peersByResource: {}, secret } })
       const agent = request.agent(app.url)
       await agent.post('/admin/login').send({ username: 'localAdmin', password: 'localAdmin' })
       const { body } = await agent.get('/replicator/resources')
-      const articles = body.find(item => item.name === 'articles')
-      expect(articles).to.include({ type: 'downstream', direction: 'from peers' })
+      expect(body.find(item => item.name === 'articles')).to.include({ type: 'downstream' })
     })
   })
 })

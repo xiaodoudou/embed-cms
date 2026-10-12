@@ -357,6 +357,6 @@ A page can also have an `allowed` list: `allowed: ['admins']` limits it to those
 | `anonymousRead` | `lib/plugins/anonymousRead/index.js` | The smallest: one bootstrap function. |
 | `xlsx`, `import`, `importFromRemote` | `lib/plugins/xlsx`, `import`, `importFromRemote` | Routes with uploads, a resource for settings. |
 | `sync` | `lib/plugins/sync/index.js` | Routes, a settings resource, hooks, and an admin page (`src/components/pages/SyncResource.vue`). |
-| `replicator` | `lib/plugins/replicator/` | A TCP protocol next to the HTTP routes, and the **Replicator** page. |
+| `replicator` | `lib/plugins/replicator/` | A websocket at `/_replicator` on the HTTP port, the HTTP routes, and the **Replicator** page. |
 
 The built-in server plugins are switched on by the options in [CONFIG.md](../reference/CONFIG.md#features-you-can-switch). Yours are installed in code with `cms.use`: they don't need an option, and the CMS doesn't look for plugin files by itself.

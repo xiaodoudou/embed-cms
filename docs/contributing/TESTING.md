@@ -67,14 +67,14 @@ Setting `LOG_LEVEL` does the same (`LOG_LEVEL=debug` shows even the refused requ
 | `test/helpers/` | What the backend tests share: `app.js` boots a CMS, `cmsInstance.js` holds the shared options, `engines.js` the storage engines of the contract suite, `quiet.js` the log level |
 | `test/fixtures/` | Data the tests read: the `resources/` of the shared CMS, `contractResources/` for the contract suite, `ossResources/` for the OSS tests, `man.jpg` and the `smartCrop/` reference pictures |
 | `test/bench/` | The benchmarks (`npm run bench:stores`, `bench.js`, `compare.js`) and their own `resources/` |
-| `test/security/` | One regression test per finding of the backend security audit: `auth` (passwords, sessions, login limits, revocation), `http` (headers, CSRF, CORS, errors), `uploads`, `query`, `rest`, `importFromRemote` (SSRF), `replication` (handshake, peer validation), `websocket` |
+| `test/security/` | One regression test per finding of the backend security audit: `auth` (passwords, sessions, login limits, revocation), `http` (headers, CSRF, CORS, errors), `uploads`, `query`, `rest`, `importFromRemote` (SSRF), `replication` (handshake, a node that only sends, the records a node pulls checked one by one), `websocket` |
 | `test/unit/authentication*` | Passwords, login, retry blocking, group permissions, JWT handling |
 | `test/unit/driver*`, `resource*`, `locking*` | CRUD, hooks, unique keys, concurrency, attachments, import maps |
 | `test/unit/localEngines*` | The three local engines behind one interface (ranges, paging, scan, count, hooks, reopen), the choice in `cms.json`, and the migration between them |
 | `test/unit/stores*`, `jsondown*`, `queryNeedles*`, `paging*`, `importMap*` | `JsonStore`, `FileStore` (including path traversal), the JSON file engine (ordering, ranges, atomic and sliced flush, corrupt files), the text prefilter of queries, paging, the indexed import map |
 | `test/unit/drivers.contract.test.js` | The [driver contract suite](#driver-contract-suite) |
 | `test/unit/authentication.cache*`, `hardening*`, `security.utils*` | The verified-password cache, ids, and the small security utilities (passwords, redaction, safe regular expressions, file types) |
-| `test/unit/replicator.attachments*`, `sync*` | Attachment download between peers, the low-level store sync |
+| `test/unit/replication.live*`, `replicator.attachments*`, `sync*` | Live links between two nodes (a change crosses as it is written, a link that drops connects again, files follow the records), attachment download between peers, the low-level store sync |
 | `test/unit/rest.attachments*`, `ossHelper*`, `admin*`, `updates*`, `syslog.system*` | REST attachment routes, attachments kept in Alibaba Cloud OSS (the client stood in for), admin plugin, websocket updates, log and system streams |
 | `test/unit/xlsx*`, `sync*`, `import*`, `importFromRemote*`, `replicator*` | The plugins, each checked through its real routes |
 | `test/unit/pageHelper*` | The [PageHelper](../reference/PAGE_HELPER.md): the templates read and checked at the start, each way a kept page can be old (a template, a record, the age, a damaged file), the memory and the folder, errors and 404 pages, many requests at once. `pageHelper.edge.test.js` stands a small CMS in for the real one, so that each failure is made on purpose |

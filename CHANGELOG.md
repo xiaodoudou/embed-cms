@@ -4,6 +4,8 @@ What changed in each version of Embed CMS, from 3.0.0 on, newest first. The vers
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-10-12
+
 ### Added
 
 - **A token field.** `input: 'token'` holds a key or a secret that two systems share. Type it, paste it, or make a random one with the **Generate** button, and copy it with **Copy**. `options.length` (random bytes), `options.prefix` and `options.format` (`base64url` or `hex`) shape what Generate makes, and `options.autoGenerate` gives a new record a token by itself, in the admin and over the API. See [token](docs/reference/fields/token.md).
@@ -242,7 +244,8 @@ The release that turned node-cms into a project that stands on its own: the firs
 - The bugs the component tests found: a new record opens a blank editor again, a refused request is not logged as a server error, record names and labels after the mustache 4 update, a record whose id overlaps the machine id can be changed and removed, and `remove` and `update` throw instead of failing silently.
 - A delete goes to the replication peers right away again, `cms-import` prints no empty progress bars into logs, the xlsx import answers `400` without a file.
 
-[Unreleased]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.5...HEAD
+[Unreleased]: https://github.com/xiaodoudou/embed-cms/compare/v3.2.0...HEAD
+[3.2.0]: https://github.com/xiaodoudou/embed-cms/compare/v3.1.1...v3.2.0
 [3.1.1]: https://github.com/xiaodoudou/embed-cms/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.7...v3.1.0
 [3.0.7]: https://github.com/xiaodoudou/embed-cms/compare/v3.0.6...v3.0.7

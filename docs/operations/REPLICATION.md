@@ -89,7 +89,7 @@ Replication needs no port of its own: a peer connects to the HTTP port of the CM
 | `replication.pollInterval` | Milliseconds between two pulls from a peer whose store can't keep a link open (MongoDB, PostgreSQL). `30000` by default. |
 | `replication.maxRecordBytes` | Largest record accepted from a peer with `strictReplication` (4 MB). |
 
-### Moving from 3.x
+### Moving from 3.1 or earlier
 
 Earlier versions replicated over a TCP port of their own, `netPort`, and only after a write or when someone asked. Now:
 
